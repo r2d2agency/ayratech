@@ -9,6 +9,8 @@ import LiveMapView from './views/LiveMapView';
 import RoutesView from './views/RoutesView';
 import SupermarketsListView from './views/SupermarketsListView';
 import SupermarketFormView from './views/SupermarketFormView';
+import SupermarketGroupsListView from './views/SupermarketGroupsListView';
+import SupermarketGroupFormView from './views/SupermarketGroupFormView';
 import AdminView from './views/AdminView';
 import LoginView from './views/LoginView';
 import { BrandingProvider } from './context/BrandingContext';

@@ -62,7 +62,13 @@ export interface Promoter {
   atividadeAtual?: string;
 }
 
-export type ViewType = 'dashboard' | 'supermarkets_list' | 'supermarket_form' | 'promoters' | 'clients' | 'products' | 'routes' | 'live_map' | 'admin';
+export interface SupermarketGroup {
+  id: string;
+  name: string;
+  status: boolean;
+}
+
+export type ViewType = 'dashboard' | 'supermarkets_list' | 'supermarket_form' | 'supermarket_groups_list' | 'supermarket_group_form' | 'promoters' | 'clients' | 'products' | 'routes' | 'live_map' | 'admin';
 
 export const INITIAL_DATA: SupermarketData = {
   id: '',

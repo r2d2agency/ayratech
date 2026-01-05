@@ -1,50 +1,157 @@
 import React, { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
-import { mockClients } from '../mockData';
+import { Plus, X } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import api from '../api/client';
 
 const ClientsView: React.FC = () => {
   const { settings } = useBranding();
   const [clients, setClients] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showContractModal, setShowContractModal] = useState(false);
+  
+  // Contract Form State
+  const [newContract, setNewContract] = useState({
+    clientId: '',
+    description: '',
+    startDate: '',
+    endDate: '',
+    value: 0
+  });
 
   useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        const response = await api.get('/clients');
-        // Map backend data to frontend structure if needed
-        // Backend: { id, name, logo, status, products: [] }
-        // Frontend Mock: { id, nome, logo, totalProdutos }
-        const mappedClients = response.data.map((c: any) => ({
-          id: c.id,
-          nome: c.name,
-          logo: c.logo || 'https://via.placeholder.com/150',
-          totalProdutos: c.products ? c.products.length : 0,
-          status: c.status
-        }));
-        
-        if (mappedClients.length > 0) {
-           setClients(mappedClients);
-        } else {
-           setClients(mockClients); // Fallback if DB is empty
-        }
-      } catch (error) {
-        console.error("Failed to fetch clients, using mock data", error);
-        setClients(mockClients);
-      }
-    };
-
     fetchClients();
   }, []);
 
+  const fetchClients = async () => {
+    try {
+      const response = await api.get('/clients');
+      const mappedClients = response.data.map((c: any) => ({
+        id: c.id,
+        nome: c.name,
+        logo: c.logo || 'https://via.placeholder.com/150',
+        totalProdutos: c.products ? c.products.length : 0,
+        status: c.status
+      }));
+      setClients(mappedClients);
+    } catch (error) {
+      console.error("Failed to fetch clients", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateContract = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.post('/contracts', newContract);
+      alert('Contrato criado com sucesso!');
+      setShowContractModal(false);
+      setNewContract({ clientId: '', description: '', startDate: '', endDate: '', value: 0 });
+    } catch (error) {
+      console.error("Error creating contract:", error);
+      alert('Erro ao criar contrato.');
+    }
+  };
+
+  if (loading) return <div className="p-8">Carregando clientes...</div>;
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 relative">
+      {showContractModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative">
+            <button 
+              onClick={() => setShowContractModal(false)}
+              className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full transition-colors"
+            >
+              <X size={20} className="text-slate-400" />
+            </button>
+            
+            <h2 className="text-2xl font-black text-slate-900 mb-6">Novo Contrato</h2>
+            
+            <form onSubmit={handleCreateContract} className="space-y-4">
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Cliente</label>
+                <select 
+                  required
+                  value={newContract.clientId}
+                  onChange={e => setNewContract({...newContract, clientId: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                >
+                  <option value="">Selecione um cliente...</option>
+                  {clients.map(c => (
+                    <option key={c.id} value={c.id}>{c.nome}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Descrição do Contrato</label>
+                <input 
+                  type="text" 
+                  required
+                  value={newContract.description}
+                  onChange={e => setNewContract({...newContract, description: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  placeholder="Ex: Contrato Anual 2024"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Início</label>
+                  <input 
+                    type="date" 
+                    required
+                    value={newContract.startDate}
+                    onChange={e => setNewContract({...newContract, startDate: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Fim</label>
+                  <input 
+                    type="date" 
+                    required
+                    value={newContract.endDate}
+                    onChange={e => setNewContract({...newContract, endDate: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Valor (R$)</label>
+                <input 
+                  type="number" 
+                  required
+                  min="0"
+                  step="0.01"
+                  value={newContract.value}
+                  onChange={e => setNewContract({...newContract, value: parseFloat(e.target.value)})}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                />
+              </div>
+
+              <button 
+                type="submit"
+                className="w-full py-4 text-white rounded-xl font-black shadow-lg hover:scale-[1.02] transition-all mt-4"
+                style={{ backgroundColor: settings.primaryColor }}
+              >
+                Criar Contrato
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">Clientes & Contratos</h1>
           <p className="text-slate-500 font-medium text-lg">Marcas que confiam na operação Ayratech.</p>
         </div>
         <button 
+          onClick={() => setShowContractModal(true)}
           className="flex items-center gap-2 text-white px-8 py-3 rounded-2xl font-black shadow-xl shadow-blue-200 transition-all hover:scale-105"
           style={{ backgroundColor: settings.primaryColor }}
         >

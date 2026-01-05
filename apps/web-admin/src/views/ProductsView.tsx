@@ -1,23 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
-import { mockProducts, mockClients } from '../mockData';
 import { useBranding } from '../context/BrandingContext';
+import api from '../api/client';
 
 const ProductsView: React.FC = () => {
   const { settings } = useBranding();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState('Todas as Marcas');
+  const [products, setProducts] = useState<any[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredProducts = mockProducts.filter(p => {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [productsRes, clientsRes] = await Promise.all([
+          api.get('/products'),
+          api.get('/clients')
+        ]);
+
+        const mappedClients = clientsRes.data.map((c: any) => ({
+          id: c.id,
+          nome: c.name,
+          logo: c.logo
+        }));
+        setClients(mappedClients);
+
+        const mappedProducts = productsRes.data.map((p: any) => ({
+          id: p.id,
+          nome: p.name,
+          sku: p.sku,
+          categoria: p.category,
+          imagem: p.image || 'https://via.placeholder.com/150',
+          clientId: p.clientId
+        }));
+        setProducts(mappedProducts);
+
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const filteredProducts = products.filter(p => {
     const matchesSearch = p.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           p.sku.includes(searchTerm) || 
                           p.categoria.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const clientName = mockClients.find(c => c.id === p.clientId)?.nome || '';
+    const clientName = clients.find(c => c.id === p.clientId)?.nome || '';
     const matchesClient = selectedClient === 'Todas as Marcas' || clientName === selectedClient;
 
     return matchesSearch && matchesClient;
   });
+
+  if (loading) return <div className="p-8">Carregando produtos...</div>;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -52,7 +92,7 @@ const ProductsView: React.FC = () => {
             onChange={(e) => setSelectedClient(e.target.value)}
           >
             <option>Todas as Marcas</option>
-            {mockClients.map(c => <option key={c.id}>{c.nome}</option>)}
+            {clients.map(c => <option key={c.id}>{c.nome}</option>)}
           </select>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-8">
@@ -68,9 +108,9 @@ const ProductsView: React.FC = () => {
               <h4 className="text-lg font-black text-slate-900 truncate mb-1">{p.nome}</h4>
               <div className="flex items-center gap-2 mt-4">
                 <div className="h-6 w-6 rounded-lg border border-slate-100 flex items-center justify-center p-1">
-                  <img src={mockClients.find(c => c.id === p.clientId)?.logo} className="object-contain" alt="" />
+                  <img src={clients.find(c => c.id === p.clientId)?.logo} className="object-contain" alt="" />
                 </div>
-                <span className="text-[11px] font-black text-slate-500">{mockClients.find(c => c.id === p.clientId)?.nome}</span>
+                <span className="text-[11px] font-black text-slate-500">{clients.find(c => c.id === p.clientId)?.nome}</span>
               </div>
             </div>
           ))}

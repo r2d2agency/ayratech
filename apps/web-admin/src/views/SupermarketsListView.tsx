@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Store, ExternalLink } from 'lucide-react';
-import { mockSupermarkets } from '../mockData';
+import api from '../api/client';
 import { useBranding } from '../context/BrandingContext';
 import { ViewType } from '../types';
 
@@ -10,6 +10,24 @@ interface SupermarketsListViewProps {
 
 const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate }) => {
   const { settings } = useBranding();
+  const [supermarkets, setSupermarkets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSupermarkets = async () => {
+      try {
+        const response = await api.get('/supermarkets');
+        setSupermarkets(response.data);
+      } catch (error) {
+        console.error("Error fetching supermarkets:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSupermarkets();
+  }, []);
+
+  if (loading) return <div className="p-8">Carregando supermercados...</div>;
 
   return (
     <div className="animate-in fade-in duration-500 space-y-8">
@@ -39,7 +57,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {mockSupermarkets.map(s => (
+            {supermarkets.map(s => (
               <tr key={s.id} className="hover:bg-slate-50/50 transition-colors group">
                 <td className="px-8 py-6">
                    <div className="flex items-center gap-4">

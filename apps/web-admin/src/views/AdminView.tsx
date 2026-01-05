@@ -40,12 +40,116 @@ const AdminView: React.FC = () => {
           Branding & Identidade
         </button>
         <button
+          onClick={() => setActiveTab('users')}
+          className={`pb-4 px-4 font-bold text-sm transition-all ${activeTab === 'users' ? 'text-[var(--primary-color)] border-b-2 border-[var(--primary-color)]' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          Usuários
+        </button>
+        <button
           onClick={() => setActiveTab('permissions')}
           className={`pb-4 px-4 font-bold text-sm transition-all ${activeTab === 'permissions' ? 'text-[var(--primary-color)] border-b-2 border-[var(--primary-color)]' : 'text-slate-400 hover:text-slate-600'}`}
         >
           Permissões & Cargos
         </button>
       </div>
+
+      {activeTab === 'users' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1 bg-white rounded-3xl border border-slate-200 p-8 shadow-sm h-fit">
+            <SectionHeader icon={<Users className="text-[var(--primary-color)]" size={22} />} title="Novo Usuário" />
+            <form onSubmit={handleCreateUser} className="mt-6 space-y-4">
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Nome Completo</label>
+                <input 
+                  type="text" 
+                  required
+                  value={newUser.name}
+                  onChange={e => setNewUser({...newUser, name: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Usuário (Login)</label>
+                <input 
+                  type="text" 
+                  required
+                  value={newUser.username}
+                  onChange={e => setNewUser({...newUser, username: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Senha</label>
+                <input 
+                  type="password" 
+                  required
+                  value={newUser.password}
+                  onChange={e => setNewUser({...newUser, password: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Cargo</label>
+                <select 
+                  value={newUser.role}
+                  onChange={e => setNewUser({...newUser, role: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                >
+                  <option value="user">Usuário Comum</option>
+                  <option value="admin">Administrador</option>
+                  <option value="promoter">Promotor</option>
+                  <option value="supervisor">Supervisor</option>
+                </select>
+              </div>
+              <button type="submit" className="w-full py-3 bg-[var(--primary-color)] text-white rounded-xl font-black shadow-lg hover:opacity-90 transition-all mt-4">
+                Criar Usuário
+              </button>
+            </form>
+          </div>
+
+          <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+            <SectionHeader icon={<Users className="text-[var(--primary-color)]" size={22} />} title="Lista de Usuários" />
+            <div className="mt-6 overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-[10px] font-black text-slate-400 uppercase border-b border-slate-100">
+                    <th className="pb-3 px-4">Nome</th>
+                    <th className="pb-3 px-4">Usuário</th>
+                    <th className="pb-3 px-4">Cargo</th>
+                    <th className="pb-3 px-4 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {users.map(user => (
+                    <tr key={user.id} className="group hover:bg-slate-50 transition-colors">
+                      <td className="py-4 px-4 font-bold text-slate-700">{user.name}</td>
+                      <td className="py-4 px-4 text-sm text-slate-500">{user.username}</td>
+                      <td className="py-4 px-4">
+                        <span className="px-3 py-1 rounded-lg bg-blue-50 text-blue-600 text-xs font-black uppercase">
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-right">
+                        <button 
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {users.length === 0 && !loadingUsers && (
+                    <tr>
+                      <td colSpan={4} className="py-8 text-center text-slate-400 font-medium">Nenhum usuário encontrado.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {activeTab === 'branding' && (
         <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm max-w-2xl">

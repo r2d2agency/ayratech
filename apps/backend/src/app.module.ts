@@ -6,8 +6,11 @@ import { AppService } from './app.service';
 import { ClientsModule } from './clients/clients.module';
 import { ProductsModule } from './products/products.module';
 import { SupermarketsModule } from './supermarkets/supermarkets.module';
+import { SupermarketGroupsModule } from './supermarket-groups/supermarket-groups.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { ContractsModule } from './contracts/contracts.module';
+import { RoutesModule } from './routes/routes.module';
 
 @Module({
   imports: [
@@ -38,8 +41,11 @@ import { UsersModule } from './users/users.module';
     ClientsModule,
     ProductsModule,
     SupermarketsModule,
+    SupermarketGroupsModule,
     AuthModule,
     UsersModule,
+    ContractsModule,
+    RoutesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
