@@ -8,7 +8,14 @@ const ClientsView: React.FC = () => {
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showContractModal, setShowContractModal] = useState(false);
+  const [showClientModal, setShowClientModal] = useState(false);
   
+  // Client Form State
+  const [newClient, setNewClient] = useState({
+    name: '',
+    logo: ''
+  });
+
   // Contract Form State
   const [newContract, setNewContract] = useState({
     clientId: '',
@@ -53,10 +60,72 @@ const ClientsView: React.FC = () => {
     }
   };
 
+  const handleCreateClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.post('/clients', newClient);
+      alert('Cliente criado com sucesso!');
+      setShowClientModal(false);
+      setNewClient({ name: '', logo: '' });
+      fetchClients();
+    } catch (error) {
+      console.error("Error creating client:", error);
+      alert('Erro ao criar cliente.');
+    }
+  };
+
   if (loading) return <div className="p-8">Carregando clientes...</div>;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 relative">
+      {showClientModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative">
+            <button 
+              onClick={() => setShowClientModal(false)}
+              className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full transition-colors"
+            >
+              <X size={20} className="text-slate-400" />
+            </button>
+            
+            <h2 className="text-2xl font-black text-slate-900 mb-6">Novo Cliente</h2>
+            
+            <form onSubmit={handleCreateClient} className="space-y-4">
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Nome da Empresa</label>
+                <input 
+                  type="text" 
+                  required
+                  value={newClient.name}
+                  onChange={e => setNewClient({...newClient, name: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  placeholder="Ex: Coca-Cola"
+                />
+              </div>
+              
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Logo URL (Opcional)</label>
+                <input 
+                  type="text" 
+                  value={newClient.logo}
+                  onChange={e => setNewClient({...newClient, logo: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  placeholder="https://..."
+                />
+              </div>
+
+              <button 
+                type="submit"
+                className="w-full py-4 text-white rounded-xl font-black shadow-lg hover:scale-[1.02] transition-all mt-4"
+                style={{ backgroundColor: settings.primaryColor }}
+              >
+                Cadastrar Cliente
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {showContractModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative">
@@ -150,13 +219,21 @@ const ClientsView: React.FC = () => {
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">Clientes & Contratos</h1>
           <p className="text-slate-500 font-medium text-lg">Marcas que confiam na operação Ayratech.</p>
         </div>
-        <button 
-          onClick={() => setShowContractModal(true)}
-          className="flex items-center gap-2 text-white px-8 py-3 rounded-2xl font-black shadow-xl shadow-blue-200 transition-all hover:scale-105"
-          style={{ backgroundColor: settings.primaryColor }}
-        >
-          <Plus size={20} /> Novo Contrato
-        </button>
+        <div className="flex gap-4">
+          <button 
+            onClick={() => setShowClientModal(true)}
+            className="flex items-center gap-2 bg-white text-slate-700 border border-slate-200 px-6 py-3 rounded-2xl font-black shadow-sm transition-all hover:bg-slate-50"
+          >
+            <Plus size={20} /> Novo Cliente
+          </button>
+          <button 
+            onClick={() => setShowContractModal(true)}
+            className="flex items-center gap-2 text-white px-8 py-3 rounded-2xl font-black shadow-xl shadow-blue-200 transition-all hover:scale-105"
+            style={{ backgroundColor: settings.primaryColor }}
+          >
+            <Plus size={20} /> Novo Contrato
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
