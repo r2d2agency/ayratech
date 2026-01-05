@@ -16,16 +16,23 @@ import { UsersModule } from './users/users.module';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('DB_HOST', 'localhost'),
-        port: configService.get<number>('DB_PORT', 5432),
-        username: configService.get<string>('DB_USERNAME', 'postgres'),
-        password: configService.get<string>('DB_PASSWORD', 'password'),
-        database: configService.get<string>('DB_DATABASE', 'ayratech_db'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true, // Auto-create tables (dev only)
-      }),
+      useFactory: (configService: ConfigService) => {
+        const dbConfig = {
+          type: 'postgres',
+          host: configService.get<string>('DB_HOST', 'localhost'),
+          port: configService.get<number>('DB_PORT', 5432),
+          username: configService.get<string>('DB_USERNAME', 'postgres'),
+          password: configService.get<string>('DB_PASSWORD', 'password'),
+          database: configService.get<string>('DB_DATABASE', 'ayratech_db'),
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize: true, // Auto-create tables (dev only)
+        };
+        console.log('Attempting to connect to DB with:', { 
+          ...dbConfig, 
+          password: '***' 
+        });
+        return dbConfig as any;
+      },
       inject: [ConfigService],
     }),
     ClientsModule,
