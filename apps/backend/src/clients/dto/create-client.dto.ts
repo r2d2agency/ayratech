@@ -1,13 +1,55 @@
+import { IsString, IsOptional, IsEmail, IsEnum } from 'class-validator';
+
 export class CreateClientDto {
-  name: string;
+  @IsString()
+  razaoSocial: string;
+
+  @IsOptional()
+  @IsString()
+  nomeFantasia?: string;
+
+  @IsOptional()
+  @IsString()
   cnpj?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zipCode?: string;
-  responsibleName?: string;
-  responsibleContact?: string;
-  email?: string;
+
+  @IsOptional()
+  @IsEmail()
+  emailPrincipal?: string;
+
+  @IsOptional()
+  @IsString()
+  telefonePrincipal?: string;
+
+  @IsOptional()
+  @IsString()
+  // @IsEnum(['ativo', 'inativo', 'suspenso']) // Optional: enforce enum
+  status?: string;
+
+  @IsOptional()
+  @IsString()
+  logradouro?: string;
+
+  @IsOptional()
+  @IsString()
+  numero?: string;
+
+  @IsOptional()
+  @IsString()
+  bairro?: string;
+
+  @IsOptional()
+  @IsString()
+  cidade?: string;
+
+  @IsOptional()
+  @IsString()
+  estado?: string;
+
+  @IsOptional()
+  @IsString()
+  cep?: string;
+
+  @IsOptional()
+  @IsString()
   logo?: string;
-  status?: boolean;
 }
