@@ -24,11 +24,18 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   };
 
   const handleRegister = async () => {
-     try {
+    if (!username || !password) {
+      setError('Preencha usuário e senha para registrar.');
+      return;
+    }
+    try {
       await api.post('/auth/register', { username, password, name: username, role: 'admin' });
-      alert('Usuário criado! Faça login.');
-    } catch (err) {
-      setError('Erro ao criar usuário.');
+      alert('Usuário criado com sucesso! Agora clique em Entrar.');
+      setError('');
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      const message = err.response?.data?.message || 'Erro ao criar usuário.';
+      setError(`Erro no registro: ${Array.isArray(message) ? message.join(', ') : message}`);
     }
   }
 
