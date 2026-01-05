@@ -13,9 +13,10 @@ export class ProductsService {
   ) {}
 
   create(createProductDto: CreateProductDto) {
+    const { brandId, ...productData } = createProductDto;
     const product = this.productsRepository.create({
-      ...createProductDto,
-      brand: { id: createProductDto.brandId }
+      ...productData,
+      brand: brandId ? { id: brandId } : null
     });
     return this.productsRepository.save(product);
   }

@@ -22,7 +22,7 @@ export class AuthController {
   async register(@Body() body) {
     const hashedPassword = await bcrypt.hash(body.password, 10);
     const user = await this.usersService.create({
-      username: body.username,
+      email: body.email,
       password: hashedPassword,
       name: body.name,
       role: body.role || 'user',

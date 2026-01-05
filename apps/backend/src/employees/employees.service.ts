@@ -29,11 +29,9 @@ export class EmployeesService {
         employee: savedEmployee,
         validFrom: new Date(), // Today as start of validity
         remunerationType: 'mensal',
-        amount: baseSalary,
-        benefits: {
-          transportVoucher: transportVoucher || 0,
-          mealVoucher: mealVoucher || 0
-        }
+        baseSalary: baseSalary,
+        transportVoucher: transportVoucher || 0,
+        mealVoucher: mealVoucher || 0
       });
       await this.compensationRepository.save(compensation);
     }
