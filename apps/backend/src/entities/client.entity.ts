@@ -1,5 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Product } from './product.entity';
+import { Brand } from './brand.entity';
 
 @Entity('clients')
 export class Client {
@@ -53,4 +54,7 @@ export class Client {
 
   @OneToMany(() => Brand, (brand) => brand.client)
   brands: Brand[];
+
+  @OneToMany(() => Product, (product) => product.client)
+  products: Product[];
 }
