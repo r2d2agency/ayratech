@@ -13,6 +13,7 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
   const [groups, setGroups] = useState<SupermarketGroup[]>([]);
   const [formData, setFormData] = useState({
     fantasyName: '',
+    cnpj: '',
     groupId: '',
     classification: 'Silver',
     zipCode: '',

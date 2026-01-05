@@ -14,8 +14,8 @@ export const mockProducts: Product[] = [
 ];
 
 export const mockSupermarkets: SupermarketData[] = [
-  { ...INITIAL_DATA, id: 's1', nomeFantasia: 'Pão de Açúcar - Oscar Freire', redeFranquia: 'GPA', classificacao: 'Ouro', cidade: 'São Paulo', estado: 'SP', status: true },
-  { ...INITIAL_DATA, id: 's2', nomeFantasia: 'Carrefour Express - Paulista', redeFranquia: 'Carrefour', classificacao: 'Prata', cidade: 'São Paulo', estado: 'SP', status: true },
+  { ...INITIAL_DATA, id: 's1', fantasyName: 'Pão de Açúcar - Oscar Freire', group: { id: 'g1', name: 'GPA', status: true }, classification: 'Ouro', city: 'São Paulo', state: 'SP', status: true },
+  { ...INITIAL_DATA, id: 's2', fantasyName: 'Carrefour Express - Paulista', group: { id: 'g2', name: 'Carrefour', status: true }, classification: 'Prata', city: 'São Paulo', state: 'SP', status: true },
 ];
 
 export const mockPromoters: Promoter[] = [

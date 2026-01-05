@@ -72,22 +72,22 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                          <Store size={22} />
                       </div>
                       <div>
-                        <p className="text-base font-black text-slate-900">{s.nomeFantasia}</p>
-                        <p className="text-xs text-slate-400 font-bold">CNPJ: 00.000.000/0001-99</p>
+                        <p className="text-base font-black text-slate-900">{s.fantasyName}</p>
+                        <p className="text-xs text-slate-400 font-bold">CNPJ: {s.cnpj || 'Não informado'}</p>
                       </div>
                    </div>
                 </td>
                 <td className="px-8 py-6">
-                  <span className="text-sm font-black text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">{s.redeFranquia}</span>
+                  <span className="text-sm font-black text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">{s.group?.name || 'Sem Rede'}</span>
                 </td>
                 <td className="px-8 py-6">
-                  <p className="text-sm font-bold text-slate-600">{s.cidade} - {s.estado}</p>
+                  <p className="text-sm font-bold text-slate-600">{s.city} - {s.state}</p>
                 </td>
                 <td className="px-8 py-6 text-center">
                    <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider ${
-                      s.classificacao === 'Ouro' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'
+                      s.classification === 'Ouro' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'
                    }`}>
-                      {s.classificacao}
+                      {s.classification}
                    </span>
                 </td>
                 <td className="px-8 py-6 text-right">

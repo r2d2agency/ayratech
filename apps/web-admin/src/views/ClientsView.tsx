@@ -5,29 +5,58 @@ import api from '../api/client';
 
 const ClientsView: React.FC = () => {
   const { settings } = useBranding();
+  const [activeTab, setActiveTab] = useState<'clients' | 'templates'>('clients');
   const [clients, setClients] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showContractModal, setShowContractModal] = useState(false);
   const [showClientModal, setShowClientModal] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
   
   // Client Form State
   const [newClient, setNewClient] = useState({
     name: '',
-    logo: ''
+    logo: '',
+    cnpj: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    responsibleName: '',
+    responsibleContact: '',
+    email: ''
   });
 
   // Contract Form State
   const [newContract, setNewContract] = useState({
     clientId: '',
+    templateId: '',
     description: '',
     startDate: '',
     endDate: '',
     value: 0
   });
 
+  // Template Form State
+  const [newTemplate, setNewTemplate] = useState({
+    name: '',
+    description: '',
+    content: ''
+  });
+
   useEffect(() => {
     fetchClients();
+    fetchTemplates();
   }, []);
+
+  const fetchTemplates = async () => {
+    try {
+      const response = await api.get('/contract-templates');
+      setTemplates(response.data);
+    } catch (error) {
+      console.error("Failed to fetch templates", error);
+    }
+  };
 
   const fetchClients = async () => {
     try {
@@ -53,10 +82,24 @@ const ClientsView: React.FC = () => {
       await api.post('/contracts', newContract);
       alert('Contrato criado com sucesso!');
       setShowContractModal(false);
-      setNewContract({ clientId: '', description: '', startDate: '', endDate: '', value: 0 });
+      setNewContract({ clientId: '', templateId: '', description: '', startDate: '', endDate: '', value: 0 });
     } catch (error) {
       console.error("Error creating contract:", error);
       alert('Erro ao criar contrato.');
+    }
+  };
+
+  const handleCreateTemplate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.post('/contract-templates', newTemplate);
+      alert('Modelo de contrato criado com sucesso!');
+      setShowTemplateModal(false);
+      setNewTemplate({ name: '', description: '', content: '' });
+      fetchTemplates();
+    } catch (error) {
+      console.error("Error creating template:", error);
+      alert('Erro ao criar modelo de contrato.');
     }
   };
 
@@ -90,7 +133,7 @@ const ClientsView: React.FC = () => {
             
             <h2 className="text-2xl font-black text-slate-900 mb-6">Novo Cliente</h2>
             
-            <form onSubmit={handleCreateClient} className="space-y-4">
+            <form onSubmit={handleCreateClient} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
               <div>
                 <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Nome da Empresa</label>
                 <input 
@@ -101,6 +144,80 @@ const ClientsView: React.FC = () => {
                   className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
                   placeholder="Ex: Coca-Cola"
                 />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">CNPJ</label>
+                <input 
+                  type="text" 
+                  value={newClient.cnpj}
+                  onChange={e => setNewClient({...newClient, cnpj: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  placeholder="00.000.000/0000-00"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Responsável</label>
+                  <input 
+                    type="text" 
+                    value={newClient.responsibleName}
+                    onChange={e => setNewClient({...newClient, responsibleName: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Contato</label>
+                  <input 
+                    type="text" 
+                    value={newClient.responsibleContact}
+                    onChange={e => setNewClient({...newClient, responsibleContact: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Email</label>
+                <input 
+                  type="email" 
+                  value={newClient.email}
+                  onChange={e => setNewClient({...newClient, email: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Endereço</label>
+                <input 
+                  type="text" 
+                  value={newClient.address}
+                  onChange={e => setNewClient({...newClient, address: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  placeholder="Rua, Número, Bairro"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Cidade</label>
+                  <input 
+                    type="text" 
+                    value={newClient.city}
+                    onChange={e => setNewClient({...newClient, city: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">UF</label>
+                  <input 
+                    type="text" 
+                    value={newClient.state}
+                    onChange={e => setNewClient({...newClient, state: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  />
+                </div>
               </div>
               
               <div>
@@ -220,12 +337,22 @@ const ClientsView: React.FC = () => {
           <p className="text-slate-500 font-medium text-lg">Marcas que confiam na operação Ayratech.</p>
         </div>
         <div className="flex gap-4">
-          <button 
-            onClick={() => setShowClientModal(true)}
-            className="flex items-center gap-2 bg-white text-slate-700 border border-slate-200 px-6 py-3 rounded-2xl font-black shadow-sm transition-all hover:bg-slate-50"
-          >
-            <Plus size={20} /> Novo Cliente
-          </button>
+          {activeTab === 'templates' && (
+             <button 
+              onClick={() => setShowTemplateModal(true)}
+              className="flex items-center gap-2 bg-white text-slate-700 border border-slate-200 px-6 py-3 rounded-2xl font-black shadow-sm transition-all hover:bg-slate-50"
+            >
+              <Plus size={20} /> Novo Modelo
+            </button>
+          )}
+          {activeTab === 'clients' && (
+            <button 
+              onClick={() => setShowClientModal(true)}
+              className="flex items-center gap-2 bg-white text-slate-700 border border-slate-200 px-6 py-3 rounded-2xl font-black shadow-sm transition-all hover:bg-slate-50"
+            >
+              <Plus size={20} /> Novo Cliente
+            </button>
+          )}
           <button 
             onClick={() => setShowContractModal(true)}
             className="flex items-center gap-2 text-white px-8 py-3 rounded-2xl font-black shadow-xl shadow-blue-200 transition-all hover:scale-105"
@@ -236,40 +363,92 @@ const ClientsView: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {clients.map(c => (
-          <div key={c.id} className="bg-white rounded-3xl border border-slate-200 p-8 hover:shadow-xl transition-all group relative overflow-hidden">
-            <div 
-              className="absolute top-0 right-0 w-32 h-32 opacity-10 rounded-bl-full -mr-10 -mt-10 transition-all group-hover:opacity-20" 
-              style={{ backgroundColor: settings.primaryColor }}
-            />
-            <div className="relative z-10">
-              <div className="flex justify-between items-start mb-8">
-                <div className="h-16 w-16 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center justify-center p-3">
-                  <img src={c.logo} className="object-contain" alt={c.nome} />
+      {/* Tabs */}
+      <div className="flex gap-6 border-b border-slate-200">
+        <button 
+          onClick={() => setActiveTab('clients')}
+          className={`pb-4 text-sm font-black uppercase tracking-widest transition-all ${
+            activeTab === 'clients' 
+              ? 'border-b-4 text-slate-900' 
+              : 'text-slate-400 hover:text-slate-600'
+          }`}
+          style={{ borderColor: activeTab === 'clients' ? settings.primaryColor : 'transparent' }}
+        >
+          Clientes
+        </button>
+        <button 
+          onClick={() => setActiveTab('templates')}
+          className={`pb-4 text-sm font-black uppercase tracking-widest transition-all ${
+            activeTab === 'templates' 
+              ? 'border-b-4 text-slate-900' 
+              : 'text-slate-400 hover:text-slate-600'
+          }`}
+          style={{ borderColor: activeTab === 'templates' ? settings.primaryColor : 'transparent' }}
+        >
+          Modelos de Contrato
+        </button>
+      </div>
+
+      {activeTab === 'clients' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {clients.map(c => (
+            <div key={c.id} className="bg-white rounded-3xl border border-slate-200 p-8 hover:shadow-xl transition-all group relative overflow-hidden">
+              <div 
+                className="absolute top-0 right-0 w-32 h-32 opacity-10 rounded-bl-full -mr-10 -mt-10 transition-all group-hover:opacity-20" 
+                style={{ backgroundColor: settings.primaryColor }}
+              />
+              <div className="relative z-10">
+                <div className="flex justify-between items-start mb-8">
+                  <div className="h-16 w-16 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center justify-center p-3">
+                    <img src={c.logo} className="object-contain" alt={c.nome} />
+                  </div>
+                  <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${c.status !== false ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-gray-50 text-gray-600 border-gray-100'}`}>
+                    {c.status !== false ? 'Contrato Ativo' : 'Inativo'}
+                  </span>
                 </div>
-                <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${c.status !== false ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-gray-50 text-gray-600 border-gray-100'}`}>
-                  {c.status !== false ? 'Contrato Ativo' : 'Inativo'}
-                </span>
-              </div>
-              <h3 className="text-2xl font-black text-slate-900 mb-1">{c.nome}</h3>
-              <p className="text-slate-500 font-bold mb-8">{c.totalProdutos} SKUs Cadastrados</p>
-              <div className="pt-6 border-t border-slate-100 flex gap-3">
-                <button className="flex-1 py-3 bg-slate-50 text-slate-700 rounded-xl text-xs font-black hover:bg-slate-100 transition-colors">Produtos</button>
-                <button 
-                  className="flex-1 py-3 rounded-xl text-xs font-black transition-colors bg-opacity-10 hover:bg-opacity-20"
-                  style={{ 
-                    color: settings.primaryColor,
-                    backgroundColor: `${settings.primaryColor}1a` // 10% opacity
-                  }}
-                >
-                  Dashboard
-                </button>
+                <h3 className="text-2xl font-black text-slate-900 mb-1">{c.nome}</h3>
+                <p className="text-slate-500 font-bold mb-8">{c.totalProdutos} SKUs Cadastrados</p>
+                <div className="pt-6 border-t border-slate-100 flex gap-3">
+                  <button className="flex-1 py-3 bg-slate-50 text-slate-700 rounded-xl text-xs font-black hover:bg-slate-100 transition-colors">Produtos</button>
+                  <button 
+                    className="flex-1 py-3 rounded-xl text-xs font-black transition-colors bg-opacity-10 hover:bg-opacity-20"
+                    style={{ 
+                      color: settings.primaryColor,
+                      backgroundColor: `${settings.primaryColor}1a` // 10% opacity
+                    }}
+                  >
+                    Dashboard
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {templates.map(t => (
+            <div key={t.id} className="bg-white rounded-3xl border border-slate-200 p-8 hover:shadow-xl transition-all group relative overflow-hidden">
+              <div 
+                className="absolute top-0 right-0 w-32 h-32 opacity-5 rounded-bl-full -mr-10 -mt-10 transition-all group-hover:opacity-10 bg-slate-900" 
+              />
+              <div className="relative z-10">
+                <h3 className="text-xl font-black text-slate-900 mb-2">{t.name}</h3>
+                <p className="text-slate-500 font-medium text-sm mb-4 line-clamp-2">{t.description || 'Sem descrição'}</p>
+                <div className="pt-4 border-t border-slate-100">
+                  <button className="w-full py-2 bg-slate-50 text-slate-700 rounded-lg text-xs font-black hover:bg-slate-100 transition-colors">
+                    Editar Modelo
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {templates.length === 0 && (
+            <div className="col-span-full text-center py-12 text-slate-400">
+              <p>Nenhum modelo de contrato cadastrado.</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

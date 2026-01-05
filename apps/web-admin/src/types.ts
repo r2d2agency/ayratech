@@ -2,9 +2,16 @@
 export interface Client {
   id: string;
   nome: string;
+  cnpj?: string;
   logo: string;
   totalProdutos: number;
   status: boolean;
+  address?: string;
+  city?: string;
+  state?: string;
+  responsibleName?: string;
+  responsibleContact?: string;
+  email?: string;
 }
 
 export interface Product {
@@ -72,24 +79,15 @@ export type ViewType = 'dashboard' | 'supermarkets_list' | 'supermarket_form' | 
 
 export const INITIAL_DATA: SupermarketData = {
   id: '',
-  nomeFantasia: '',
-  razaoSocial: '',
+  fantasyName: '',
   cnpj: '',
-  redeFranquia: '',
-  classificacao: 'Ouro',
+  classification: 'Ouro',
   status: true,
-  cep: '',
-  logradouro: '',
-  numero: '',
-  complemento: '',
-  bairro: '',
-  cidade: '',
-  estado: '',
-  nomeGerente: '',
-  email: '',
-  telefone: '',
-  horarioAbertura: '08:00',
-  horarioFechamento: '22:00',
-  observacoes: '',
-  marcasVinculadas: []
+  zipCode: '',
+  street: '',
+  number: '',
+  complement: '',
+  neighborhood: '',
+  city: '',
+  state: '',
 };
