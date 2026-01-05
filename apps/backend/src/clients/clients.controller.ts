@@ -8,7 +8,20 @@ export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
 
   @Post()
-  create(@Body() createClientDto: CreateClientDto) {
+  @UseInterceptors(FileInterceptor('logo', {
+    storage: diskStorage({
+      destination: './uploads/clients',
+      filename: (req, file, cb) => {
+        const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
+        cb(null, `${randomName}${extname(file.originalname)}`);
+      },
+    }),
+  }))
+  create(@Body() createClientDto: CreateClientDto, @UploadedFile() file?: Express.Multer.File) {
+    if (file) {
+      // Assuming backend runs on port 3000
+      createClientDto.logo = `http://localhost:3000/uploads/clients/${file.filename}`;
+    }
     return this.clientsService.create(createClientDto);
   }
 

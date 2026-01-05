@@ -221,14 +221,22 @@ const ClientsView: React.FC = () => {
               </div>
               
               <div>
-                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Logo URL (Opcional)</label>
-                <input 
-                  type="text" 
-                  value={newClient.logo}
-                  onChange={e => setNewClient({...newClient, logo: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
-                  placeholder="https://..."
-                />
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Logo (Upload ou URL)</label>
+                <div className="flex flex-col gap-2">
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={e => setLogoFile(e.target.files?.[0] || null)}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  />
+                  <input 
+                    type="text" 
+                    value={newClient.logo}
+                    onChange={e => setNewClient({...newClient, logo: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                    placeholder="Ou cole a URL da imagem..."
+                  />
+                </div>
               </div>
 
               <button 
