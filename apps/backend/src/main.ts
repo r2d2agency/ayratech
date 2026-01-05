@@ -24,8 +24,16 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT || 3000;
-  await app.listen(port, '0.0.0.0');
-  console.log(`Application is running on: ${await app.getUrl()}`);
-  console.log(`Server bound to 0.0.0.0:${port}`);
+  try {
+    await app.listen(port, '0.0.0.0');
+    console.log(`Application is running on: ${await app.getUrl()}`);
+    console.log(`Server bound to 0.0.0.0:${port}`);
+  } catch (error) {
+    console.error('Error starting server:', error);
+    process.exit(1);
+  }
 }
-bootstrap();
+bootstrap().catch(err => {
+  console.error('Fatal error during bootstrap:', err);
+  process.exit(1);
+});

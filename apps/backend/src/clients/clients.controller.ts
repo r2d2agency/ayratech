@@ -13,7 +13,17 @@ export class ClientsController {
   @Post()
   @UseInterceptors(FileInterceptor('logo', {
     storage: diskStorage({
-      destination: './uploads/clients',
+      destination: (req, file, cb) => {
+        const uploadPath = './uploads/clients';
+        // Ensure directory exists - though better to do this at startup
+        // but fs.mkdirSync is synchronous.
+        // For now, assume main.ts created './uploads', but we need './uploads/clients'
+        const fs = require('fs');
+        if (!fs.existsSync(uploadPath)) {
+          fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+      },
       filename: (req, file, cb) => {
         const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
         cb(null, `${randomName}${extname(file.originalname)}`);
@@ -22,8 +32,9 @@ export class ClientsController {
   }))
   create(@Body() createClientDto: CreateClientDto, @UploadedFile() file?: Express.Multer.File) {
     if (file) {
-      // Assuming backend runs on port 3000
-      createClientDto.logo = `http://localhost:3000/uploads/clients/${file.filename}`;
+      // Use relative path or env var for domain
+      const baseUrl = process.env.API_URL || 'https://api.ayratech.app.br';
+      createClientDto.logo = `${baseUrl}/uploads/clients/${file.filename}`;
     }
     return this.clientsService.create(createClientDto);
   }
