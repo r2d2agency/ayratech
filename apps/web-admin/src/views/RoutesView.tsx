@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPinned, Plus, Trash2, CheckCircle, Save } from 'lucide-react';
+import { Calendar, MapPinned, Plus, Trash2, CheckCircle, Save, Settings, List } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import api from '../api/client';
 
 const RoutesView: React.FC = () => {
   const { settings } = useBranding();
   
+  const [activeTab, setActiveTab] = useState<'planner' | 'rules'>('planner');
   const [promoters, setPromoters] = useState<any[]>([]);
   const [supermarkets, setSupermarkets] = useState<any[]>([]);
   const [selectedPromoter, setSelectedPromoter] = useState<string | null>(null);
@@ -13,6 +14,10 @@ const RoutesView: React.FC = () => {
   
   const [routeItems, setRouteItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Rules State
+  const [rules, setRules] = useState<any[]>([]);
+  const [newRule, setNewRule] = useState({ name: '', description: '', value: '' });
 
   useEffect(() => {
     fetchData();
@@ -28,8 +33,34 @@ const RoutesView: React.FC = () => {
       const promotersList = usersRes.data.filter((u: any) => u.role === 'promoter');
       setPromoters(promotersList);
       setSupermarkets(supermarketsRes.data);
+      fetchRules();
     } catch (error) {
       console.error('Error fetching data:', error);
+    }
+  };
+
+  const fetchRules = async () => {
+    try {
+      const res = await api.get('/routes/rules/all');
+      setRules(res.data);
+    } catch (error) {
+      console.error('Error fetching rules:', error);
+    }
+  };
+
+  const handleCreateRule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.post('/routes/rules', {
+        ...newRule,
+        value: JSON.parse(newRule.value || '{}') // Ensure value is JSON
+      });
+      alert('Regra criada com sucesso!');
+      setNewRule({ name: '', description: '', value: '' });
+      fetchRules();
+    } catch (error) {
+      console.error('Error creating rule:', error);
+      alert('Erro ao criar regra. Verifique se o valor é um JSON válido.');
     }
   };
 
@@ -78,12 +109,31 @@ const RoutesView: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Planejador Inteligente</h1>
-          <p className="text-slate-500 font-medium text-lg">Defina roteiros e metas de visitação.</p>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Gestão de Rotas</h1>
+          <p className="text-slate-500 font-medium text-lg">Planejamento e Regras de Visitação.</p>
+        </div>
+        <div className="flex bg-slate-100 p-1 rounded-xl">
+          <button
+            onClick={() => setActiveTab('planner')}
+            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${
+              activeTab === 'planner' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Planejador
+          </button>
+          <button
+            onClick={() => setActiveTab('rules')}
+            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${
+              activeTab === 'rules' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Regras de Rotas
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      {activeTab === 'planner' && (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Left Column: Promoters */}
         <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm h-fit">
            <h3 className="text-xs font-black text-slate-400 uppercase mb-8 tracking-[0.2em]">1. Selecione o Promotor</h3>
@@ -191,6 +241,86 @@ const RoutesView: React.FC = () => {
                <p className="text-slate-400 max-w-sm font-medium">Selecione um promotor à esquerda para começar.</p>
             </div>
           )}
+        </div>
+      </div>
+      )}
+
+      {activeTab === 'rules' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+           {/* Form */}
+           <div className="bg-white rounded-3xl border border-slate-200 p-8">
+              <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2">
+                <Settings size={24} className="text-slate-400" />
+                Nova Regra
+              </h3>
+              <form onSubmit={handleCreateRule} className="space-y-4">
+                 <div>
+                    <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Nome da Regra</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={newRule.name}
+                      onChange={e => setNewRule({...newRule, name: e.target.value})}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                      placeholder="Ex: Distância Máxima"
+                    />
+                 </div>
+                 <div>
+                    <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Descrição</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={newRule.description}
+                      onChange={e => setNewRule({...newRule, description: e.target.value})}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                      placeholder="Ex: Limita a distância entre PDVs"
+                    />
+                 </div>
+                 <div>
+                    <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Configuração (JSON)</label>
+                    <textarea 
+                      required
+                      value={newRule.value}
+                      onChange={e => setNewRule({...newRule, value: e.target.value})}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-mono text-sm h-32"
+                      placeholder='{"maxDistance": 10}'
+                    />
+                 </div>
+                 <button 
+                    type="submit"
+                    className="w-full py-4 rounded-xl text-white font-black shadow-lg hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                    style={{ backgroundColor: settings.primaryColor }}
+                 >
+                    <Save size={20} /> Salvar Regra
+                 </button>
+              </form>
+           </div>
+
+           {/* List */}
+           <div className="bg-white rounded-3xl border border-slate-200 p-8">
+              <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2">
+                <List size={24} className="text-slate-400" />
+                Regras Ativas
+              </h3>
+              <div className="space-y-4">
+                 {rules.length === 0 ? (
+                   <p className="text-slate-400 text-center py-10">Nenhuma regra cadastrada.</p>
+                 ) : (
+                   rules.map((rule: any) => (
+                     <div key={rule.id} className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                        <div className="flex justify-between items-start mb-2">
+                           <h4 className="font-bold text-slate-900">{rule.name}</h4>
+                           <span className="text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-700">Ativa</span>
+                        </div>
+                        <p className="text-sm text-slate-500 mb-3">{rule.description}</p>
+                        <pre className="bg-slate-900 text-slate-50 p-3 rounded-lg text-xs font-mono overflow-x-auto">
+                           {JSON.stringify(rule.value, null, 2)}
+                        </pre>
+                     </div>
+                   ))
+                 )}
+              </div>
+           </div>
         </div>
       )}
     </div>
