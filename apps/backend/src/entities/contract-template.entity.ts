@@ -12,7 +12,10 @@ export class ContractTemplate {
   description: string;
 
   @Column({ type: 'text', nullable: true })
-  content: string;
+  content: string; // HTML content from docx
+
+  @Column({ nullable: true })
+  originalFileName: string;
 
   @Column({ default: true })
   status: boolean;

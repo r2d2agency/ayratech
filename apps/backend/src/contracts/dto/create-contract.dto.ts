@@ -51,4 +51,8 @@ export class CreateContractDto {
   @IsOptional()
   @IsNumber()
   slaPercentage?: number;
+
+  @IsOptional()
+  @IsString()
+  content?: string;
 }

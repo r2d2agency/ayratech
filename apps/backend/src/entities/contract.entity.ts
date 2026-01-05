@@ -33,4 +33,7 @@ export class Contract {
 
   @Column({ nullable: true })
   templateId: string;
+
+  @Column({ type: 'text', nullable: true })
+  content: string; // The generated HTML content specific to this contract
 }

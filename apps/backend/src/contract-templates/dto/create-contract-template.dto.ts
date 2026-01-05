@@ -13,6 +13,10 @@ export class CreateContractTemplateDto {
   content?: string;
 
   @IsOptional()
+  @IsString()
+  originalFileName?: string;
+
+  @IsOptional()
   @IsBoolean()
   status?: boolean;
 }
