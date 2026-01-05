@@ -75,7 +75,7 @@ const ClientsView: React.FC = () => {
         id: c.id,
         nome: c.nomeFantasia || c.razaoSocial, // Display Fantasy Name, fallback to Corporate Name
         logo: getLogoUrl(c.logo),
-        totalProdutos: c.products ? c.products.length : 0,
+        totalProdutos: c.brands ? c.brands.reduce((acc: number, b: any) => acc + (b.products ? b.products.length : 0), 0) : 0,
         status: c.status
       }));
       setClients(mappedClients);
@@ -92,7 +92,20 @@ const ClientsView: React.FC = () => {
       await api.post('/contracts', newContract);
       alert('Contrato criado com sucesso!');
       setShowContractModal(false);
-      setNewContract({ clientId: '', templateId: '', description: '', startDate: '', endDate: '', value: 0 });
+      setNewContract({ 
+        clientId: '', 
+        templateId: '', 
+        description: '', 
+        startDate: '', 
+        endDate: '', 
+        value: 0,
+        type: 'fixo',
+        valuePerStore: 0,
+        valuePerVisit: 0,
+        visitFrequency: '',
+        visitsPerMonth: 0,
+        slaPercentage: 0
+      });
     } catch (error) {
       console.error("Error creating contract:", error);
       alert('Erro ao criar contrato.');
@@ -371,6 +384,27 @@ const ClientsView: React.FC = () => {
                   ))}
                 </select>
               </div>
+
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Modelo de Contrato</label>
+                <select 
+                  value={newContract.templateId}
+                  onChange={e => {
+                    const template = templates.find(t => t.id === e.target.value);
+                    setNewContract({
+                      ...newContract, 
+                      templateId: e.target.value,
+                      description: template ? `Contrato - ${template.name}` : newContract.description
+                    });
+                  }}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                >
+                  <option value="">Sem modelo vinculado</option>
+                  {templates.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
               
               <div>
                 <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Descrição do Contrato</label>
@@ -408,14 +442,90 @@ const ClientsView: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Valor (R$)</label>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Tipo de Contrato</label>
+                <select 
+                  value={newContract.type}
+                  onChange={e => setNewContract({...newContract, type: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                >
+                  <option value="fixo">Fixo Mensal</option>
+                  <option value="por_loja">Por Loja</option>
+                  <option value="por_visita">Por Visita</option>
+                </select>
+              </div>
+
+              {newContract.type === 'fixo' && (
+                <div>
+                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Valor Mensal (R$)</label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    step="0.01"
+                    value={newContract.value}
+                    onChange={e => setNewContract({...newContract, value: parseFloat(e.target.value)})}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  />
+                </div>
+              )}
+
+              {newContract.type === 'por_loja' && (
+                <div>
+                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Valor por Loja (R$)</label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    step="0.01"
+                    value={newContract.valuePerStore}
+                    onChange={e => setNewContract({...newContract, valuePerStore: parseFloat(e.target.value)})}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  />
+                </div>
+              )}
+
+              {newContract.type === 'por_visita' && (
+                <div>
+                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Valor por Visita (R$)</label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    step="0.01"
+                    value={newContract.valuePerVisit}
+                    onChange={e => setNewContract({...newContract, valuePerVisit: parseFloat(e.target.value)})}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Frequência de Visitas</label>
+                  <input 
+                    type="text" 
+                    value={newContract.visitFrequency}
+                    onChange={e => setNewContract({...newContract, visitFrequency: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                    placeholder="Ex: Semanal"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Visitas/Mês</label>
+                  <input 
+                    type="number" 
+                    value={newContract.visitsPerMonth}
+                    onChange={e => setNewContract({...newContract, visitsPerMonth: parseFloat(e.target.value)})}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">SLA (%)</label>
                 <input 
                   type="number" 
-                  required
                   min="0"
-                  step="0.01"
-                  value={newContract.value}
-                  onChange={e => setNewContract({...newContract, value: parseFloat(e.target.value)})}
+                  max="100"
+                  value={newContract.slaPercentage}
+                  onChange={e => setNewContract({...newContract, slaPercentage: parseFloat(e.target.value)})}
                   className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
                 />
               </div>

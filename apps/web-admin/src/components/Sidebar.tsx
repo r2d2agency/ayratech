@@ -23,11 +23,14 @@ interface SidebarProps {
   onNavigate: (view: ViewType) => void;
   expanded: boolean;
   setExpanded: (val: boolean) => void;
+  userRole?: string;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, setExpanded }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, setExpanded, userRole }) => {
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const { settings } = useBranding();
+  
+  const canViewEmployees = userRole && ['admin', 'rh', 'manager'].includes(userRole);
 
   const toggleSubmenu = (id: string) => {
     if (!expanded) {
@@ -131,6 +134,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
               >
                 Clientes / Indústrias
               </button>
+              {canViewEmployees && (
+              <button 
+                onClick={() => onNavigate('employees')}
+                className={`w-full text-left p-2 rounded-lg text-xs font-bold transition-all ${activeView === 'employees' ? 'text-[var(--primary-color)] bg-blue-50' : 'text-slate-500 hover:text-[var(--primary-color)]'}`}
+              >
+                Funcionários
+              </button>
+              )}
               <button 
                 onClick={() => onNavigate('products')}
                 className={`w-full text-left p-2 rounded-lg text-xs font-bold transition-all ${activeView === 'products' ? 'text-[var(--primary-color)] bg-blue-50' : 'text-slate-500 hover:text-[var(--primary-color)]'}`}
@@ -148,12 +159,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
                 className={`w-full text-left p-2 rounded-lg text-xs font-bold transition-all ${activeView === 'supermarket_groups_list' ? 'text-[var(--primary-color)] bg-blue-50' : 'text-slate-500 hover:text-[var(--primary-color)]'}`}
               >
                 Redes / Grupos
-              </button>
-              <button 
-                onClick={() => onNavigate('promoters')}
-                className={`w-full text-left p-2 rounded-lg text-xs font-bold transition-all ${activeView === 'promoters' ? 'text-[var(--primary-color)] bg-blue-50' : 'text-slate-500 hover:text-[var(--primary-color)]'}`}
-              >
-                Promotores
               </button>
             </div>
           )}

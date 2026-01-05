@@ -13,16 +13,22 @@ export class UsersService {
     private usersRepository: Repository<User>,
   ) {}
 
-  async findOne(username: string): Promise<User | undefined> {
-    return this.usersRepository.findOneBy({ username });
+  async findOne(email: string): Promise<User | undefined> {
+    return this.usersRepository.findOne({ 
+      where: { email },
+      relations: ['role', 'employee']
+    });
   }
 
   async findById(id: string): Promise<User | undefined> {
-    return this.usersRepository.findOneBy({ id });
+    return this.usersRepository.findOne({ 
+      where: { id },
+      relations: ['role', 'employee']
+    });
   }
 
   async findAll(): Promise<User[]> {
-    return this.usersRepository.find();
+    return this.usersRepository.find({ relations: ['role', 'employee'] });
   }
 
   async create(createUserDto: CreateUserDto): Promise<User> {

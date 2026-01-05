@@ -51,6 +51,6 @@ export class Client {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @OneToMany(() => Product, (product) => product.client)
-  products: Product[];
+  @OneToMany(() => Brand, (brand) => brand.client)
+  brands: Brand[];
 }

@@ -1,16 +1,21 @@
-import { IsString, IsOptional, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsEmail } from 'class-validator';
 
 export class CreateUserDto {
-  @IsString()
-  username: string;
+  @IsEmail()
+  email: string;
 
   @IsString()
-  password?: string; // Optional because it might be set by default or handled separately
-
-  @IsString()
-  name: string;
+  password?: string;
 
   @IsOptional()
   @IsString()
-  role?: string;
+  employeeId?: string;
+
+  @IsOptional()
+  @IsString()
+  roleId?: string;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
 }

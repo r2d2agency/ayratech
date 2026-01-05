@@ -32,7 +32,7 @@ const ProductsView: React.FC = () => {
           sku: p.sku,
           categoria: p.category,
           imagem: p.image || 'https://via.placeholder.com/150',
-          clientId: p.clientId
+          clientId: p.brand?.client?.id
         }));
         setProducts(mappedProducts);
 

@@ -12,16 +12,20 @@ import SupermarketFormView from './views/SupermarketFormView';
 import SupermarketGroupsListView from './views/SupermarketGroupsListView';
 import SupermarketGroupFormView from './views/SupermarketGroupFormView';
 import AdminView from './views/AdminView';
+import EmployeesView from './views/EmployeesView';
 import LoginView from './views/LoginView';
 import { BrandingProvider } from './context/BrandingContext';
+import { jwtDecode } from 'jwt-decode';
 
-const MainContent: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
+const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onLogout, userRole }) => {
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
 
   const handleNavigate = (view: ViewType) => {
     setActiveView(view);
   };
+  
+  const canViewEmployees = ['admin', 'rh', 'manager'].includes(userRole);
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
@@ -29,7 +33,8 @@ const MainContent: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         activeView={activeView} 
         onNavigate={handleNavigate} 
         expanded={sidebarExpanded} 
-        setExpanded={setSidebarExpanded} 
+        setExpanded={setSidebarExpanded}
+        userRole={userRole}
       />
       
       <div className={`transition-all duration-300 ${sidebarExpanded ? 'pl-64' : 'pl-20'}`}>
@@ -45,6 +50,9 @@ const MainContent: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           {activeView === 'supermarket_form' && <SupermarketFormView onNavigate={handleNavigate} />}
           {activeView === 'supermarket_groups_list' && <SupermarketGroupsListView onNavigate={handleNavigate} />}
           {activeView === 'supermarket_group_form' && <SupermarketGroupFormView onNavigate={handleNavigate} />}
+          {activeView === 'employees' && (
+            canViewEmployees ? <EmployeesView /> : <div className="p-8 text-center text-red-500">Acesso não autorizado</div>
+          )}
           {activeView === 'admin' && <AdminView />}
         </main>
       </div>
@@ -55,18 +63,35 @@ const MainContent: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string>('');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
       setIsAuthenticated(true);
+      try {
+        const decoded: any = jwtDecode(token);
+        setUserRole(decoded.role || 'user');
+      } catch (e) {
+        console.error("Invalid token", e);
+      }
     }
     setLoading(false);
   }, []);
 
   const handleLogin = () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded: any = jwtDecode(token);
+        setUserRole(decoded.role || 'user');
+      } catch (e) {
+        console.error("Invalid token", e);
+      }
+    }
     setIsAuthenticated(true);
   };
+
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -77,7 +102,7 @@ const App: React.FC = () => {
 
   return (
     <BrandingProvider>
-      {isAuthenticated ? <MainContent onLogout={handleLogout} /> : <LoginView onLogin={handleLogin} />}
+      {isAuthenticated ? <MainContent onLogout={handleLogout} userRole={userRole} /> : <LoginView onLogin={handleLogin} />}
     </BrandingProvider>
   );
 };

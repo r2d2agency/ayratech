@@ -3,5 +3,9 @@ export class CreateProductDto {
   sku: string;
   category: string;
   image?: string;
-  clientId: string;
+  clientId?: string;
+  brandId: string;
+  barcode?: string;
+  subcategory?: string;
+  status?: string;
 }

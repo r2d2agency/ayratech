@@ -23,4 +23,32 @@ export class CreateContractDto {
   @IsOptional()
   @IsBoolean()
   status?: boolean;
+
+  @IsOptional()
+  @IsString()
+  code?: string;
+
+  @IsOptional()
+  @IsString()
+  type?: string;
+
+  @IsOptional()
+  @IsNumber()
+  valuePerStore?: number;
+
+  @IsOptional()
+  @IsNumber()
+  valuePerVisit?: number;
+
+  @IsOptional()
+  @IsString()
+  visitFrequency?: string;
+
+  @IsOptional()
+  @IsNumber()
+  visitsPerMonth?: number;
+
+  @IsOptional()
+  @IsNumber()
+  slaPercentage?: number;
 }

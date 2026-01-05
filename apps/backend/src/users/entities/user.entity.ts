@@ -1,19 +1,41 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Role } from '../../roles/entities/role.entity';
+import { Employee } from '../../employees/entities/employee.entity';
 
-@Entity()
+@Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ unique: true })
-  username: string;
+  email: string; // email_login
 
-  @Column()
-  password: string;
+  @Column({ name: 'password_hash' })
+  password: string; // password_hash
 
-  @Column()
-  name: string;
+  @Column({ nullable: true })
+  employeeId: string;
 
-  @Column({ default: 'user' })
-  role: string;
+  @ManyToOne(() => Employee, { nullable: true })
+  @JoinColumn({ name: 'employeeId' })
+  employee: Employee;
+
+  @Column({ nullable: true })
+  roleId: string;
+
+  @ManyToOne(() => Role, { nullable: true })
+  @JoinColumn({ name: 'roleId' })
+  role: Role;
+
+  @Column({ default: 'active' })
+  status: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lastLoginAt: Date;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

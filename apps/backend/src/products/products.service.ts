@@ -15,29 +15,27 @@ export class ProductsService {
   create(createProductDto: CreateProductDto) {
     const product = this.productsRepository.create({
       ...createProductDto,
-      client: { id: createProductDto.clientId }
+      brand: { id: createProductDto.brandId }
     });
     return this.productsRepository.save(product);
   }
 
   findAll() {
-    return this.productsRepository.find({ relations: ['client'] });
+    return this.productsRepository.find({ relations: ['brand', 'brand.client'] });
   }
 
   findOne(id: string) {
     return this.productsRepository.findOne({ 
       where: { id },
-      relations: ['client']
+      relations: ['brand', 'brand.client']
     });
   }
 
   update(id: string, updateProductDto: UpdateProductDto) {
-    // Handling relations in update is trickier with simple update, but for now standard update
-    // If clientId is passed, it needs to be mapped to client relation
-    const { clientId, ...rest } = updateProductDto;
+    const { brandId, ...rest } = updateProductDto;
     const updateData: any = { ...rest };
-    if (clientId) {
-      updateData.client = { id: clientId };
+    if (brandId) {
+      updateData.brand = { id: brandId };
     }
     return this.productsRepository.update(id, updateData);
   }

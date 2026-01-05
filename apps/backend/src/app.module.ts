@@ -14,6 +14,11 @@ import { UsersModule } from './users/users.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { RoutesModule } from './routes/routes.module';
 import { ContractTemplatesModule } from './contract-templates/contract-templates.module';
+import { RolesModule } from './roles/roles.module';
+import { EmployeesModule } from './employees/employees.module';
+import { WorkSchedulesModule } from './work-schedules/work-schedules.module';
+import { TimeClockModule } from './time-clock/time-clock.module';
+import { AbsencesModule } from './absences/absences.module';
 
 @Module({
   imports: [
@@ -50,6 +55,8 @@ import { ContractTemplatesModule } from './contract-templates/contract-templates
     ContractsModule,
     RoutesModule,
     ContractTemplatesModule,
+    BrandsModule,
+    RolesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
