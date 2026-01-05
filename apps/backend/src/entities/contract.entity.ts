@@ -26,4 +26,7 @@ export class Contract {
 
   @Column()
   clientId: string;
+
+  @Column({ nullable: true })
+  templateId: string;
 }

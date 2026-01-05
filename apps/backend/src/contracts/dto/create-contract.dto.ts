@@ -17,6 +17,10 @@ export class CreateContractDto {
   clientId: string;
 
   @IsOptional()
+  @IsString()
+  templateId?: string;
+
+  @IsOptional()
   @IsBoolean()
   status?: boolean;
 }

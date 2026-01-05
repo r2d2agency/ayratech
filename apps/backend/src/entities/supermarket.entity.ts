@@ -9,6 +9,9 @@ export class Supermarket {
   @Column()
   fantasyName: string;
 
+  @Column({ nullable: true })
+  cnpj: string;
+
   @ManyToOne(() => SupermarketGroup, (group) => group.supermarkets, { eager: true })
   @JoinColumn({ name: 'groupId' })
   group: SupermarketGroup;

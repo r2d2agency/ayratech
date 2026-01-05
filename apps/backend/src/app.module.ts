@@ -11,6 +11,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { RoutesModule } from './routes/routes.module';
+import { ContractTemplatesModule } from './contract-templates/contract-templates.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { RoutesModule } from './routes/routes.module';
     UsersModule,
     ContractsModule,
     RoutesModule,
+    ContractTemplatesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

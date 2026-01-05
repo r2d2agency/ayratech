@@ -1,5 +1,6 @@
 export class CreateSupermarketDto {
   fantasyName: string;
+  cnpj?: string;
   groupId: string;
   classification: string;
   

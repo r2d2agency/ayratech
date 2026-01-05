@@ -10,6 +10,30 @@ export class Client {
   name: string;
 
   @Column({ nullable: true })
+  cnpj: string;
+
+  @Column({ nullable: true })
+  address: string;
+
+  @Column({ nullable: true })
+  city: string;
+
+  @Column({ nullable: true })
+  state: string;
+
+  @Column({ nullable: true })
+  zipCode: string;
+
+  @Column({ nullable: true })
+  responsibleName: string;
+
+  @Column({ nullable: true })
+  responsibleContact: string;
+
+  @Column({ nullable: true })
+  email: string;
+
+  @Column({ nullable: true })
   logo: string;
 
   @Column({ default: true })
