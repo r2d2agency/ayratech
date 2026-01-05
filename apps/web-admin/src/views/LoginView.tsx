@@ -7,7 +7,7 @@ interface LoginViewProps {
 }
 
 const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
-  const { branding } = useBranding();
+  const { branddin } = useBranding();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -33,9 +33,9 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100" style={{ fontFamily: branding.fontFamily }}>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded shadow-md w-96">
-        <h2 className="text-2xl font-bold mb-6 text-center" style={{ color: branding.primaryColor }}>Login</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center" style={{ color: settings.primaryColor }}>Login</h2>
         {error && <p className="text-red-500 mb-4">{error}</p>}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
@@ -59,7 +59,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
           <button
             type="submit"
             className="w-full text-white font-bold py-2 px-4 rounded hover:opacity-90 transition-colors"
-            style={{ backgroundColor: branding.primaryColor }}
+            style={{ backgroundColor: settings.primaryColor }}
           >
             Entrar
           </button>
