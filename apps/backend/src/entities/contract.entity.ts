@@ -22,13 +22,13 @@ export class Contract {
   // @Column({ default: true })
   // status: boolean;
 
-  @ManyToOne(() => Client, { eager: true })
+  @ManyToOne(() => Client, { eager: true, createForeignKeyConstraints: false })
   client: Client;
 
-  @Column()
+  @Column({ nullable: true })
   clientId: string;
 
-  @ManyToOne(() => ContractTemplate, { eager: true, nullable: true })
+  @ManyToOne(() => ContractTemplate, { eager: true, nullable: true, createForeignKeyConstraints: false })
   template: ContractTemplate;
 
   @Column({ nullable: true })
