@@ -43,6 +43,8 @@ const MainContent: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           {activeView === 'routes' && <RoutesView />}
           {activeView === 'supermarkets_list' && <SupermarketsListView onNavigate={handleNavigate} />}
           {activeView === 'supermarket_form' && <SupermarketFormView onNavigate={handleNavigate} />}
+          {activeView === 'supermarket_groups_list' && <SupermarketGroupsListView onNavigate={handleNavigate} />}
+          {activeView === 'supermarket_group_form' && <SupermarketGroupFormView onNavigate={handleNavigate} />}
           {activeView === 'admin' && <AdminView />}
         </main>
       </div>
