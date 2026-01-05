@@ -34,8 +34,16 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
       setError('');
     } catch (err: any) {
       console.error('Registration error:', err);
-      const message = err.response?.data?.message || 'Erro ao criar usuário.';
-      setError(`Erro no registro: ${Array.isArray(message) ? message.join(', ') : message}`);
+      let errorMessage = 'Erro ao criar usuário.';
+      
+      if (err.response?.data?.message) {
+        const msg = err.response.data.message;
+        errorMessage = Array.isArray(msg) ? msg.join(', ') : msg;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(`Erro no registro: ${errorMessage}`);
     }
   }
 
