@@ -6,7 +6,7 @@ import * as path from 'path';
 
 async function bootstrap() {
   // Ensure uploads directory exists
-  const uploadsPath = path.join(__dirname, '..', 'uploads');
+  const uploadsPath = path.join(process.cwd(), 'uploads');
   if (!fs.existsSync(uploadsPath)) {
     console.log(`Creating uploads directory at: ${uploadsPath}`);
     fs.mkdirSync(uploadsPath, { recursive: true });
