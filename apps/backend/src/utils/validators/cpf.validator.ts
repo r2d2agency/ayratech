@@ -4,6 +4,7 @@ import { ValidatorConstraint, ValidatorConstraintInterface, ValidationArguments 
 export class IsCPFConstraint implements ValidatorConstraintInterface {
   validate(cpf: string, args: ValidationArguments) {
     if (!cpf) return false;
+    if (typeof cpf !== 'string') return false;
     
     // Remove characters that are not digits
     cpf = cpf.replace(/[^\d]+/g, '');
