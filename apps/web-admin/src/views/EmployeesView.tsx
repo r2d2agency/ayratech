@@ -96,7 +96,14 @@ const EmployeesView: React.FC = () => {
   const handleSaveEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const payload = { ...employeeForm };
+      const payload = {
+        ...employeeForm,
+        roleId: employeeForm.roleId || null,
+        supervisorId: employeeForm.supervisorId || null,
+        baseSalary: employeeForm.baseSalary ? Number(employeeForm.baseSalary) : undefined,
+        transportVoucher: employeeForm.transportVoucher ? Number(employeeForm.transportVoucher) : undefined,
+        mealVoucher: employeeForm.mealVoucher ? Number(employeeForm.mealVoucher) : undefined,
+      };
       if (editingEmployee) {
         await api.patch(`/employees/${editingEmployee.id}`, payload);
       } else {
