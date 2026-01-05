@@ -10,8 +10,8 @@ RUN apk add --no-cache python3 make g++
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies with verbose logging
-RUN npm install --verbose
+# Install dependencies with verbose logging and ignoring scripts to avoid permission issues
+RUN npm install --verbose --ignore-scripts --legacy-peer-deps
 
 # Install NestJS CLI globally to ensure 'nest' command is available
 RUN npm install -g @nestjs/cli
