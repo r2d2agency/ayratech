@@ -4,11 +4,14 @@ FROM node:20-alpine AS builder
 # Set working directory
 WORKDIR /app
 
+# Install build dependencies just in case
+RUN apk add --no-cache python3 make g++
+
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies with verbose logging
+RUN npm install --verbose
 
 # Install NestJS CLI globally to ensure 'nest' command is available
 RUN npm install -g @nestjs/cli
