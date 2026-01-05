@@ -33,6 +33,9 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
 
+# Create uploads directory
+RUN mkdir -p /app/uploads
+
 # Expose the application port
 EXPOSE 3000
 
