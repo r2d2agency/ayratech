@@ -1,0 +1,12 @@
+{
+  "name": "ayratech-supermarket-manager-root",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w apps/web-admin",
+    "build:web": "npm run build -w apps/web-admin",
+    "dev:backend": "npm run start:dev -w apps/backend"
+  }
+}
