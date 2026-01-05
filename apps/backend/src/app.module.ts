@@ -47,6 +47,10 @@ import { AbsencesModule } from './absences/absences.module';
       },
       inject: [ConfigService],
     }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'),
+      serveRoot: '/uploads',
+    }),
     ClientsModule,
     ProductsModule,
     SupermarketsModule,
