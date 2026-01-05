@@ -3,7 +3,7 @@ import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { UsersService } from '../users/users.service';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 @Controller('auth')
 export class AuthController {
@@ -24,8 +24,7 @@ export class AuthController {
     const user = await this.usersService.create({
       email: body.email,
       password: hashedPassword,
-      name: body.name,
-      role: body.role || 'user',
+      roleId: body.roleId,
     });
     const { password, ...result } = user;
     return result;
