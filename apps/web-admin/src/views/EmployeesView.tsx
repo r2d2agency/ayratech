@@ -68,6 +68,58 @@ const EmployeesView: React.FC = () => {
 
   const [formTab, setFormTab] = useState<'general' | 'address' | 'contract' | 'schedule'>('general');
 
+  // Helper functions
+  const formatCPF = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+      .replace(/(-\d{2})\d+?$/, '$1');
+  };
+
+  const validateCPF = (cpf: string) => {
+    cpf = cpf.replace(/[^\d]+/g, '');
+    if (cpf.length !== 11 || !!cpf.match(/(\d)\1{10}/)) return false;
+    
+    let sum = 0;
+    let remainder;
+    
+    for (let i = 1; i <= 9; i++) sum = sum + parseInt(cpf.substring(i - 1, i)) * (11 - i);
+    remainder = (sum * 10) % 11;
+    if ((remainder === 10) || (remainder === 11)) remainder = 0;
+    if (remainder !== parseInt(cpf.substring(9, 10))) return false;
+    
+    sum = 0;
+    for (let i = 1; i <= 10; i++) sum = sum + parseInt(cpf.substring(i - 1, i)) * (12 - i);
+    remainder = (sum * 10) % 11;
+    if ((remainder === 10) || (remainder === 11)) remainder = 0;
+    if (remainder !== parseInt(cpf.substring(10, 11))) return false;
+    
+    return true;
+  };
+
+  const handleCepBlur = async () => {
+    const cep = employeeForm.addressZip.replace(/\D/g, '');
+    if (cep.length !== 8) return;
+    
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await response.json();
+      if (!data.erro) {
+        setEmployeeForm(prev => ({
+          ...prev,
+          addressStreet: data.logradouro,
+          addressDistrict: data.bairro,
+          addressCity: data.localidade,
+          addressState: data.uf
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching CEP:', error);
+    }
+  };
+
   useEffect(() => {
     fetchEmployees();
     fetchRoles();
@@ -95,6 +147,12 @@ const EmployeesView: React.FC = () => {
 
   const handleSaveEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateCPF(employeeForm.cpf)) {
+      alert('CPF inválido. Por favor, verifique os dígitos.');
+      return;
+    }
+
     try {
       const payload = {
         ...employeeForm,
@@ -417,9 +475,11 @@ const EmployeesView: React.FC = () => {
                     <input
                       type="text"
                       required
+                      maxLength={14}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                       value={employeeForm.cpf}
-                      onChange={e => setEmployeeForm({...employeeForm, cpf: e.target.value})}
+                      onChange={e => setEmployeeForm({...employeeForm, cpf: formatCPF(e.target.value)})}
+                      placeholder="000.000.000-00"
                     />
                   </div>
                   <div>
@@ -472,6 +532,8 @@ const EmployeesView: React.FC = () => {
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                       value={employeeForm.addressZip}
                       onChange={e => setEmployeeForm({...employeeForm, addressZip: e.target.value})}
+                      onBlur={handleCepBlur}
+                      placeholder="00000-000"
                     />
                   </div>
                   <div className="md:col-span-4">
