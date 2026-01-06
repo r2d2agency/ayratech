@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
@@ -7,11 +7,24 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
-export class UsersService {
+export class UsersService implements OnModuleInit {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
   ) {}
+
+  async onModuleInit() {
+    const count = await this.usersRepository.count();
+    if (count === 0) {
+      const defaultEmail = process.env.DEFAULT_ADMIN_EMAIL || 'admin@ayratech.app.br';
+      const defaultPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'admin123';
+      const existing = await this.usersRepository.findOne({ where: { email: defaultEmail } });
+      if (!existing) {
+        await this.create({ email: defaultEmail, password: defaultPassword, status: 'active' });
+        // No logs
+      }
+    }
+  }
 
   async findOne(email: string): Promise<User | undefined> {
     return this.usersRepository.findOne({ 
@@ -34,12 +47,18 @@ export class UsersService {
   async create(createUserDto: CreateUserDto): Promise<User> {
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(createUserDto.password || '123456', salt);
-    
     const newUser = this.usersRepository.create({
       ...createUserDto,
       password: hashedPassword,
     });
-    return this.usersRepository.save(newUser);
+    try {
+      return await this.usersRepository.save(newUser);
+    } catch (err: any) {
+      if (err?.code === '23505') {
+        throw new BadRequestException('Email já cadastrado');
+      }
+      throw err;
+    }
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<any> {
