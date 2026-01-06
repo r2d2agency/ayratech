@@ -67,6 +67,8 @@ const EmployeesView: React.FC = () => {
   });
 
   const [formTab, setFormTab] = useState<'general' | 'address' | 'contract' | 'schedule'>('general');
+  const [cpfError, setCpfError] = useState<string>('');
+  const [cepError, setCepError] = useState<string>('');
 
   // Helper functions
   const formatCPF = (value: string) => {
@@ -76,6 +78,12 @@ const EmployeesView: React.FC = () => {
       .replace(/(\d{3})(\d)/, '$1.$2')
       .replace(/(\d{3})(\d{1,2})/, '$1-$2')
       .replace(/(-\d{2})\d+?$/, '$1');
+  };
+  const formatCEP = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{5})(\d)/, '$1-$2')
+      .slice(0, 9);
   };
 
   const validateCPF = (cpf: string) => {
@@ -99,12 +107,16 @@ const EmployeesView: React.FC = () => {
     return true;
   };
 
-  const handleCepBlur = async () => {
-    const cep = employeeForm.addressZip.replace(/\D/g, '');
-    if (cep.length !== 8) return;
+  const handleCepLookup = async () => {
+    const cepDigits = employeeForm.addressZip.replace(/\D/g, '');
+    if (cepDigits.length !== 8) {
+      setCepError(cepDigits.length > 0 ? 'CEP deve ter 8 dígitos' : '');
+      return;
+    }
+    setCepError('');
     
     try {
-      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const response = await fetch(`https://viacep.com.br/ws/${cepDigits}/json/`);
       const data = await response.json();
       if (!data.erro) {
         setEmployeeForm(prev => ({
@@ -114,9 +126,12 @@ const EmployeesView: React.FC = () => {
           addressCity: data.localidade,
           addressState: data.uf
         }));
+      } else {
+        setCepError('CEP não encontrado');
       }
     } catch (error) {
       console.error('Error fetching CEP:', error);
+      setCepError('Erro ao consultar CEP');
     }
   };
 
@@ -124,13 +139,23 @@ const EmployeesView: React.FC = () => {
     fetchEmployees();
     fetchRoles();
   }, []);
+  useEffect(() => {
+    const digits = employeeForm.addressZip.replace(/\D/g, '');
+    if (digits.length === 8) {
+      handleCepLookup();
+    }
+  }, [employeeForm.addressZip]);
 
   const fetchEmployees = async () => {
     try {
       const response = await api.get('/employees');
       setEmployees(response.data);
     } catch (error) {
-      console.error('Error fetching employees:', error);
+      if ((error as any)?.response?.status === 401) {
+        alert('Sessão expirada ou não autenticado. Faça login para continuar.');
+      } else {
+        console.error('Error fetching employees:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -150,8 +175,10 @@ const EmployeesView: React.FC = () => {
 
     if (!validateCPF(employeeForm.cpf)) {
       alert('CPF inválido. Por favor, verifique os dígitos.');
+      setCpfError('CPF inválido');
       return;
     }
+    setCpfError('');
 
     try {
       const payload = {
@@ -172,8 +199,12 @@ const EmployeesView: React.FC = () => {
       resetEmployeeForm();
       fetchEmployees();
     } catch (error) {
-      console.error('Error saving employee:', error);
-      alert('Erro ao salvar funcionário. Verifique os dados.');
+      if ((error as any)?.response?.status === 401) {
+        alert('Sessão expirada ou não autenticado. Faça login para continuar.');
+      } else {
+        console.error('Error saving employee:', error);
+        alert('Erro ao salvar funcionário. Verifique os dados.');
+      }
     }
   };
 
@@ -476,11 +507,13 @@ const EmployeesView: React.FC = () => {
                       type="text"
                       required
                       maxLength={14}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                      className={`w-full px-3 py-2 border rounded-lg ${cpfError ? 'border-red-500' : 'border-slate-300'}`}
                       value={employeeForm.cpf}
                       onChange={e => setEmployeeForm({...employeeForm, cpf: formatCPF(e.target.value)})}
+                      onBlur={() => setCpfError(validateCPF(employeeForm.cpf) ? '' : 'CPF inválido')}
                       placeholder="000.000.000-00"
                     />
+                    {cpfError && <p className="text-red-600 text-xs mt-1">{cpfError}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">RG</label>
@@ -529,12 +562,13 @@ const EmployeesView: React.FC = () => {
                     <label className="block text-sm font-medium text-slate-700 mb-1">CEP</label>
                     <input
                       type="text"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                      className={`w-full px-3 py-2 border rounded-lg ${cepError ? 'border-red-500' : 'border-slate-300'}`}
                       value={employeeForm.addressZip}
-                      onChange={e => setEmployeeForm({...employeeForm, addressZip: e.target.value})}
-                      onBlur={handleCepBlur}
+                      onChange={e => setEmployeeForm({...employeeForm, addressZip: formatCEP(e.target.value)})}
+                      onBlur={handleCepLookup}
                       placeholder="00000-000"
                     />
+                    {cepError && <p className="text-red-600 text-xs mt-1">{cepError}</p>}
                   </div>
                   <div className="md:col-span-4">
                     <label className="block text-sm font-medium text-slate-700 mb-1">Logradouro</label>
