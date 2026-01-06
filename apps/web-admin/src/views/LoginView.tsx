@@ -8,14 +8,14 @@ interface LoginViewProps {
 
 const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const { settings } = useBranding();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await api.post('/auth/login', { username, password });
+      const response = await api.post('/auth/login', { email, password });
       localStorage.setItem('token', response.data.access_token);
       onLogin();
     } catch (err) {
@@ -24,12 +24,12 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   };
 
   const handleRegister = async () => {
-    if (!username || !password) {
+    if (!email || !password) {
       setError('Preencha usuário e senha para registrar.');
       return;
     }
     try {
-      await api.post('/auth/register', { username, password, name: username, role: 'admin' });
+      await api.post('/auth/register', { email, password });
       alert('Usuário criado com sucesso! Agora clique em Entrar.');
       setError('');
     } catch (err: any) {
@@ -54,12 +54,12 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
         {error && <p className="text-red-500 mb-4">{error}</p>}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Usuário</label>
+            <label className="block text-gray-700 text-sm font-bold mb-2">Email</label>
             <input
               type="text"
               className="w-full px-3 py-2 border rounded"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div className="mb-6">
