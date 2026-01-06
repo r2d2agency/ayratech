@@ -12,4 +12,7 @@ export class CreateRoleDto {
   @IsOptional()
   @IsString()
   accessLevel?: string;
+
+  @IsOptional()
+  permissions?: string[];
 }

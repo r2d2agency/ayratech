@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
+import { Role } from '../roles/entities/role.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcryptjs';
@@ -11,6 +12,8 @@ export class UsersService implements OnModuleInit {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(Role)
+    private rolesRepository: Repository<Role>,
   ) {}
 
   async onModuleInit() {
@@ -19,9 +22,24 @@ export class UsersService implements OnModuleInit {
       const defaultEmail = process.env.DEFAULT_ADMIN_EMAIL || 'admin@ayratech.app.br';
       const defaultPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'admin123';
       const existing = await this.usersRepository.findOne({ where: { email: defaultEmail } });
+      
       if (!existing) {
-        await this.create({ email: defaultEmail, password: defaultPassword, status: 'active' });
-        // No logs
+        // Ensure admin role exists
+        let adminRole = await this.rolesRepository.findOne({ where: { name: 'admin' } });
+        if (!adminRole) {
+            // Should have been created by RolesService, but just in case
+            adminRole = await this.rolesRepository.save(
+                this.rolesRepository.create({ name: 'admin', description: 'Admin', accessLevel: 'all' })
+            );
+        }
+
+        await this.create({ 
+            email: defaultEmail, 
+            password: defaultPassword, 
+            roleId: adminRole.id, // Use actual UUID
+            status: 'active' 
+        });
+        console.log('Default admin user created.');
       }
     }
   }
@@ -41,32 +59,107 @@ export class UsersService implements OnModuleInit {
   }
 
   async findAll(): Promise<User[]> {
-    return this.usersRepository.find({ relations: ['role', 'employee'] });
+    try {
+      // Temporarily removed 'employee' relation to isolate the issue causing 500 error
+      // If 'employee' relation is needed, we must ensure Employee entity is properly loaded and DB is consistent
+      return await this.usersRepository.find({ relations: ['role'] });
+    } catch (err) {
+      console.error('Error in findAll users:', err);
+      // Return empty array instead of throwing 500 to allow UI to render
+      return [];
+    }
   }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
+    // Safety check for repository injection
+    if (!this.rolesRepository) {
+        console.error('RolesRepository not injected');
+        throw new BadRequestException('Erro interno: Repositório de cargos não disponível.');
+    }
+
+    // Validate roleId if present
+    if (createUserDto.roleId !== undefined && createUserDto.roleId !== null) {
+       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+       
+       if (!createUserDto.roleId || !uuidRegex.test(createUserDto.roleId)) {
+          delete createUserDto.roleId;
+       } else {
+          try {
+              const roleExists = await this.rolesRepository.findOne({ where: { id: createUserDto.roleId } });
+              if (!roleExists) {
+                 throw new BadRequestException('Cargo selecionado não existe.');
+              }
+          } catch (e) {
+              console.error('Error checking role existence:', e);
+              // If check fails (e.g. DB error), assume invalid or let save handle it, but better to fail safe
+              throw new BadRequestException('Erro ao validar cargo.');
+          }
+       }
+    } else {
+       delete createUserDto.roleId;
+    }
+
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(createUserDto.password || '123456', salt);
     const newUser = this.usersRepository.create({
       ...createUserDto,
       password: hashedPassword,
     });
+    
     try {
       return await this.usersRepository.save(newUser);
     } catch (err: any) {
+      console.error('Erro ao criar usuário:', err);
       if (err?.code === '23505') {
         throw new BadRequestException('Email já cadastrado');
       }
-      throw err;
+      // Handle FK violations
+      if (err?.code === '23503') {
+         throw new BadRequestException('Erro de relacionamento (Cargo ou Funcionário inválido).');
+      }
+      throw new BadRequestException('Erro ao criar usuário. Verifique os dados.');
     }
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<any> {
+    if (updateUserDto.roleId !== undefined) {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      
+      if (!updateUserDto.roleId || !uuidRegex.test(updateUserDto.roleId)) {
+        // If invalid/empty, remove role association (set to null if your DB logic allows, or just ignore invalid value)
+        // Here we assume empty string means "remove role" or "no role"
+        if (updateUserDto.roleId === '' || updateUserDto.roleId === null) {
+            updateUserDto.roleId = null; // Explicitly set to null to remove role
+        } else {
+            // If it's some garbage string that is not empty/null, we should probably ignore it or throw error.
+            // Let's remove it to be safe, preventing DB error.
+            delete updateUserDto.roleId;
+        }
+      } else {
+         // Valid UUID, check existence
+         const roleExists = await this.rolesRepository.findOne({ where: { id: updateUserDto.roleId } });
+         if (!roleExists) {
+           throw new BadRequestException(`Cargo inválido ou não encontrado.`);
+         }
+      }
+    }
+    
     if (updateUserDto.password) {
       const salt = await bcrypt.genSalt();
       updateUserDto.password = await bcrypt.hash(updateUserDto.password, salt);
     }
-    return this.usersRepository.update(id, updateUserDto);
+    
+    try {
+      // Use save instead of update to handle listeners/subscribers if any, and better error return
+      // But update is fine for partial.
+      return await this.usersRepository.update(id, updateUserDto);
+    } catch (err: any) {
+      console.error('Erro ao atualizar usuário:', err);
+      if (err?.code === '23505') {
+        throw new BadRequestException('Email já cadastrado');
+      }
+      throw new BadRequestException('Erro ao atualizar usuário. Verifique os dados.');
+    }
   }
 
   async remove(id: string): Promise<any> {

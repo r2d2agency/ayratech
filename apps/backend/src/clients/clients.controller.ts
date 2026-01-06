@@ -50,7 +50,27 @@ export class ClientsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateClientDto: UpdateClientDto) {
+  @UseInterceptors(FileInterceptor('logo', {
+    storage: diskStorage({
+      destination: (req, file, cb) => {
+        const uploadPath = './uploads/clients';
+        const fs = require('fs');
+        if (!fs.existsSync(uploadPath)) {
+          fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+      },
+      filename: (req, file, cb) => {
+        const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
+        cb(null, `${randomName}${extname(file.originalname)}`);
+      },
+    }),
+  }))
+  update(@Param('id') id: string, @Body() updateClientDto: UpdateClientDto, @UploadedFile() file?: Express.Multer.File) {
+    if (file) {
+      const baseUrl = process.env.API_URL || 'https://api.ayratech.app.br';
+      updateClientDto.logo = `${baseUrl}/uploads/clients/${file.filename}`;
+    }
     return this.clientsService.update(id, updateClientDto);
   }
 

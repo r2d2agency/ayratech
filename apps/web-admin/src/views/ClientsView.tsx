@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Trash2, Edit } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import api from '../api/client';
 
@@ -13,6 +13,7 @@ const ClientsView: React.FC = () => {
   const [showClientModal, setShowClientModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [editingClient, setEditingClient] = useState<string | null>(null);
   
   // Client Form State
   const [newClient, setNewClient] = useState({
@@ -72,6 +73,7 @@ const ClientsView: React.FC = () => {
     try {
       const response = await api.get('/clients');
       const mappedClients = response.data.map((c: any) => ({
+        ...c,
         id: c.id,
         nome: c.nomeFantasia || c.razaoSocial, // Display Fantasy Name, fallback to Corporate Name
         logo: getLogoUrl(c.logo),
@@ -126,7 +128,27 @@ const ClientsView: React.FC = () => {
     }
   };
 
-  const handleCreateClient = async (e: React.FormEvent) => {
+  const resetClientForm = () => {
+    setNewClient({
+      razaoSocial: '',
+      nomeFantasia: '',
+      cnpj: '',
+      emailPrincipal: '',
+      telefonePrincipal: '',
+      status: 'ativo',
+      logradouro: '',
+      numero: '',
+      bairro: '',
+      cidade: '',
+      estado: '',
+      cep: '',
+      logo: ''
+    });
+    setLogoFile(null);
+    setEditingClient(null);
+  };
+
+  const handleClientSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const formData = new FormData();
@@ -149,33 +171,55 @@ const ClientsView: React.FC = () => {
         formData.append('logo', newClient.logo);
       }
 
-      await api.post('/clients', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      alert('Cliente criado com sucesso!');
+      if (editingClient) {
+        await api.patch(`/clients/${editingClient}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        alert('Cliente atualizado com sucesso!');
+      } else {
+        await api.post('/clients', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        alert('Cliente criado com sucesso!');
+      }
+
       setShowClientModal(false);
-      setNewClient({
-        razaoSocial: '',
-        nomeFantasia: '',
-        cnpj: '',
-        emailPrincipal: '',
-        telefonePrincipal: '',
-        status: 'ativo',
-        logradouro: '',
-        numero: '',
-        bairro: '',
-        cidade: '',
-        estado: '',
-        cep: '',
-        logo: ''
-      });
-      setLogoFile(null);
+      resetClientForm();
       fetchClients();
     } catch (error) {
-      console.error("Error creating client:", error);
-      alert('Erro ao criar cliente.');
+      console.error("Error saving client:", error);
+      alert('Erro ao salvar cliente.');
+    }
+  };
+
+  const handleEditClient = (client: any) => {
+    setEditingClient(client.id);
+    setNewClient({
+      razaoSocial: client.razaoSocial || '',
+      nomeFantasia: client.nomeFantasia || '',
+      cnpj: client.cnpj || '',
+      emailPrincipal: client.emailPrincipal || '',
+      telefonePrincipal: client.telefonePrincipal || '',
+      status: client.status || 'ativo',
+      logradouro: client.logradouro || '',
+      numero: client.numero || '',
+      bairro: client.bairro || '',
+      cidade: client.cidade || '',
+      estado: client.estado || '',
+      cep: client.cep || '',
+      logo: client.logo || ''
+    });
+    setShowClientModal(true);
+  };
+
+  const handleDeleteClient = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este cliente?')) return;
+    try {
+      await api.delete(`/clients/${id}`);
+      fetchClients();
+    } catch (error) {
+      console.error("Error deleting client:", error);
+      alert('Erro ao excluir cliente.');
     }
   };
 
@@ -193,9 +237,9 @@ const ClientsView: React.FC = () => {
               <X size={20} className="text-slate-400" />
             </button>
             
-            <h2 className="text-2xl font-black text-slate-900 mb-6">Novo Cliente</h2>
+            <h2 className="text-2xl font-black text-slate-900 mb-6">{editingClient ? 'Editar Cliente' : 'Novo Cliente'}</h2>
             
-            <form onSubmit={handleCreateClient} className="space-y-6">
+            <form onSubmit={handleClientSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Razão Social *</label>
@@ -350,7 +394,7 @@ const ClientsView: React.FC = () => {
                 className="w-full py-4 text-white rounded-xl font-black shadow-lg hover:scale-[1.02] transition-all mt-4"
                 style={{ backgroundColor: settings.primaryColor }}
               >
-                Cadastrar Cliente
+                {editingClient ? 'Atualizar Cliente' : 'Cadastrar Cliente'}
               </button>
             </form>
           </div>
@@ -616,7 +660,7 @@ const ClientsView: React.FC = () => {
           )}
           {activeTab === 'clients' && (
             <button 
-              onClick={() => setShowClientModal(true)}
+              onClick={() => { resetClientForm(); setShowClientModal(true); }}
               className="flex items-center gap-2 bg-white text-slate-700 border border-slate-200 px-6 py-3 rounded-2xl font-black shadow-sm transition-all hover:bg-slate-50"
             >
               <Plus size={20} /> Novo Cliente
@@ -671,9 +715,27 @@ const ClientsView: React.FC = () => {
                   <div className="h-16 w-16 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center justify-center p-3">
                     <img src={c.logo} className="object-contain" alt={c.nome} />
                   </div>
-                  <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${c.status === 'ativo' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-gray-50 text-gray-600 border-gray-100'}`}>
-                    {c.status}
-                  </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${c.status === 'ativo' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-gray-50 text-gray-600 border-gray-100'}`}>
+                      {c.status}
+                    </span>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleEditClient(c); }}
+                        className="p-2 bg-slate-50 text-slate-400 hover:text-[var(--primary-color)] hover:bg-blue-50 rounded-lg transition-all" 
+                        title="Editar"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleDeleteClient(c.id); }}
+                        className="p-2 bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" 
+                        title="Excluir"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 mb-1">{c.nome}</h3>
                 <p className="text-slate-500 font-bold mb-8">{c.totalProdutos} SKUs Cadastrados</p>

@@ -1,10 +1,10 @@
 import { Client, Product, SupermarketData, Promoter, INITIAL_DATA } from './types';
 
 export const mockClients: Client[] = [
-  { id: 'c1', nome: 'Nestlé', logo: 'https://logo.clearbit.com/nestle.com', totalProdutos: 42, status: true },
-  { id: 'c2', nome: 'Coca-Cola', logo: 'https://logo.clearbit.com/cocacola.com', totalProdutos: 18, status: true },
-  { id: 'c3', nome: 'P&G', logo: 'https://logo.clearbit.com/pg.com', totalProdutos: 56, status: true },
-  { id: 'c4', nome: 'Unilever', logo: 'https://logo.clearbit.com/unilever.com', totalProdutos: 89, status: true },
+  { id: 'c1', nome: 'Nestlé', logo: 'https://ui-avatars.com/api/?name=Nestle&background=random', totalProdutos: 42, status: true },
+  { id: 'c2', nome: 'Coca-Cola', logo: 'https://ui-avatars.com/api/?name=Coca+Cola&background=random', totalProdutos: 18, status: true },
+  { id: 'c3', nome: 'P&G', logo: 'https://ui-avatars.com/api/?name=PG&background=random', totalProdutos: 56, status: true },
+  { id: 'c4', nome: 'Unilever', logo: 'https://ui-avatars.com/api/?name=Unilever&background=random', totalProdutos: 89, status: true },
 ];
 
 export const mockProducts: Product[] = [

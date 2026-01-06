@@ -14,6 +14,9 @@ export class Role {
   @Column({ nullable: true })
   accessLevel: string; // nivel_acesso
 
+  @Column('simple-array', { nullable: true })
+  permissions: string[];
+
   @CreateDateColumn()
   createdAt: Date;
 
