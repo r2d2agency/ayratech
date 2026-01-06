@@ -46,6 +46,27 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
       setError(`Erro no registro: ${errorMessage}`);
     }
   }
+  const handleDevReset = async () => {
+    if (!email || !password) {
+      setError('Preencha email e senha para recuperar acesso.');
+      return;
+    }
+    try {
+      await api.post('/auth/reset', { email, password }, { headers: { 'x-admin-reset': 'AYRATECH_DEV_RESET' } });
+      const response = await api.post('/auth/login', { email, password });
+      localStorage.setItem('token', response.data.access_token);
+      onLogin();
+    } catch (err: any) {
+      let errorMessage = 'Falha ao recuperar acesso.';
+      if (err.response?.data?.message) {
+        const msg = err.response.data.message;
+        errorMessage = Array.isArray(msg) ? msg.join(', ') : msg;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
+    }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -84,6 +105,13 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
             className="w-full mt-2 text-gray-600 font-bold py-2 px-4 rounded border hover:bg-gray-50 transition-colors"
           >
             Registrar (Dev)
+          </button>
+          <button
+            type="button"
+            onClick={handleDevReset}
+            className="w-full mt-2 text-gray-600 font-bold py-2 px-4 rounded border hover:bg-gray-50 transition-colors"
+          >
+            Recuperar acesso (Dev)
           </button>
         </form>
       </div>

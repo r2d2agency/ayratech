@@ -35,6 +35,7 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
         expanded={sidebarExpanded} 
         setExpanded={setSidebarExpanded}
         userRole={userRole}
+        onLogout={onLogout}
       />
       
       <div className={`transition-all duration-300 ${sidebarExpanded ? 'pl-64' : 'pl-20'}`}>

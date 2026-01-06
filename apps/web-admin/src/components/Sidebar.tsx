@@ -24,9 +24,10 @@ interface SidebarProps {
   expanded: boolean;
   setExpanded: (val: boolean) => void;
   userRole?: string;
+  onLogout?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, setExpanded, userRole }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, setExpanded, userRole, onLogout }) => {
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const { settings } = useBranding();
   
@@ -188,7 +189,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
           </div>
           <span className={`font-bold text-sm transition-all ${expanded ? 'opacity-100' : 'opacity-0 w-0'}`}>Recolher Menu</span>
         </button>
-        <button className="w-full flex items-center gap-3 p-3 rounded-xl text-red-400 hover:bg-red-50 transition-all">
+        <button 
+          onClick={() => {
+            if (onLogout) onLogout();
+          }}
+          className="w-full flex items-center gap-3 p-3 rounded-xl text-red-400 hover:bg-red-50 transition-all"
+        >
           <div className="min-w-[24px] flex justify-center"><LogOut size={20} /></div>
           <span className={`font-bold text-sm transition-all ${expanded ? 'opacity-100' : 'opacity-0 w-0'}`}>Sair</span>
         </button>
