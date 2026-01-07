@@ -81,6 +81,12 @@ const ProductsView: React.FC = () => {
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!productForm.clientId) {
+      alert('Por favor, selecione um Fabricante/Cliente.');
+      return;
+    }
+
     try {
       const formData = new FormData();
       
@@ -142,9 +148,17 @@ const ProductsView: React.FC = () => {
       fetchData();
     } catch (error: any) {
       console.error("Error saving product:", error);
-      const msg = error.response?.data?.message 
-        ? (Array.isArray(error.response.data.message) ? error.response.data.message.join('\n') : error.response.data.message)
-        : error.message;
+      console.error("Error details:", error.response?.data);
+      
+      let msg = 'Erro desconhecido.';
+      if (error.response?.data?.message) {
+        msg = Array.isArray(error.response.data.message) 
+          ? error.response.data.message.join('\n') 
+          : error.response.data.message;
+      } else if (error.message) {
+        msg = error.message;
+      }
+      
       alert(`Erro ao salvar produto:\n${msg}`);
     }
   };
@@ -402,10 +416,21 @@ const ProductsView: React.FC = () => {
                     required
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium bg-white"
                     value={productForm.brandId}
-                    onChange={e => setProductForm({...productForm, brandId: e.target.value})}
+                    onChange={e => {
+                      const selectedBrandId = e.target.value;
+                      const brand = brands.find(b => b.id === selectedBrandId);
+                      setProductForm(prev => ({
+                        ...prev, 
+                        brandId: selectedBrandId,
+                        // Auto-select client if brand has one
+                        clientId: brand?.client?.id || prev.clientId
+                      }));
+                    }}
                   >
                     <option value="">Selecione...</option>
-                    {brands.map(brand => (
+                    {brands
+                      .filter(b => !productForm.clientId || !b.client || b.client.id === productForm.clientId)
+                      .map(brand => (
                       <option key={brand.id} value={brand.id}>{brand.name}</option>
                     ))}
                   </select>
