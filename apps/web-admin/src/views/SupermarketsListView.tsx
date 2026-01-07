@@ -143,11 +143,17 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
     }
 
     try {
+      const payload = { ...formData };
+      // Convert empty string to null for groupId to avoid foreign key constraint errors
+      if (!payload.groupId) {
+        (payload as any).groupId = null;
+      }
+
       if (editingSupermarket) {
-        await api.patch(`/supermarkets/${editingSupermarket.id}`, formData);
+        await api.patch(`/supermarkets/${editingSupermarket.id}`, payload);
         alert('Supermercado atualizado com sucesso!');
       } else {
-        await api.post('/supermarkets', formData);
+        await api.post('/supermarkets', payload);
         alert('Supermercado criado com sucesso!');
       }
       setShowModal(false);
