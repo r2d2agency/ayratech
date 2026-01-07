@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Trash2, Edit } from 'lucide-react';
+import { Plus, X, Trash2, Edit, Eye, Store, Package, Tag } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import api from '../api/client';
 
@@ -22,6 +22,11 @@ const ClientsView: React.FC = () => {
   const [leftStateFilter, setLeftStateFilter] = useState('');
   const [leftCityFilter, setLeftCityFilter] = useState('');
   const [rightSearch, setRightSearch] = useState('');
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [detailsClient, setDetailsClient] = useState<any | null>(null);
+  const [detailsTab, setDetailsTab] = useState<'products' | 'pdvs' | 'brands'>('products');
+  const [newBrandName, setNewBrandName] = useState('');
+  const [isCreatingBrand, setIsCreatingBrand] = useState(false);
   
   // Client Form State
   const [newClient, setNewClient] = useState({
@@ -61,6 +66,50 @@ const ClientsView: React.FC = () => {
     fetchClients();
     fetchTemplates();
   }, []);
+
+  const handleCreateBrand = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBrandName || !detailsClient) return;
+
+    try {
+      await api.post('/brands', {
+        name: newBrandName,
+        clientId: detailsClient.id
+      });
+      alert('Marca criada com sucesso!');
+      setNewBrandName('');
+      setIsCreatingBrand(false);
+      
+      // Refresh clients and update details
+      const response = await api.get('/clients');
+      const mappedClients = response.data.map((c: any) => {
+        const directProducts = c.products || [];
+        const brandProducts = c.brands ? c.brands.flatMap((b: any) => b.products || []) : [];
+        const allProducts = [...directProducts, ...brandProducts];
+
+        return {
+          ...c,
+          id: c.id,
+          nome: c.nomeFantasia || c.razaoSocial,
+          logo: getLogoUrl(c.logo),
+          totalProdutos: allProducts.length,
+          totalPdvs: c.supermarkets ? c.supermarkets.length : 0,
+          status: c.status,
+          allProducts: allProducts
+        };
+      });
+      setClients(mappedClients);
+      
+      // Update current details client
+      const updatedClient = mappedClients.find((c: any) => c.id === detailsClient.id);
+      if (updatedClient) {
+        setDetailsClient(updatedClient);
+      }
+    } catch (error) {
+      console.error("Error creating brand:", error);
+      alert('Erro ao criar marca.');
+    }
+  };
 
   const openDetailsModal = (client: any) => {
     setDetailsClient(client);
@@ -944,6 +993,177 @@ const ClientsView: React.FC = () => {
               <p>Nenhum modelo de contrato cadastrado.</p>
             </div>
           )}
+        </div>
+      )}
+
+      {showDetailsModal && detailsClient && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-4xl w-full shadow-2xl relative max-h-[90vh] flex flex-col">
+            <button 
+              onClick={() => setShowDetailsModal(false)}
+              className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full transition-colors"
+            >
+              <X size={20} className="text-slate-400" />
+            </button>
+
+            <div className="flex items-center gap-4 mb-6">
+              <div className="h-16 w-16 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center justify-center p-3">
+                <img src={detailsClient.logo} className="object-contain" alt={detailsClient.nome} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black text-slate-900">{detailsClient.nome}</h2>
+                <p className="text-slate-500 font-medium">Detalhes e Associações</p>
+              </div>
+            </div>
+
+            <div className="flex gap-6 border-b border-slate-200 mb-6">
+              <button 
+                onClick={() => setDetailsTab('products')}
+                className={`pb-4 flex items-center gap-2 text-sm font-black uppercase tracking-widest transition-all ${
+                  detailsTab === 'products' ? 'border-b-4 text-slate-900' : 'text-slate-400 hover:text-slate-600'
+                }`}
+                style={{ borderColor: detailsTab === 'products' ? settings.primaryColor : 'transparent' }}
+              >
+                <Package size={18} /> Produtos ({detailsClient.allProducts?.length || 0})
+              </button>
+              <button 
+                onClick={() => setDetailsTab('pdvs')}
+                className={`pb-4 flex items-center gap-2 text-sm font-black uppercase tracking-widest transition-all ${
+                  detailsTab === 'pdvs' ? 'border-b-4 text-slate-900' : 'text-slate-400 hover:text-slate-600'
+                }`}
+                style={{ borderColor: detailsTab === 'pdvs' ? settings.primaryColor : 'transparent' }}
+              >
+                <Store size={18} /> PDVs ({detailsClient.supermarkets?.length || 0})
+              </button>
+              <button 
+                onClick={() => setDetailsTab('brands')}
+                className={`pb-4 flex items-center gap-2 text-sm font-black uppercase tracking-widest transition-all ${
+                  detailsTab === 'brands' ? 'border-b-4 text-slate-900' : 'text-slate-400 hover:text-slate-600'
+                }`}
+                style={{ borderColor: detailsTab === 'brands' ? settings.primaryColor : 'transparent' }}
+              >
+                <Tag size={18} /> Marcas ({detailsClient.brands?.length || 0})
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto min-h-[300px]">
+               {detailsTab === 'products' && (
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                   {detailsClient.allProducts?.length > 0 ? (
+                     detailsClient.allProducts.map((p: any) => (
+                       <div key={p.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex gap-3 items-center">
+                          <div className="h-12 w-12 bg-white rounded-lg flex items-center justify-center border border-slate-100">
+                            {p.image ? (
+                              <img src={p.image} className="h-10 w-10 object-contain" />
+                            ) : (
+                              <Package size={20} className="text-slate-300" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900 line-clamp-1" title={p.name}>{p.name}</p>
+                            <p className="text-xs text-slate-500">{p.category?.name || 'Sem categoria'}</p>
+                          </div>
+                       </div>
+                     ))
+                   ) : (
+                      <div className="col-span-full text-center py-12 text-slate-400 flex flex-col items-center">
+                        <Package size={48} className="mb-4 opacity-20" />
+                        <p>Nenhum produto cadastrado.</p>
+                      </div>
+                   )}
+                 </div>
+               )}
+
+               {detailsTab === 'pdvs' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {detailsClient.supermarkets?.length > 0 ? (
+                      detailsClient.supermarkets.map((s: any) => (
+                        <div key={s.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex justify-between items-center">
+                           <div>
+                             <p className="font-bold text-slate-900">{s.fantasyName}</p>
+                             <p className="text-xs text-slate-500">{s.city} - {s.state}</p>
+                           </div>
+                           <div className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-lg">
+                             Ativo
+                           </div>
+                        </div>
+                      ))
+                    ) : (
+                       <div className="col-span-full text-center py-12 text-slate-400 flex flex-col items-center">
+                        <Store size={48} className="mb-4 opacity-20" />
+                        <p>Nenhum PDV vinculado.</p>
+                      </div>
+                    )}
+                  </div>
+               )}
+
+               {detailsTab === 'brands' && (
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-black text-slate-900">Marcas Cadastradas</h3>
+                      {!isCreatingBrand ? (
+                        <button 
+                          onClick={() => setIsCreatingBrand(true)}
+                          className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-800 transition-colors"
+                        >
+                          <Plus size={16} /> Nova Marca
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => setIsCreatingBrand(false)}
+                          className="text-slate-500 text-xs font-bold hover:text-slate-700"
+                        >
+                          Cancelar
+                        </button>
+                      )}
+                    </div>
+
+                    {isCreatingBrand && (
+                      <form onSubmit={handleCreateBrand} className="bg-slate-50 p-4 rounded-2xl border border-slate-200 animate-in slide-in-from-top-2 fade-in">
+                        <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            autoFocus
+                            value={newBrandName}
+                            onChange={e => setNewBrandName(e.target.value)}
+                            placeholder="Nome da nova marca..."
+                            className="flex-1 px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 text-sm font-bold"
+                          />
+                          <button 
+                            type="submit"
+                            disabled={!newBrandName.trim()}
+                            className="px-6 py-2 bg-emerald-500 text-white rounded-xl font-bold text-sm hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            Salvar
+                          </button>
+                        </div>
+                      </form>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {detailsClient.brands?.length > 0 ? (
+                        detailsClient.brands.map((b: any) => (
+                          <div key={b.id} className="bg-white p-4 rounded-xl border border-slate-200 flex justify-between items-center shadow-sm">
+                             <div>
+                               <p className="font-bold text-slate-900">{b.name}</p>
+                               <p className="text-xs text-slate-500">{b.products?.length || 0} produtos</p>
+                             </div>
+                             <div className="h-8 w-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400">
+                               <Tag size={16} />
+                             </div>
+                          </div>
+                        ))
+                      ) : (
+                         <div className="col-span-full text-center py-12 text-slate-400 flex flex-col items-center">
+                          <Tag size={48} className="mb-4 opacity-20" />
+                          <p>Nenhuma marca cadastrada.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+               )}
+             </div>
+          </div>
         </div>
       )}
     </div>
