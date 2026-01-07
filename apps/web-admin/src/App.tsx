@@ -47,6 +47,7 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
           {activeView === 'clients' && <ClientsView />}
           {activeView === 'products' && <ProductsView />}
           {activeView === 'categories' && <CategoriesView />}
+          {activeView === 'brands' && <BrandsView />}
           {activeView === 'live_map' && <LiveMapView onNavigate={handleNavigate} />}
           {activeView === 'routes' && <RoutesView />}
           {activeView === 'supermarkets_list' && <SupermarketsListView onNavigate={handleNavigate} />}
