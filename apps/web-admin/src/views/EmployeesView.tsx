@@ -181,14 +181,36 @@ const EmployeesView: React.FC = () => {
     setCpfError('');
 
     try {
+      // Validate required fields that might be in other tabs
+      const requiredFields = [
+        { field: 'addressZip', label: 'CEP' },
+        { field: 'addressStreet', label: 'Logradouro' },
+        { field: 'addressNumber', label: 'Número' },
+        { field: 'addressDistrict', label: 'Bairro' },
+        { field: 'addressCity', label: 'Cidade' },
+        { field: 'addressState', label: 'Estado' },
+        { field: 'internalCode', label: 'Matrícula Interna' },
+        { field: 'admissionDate', label: 'Data de Admissão' }
+      ];
+
+      const missingFields = requiredFields.filter(f => !employeeForm[f.field as keyof typeof employeeForm]);
+      
+      if (missingFields.length > 0) {
+        const missingLabels = missingFields.map(f => f.label).join(', ');
+        alert(`Por favor, preencha os seguintes campos obrigatórios: ${missingLabels}`);
+        return;
+      }
+
       const payload = {
         ...employeeForm,
-        roleId: employeeForm.roleId || null,
-        supervisorId: employeeForm.supervisorId || null,
+        birthDate: employeeForm.birthDate || undefined,
+        roleId: employeeForm.roleId || undefined,
+        supervisorId: employeeForm.supervisorId || undefined,
         baseSalary: employeeForm.baseSalary ? Number(employeeForm.baseSalary) : undefined,
         transportVoucher: employeeForm.transportVoucher ? Number(employeeForm.transportVoucher) : undefined,
         mealVoucher: employeeForm.mealVoucher ? Number(employeeForm.mealVoucher) : undefined,
       };
+      console.log('Sending employee payload:', payload);
       if (editingEmployee) {
         await api.patch(`/employees/${editingEmployee.id}`, payload);
       } else {
@@ -198,12 +220,21 @@ const EmployeesView: React.FC = () => {
       setEditingEmployee(null);
       resetEmployeeForm();
       fetchEmployees();
-    } catch (error) {
-      if ((error as any)?.response?.status === 401) {
+    } catch (error: any) {
+      console.error('Error saving employee:', error);
+      
+      if (error?.response?.status === 401) {
         alert('Sessão expirada ou não autenticado. Faça login para continuar.');
+      } else if (error?.response?.data) {
+        // Show full error details for debugging
+        const errorData = error.response.data;
+        const errorMessage = typeof errorData === 'object' 
+          ? JSON.stringify(errorData, null, 2)
+          : String(errorData);
+        alert(`Erro ao salvar (Detalhes do Servidor):\n${errorMessage}`);
+        console.error('Server error details:', errorData);
       } else {
-        console.error('Error saving employee:', error);
-        alert('Erro ao salvar funcionário. Verifique os dados.');
+        alert('Erro ao salvar funcionário. Verifique se o CPF ou Matrícula já existem.');
       }
     }
   };
@@ -559,9 +590,10 @@ const EmployeesView: React.FC = () => {
               {formTab === 'address' && (
                 <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">CEP</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">CEP *</label>
                     <input
                       type="text"
+                      required
                       className={`w-full px-3 py-2 border rounded-lg ${cepError ? 'border-red-500' : 'border-slate-300'}`}
                       value={employeeForm.addressZip}
                       onChange={e => setEmployeeForm({...employeeForm, addressZip: formatCEP(e.target.value)})}
@@ -571,45 +603,50 @@ const EmployeesView: React.FC = () => {
                     {cepError && <p className="text-red-600 text-xs mt-1">{cepError}</p>}
                   </div>
                   <div className="md:col-span-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Logradouro</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Logradouro *</label>
                     <input
                       type="text"
+                      required
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                       value={employeeForm.addressStreet}
                       onChange={e => setEmployeeForm({...employeeForm, addressStreet: e.target.value})}
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Número</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Número *</label>
                     <input
                       type="text"
+                      required
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                       value={employeeForm.addressNumber}
                       onChange={e => setEmployeeForm({...employeeForm, addressNumber: e.target.value})}
                     />
                   </div>
                   <div className="md:col-span-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Bairro</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Bairro *</label>
                     <input
                       type="text"
+                      required
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                       value={employeeForm.addressDistrict}
                       onChange={e => setEmployeeForm({...employeeForm, addressDistrict: e.target.value})}
                     />
                   </div>
                   <div className="md:col-span-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Cidade</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Cidade *</label>
                     <input
                       type="text"
+                      required
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                       value={employeeForm.addressCity}
                       onChange={e => setEmployeeForm({...employeeForm, addressCity: e.target.value})}
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Estado</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Estado *</label>
                     <input
                       type="text"
+                      required
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                       value={employeeForm.addressState}
                       onChange={e => setEmployeeForm({...employeeForm, addressState: e.target.value})}

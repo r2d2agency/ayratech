@@ -26,7 +26,9 @@ export class EmployeesController {
     }),
   }))
   create(@Body() createEmployeeDto: CreateEmployeeDto, @UploadedFile() file: Express.Multer.File) {
+    console.log('Creating employee with data:', JSON.stringify(createEmployeeDto, null, 2));
     if (file) {
+      console.log('Uploaded file:', file.filename);
       createEmployeeDto.facialPhotoUrl = `/uploads/employees/${file.filename}`;
     }
     return this.employeesService.create(createEmployeeDto);

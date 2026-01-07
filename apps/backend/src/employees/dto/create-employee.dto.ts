@@ -74,7 +74,7 @@ export class CreateEmployeeDto {
 
   @IsDateString()
   @IsNotEmpty()
-  admissionDate: Date;
+  admissionDate: string;
 
   @IsString()
   @IsNotEmpty()
