@@ -353,8 +353,24 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                 </div>
 
                 {/* Address Section */}
-                <div className="md:col-span-2 border-t border-slate-100 pt-6 mt-2">
-                   <h3 className="text-lg font-black text-slate-800 mb-4">Endereço</h3>
+                <div className="md:col-span-2 border-t border-slate-100 pt-6 mt-2 flex flex-col gap-4">
+                   <div className="flex justify-between items-center">
+                     <h3 className="text-lg font-black text-slate-800">Endereço</h3>
+                     <button
+                       type="button"
+                       onClick={() => setShowMapModal(true)}
+                       className="flex items-center gap-2 text-blue-500 font-bold hover:bg-blue-50 px-4 py-2 rounded-xl transition-colors"
+                     >
+                       <MapPin size={18} />
+                       Selecionar no Mapa
+                     </button>
+                   </div>
+                   {formData.latitude && formData.longitude && (
+                      <div className="bg-green-50 text-green-700 px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 border border-green-100">
+                        <MapPin size={16} />
+                        Localização confirmada: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+                      </div>
+                   )}
                 </div>
 
                 <div>
