@@ -112,6 +112,7 @@ const ProductsView: React.FC = () => {
       category: product.categoria,
       image: product.imagem === 'https://via.placeholder.com/150' ? '' : product.imagem,
       brandId: product.brandId || '',
+      clientId: product.clientId || '',
       barcode: product.barcode || '',
       subcategory: product.subcategory || '',
       status: product.status || 'active'
@@ -126,6 +127,7 @@ const ProductsView: React.FC = () => {
       category: '',
       image: '',
       brandId: '',
+      clientId: '',
       barcode: '',
       subcategory: '',
       status: 'active'

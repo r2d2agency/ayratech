@@ -13,32 +13,43 @@ export class ProductsService {
   ) {}
 
   create(createProductDto: CreateProductDto) {
-    const { brandId, ...productData } = createProductDto;
+    const { brandId, clientId, ...productData } = createProductDto;
     const product = this.productsRepository.create({
       ...productData,
-      brand: brandId ? { id: brandId } : null
+      brand: brandId ? { id: brandId } : null,
+      client: clientId ? { id: clientId } : null
     });
     return this.productsRepository.save(product);
   }
 
   findAll() {
-    return this.productsRepository.find({ relations: ['brand', 'brand.client'] });
+    return this.productsRepository.find({ relations: ['brand', 'brand.client', 'client'] });
   }
 
   findOne(id: string) {
     return this.productsRepository.findOne({ 
       where: { id },
-      relations: ['brand', 'brand.client']
+      relations: ['brand', 'brand.client', 'client']
     });
   }
 
-  update(id: string, updateProductDto: UpdateProductDto) {
-    const { brandId, ...rest } = updateProductDto;
+  async update(id: string, updateProductDto: UpdateProductDto) {
+    const { brandId, clientId, ...rest } = updateProductDto;
     const updateData: any = { ...rest };
+    
     if (brandId) {
       updateData.brand = { id: brandId };
     }
-    return this.productsRepository.update(id, updateData);
+    
+    if (clientId) {
+      updateData.client = { id: clientId };
+    }
+    
+    // Check if we need to remove the relation if passed as null/empty string?
+    // For now assuming we just update if provided.
+    
+    await this.productsRepository.update(id, updateData);
+    return this.findOne(id);
   }
 
   remove(id: string) {
