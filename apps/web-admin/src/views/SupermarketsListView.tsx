@@ -65,6 +65,8 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
       complement: '',
       city: '',
       state: '',
+      latitude: null,
+      longitude: null,
       status: true
     });
     setEditingSupermarket(null);
@@ -79,7 +81,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
     setEditingSupermarket(supermarket);
     setFormData({
       fantasyName: supermarket.fantasyName || '',
-      cnpj: supermarket.cnpj || '',
+      cnpj: formatCNPJ(supermarket.cnpj || ''),
       groupId: supermarket.groupId || (supermarket.group?.id || ''),
       classification: supermarket.classification || 'Prata',
       zipCode: supermarket.zipCode || '',
@@ -89,6 +91,8 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
       complement: supermarket.complement || '',
       city: supermarket.city || '',
       state: supermarket.state || '',
+      latitude: supermarket.latitude ? parseFloat(supermarket.latitude) : null,
+      longitude: supermarket.longitude ? parseFloat(supermarket.longitude) : null,
       status: supermarket.status !== undefined ? supermarket.status : true
     });
     setShowModal(true);
@@ -108,7 +112,15 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'cnpj') {
+      setFormData(prev => ({ ...prev, [name]: formatCNPJ(value) }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleLocationConfirm = (lat: number, lng: number) => {
+    setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
   };
 
   const handleCepBlur = async () => {
@@ -142,8 +154,18 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
       return;
     }
 
+    if (formData.cnpj && !validateCNPJ(formData.cnpj)) {
+      alert('CNPJ inválido. Por favor, verifique o número digitado.');
+      return;
+    }
+
     try {
       const payload = { ...formData };
+      // Remove formatting from CNPJ before saving
+      if (payload.cnpj) {
+        payload.cnpj = payload.cnpj.replace(/\D/g, '');
+      }
+
       // Convert empty string to null for groupId to avoid foreign key constraint errors
       if (!payload.groupId) {
         (payload as any).groupId = null;
@@ -445,6 +467,13 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
           </div>
         </div>
       )}
+      <LocationPickerModal
+        isOpen={showMapModal}
+        onClose={() => setShowMapModal(false)}
+        onConfirm={handleLocationConfirm}
+        initialLat={formData.latitude || undefined}
+        initialLng={formData.longitude || undefined}
+      />
     </div>
   );
 };
