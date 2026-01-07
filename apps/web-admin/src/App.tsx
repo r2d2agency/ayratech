@@ -13,6 +13,7 @@ import SupermarketGroupsListView from './views/SupermarketGroupsListView';
 import SupermarketGroupFormView from './views/SupermarketGroupFormView';
 import AdminView from './views/AdminView';
 import CategoriesView from './views/CategoriesView';
+import BrandsView from './views/BrandsView';
 import EmployeesView from './views/EmployeesView';
 import LoginView from './views/LoginView';
 import { BrandingProvider } from './context/BrandingContext';
