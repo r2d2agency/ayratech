@@ -6,10 +6,11 @@ import api from '../api/client';
 const ProductsView: React.FC = () => {
   const { settings } = useBranding();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedClient, setSelectedClient] = useState('Todas as Marcas');
+  const [selectedClient, setSelectedClient] = useState('Todos os Clientes');
   const [products, setProducts] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modal State
@@ -21,6 +22,7 @@ const ProductsView: React.FC = () => {
     name: '',
     sku: '',
     category: '',
+    categoryId: '',
     image: '',
     brandId: '',
     clientId: '',
@@ -29,37 +31,44 @@ const ProductsView: React.FC = () => {
     status: 'active'
   });
 
+  const [selectedParentId, setSelectedParentId] = useState('');
+  const [selectedSubId, setSelectedSubId] = useState('');
+
   useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = async () => {
     try {
-      const [productsRes, clientsRes, brandsRes] = await Promise.all([
+      const [productsRes, clientsRes, brandsRes, categoriesRes] = await Promise.all([
         api.get('/products'),
         api.get('/clients'),
-        api.get('/brands')
+        api.get('/brands'),
+        api.get('/categories')
       ]);
 
       const mappedClients = clientsRes.data.map((c: any) => ({
         id: c.id,
-        nome: c.name,
+        nome: c.nomeFantasia || c.razaoSocial,
         logo: c.logo
       }));
       setClients(mappedClients);
       setBrands(brandsRes.data);
+      setCategories(categoriesRes.data);
 
       const mappedProducts = productsRes.data.map((p: any) => ({
         id: p.id,
         nome: p.name,
         sku: p.sku,
         categoria: p.category,
+        categoryId: p.categoryRef?.id,
         imagem: p.image || 'https://via.placeholder.com/150',
         brandId: p.brand?.id,
-        clientId: p.brand?.client?.id,
+        clientId: p.client?.id,
         barcode: p.barcode,
         subcategory: p.subcategory,
-        status: p.status
+        status: p.status,
+        categoryRef: p.categoryRef
       }));
       setProducts(mappedProducts);
 
@@ -73,13 +82,57 @@ const ProductsView: React.FC = () => {
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const payload = { ...productForm };
+      const formData = new FormData();
+      
+      // Append fields
+      Object.keys(productForm).forEach(key => {
+        const value = productForm[key as keyof typeof productForm];
+        
+        // Skip empty optional fields
+        if ((key === 'brandId' || key === 'clientId' || key === 'categoryId') && !value) return;
+        
+        // Skip image string if we are uploading a file (controller will handle it)
+        // Or if it's just the placeholder/empty
+        if (key === 'image') return; 
+
+        if (value !== undefined && value !== null) {
+          formData.append(key, value as string);
+        }
+      });
+
+      // Handle Category Logic
+      const finalCategoryId = selectedSubId || selectedParentId;
+      if (finalCategoryId) {
+        formData.set('categoryId', finalCategoryId);
+        
+        // Update legacy strings
+        const selectedCat = categories.find(c => c.id === finalCategoryId);
+        if (selectedCat) {
+          if (selectedCat.parent) {
+            // It's a subcategory
+            formData.set('category', selectedCat.parent.name);
+            formData.set('subcategory', selectedCat.name);
+          } else {
+            // It's a parent category
+            formData.set('category', selectedCat.name);
+            formData.set('subcategory', '');
+          }
+        }
+      }
+
+      // Append file if exists
+      if (imageFile) {
+        formData.append('image', imageFile);
+      } else if (productForm.image && productForm.image !== 'https://via.placeholder.com/150') {
+         // If no new file, but we have an existing image URL, we might want to keep it.
+         formData.append('image', productForm.image);
+      }
       
       if (editingProduct) {
-        await api.patch(`/products/${editingProduct.id}`, payload);
+        await api.patch(`/products/${editingProduct.id}`, formData);
         alert('Produto atualizado com sucesso!');
       } else {
-        await api.post('/products', payload);
+        await api.post('/products', formData);
         alert('Produto criado com sucesso!');
       }
       
@@ -109,10 +162,29 @@ const ProductsView: React.FC = () => {
 
   const openEditModal = (product: any) => {
     setEditingProduct(product);
+    
+    // Determine IDs from product.categoryRef
+    let pId = '';
+    let sId = '';
+    
+    if (product.categoryRef) {
+      if (product.categoryRef.parent) {
+        pId = product.categoryRef.parent.id;
+        sId = product.categoryRef.id;
+      } else {
+        pId = product.categoryRef.id;
+        sId = '';
+      }
+    }
+
+    setSelectedParentId(pId);
+    setSelectedSubId(sId);
+
     setProductForm({
       name: product.nome,
       sku: product.sku,
       category: product.categoria,
+      categoryId: product.categoryId || '',
       image: product.imagem === 'https://via.placeholder.com/150' ? '' : product.imagem,
       brandId: product.brandId || '',
       clientId: product.clientId || '',
@@ -130,6 +202,7 @@ const ProductsView: React.FC = () => {
       name: '',
       sku: '',
       category: '',
+      categoryId: '',
       image: '',
       brandId: '',
       clientId: '',
@@ -137,6 +210,8 @@ const ProductsView: React.FC = () => {
       subcategory: '',
       status: 'active'
     });
+    setSelectedParentId('');
+    setSelectedSubId('');
     setImagePreview('');
     setImageFile(null);
   };
@@ -155,7 +230,7 @@ const ProductsView: React.FC = () => {
                           p.categoria.toLowerCase().includes(searchTerm.toLowerCase());
     
     const clientName = clients.find(c => c.id === p.clientId)?.nome || '';
-    const matchesClient = selectedClient === 'Todas as Marcas' || clientName === selectedClient;
+    const matchesClient = selectedClient === 'Todos os Clientes' || clientName === selectedClient;
 
     return matchesSearch && matchesClient;
   });
@@ -200,7 +275,7 @@ const ProductsView: React.FC = () => {
             value={selectedClient}
             onChange={(e) => setSelectedClient(e.target.value)}
           >
-            <option>Todas as Marcas</option>
+            <option>Todos os Clientes</option>
             {clients.map(c => <option key={c.id}>{c.nome}</option>)}
           </select>
         </div>
@@ -290,23 +365,35 @@ const ProductsView: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Categoria</label>
-                  <input
-                    type="text"
+                  <select
                     required
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium"
-                    value={productForm.category}
-                    onChange={e => setProductForm({...productForm, category: e.target.value})}
-                  />
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium bg-white"
+                    value={selectedParentId}
+                    onChange={e => {
+                      setSelectedParentId(e.target.value);
+                      setSelectedSubId('');
+                    }}
+                  >
+                    <option value="">Selecione...</option>
+                    {categories.filter(c => !c.parent).map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Subcategoria</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium"
-                    value={productForm.subcategory}
-                    onChange={e => setProductForm({...productForm, subcategory: e.target.value})}
-                  />
+                  <select
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium bg-white"
+                    value={selectedSubId}
+                    onChange={e => setSelectedSubId(e.target.value)}
+                    disabled={!selectedParentId}
+                  >
+                    <option value="">Selecione...</option>
+                    {selectedParentId && categories.filter(c => c.parent?.id === selectedParentId).map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -325,6 +412,21 @@ const ProductsView: React.FC = () => {
                 </div>
 
                 <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Fabricante/Cliente</label>
+                  <select
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium bg-white"
+                    value={productForm.clientId}
+                    onChange={e => setProductForm({...productForm, clientId: e.target.value})}
+                  >
+                    <option value="">Selecione...</option>
+                    {clients.map(client => (
+                      <option key={client.id} value={client.id}>{client.nome}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Status</label>
                   <select
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium bg-white"
@@ -337,14 +439,47 @@ const ProductsView: React.FC = () => {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">URL da Imagem</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium"
-                    value={productForm.image}
-                    onChange={e => setProductForm({...productForm, image: e.target.value})}
-                    placeholder="https://..."
-                  />
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Imagem do Produto</label>
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-24 h-24 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden bg-slate-50 group hover:border-blue-400 transition-all cursor-pointer">
+                      {imagePreview ? (
+                        <img src={imagePreview} className="w-full h-full object-cover" alt="Preview" />
+                      ) : (
+                        <div className="text-center p-2">
+                          <span className="text-xs text-slate-400 font-medium">Upload</span>
+                        </div>
+                      )}
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          if (file) {
+                            setImageFile(file);
+                            setImagePreview(URL.createObjectURL(file));
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-slate-600 mb-1">Clique para selecionar uma imagem</p>
+                      <p className="text-xs text-slate-400">Formatos aceitos: JPG, PNG, WEBP. A imagem será otimizada automaticamente.</p>
+                      {imagePreview && (
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            setImageFile(null);
+                            setImagePreview('');
+                            setProductForm({...productForm, image: ''});
+                          }}
+                          className="mt-2 text-xs font-bold text-red-500 hover:text-red-600"
+                        >
+                          Remover Imagem
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 

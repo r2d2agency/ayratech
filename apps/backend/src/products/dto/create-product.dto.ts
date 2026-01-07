@@ -1,7 +1,8 @@
 export class CreateProductDto {
   name: string;
   sku: string;
-  category: string;
+  category?: string;
+  categoryId?: string;
   image?: string;
   clientId: string;
   brandId?: string;

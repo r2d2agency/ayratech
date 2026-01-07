@@ -14,6 +14,14 @@ const ClientsView: React.FC = () => {
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [editingClient, setEditingClient] = useState<string | null>(null);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkClient, setLinkClient] = useState<any | null>(null);
+  const [availableSupermarkets, setAvailableSupermarkets] = useState<any[]>([]);
+  const [selectedSupermarketIds, setSelectedSupermarketIds] = useState<string[]>([]);
+  const [leftSearch, setLeftSearch] = useState('');
+  const [leftStateFilter, setLeftStateFilter] = useState('');
+  const [leftCityFilter, setLeftCityFilter] = useState('');
+  const [rightSearch, setRightSearch] = useState('');
   
   // Client Form State
   const [newClient, setNewClient] = useState({
@@ -54,6 +62,38 @@ const ClientsView: React.FC = () => {
     fetchTemplates();
   }, []);
 
+  const openLinkModal = async (client: any) => {
+    setLinkClient(client);
+    setSelectedSupermarketIds((client.supermarkets || []).map((s: any) => s.id));
+    try {
+      const res = await api.get('/supermarkets');
+      setAvailableSupermarkets(res.data);
+      setShowLinkModal(true);
+    } catch (e) {
+      console.error('Failed to fetch supermarkets', e);
+    }
+  };
+
+  const addToSelected = (id: string) => {
+    setSelectedSupermarketIds(prev => prev.includes(id) ? prev : [...prev, id]);
+  };
+  const removeFromSelected = (id: string) => {
+    setSelectedSupermarketIds(prev => prev.filter(sid => sid !== id));
+  };
+  const saveLinks = async () => {
+    if (!linkClient) return;
+    try {
+      await api.patch(`/clients/${linkClient.id}`, { supermarketIds: selectedSupermarketIds });
+      alert('Vínculos atualizados com sucesso!');
+      setShowLinkModal(false);
+      setLinkClient(null);
+      fetchClients();
+    } catch (error: any) {
+      console.error('Error updating links', error);
+      const msg = error.response?.data?.message || error.message;
+      alert(`Erro ao atualizar vínculos:\n${msg}`);
+    }
+  };
   const fetchTemplates = async () => {
     try {
       const response = await api.get('/contract-templates');
@@ -78,6 +118,7 @@ const ClientsView: React.FC = () => {
         nome: c.nomeFantasia || c.razaoSocial, // Display Fantasy Name, fallback to Corporate Name
         logo: getLogoUrl(c.logo),
         totalProdutos: c.brands ? c.brands.reduce((acc: number, b: any) => acc + (b.products ? b.products.length : 0), 0) : 0,
+        totalPdvs: c.supermarkets ? c.supermarkets.length : 0,
         status: c.status
       }));
       setClients(mappedClients);
@@ -227,6 +268,101 @@ const ClientsView: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 relative">
+      {showLinkModal && linkClient && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-4xl w-full shadow-2xl relative">
+            <button 
+              onClick={() => setShowLinkModal(false)}
+              className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full transition-colors"
+            >
+              <X size={20} className="text-slate-400" />
+            </button>
+            <h2 className="text-2xl font-black text-slate-900 mb-6">Vincular PDVs - {linkClient.nome}</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
+                <div className="mb-3">
+                  <input 
+                    type="text"
+                    value={leftSearch}
+                    onChange={e => setLeftSearch(e.target.value)}
+                    placeholder="Filtrar PDVs disponíveis..."
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm"
+                  />
+                </div>
+                <div className="max-h-80 overflow-y-auto space-y-2">
+                  {availableSupermarkets
+                    .filter(s => (s.fantasyName || '').toLowerCase().includes(leftSearch.toLowerCase()))
+                    .filter(s => !selectedSupermarketIds.includes(s.id))
+                    .map(s => (
+                      <div key={s.id} className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-3 py-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-slate-800 truncate">{s.fantasyName}</p>
+                          <p className="text-xs text-slate-500">{s.city} - {s.state}</p>
+                        </div>
+                        <button 
+                          onClick={() => addToSelected(s.id)}
+                          className="text-xs font-black text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-lg"
+                        >
+                          Incluir →
+                        </button>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+              <div className="flex items-center justify-center">
+                <div className="text-slate-400 font-bold text-sm">Selecionar</div>
+              </div>
+              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
+                <div className="mb-3">
+                  <input 
+                    type="text"
+                    value={rightSearch}
+                    onChange={e => setRightSearch(e.target.value)}
+                    placeholder="Filtrar PDVs vinculados..."
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm"
+                  />
+                </div>
+                <div className="max-h-80 overflow-y-auto space-y-2">
+                  {availableSupermarkets
+                    .filter(s => selectedSupermarketIds.includes(s.id))
+                    .filter(s => (s.fantasyName || '').toLowerCase().includes(rightSearch.toLowerCase()))
+                    .map(s => (
+                      <div key={s.id} className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-3 py-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-slate-800 truncate">{s.fantasyName}</p>
+                          <p className="text-xs text-slate-500">{s.city} - {s.state}</p>
+                        </div>
+                        <button 
+                          onClick={() => removeFromSelected(s.id)}
+                          className="text-xs font-black text-red-600 hover:bg-red-50 px-3 py-1 rounded-lg"
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button 
+                onClick={() => setShowLinkModal(false)}
+                className="px-6 py-3 font-bold text-slate-600 hover:bg-slate-50 rounded-xl"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={saveLinks}
+                className="px-8 py-3 text-white font-black rounded-xl shadow-lg hover:scale-105 transition-all"
+                style={{ backgroundColor: settings.primaryColor }}
+              >
+                Salvar Vínculos
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {showClientModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
@@ -705,7 +841,11 @@ const ClientsView: React.FC = () => {
       {activeTab === 'clients' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {clients.map(c => (
-            <div key={c.id} className="bg-white rounded-3xl border border-slate-200 p-8 hover:shadow-xl transition-all group relative overflow-hidden">
+            <div 
+              key={c.id} 
+              onClick={() => openLinkModal(c)}
+              className="bg-white rounded-3xl border border-slate-200 p-8 hover:shadow-xl transition-all group relative overflow-hidden cursor-pointer"
+            >
               <div 
                 className="absolute top-0 right-0 w-32 h-32 opacity-10 rounded-bl-full -mr-10 -mt-10 transition-all group-hover:opacity-20" 
                 style={{ backgroundColor: settings.primaryColor }}
@@ -738,17 +878,19 @@ const ClientsView: React.FC = () => {
                   </div>
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 mb-1">{c.nome}</h3>
-                <p className="text-slate-500 font-bold mb-8">{c.totalProdutos} SKUs Cadastrados</p>
+                <p className="text-slate-500 font-bold mb-2">{c.totalProdutos} SKUs cadastrados</p>
+                <p className="text-slate-500 font-bold mb-8">{c.totalPdvs} PDVs vinculados</p>
                 <div className="pt-6 border-t border-slate-100 flex gap-3">
                   <button className="flex-1 py-3 bg-slate-50 text-slate-700 rounded-xl text-xs font-black hover:bg-slate-100 transition-colors">Produtos</button>
                   <button 
+                    onClick={() => openLinkModal(c)}
                     className="flex-1 py-3 rounded-xl text-xs font-black transition-colors bg-opacity-10 hover:bg-opacity-20"
                     style={{ 
                       color: settings.primaryColor,
                       backgroundColor: `${settings.primaryColor}1a` // 10% opacity
                     }}
                   >
-                    Dashboard
+                    Vincular PDVs
                   </button>
                 </div>
               </div>

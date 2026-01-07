@@ -1,6 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
 import { Client } from './client.entity';
 import { Brand } from './brand.entity';
+import { Category } from '../categories/entities/category.entity';
 
 @Entity()
 export class Product {
@@ -13,8 +14,11 @@ export class Product {
   @Column()
   sku: string;
 
-  @Column()
+  @Column({ nullable: true })
   category: string;
+
+  @Column({ nullable: true })
+  subcategory: string;
 
   @Column({ nullable: true })
   image: string;
@@ -24,4 +28,7 @@ export class Product {
 
   @ManyToOne(() => Brand, (brand) => brand.products, { nullable: true })
   brand: Brand;
+
+  @ManyToOne(() => Category, { nullable: true })
+  categoryRef: Category;
 }

@@ -67,6 +67,7 @@ import { UploadModule } from './upload/upload.module';
     WorkSchedulesModule,
     TimeClockModule,
     AbsencesModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

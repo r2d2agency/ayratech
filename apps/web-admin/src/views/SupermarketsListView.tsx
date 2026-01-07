@@ -186,9 +186,9 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
         payload.cnpj = payload.cnpj.replace(/\D/g, '');
       }
 
-      // Convert empty string to null for groupId to avoid foreign key constraint errors
+      // Convert empty string to undefined for groupId to avoid foreign key constraint errors
       if (!payload.groupId) {
-        (payload as any).groupId = null;
+        delete (payload as any).groupId;
       }
 
       if (editingSupermarket) {

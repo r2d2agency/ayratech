@@ -78,7 +78,11 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
 
     setLoading(true);
     try {
-      await api.post('/supermarkets', formData);
+      const payload = { ...formData };
+      if (!payload.groupId) {
+        delete (payload as any).groupId;
+      }
+      await api.post('/supermarkets', payload);
       alert('Cadastro realizado com sucesso!');
       onNavigate('supermarkets_list');
     } catch (error: any) {

@@ -150,6 +150,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
                 Produtos
               </button>
               <button 
+                onClick={() => onNavigate('categories')}
+                className={`w-full text-left p-2 rounded-lg text-xs font-bold transition-all ${activeView === 'categories' ? 'text-[var(--primary-color)] bg-blue-50' : 'text-slate-500 hover:text-[var(--primary-color)]'}`}
+              >
+                Categorias
+              </button>
+              <button 
                 onClick={() => onNavigate('supermarkets_list')}
                 className={`w-full text-left p-2 rounded-lg text-xs font-bold transition-all ${activeView === 'supermarkets_list' ? 'text-[var(--primary-color)] bg-blue-50' : 'text-slate-500 hover:text-[var(--primary-color)]'}`}
               >
