@@ -21,6 +21,7 @@ import { WorkSchedulesModule } from './work-schedules/work-schedules.module';
 import { TimeClockModule } from './time-clock/time-clock.module';
 import { AbsencesModule } from './absences/absences.module';
 import { UploadModule } from './upload/upload.module';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { UploadModule } from './upload/upload.module';
     WorkSchedulesModule,
     TimeClockModule,
     AbsencesModule,
+    UploadModule,
     CategoriesModule,
   ],
   controllers: [AppController],
