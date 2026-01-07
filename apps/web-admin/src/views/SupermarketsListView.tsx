@@ -15,12 +15,13 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
   const { settings } = useBranding();
   const [supermarkets, setSupermarkets] = useState<any[]>([]);
   const [groups, setGroups] = useState<SupermarketGroup[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Modal & Form State
   const [showModal, setShowModal] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'location'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'location' | 'clients'>('general');
   const [editingSupermarket, setEditingSupermarket] = useState<any | null>(null);
   const [cepLoading, setCepLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -37,17 +38,20 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
     state: '',
     latitude: null as number | null,
     longitude: null as number | null,
-    status: true
+    status: true,
+    clientIds: [] as string[]
   });
 
   const fetchData = async () => {
     try {
-      const [supermarketsRes, groupsRes] = await Promise.all([
+      const [supermarketsRes, groupsRes, clientsRes] = await Promise.all([
         api.get('/supermarkets'),
-        api.get('/supermarket-groups')
+        api.get('/supermarket-groups'),
+        api.get('/clients')
       ]);
       setSupermarkets(supermarketsRes.data);
       setGroups(groupsRes.data);
+      setClients(clientsRes.data);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -102,7 +106,8 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
       state: supermarket.state || '',
       latitude: supermarket.latitude ? parseFloat(supermarket.latitude) : null,
       longitude: supermarket.longitude ? parseFloat(supermarket.longitude) : null,
-      status: supermarket.status !== undefined ? supermarket.status : true
+      status: supermarket.status !== undefined ? supermarket.status : true,
+      clientIds: supermarket.clients ? supermarket.clients.map((c: any) => c.id) : []
     });
     setShowModal(true);
   };
@@ -235,7 +240,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {supermarkets.map(s => (
+            {filteredSupermarkets.map(s => (
               <tr key={s.id} className="hover:bg-slate-50/50 transition-colors group">
                 <td className="px-8 py-6">
                    <div className="flex items-center gap-4">
@@ -330,6 +335,13 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                 onClick={() => setActiveTab('location')}
               >
                 Endereço e Localização
+              </button>
+              <button 
+                type="button"
+                className={`flex-1 px-8 py-4 font-bold text-sm uppercase tracking-wider transition-all border-b-2 ${activeTab === 'clients' ? 'border-blue-500 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                onClick={() => setActiveTab('clients')}
+              >
+                Clientes Vinculados
               </button>
             </div>
             
@@ -521,6 +533,54 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                           </div>
                        </div>
                     </div>
+                </div>
+              )}
+
+              {activeTab === 'clients' && (
+                <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                  <div className="mb-6">
+                    <h3 className="text-lg font-black text-slate-800 mb-2">Vínculo com Clientes</h3>
+                    <p className="text-sm text-slate-500">Selecione os clientes que atuam neste supermercado.</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto pr-2">
+                    {clients.map(client => (
+                      <div 
+                        key={client.id}
+                        onClick={() => handleClientToggle(client.id)}
+                        className={`
+                          cursor-pointer p-4 rounded-xl border-2 transition-all flex items-center gap-4 group
+                          ${formData.clientIds.includes(client.id) 
+                            ? 'border-blue-500 bg-blue-50' 
+                            : 'border-slate-100 hover:border-blue-200 hover:bg-slate-50'}
+                        `}
+                      >
+                        <div className={`
+                          w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors
+                          ${formData.clientIds.includes(client.id)
+                            ? 'bg-blue-500 border-blue-500 text-white'
+                            : 'border-slate-300 group-hover:border-blue-300'}
+                        `}>
+                          {formData.clientIds.includes(client.id) && (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-slate-800 truncate">{client.nomeFantasia || client.razaoSocial}</p>
+                          <p className="text-xs text-slate-500 font-medium">CNPJ: {client.cnpj}</p>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {clients.length === 0 && (
+                      <div className="col-span-full py-8 text-center text-slate-400 font-medium">
+                        Nenhum cliente cadastrado.
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 

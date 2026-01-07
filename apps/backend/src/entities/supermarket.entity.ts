@@ -52,4 +52,7 @@ export class Supermarket {
 
   @Column({ default: true })
   status: boolean;
+
+  @ManyToMany(() => Client, (client) => client.supermarkets)
+  clients: Client[];
 }

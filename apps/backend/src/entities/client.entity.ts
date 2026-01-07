@@ -1,6 +1,7 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable } from 'typeorm';
 import { Product } from './product.entity';
 import { Brand } from './brand.entity';
+import { Supermarket } from './supermarket.entity';
 
 @Entity('clients')
 export class Client {

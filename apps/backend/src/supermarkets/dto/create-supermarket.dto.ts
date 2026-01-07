@@ -16,4 +16,5 @@ export class CreateSupermarketDto {
   longitude?: number;
 
   status?: boolean;
+  clientIds?: string[];
 }

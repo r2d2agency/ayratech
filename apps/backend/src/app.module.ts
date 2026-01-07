@@ -20,6 +20,7 @@ import { EmployeesModule } from './employees/employees.module';
 import { WorkSchedulesModule } from './work-schedules/work-schedules.module';
 import { TimeClockModule } from './time-clock/time-clock.module';
 import { AbsencesModule } from './absences/absences.module';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [

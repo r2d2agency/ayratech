@@ -15,12 +15,15 @@ const ProductsView: React.FC = () => {
   // Modal State
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
   const [productForm, setProductForm] = useState({
     name: '',
     sku: '',
     category: '',
     image: '',
     brandId: '',
+    clientId: '',
     barcode: '',
     subcategory: '',
     status: 'active'
@@ -117,6 +120,8 @@ const ProductsView: React.FC = () => {
       subcategory: product.subcategory || '',
       status: product.status || 'active'
     });
+    setImagePreview(product.imagem === 'https://via.placeholder.com/150' ? '' : product.imagem);
+    setImageFile(null);
     setShowModal(true);
   };
 
@@ -132,6 +137,16 @@ const ProductsView: React.FC = () => {
       subcategory: '',
       status: 'active'
     });
+    setImagePreview('');
+    setImageFile(null);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
   };
 
   const filteredProducts = products.filter(p => {

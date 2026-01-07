@@ -12,21 +12,48 @@ export class SupermarketsService {
     private supermarketsRepository: Repository<Supermarket>,
   ) {}
 
-  create(createSupermarketDto: CreateSupermarketDto) {
-    const supermarket = this.supermarketsRepository.create(createSupermarketDto);
+  async create(createSupermarketDto: CreateSupermarketDto) {
+    const { clientIds, ...supermarketData } = createSupermarketDto;
+    const supermarket = this.supermarketsRepository.create({
+      ...supermarketData,
+      clients: clientIds ? clientIds.map(id => ({ id })) : []
+    });
     return this.supermarketsRepository.save(supermarket);
   }
 
   findAll() {
-    return this.supermarketsRepository.find();
+    return this.supermarketsRepository.find({
+      relations: ['group', 'clients']
+    });
   }
 
   findOne(id: string) {
-    return this.supermarketsRepository.findOneBy({ id });
+    return this.supermarketsRepository.findOne({ 
+      where: { id },
+      relations: ['group', 'clients']
+    });
   }
 
-  update(id: string, updateSupermarketDto: UpdateSupermarketDto) {
-    return this.supermarketsRepository.update(id, updateSupermarketDto);
+  async update(id: string, updateSupermarketDto: UpdateSupermarketDto) {
+    const { clientIds, ...rest } = updateSupermarketDto;
+    
+    // First update basic fields
+    await this.supermarketsRepository.update(id, rest);
+    
+    // If clientIds provided, we need to update the relationship
+    if (clientIds) {
+      const supermarket = await this.supermarketsRepository.findOne({ 
+        where: { id },
+        relations: ['clients'] 
+      });
+      
+      if (supermarket) {
+        supermarket.clients = clientIds.map(cid => ({ id: cid } as any));
+        await this.supermarketsRepository.save(supermarket);
+      }
+    }
+    
+    return this.findOne(id);
   }
 
   remove(id: string) {
