@@ -13,7 +13,7 @@ export class RouteItem {
   @Column()
   routeId: string;
 
-  @ManyToOne(() => Supermarket, { eager: true })
+  @ManyToOne(() => Supermarket, { eager: true, onDelete: 'CASCADE' })
   supermarket: Supermarket;
 
   @Column()
