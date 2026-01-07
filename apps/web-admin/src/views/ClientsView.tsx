@@ -62,6 +62,12 @@ const ClientsView: React.FC = () => {
     fetchTemplates();
   }, []);
 
+  const openDetailsModal = (client: any) => {
+    setDetailsClient(client);
+    setDetailsTab('products');
+    setShowDetailsModal(true);
+  };
+
   const openLinkModal = async (client: any) => {
     setLinkClient(client);
     setSelectedSupermarketIds((client.supermarkets || []).map((s: any) => s.id));
@@ -112,15 +118,22 @@ const ClientsView: React.FC = () => {
   const fetchClients = async () => {
     try {
       const response = await api.get('/clients');
-      const mappedClients = response.data.map((c: any) => ({
-        ...c,
-        id: c.id,
-        nome: c.nomeFantasia || c.razaoSocial, // Display Fantasy Name, fallback to Corporate Name
-        logo: getLogoUrl(c.logo),
-        totalProdutos: c.brands ? c.brands.reduce((acc: number, b: any) => acc + (b.products ? b.products.length : 0), 0) : 0,
-        totalPdvs: c.supermarkets ? c.supermarkets.length : 0,
-        status: c.status
-      }));
+      const mappedClients = response.data.map((c: any) => {
+        const directProducts = c.products || [];
+        const brandProducts = c.brands ? c.brands.flatMap((b: any) => b.products || []) : [];
+        const allProducts = [...directProducts, ...brandProducts];
+
+        return {
+          ...c,
+          id: c.id,
+          nome: c.nomeFantasia || c.razaoSocial, // Display Fantasy Name, fallback to Corporate Name
+          logo: getLogoUrl(c.logo),
+          totalProdutos: allProducts.length,
+          totalPdvs: c.supermarkets ? c.supermarkets.length : 0,
+          status: c.status,
+          allProducts: allProducts
+        };
+      });
       setClients(mappedClients);
     } catch (error) {
       console.error("Failed to fetch clients", error);
@@ -881,9 +894,20 @@ const ClientsView: React.FC = () => {
                 <p className="text-slate-500 font-bold mb-2">{c.totalProdutos} SKUs cadastrados</p>
                 <p className="text-slate-500 font-bold mb-8">{c.totalPdvs} PDVs vinculados</p>
                 <div className="pt-6 border-t border-slate-100 flex gap-3">
-                  <button className="flex-1 py-3 bg-slate-50 text-slate-700 rounded-xl text-xs font-black hover:bg-slate-100 transition-colors">Produtos</button>
                   <button 
-                    onClick={() => openLinkModal(c)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openDetailsModal(c);
+                    }}
+                    className="flex-1 py-3 bg-slate-50 text-slate-700 rounded-xl text-xs font-black hover:bg-slate-100 transition-colors"
+                  >
+                    Produtos
+                  </button>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openLinkModal(c);
+                    }}
                     className="flex-1 py-3 rounded-xl text-xs font-black transition-colors bg-opacity-10 hover:bg-opacity-20"
                     style={{ 
                       color: settings.primaryColor,

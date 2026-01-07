@@ -19,14 +19,14 @@ export class ClientsService {
 
   findAll() {
     return this.clientsRepository.find({
-      relations: ['brands', 'brands.products', 'supermarkets']
+      relations: ['brands', 'brands.products', 'supermarkets', 'products']
     });
   }
 
   findOne(id: string) {
     return this.clientsRepository.findOne({
       where: { id },
-      relations: ['brands', 'brands.products', 'supermarkets']
+      relations: ['brands', 'brands.products', 'supermarkets', 'products']
     });
   }
 

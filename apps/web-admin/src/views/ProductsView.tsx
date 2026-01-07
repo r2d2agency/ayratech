@@ -419,10 +419,8 @@ const ProductsView: React.FC = () => {
                     value={productForm.clientId}
                     onChange={e => setProductForm({...productForm, clientId: e.target.value})}
                   >
-                    <option value="">Selecione...</option>
-                    {clients.map(client => (
-                      <option key={client.id} value={client.id}>{client.nome}</option>
-                    ))}
+                    <option value="">Selecione o Cliente</option>
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
                   </select>
                 </div>
 
