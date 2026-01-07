@@ -3,7 +3,7 @@ import { Store, Edit, Trash2, X, Search, MapPin } from 'lucide-react';
 import api from '../api/client';
 import { useBranding } from '../context/BrandingContext';
 import { ViewType, SupermarketGroup } from '../types';
-import LocationPickerModal from '../components/LocationPickerModal';
+import MapModal from '../components/MapModal';
 import { validateCNPJ } from '../utils/validators';
 import { formatCNPJ } from '../utils/formatters';
 
@@ -544,7 +544,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
           </div>
         </div>
       )}
-      <LocationPickerModal
+      <MapModal
         isOpen={showMapModal}
         onClose={() => setShowMapModal(false)}
         onConfirm={handleLocationConfirm}

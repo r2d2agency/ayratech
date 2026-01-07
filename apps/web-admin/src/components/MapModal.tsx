@@ -36,7 +36,7 @@ const LocationMarker = ({ position, setPosition }: { position: { lat: number, ln
   );
 };
 
-const LocationPickerModal: React.FC<LocationPickerModalProps> = ({ isOpen, onClose, onConfirm, initialLat, initialLng }) => {
+const MapModal: React.FC<LocationPickerModalProps> = ({ isOpen, onClose, onConfirm, initialLat, initialLng }) => {
   const [position, setPosition] = useState<{ lat: number, lng: number } | null>(null);
 
   useEffect(() => {
@@ -96,4 +96,4 @@ const LocationPickerModal: React.FC<LocationPickerModalProps> = ({ isOpen, onClo
   );
 };
 
-export default LocationPickerModal;
+export default MapModal;
