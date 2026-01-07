@@ -32,9 +32,8 @@ export class ClientsController {
   }))
   create(@Body() createClientDto: CreateClientDto, @UploadedFile() file?: Express.Multer.File) {
     if (file) {
-      // Use relative path or env var for domain
-      const baseUrl = process.env.API_URL || 'https://api.ayratech.app.br';
-      createClientDto.logo = `${baseUrl}/uploads/clients/${file.filename}`;
+      // Store relative path to allow frontend to prepend correct API URL
+      createClientDto.logo = `/uploads/clients/${file.filename}`;
     }
     return this.clientsService.create(createClientDto);
   }
@@ -68,8 +67,7 @@ export class ClientsController {
   }))
   update(@Param('id') id: string, @Body() updateClientDto: UpdateClientDto, @UploadedFile() file?: Express.Multer.File) {
     if (file) {
-      const baseUrl = process.env.API_URL || 'https://api.ayratech.app.br';
-      updateClientDto.logo = `${baseUrl}/uploads/clients/${file.filename}`;
+      updateClientDto.logo = `/uploads/clients/${file.filename}`;
     }
     return this.clientsService.update(id, updateClientDto);
   }

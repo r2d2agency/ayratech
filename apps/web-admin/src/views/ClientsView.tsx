@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Trash2, Edit, Eye, Store, Package } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
-import api from '../api/client';
+import api, { API_URL } from '../api/client';
 
 const ClientsView: React.FC = () => {
   const { settings } = useBranding();
@@ -115,6 +115,7 @@ const ClientsView: React.FC = () => {
   const getLogoUrl = (url: string) => {
     if (!url) return 'https://via.placeholder.com/150';
     if (url.startsWith('http')) return url;
+    if (url.startsWith('/')) return `${API_URL}${url}`;
     return `https://${url}`;
   };
 

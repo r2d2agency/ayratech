@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, X, Edit, Trash } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
-import api from '../api/client';
+import api, { API_URL } from '../api/client';
 
 const ProductsView: React.FC = () => {
   const { settings } = useBranding();
@@ -51,6 +51,8 @@ const ProductsView: React.FC = () => {
         id: c.id,
         nome: c.nomeFantasia || c.razaoSocial,
         logo: c.logo
+          ? (c.logo.startsWith('http') ? c.logo : `${API_URL}${c.logo}`)
+          : 'https://via.placeholder.com/150'
       }));
       setClients(mappedClients);
       setBrands(brandsRes.data);
@@ -62,7 +64,9 @@ const ProductsView: React.FC = () => {
         sku: p.sku,
         categoria: p.category,
         categoryId: p.categoryRef?.id,
-        imagem: p.image || 'https://via.placeholder.com/150',
+        imagem: p.image 
+          ? (p.image.startsWith('http') ? p.image : `${API_URL}${p.image}`)
+          : 'https://via.placeholder.com/150',
         brandId: p.brand?.id,
         clientId: p.client?.id,
         barcode: p.barcode,

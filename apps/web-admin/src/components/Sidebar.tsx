@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { ViewType } from '../types';
 import { useBranding } from '../context/BrandingContext';
+import { API_URL } from '../api/client';
 
 interface SidebarProps {
   activeView: ViewType;
@@ -80,7 +81,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
           style={{ backgroundColor: settings.primaryColor }}
         >
           {settings.logoUrl ? (
-             <img src={settings.logoUrl} alt="" className="w-6 h-6 object-contain brightness-0 invert" />
+             <img 
+               src={settings.logoUrl.startsWith('/') ? `${API_URL}${settings.logoUrl}` : settings.logoUrl} 
+               alt="" 
+               className="w-6 h-6 object-contain brightness-0 invert" 
+             />
           ) : (
              <LayoutGrid size={24} />
           )}
