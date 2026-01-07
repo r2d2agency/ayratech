@@ -17,6 +17,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
   const [groups, setGroups] = useState<SupermarketGroup[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Modal & Form State
   const [showModal, setShowModal] = useState(false);
@@ -167,6 +168,17 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
     }
   };
 
+  const handleClientToggle = (clientId: string) => {
+    setFormData(prev => {
+      const currentIds = prev.clientIds || [];
+      if (currentIds.includes(clientId)) {
+        return { ...prev, clientIds: currentIds.filter(id => id !== clientId) };
+      } else {
+        return { ...prev, clientIds: [...currentIds, clientId] };
+      }
+    });
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.fantasyName || !formData.city) {
@@ -212,6 +224,12 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
 
   if (loading) return <div className="p-8">Carregando supermercados...</div>;
 
+  const filteredSupermarkets = supermarkets.filter(s => 
+    (s.fantasyName && s.fantasyName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (s.city && s.city.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (s.group?.name && s.group.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
   return (
     <div className="animate-in fade-in duration-500 space-y-8 relative">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
@@ -229,6 +247,18 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
       </div>
 
       <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="p-6 border-b border-slate-100 flex gap-4">
+            <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input 
+                    type="text" 
+                    placeholder="Buscar por nome, cidade ou rede..." 
+                    className="w-full pl-12 h-12 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all text-sm font-medium"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+        </div>
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-50/80 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
