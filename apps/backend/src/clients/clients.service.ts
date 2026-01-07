@@ -19,16 +19,33 @@ export class ClientsService {
 
   findAll() {
     return this.clientsRepository.find({
-      relations: ['brands', 'brands.products']
+      relations: ['brands', 'brands.products', 'supermarkets']
     });
   }
 
   findOne(id: string) {
-    return this.clientsRepository.findOneBy({ id });
+    return this.clientsRepository.findOne({
+      where: { id },
+      relations: ['brands', 'brands.products', 'supermarkets']
+    });
   }
 
-  update(id: string, updateClientDto: UpdateClientDto) {
-    return this.clientsRepository.update(id, updateClientDto);
+  async update(id: string, updateClientDto: UpdateClientDto) {
+    const { supermarketIds, ...rest } = updateClientDto as any;
+    await this.clientsRepository.update(id, rest);
+
+    if (supermarketIds) {
+      const client = await this.clientsRepository.findOne({
+        where: { id },
+        relations: ['supermarkets']
+      });
+      if (client) {
+        client.supermarkets = supermarketIds.map((sid: string) => ({ id: sid } as any));
+        await this.clientsRepository.save(client);
+      }
+    }
+
+    return this.findOne(id);
   }
 
   remove(id: string) {

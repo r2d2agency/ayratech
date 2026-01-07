@@ -58,4 +58,8 @@ export class Client {
 
   @OneToMany(() => Product, (product) => product.client)
   products: Product[];
+
+  @ManyToMany(() => Supermarket, (supermarket) => supermarket.clients)
+  @JoinTable({ name: 'client_supermarkets' })
+  supermarkets: Supermarket[];
 }
