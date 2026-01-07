@@ -550,6 +550,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
         onConfirm={handleLocationConfirm}
         initialLat={formData.latitude || undefined}
         initialLng={formData.longitude || undefined}
+        address={`${formData.street || ''} ${formData.number || ''}, ${formData.city || ''} - ${formData.state || ''}`}
       />
     </div>
   );
