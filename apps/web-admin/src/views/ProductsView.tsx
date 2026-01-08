@@ -155,10 +155,16 @@ const ProductsView: React.FC = () => {
       console.error("Error details:", error.response?.data);
       
       let msg = 'Erro desconhecido.';
-      if (error.response?.data?.message) {
-        msg = Array.isArray(error.response.data.message) 
-          ? error.response.data.message.join('\n') 
-          : error.response.data.message;
+      if (error.response?.data) {
+        if (typeof error.response.data === 'string') {
+            msg = error.response.data;
+        } else if (error.response.data.message) {
+            msg = Array.isArray(error.response.data.message) 
+            ? error.response.data.message.join('\n') 
+            : JSON.stringify(error.response.data.message);
+        } else {
+            msg = JSON.stringify(error.response.data);
+        }
       } else if (error.message) {
         msg = error.message;
       }

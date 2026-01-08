@@ -14,21 +14,26 @@ export class ProductsController {
   @Post()
   @UseInterceptors(FileInterceptor('image'))
   async create(@Body() createProductDto: CreateProductDto, @UploadedFile() file: Express.Multer.File) {
-    if (file) {
-      const filename = `product-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
-      const uploadDir = path.join(process.cwd(), 'uploads', 'products');
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-      
-      await sharp(file.buffer)
-        .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
-        .webp({ quality: 80 })
-        .toFile(path.join(uploadDir, filename));
+    try {
+      if (file) {
+        const filename = `product-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
+        const uploadDir = path.join(process.cwd(), 'uploads', 'products');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
         
-      createProductDto.image = `/uploads/products/${filename}`;
+        await sharp(file.buffer)
+          .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
+          .webp({ quality: 80 })
+          .toFile(path.join(uploadDir, filename));
+          
+        createProductDto.image = `/uploads/products/${filename}`;
+      }
+      return await this.productsService.create(createProductDto);
+    } catch (error) {
+      console.error('Error in ProductsController.create:', error);
+      throw error;
     }
-    return this.productsService.create(createProductDto);
   }
 
   @Get()
@@ -44,21 +49,26 @@ export class ProductsController {
   @Patch(':id')
   @UseInterceptors(FileInterceptor('image'))
   async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto, @UploadedFile() file: Express.Multer.File) {
-    if (file) {
-      const filename = `product-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
-      const uploadDir = path.join(process.cwd(), 'uploads', 'products');
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-      
-      await sharp(file.buffer)
-        .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
-        .webp({ quality: 80 })
-        .toFile(path.join(uploadDir, filename));
+    try {
+      if (file) {
+        const filename = `product-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
+        const uploadDir = path.join(process.cwd(), 'uploads', 'products');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
         
-      updateProductDto.image = `/uploads/products/${filename}`;
+        await sharp(file.buffer)
+          .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
+          .webp({ quality: 80 })
+          .toFile(path.join(uploadDir, filename));
+          
+        updateProductDto.image = `/uploads/products/${filename}`;
+      }
+      return await this.productsService.update(id, updateProductDto);
+    } catch (error) {
+      console.error('Error in ProductsController.update:', error);
+      throw error;
     }
-    return this.productsService.update(id, updateProductDto);
   }
 
   @Delete(':id')
