@@ -135,7 +135,20 @@ const ProductsView: React.FC = () => {
         formData.append('image', imageFile);
       } else if (productForm.image && productForm.image !== 'https://via.placeholder.com/150') {
          // If no new file, but we have an existing image URL, we might want to keep it.
-         formData.append('image', productForm.image);
+         // Strip API_URL if present to save relative path
+         let imageUrl = productForm.image;
+         if (imageUrl.startsWith(API_URL)) {
+            imageUrl = imageUrl.replace(API_URL, '');
+         } else if (imageUrl.startsWith('http')) {
+            // Try to extract relative path if it matches expected pattern
+            try {
+              const urlObj = new URL(imageUrl);
+              imageUrl = urlObj.pathname; // This will keep /uploads/...
+            } catch (e) {
+              // If invalid URL, keep as is
+            }
+         }
+         formData.append('image', imageUrl);
       }
       
       if (editingProduct) {

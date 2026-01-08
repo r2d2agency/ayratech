@@ -38,13 +38,13 @@ export class ProductsService {
   }
 
   findAll() {
-    return this.productsRepository.find({ relations: ['brand', 'brand.client', 'client', 'categoryRef'] });
+    return this.productsRepository.find({ relations: ['brand', 'brand.client', 'client', 'categoryRef', 'categoryRef.parent'] });
   }
 
   findOne(id: string) {
     return this.productsRepository.findOne({ 
       where: { id },
-      relations: ['brand', 'brand.client', 'client', 'categoryRef']
+      relations: ['brand', 'brand.client', 'client', 'categoryRef', 'categoryRef.parent']
     });
   }
 
