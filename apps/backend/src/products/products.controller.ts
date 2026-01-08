@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, HttpException, HttpStatus } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -22,17 +22,23 @@ export class ProductsController {
           fs.mkdirSync(uploadDir, { recursive: true });
         }
         
-        await sharp(file.buffer)
-          .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
-          .webp({ quality: 80 })
-          .toFile(path.join(uploadDir, filename));
+        try {
+          await sharp(file.buffer)
+            .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
+            .webp({ quality: 80 })
+            .toFile(path.join(uploadDir, filename));
+        } catch (sharpError) {
+          console.error('Sharp processing error:', sharpError);
+          throw new HttpException(`Image processing failed: ${sharpError.message}`, HttpStatus.BAD_REQUEST);
+        }
           
         createProductDto.image = `/uploads/products/${filename}`;
       }
       return await this.productsService.create(createProductDto);
     } catch (error) {
       console.error('Error in ProductsController.create:', error);
-      throw error;
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(error.message || 'Internal server error during creation', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -57,17 +63,23 @@ export class ProductsController {
           fs.mkdirSync(uploadDir, { recursive: true });
         }
         
-        await sharp(file.buffer)
-          .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
-          .webp({ quality: 80 })
-          .toFile(path.join(uploadDir, filename));
+        try {
+          await sharp(file.buffer)
+            .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
+            .webp({ quality: 80 })
+            .toFile(path.join(uploadDir, filename));
+        } catch (sharpError) {
+          console.error('Sharp processing error:', sharpError);
+          throw new HttpException(`Image processing failed: ${sharpError.message}`, HttpStatus.BAD_REQUEST);
+        }
           
         updateProductDto.image = `/uploads/products/${filename}`;
       }
       return await this.productsService.update(id, updateProductDto);
     } catch (error) {
       console.error('Error in ProductsController.update:', error);
-      throw error;
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(error.message || 'Internal server error during update', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
