@@ -54,22 +54,20 @@ export class UsersService implements OnModuleInit {
   async findById(id: string): Promise<User | undefined> {
     return this.usersRepository.findOne({ 
       where: { id },
-      relations: ['role']
+      relations: ['role', 'employee']
     });
   }
 
   async findByEmployeeId(employeeId: string): Promise<User | undefined> {
     return this.usersRepository.findOne({ 
       where: { employee: { id: employeeId } },
-      relations: ['role']
+      relations: ['role', 'employee']
     });
   }
 
   async findAll(): Promise<User[]> {
     try {
-      // Temporarily removed 'employee' relation to isolate the issue causing 500 error
-      // If 'employee' relation is needed, we must ensure Employee entity is properly loaded and DB is consistent
-      return await this.usersRepository.find({ relations: ['role'] });
+      return await this.usersRepository.find({ relations: ['role', 'employee'] });
     } catch (err) {
       console.error('Error in findAll users:', err);
       // Return empty array instead of throwing 500 to allow UI to render
