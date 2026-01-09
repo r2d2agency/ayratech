@@ -17,9 +17,19 @@ export class RoutesController {
     return this.routesService.findAll();
   }
 
+  @Get('templates/all')
+  findTemplates() {
+    return this.routesService.findTemplates();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.routesService.findOne(id);
+  }
+
+  @Post(':id/duplicate')
+  duplicate(@Param('id') id: string, @Body() body: { date: string; promoterId?: string }) {
+    return this.routesService.duplicate(id, body.date, body.promoterId);
   }
 
   @Patch(':id')
@@ -41,5 +51,14 @@ export class RoutesController {
   @Get('rules/all')
   findAllRules() {
     return this.routesService.findAllRules();
+  }
+
+  @Patch('items/:itemId/products/:productId/check')
+  checkProduct(
+    @Param('itemId') itemId: string,
+    @Param('productId') productId: string,
+    @Body() body: { checked: boolean; observation?: string },
+  ) {
+    return this.routesService.checkProduct(itemId, productId, body.checked, body.observation);
   }
 }

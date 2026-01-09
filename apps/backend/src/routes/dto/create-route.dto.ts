@@ -7,18 +7,39 @@ class RouteItemDto {
 
   @IsOptional()
   order: number;
+
+  @IsOptional()
+  @IsString()
+  startTime?: string;
+
+  @IsOptional()
+  estimatedDuration?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  productIds?: string[];
 }
 
 export class CreateRouteDto {
+  @IsOptional()
   @IsDateString()
-  date: string;
+  date?: string;
 
+  @IsOptional()
   @IsString()
-  promoterId: string;
+  promoterId?: string;
 
   @IsOptional()
   @IsString()
   status?: string;
+
+  @IsOptional()
+  isTemplate?: boolean;
+
+  @IsOptional()
+  @IsString()
+  templateName?: string;
 
   @IsArray()
   @ValidateNested({ each: true })

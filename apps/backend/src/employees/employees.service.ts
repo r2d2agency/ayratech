@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Employee } from './entities/employee.entity';
@@ -6,6 +6,8 @@ import { EmployeeCompensation } from './entities/employee-compensation.entity';
 import { EmployeeDocument } from './entities/employee-document.entity';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { UsersService } from '../users/users.service';
+import { RolesService } from '../roles/roles.service';
 
 @Injectable()
 export class EmployeesService {
@@ -16,11 +18,19 @@ export class EmployeesService {
     private compensationRepository: Repository<EmployeeCompensation>,
     @InjectRepository(EmployeeDocument)
     private documentsRepository: Repository<EmployeeDocument>,
+    private usersService: UsersService,
+    private rolesService: RolesService,
   ) {}
 
   async create(createEmployeeDto: CreateEmployeeDto) {
-    const { baseSalary, transportVoucher, mealVoucher, ...employeeData } = createEmployeeDto;
+    const { baseSalary, transportVoucher, mealVoucher, createAccess, appPassword, ...employeeData } = createEmployeeDto;
     
+    // Check if email already exists in employees
+    const existingEmployee = await this.employeesRepository.findOne({ where: { email: employeeData.email } });
+    if (existingEmployee) {
+        throw new BadRequestException('Email já cadastrado para outro funcionário.');
+    }
+
     const employee = this.employeesRepository.create(employeeData);
     const savedEmployee = await this.employeesRepository.save(employee);
 
@@ -34,6 +44,39 @@ export class EmployeesService {
         mealVoucher: mealVoucher || 0
       });
       await this.compensationRepository.save(compensation);
+    }
+
+    // Handle User Creation for App Access
+    if (createAccess === 'true' || createAccess === '1' || createAccess === 'on') {
+        try {
+            // Find 'promotor' role
+            const allRoles = await this.rolesService.findAll();
+            const promoterRole = allRoles.find(r => 
+                r.name.toLowerCase() === 'promotor' || 
+                r.name.toLowerCase() === 'promoter' || 
+                r.name.toLowerCase() === 'app_user'
+            );
+
+            if (!promoterRole) {
+                console.warn('Role "promotor" not found. Skipping user creation.');
+            } else {
+                // Check if user exists
+                const existingUser = await this.usersService.findOne(savedEmployee.email);
+                if (!existingUser) {
+                    await this.usersService.create({
+                        email: savedEmployee.email,
+                        password: appPassword || 'mudar123',
+                        roleId: promoterRole.id,
+                        employeeId: savedEmployee.id,
+                        status: 'active'
+                    });
+                    console.log(`User created for employee ${savedEmployee.email}`);
+                }
+            }
+        } catch (error) {
+            console.error('Error creating user for employee:', error);
+            // Don't fail the request, just log it
+        }
     }
 
     return savedEmployee;

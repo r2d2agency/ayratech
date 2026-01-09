@@ -58,7 +58,9 @@ const EmployeesView: React.FC = () => {
     mealVoucher: '',
     // Schedule (simplified)
     weeklyHours: 44,
-    facialPhotoUrl: ''
+    facialPhotoUrl: '',
+    createAccess: false,
+    appPassword: ''
   });
 
   const [facialPhotoFile, setFacialPhotoFile] = useState<File | null>(null);
@@ -560,6 +562,115 @@ const EmployeesView: React.FC = () => {
                       onChange={e => setEmployeeForm({...employeeForm, phone: e.target.value})}
                     />
                   </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-4">
+                  <h3 className="text-sm font-medium text-gray-900 mb-4">Foto Facial</h3>
+                  <div className="flex items-start gap-4">
+                    {facialPhotoPreview ? (
+                      <div className="relative">
+                        <img 
+                          src={facialPhotoPreview} 
+                          alt="Preview" 
+                          className="w-32 h-32 object-cover rounded-lg border border-gray-300"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFacialPhotoPreview('');
+                            setFacialPhotoFile(null);
+                            setEmployeeForm({ ...employeeForm, facialPhotoUrl: '' });
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200"
+                        >
+                          <XCircle size={16} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-white text-gray-400">
+                        <span className="text-xs text-center p-2">Sem foto</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Carregar Foto
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > 5 * 1024 * 1024) {
+                                alert('Arquivo muito grande. Máximo 5MB.');
+                                return;
+                            }
+                            setFacialPhotoFile(file);
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                                setFacialPhotoPreview(reader.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="block w-full text-sm text-gray-500
+                          file:mr-4 file:py-2 file:px-4
+                          file:rounded-md file:border-0
+                          file:text-sm file:font-semibold
+                          file:bg-blue-50 file:text-blue-700
+                          hover:file:bg-blue-100"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        PNG, JPG ou JPEG até 5MB.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-medium text-gray-900">Acesso ao Aplicativo</h3>
+                    <div className="flex items-center">
+                      <input
+                        id="createAccess"
+                        type="checkbox"
+                        checked={(employeeForm as any).createAccess || false}
+                        onChange={(e) => setEmployeeForm({ ...employeeForm, createAccess: e.target.checked } as any)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="createAccess" className="ml-2 block text-sm text-gray-900">
+                        Habilitar acesso
+                      </label>
+                    </div>
+                  </div>
+                  
+                  {(employeeForm as any).createAccess && (
+                    <div className="grid grid-cols-1 gap-6">
+                       <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                          <div className="flex">
+                            <div className="ml-3">
+                              <p className="text-sm text-yellow-700">
+                                Isso criará um usuário vinculado a este funcionário com perfil de <strong>Promotor</strong>.
+                                O funcionário poderá usar o email cadastrado e a senha abaixo para acessar o App.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">
+                            Senha de Acesso
+                          </label>
+                          <input
+                            type="text"
+                            value={(employeeForm as any).appPassword || ''}
+                            onChange={(e) => setEmployeeForm({ ...employeeForm, appPassword: e.target.value } as any)}
+                            className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+                            placeholder="Digite uma senha inicial"
+                          />
+                        </div>
+                    </div>
+                  )}
                 </div>
               )}
 

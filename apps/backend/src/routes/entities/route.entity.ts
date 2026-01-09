@@ -7,17 +7,23 @@ export class Route {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'date', nullable: true })
   date: string;
 
-  @ManyToOne(() => Employee, { eager: true })
+  @ManyToOne(() => Employee, { eager: true, nullable: true })
   promoter: Employee;
 
-  @Column()
+  @Column({ nullable: true })
   promoterId: string;
 
-  @Column({ default: 'PLANNING' }) // PLANNING, IN_PROGRESS, COMPLETED
+  @Column({ default: 'DRAFT' }) // DRAFT, CONFIRMED, COMPLETED
   status: string;
+
+  @Column({ default: false })
+  isTemplate: boolean;
+
+  @Column({ nullable: true })
+  templateName: string;
 
   @OneToMany(() => RouteItem, (item) => item.route, { cascade: true, eager: true })
   items: RouteItem[];

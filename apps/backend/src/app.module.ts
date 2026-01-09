@@ -49,10 +49,10 @@ import { CategoriesModule } from './categories/categories.module';
       },
       inject: [ConfigService],
     }),
-    // ServeStaticModule.forRoot({
-    //   rootPath: join(process.cwd(), 'uploads'),
-    //   serveRoot: '/uploads',
-    // }),
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+    }),
     ClientsModule,
     ProductsModule,
     SupermarketsModule,

@@ -99,4 +99,12 @@ export class CreateEmployeeDto {
   @IsNumber()
   @Type(() => Number)
   mealVoucher?: number;
+
+  @IsOptional()
+  @IsString()
+  createAccess?: string; // Passed as string from FormData
+
+  @IsOptional()
+  @IsString()
+  appPassword?: string;
 }

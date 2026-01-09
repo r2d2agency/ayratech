@@ -20,25 +20,52 @@ Este documento detalha as regras de negócio e fluxos operacionais do sistema Ay
 ### 2.2. Produtos (SKUs)
 *   Itens que serão auditados no ponto de venda.
 *   Atributos obrigatórios: Nome, SKU (código), Categoria.
-*   Atributos opcionais: Imagem de referência, Preço sugerido, Código de barras (EAN).
+*   Atributos importantes: 
+    *   **Código de barras (EAN):** Essencial para leitura rápida no App via câmera.
+    *   **Status:** Controle de 'active'/'inactive' para produtos que saíram de linha.
+    *   **Imagem:** Referência visual para o promotor encontrar o produto na gôndola.
 
 ### 2.3. Supermercados (PDVs)
 *   Locais onde o serviço é executado.
 *   Classificação: Ouro, Prata, Bronze (define prioridade ou frequência de visita).
 *   Geolocalização: Latitude/Longitude obrigatórias para validação de check-in.
 
+### 2.4. Funcionários (Recursos Humanos)
+*   **Cadastro Unificado:** Dados pessoais (CPF, RG, Endereço) e dados contratuais (Salário, Benefícios) centralizados.
+*   **Foto Facial:** 
+    *   Obrigatória para identificação visual e segurança.
+    *   **Regra Técnica:** Upload deve ser validado (Máx 5MB). O sistema deve servir esse arquivo estático publicamente para o App.
+*   **Acesso ao Aplicativo:** 
+    *   O cadastro de funcionário permite a criação automática ("toggle") de um usuário de sistema.
+    *   Este usuário herda o perfil `Promotor` e usa o email do funcionário como login.
+
 ## 3. Fluxos Operacionais
 
-### 3.1. Gestão de Rotas e Visitas
-1.  **Criação de Rota:** O Admin ou Supervisor cria uma rota associando um Promotor a uma lista de Supermercados para dias específicos da semana.
-2.  **Execução (App Mobile):**
-    *   **Check-in:** O promotor só pode realizar check-in se estiver num raio de X metros (configurável, ex: 200m) do PDV.
-    *   **Tarefas:** Ao fazer check-in, o app lista as tarefas: Auditoria de Preço, Ruptura (falta de produto), Fotos de Gôndola, Validação de Planograma.
-    *   **Check-out:** Finaliza a visita e envia os dados. Só permitido após completar tarefas obrigatórias.
+### 3.1. Gestão de Rotas e Planejamento
+1.  **Planejador Visual:** O Supervisor/Admin seleciona um Promotor e uma Data.
+2.  **Montagem da Rota:** Adiciona-se uma lista sequencial de Supermercados (PDVs) a serem visitados.
+    *   **Reordenação:** É possível ajustar a ordem de visita para otimizar o deslocamento.
+    *   **Horários:** Definição de horário previsto de chegada e duração estimada da visita.
+3.  **Vinculação de Produtos (Conferência):**
+    *   **Regra de Negócio Crítica:** A rota não define apenas "Onde ir", mas "O que fazer".
+    *   Para cada PDV na rota, deve-se selecionar **quais produtos** serão conferidos.
+    *   *Exemplo:* No Supermercado A, conferir apenas Bebidas. No Supermercado B, conferir Bebidas e Salgadinhos.
+4.  **Templates e Duplicação:**
+    *   Rotas frequentes podem ser salvas como **Modelos (Templates)**.
+    *   O Supervisor pode **Duplicar** uma rota existente para outro dia ou outro promotor, agilizando o planejamento semanal.
+5.  **Ciclo de Vida da Rota (Status):**
+    *   `Rascunho (Draft)`: Em planejamento (Cor Branca/Cinza). Invisível ou marcado como provisório para o promotor.
+    *   `Confirmado (Confirmed)`: Validado pelo supervisor (Cor Verde). Pronto para execução.
+    *   `Concluído (Completed)`: Executado pelo promotor (Cor Esmeralda/Destaque).
 
-### 3.2. Coleta de Dados e IA
-*   **Fotos:** Devem ser validadas por IA para confirmar a presença dos produtos e conformidade com o planograma (Share of Shelf).
-*   **Offline-First:** O App deve permitir coleta de dados sem internet e sincronizar quando houver conexão.
+### 3.2. Execução (App Mobile)
+*   **Check-in:** O promotor só pode realizar check-in se estiver num raio de X metros (configurável, ex: 200m) do PDV.
+*   **Conferência (Checklist de Produtos):**
+    *   O App exibe a lista de produtos vinculados àquele PDV específico na rota.
+    *   **Ações:** Marcar como `Conferido` (Check) ou deixar pendente.
+    *   **Observações:** Possibilidade de adicionar notas de texto por produto (ex: "Produto sem preço", "Embalagem danificada").
+*   **Tarefas Adicionais:** Fotos de Gôndola, Validação de Planograma.
+*   **Check-out:** Finaliza a visita e sincroniza os dados.
 
 ### 3.3. Dashboard e Relatórios
 *   **Visão Admin:** Vê produtividade de todos os promotores, alertas de ruptura global e status dos contratos.
@@ -49,6 +76,7 @@ Este documento detalha as regras de negócio e fluxos operacionais do sistema Ay
 *   **Login:** Via JWT (Token).
 *   **Permissões (RBAC):**
     *   `admin`: Acesso total (CRUD de Clientes, Produtos, Usuários).
+    *   `rh` / `manager`: Gestão de funcionários e rotas.
     *   `supervisor`: Acesso a rotas e relatórios da sua equipe.
     *   `promotor`: Acesso apenas ao App Mobile (sua rota do dia).
     *   `cliente_viewer`: Acesso apenas leitura aos dashboards do seu contrato.
@@ -60,4 +88,4 @@ Este documento detalha as regras de negócio e fluxos operacionais do sistema Ay
 *   **Exportação:** Relatórios em PDF/Excel para clientes.
 
 ---
-*Documento em evolução. Última atualização: 29/12/2025*
+*Documento em evolução. Última atualização: 09/01/2026*

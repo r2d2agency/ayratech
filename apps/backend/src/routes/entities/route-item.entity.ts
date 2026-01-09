@@ -1,6 +1,7 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany } from 'typeorm';
 import { Route } from './route.entity';
 import { Supermarket } from '../../entities/supermarket.entity';
+import { RouteItemProduct } from './route-item-product.entity';
 
 @Entity()
 export class RouteItem {
@@ -22,6 +23,12 @@ export class RouteItem {
   @Column()
   order: number;
 
+  @Column({ nullable: true })
+  startTime: string; // HH:mm
+
+  @Column({ nullable: true })
+  estimatedDuration: number; // in minutes
+
   @Column({ default: 'PENDING' }) // PENDING, CHECKIN, CHECKOUT, SKIPPED
   status: string;
 
@@ -30,4 +37,7 @@ export class RouteItem {
 
   @Column({ nullable: true, type: 'timestamp' })
   checkOutTime: Date;
+
+  @OneToMany(() => RouteItemProduct, (product) => product.routeItem, { cascade: true, eager: true })
+  products: RouteItemProduct[];
 }
