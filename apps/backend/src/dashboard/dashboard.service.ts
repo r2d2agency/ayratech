@@ -82,7 +82,7 @@ export class DashboardService {
     
     const clientPerformance = Array.from(clientPerformanceMap.values()).map(stat => ({
         id: stat.client.id,
-        name: stat.client.name,
+        name: stat.client.nomeFantasia || stat.client.razaoSocial,
         logo: stat.client.logo || 'https://via.placeholder.com/150', // Fallback
         percentage: stat.total > 0 ? Math.round((stat.checked / stat.total) * 100) : 0
     })).sort((a, b) => b.percentage - a.percentage);
