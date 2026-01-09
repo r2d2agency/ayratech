@@ -190,6 +190,11 @@ const EmployeesView: React.FC = () => {
       return;
     }
 
+    if (!employeeForm.roleId) {
+      alert('Selecione um cargo para o funcionário.');
+      return;
+    }
+
     try {
       const formData = new FormData();
       
@@ -218,9 +223,10 @@ const EmployeesView: React.FC = () => {
       }
       setShowEmployeeModal(false);
       fetchEmployees();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving employee:', error);
-      alert('Erro ao salvar funcionário.');
+      const errorMessage = error.response?.data?.message || error.message || 'Erro ao salvar funcionário.';
+      alert(`Erro: ${errorMessage}`);
     }
   };
 
@@ -798,9 +804,16 @@ const EmployeesView: React.FC = () => {
                       onChange={e => setEmployeeForm({...employeeForm, supervisorId: e.target.value})}
                     >
                       <option value="">Nenhum</option>
-                      {employees.filter(e => e.id !== editingEmployee?.id).map(emp => (
-                        <option key={emp.id} value={emp.id}>{emp.fullName}</option>
-                      ))}
+                      {employees
+                        .filter(e => 
+                          e.id !== editingEmployee?.id && 
+                          e.role && 
+                          (e.role.name.toLowerCase().includes('supervisor') || e.role.name.toLowerCase().includes('coordenador'))
+                        )
+                        .map(emp => (
+                          <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                        ))
+                      }
                     </select>
                   </div>
                   <div>
