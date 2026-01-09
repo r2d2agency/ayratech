@@ -1,5 +1,8 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param, Res, NotFoundException } from '@nestjs/common';
 import { AppService } from './app.service';
+import { Response } from 'express';
+import * as path from 'path';
+import * as fs from 'fs';
 
 @Controller()
 export class AppController {
@@ -13,5 +16,21 @@ export class AppController {
   @Get('health')
   getHealth(): { status: string } {
     return { status: 'ok' };
+  }
+
+  @Get('uploads/:folder/:filename')
+  serveFile(
+    @Param('folder') folder: string,
+    @Param('filename') filename: string,
+    @Res() res: Response
+  ) {
+    const filePath = path.join(process.cwd(), 'uploads', folder, filename);
+    
+    if (!fs.existsSync(filePath)) {
+      console.error(`File not found: ${filePath}`);
+      throw new NotFoundException('File not found');
+    }
+
+    return res.sendFile(filePath);
   }
 }
