@@ -12,13 +12,17 @@ export class NotificationsService {
   ) {}
 
   create(createNotificationDto: CreateNotificationDto) {
-    const notification = this.notificationsRepository.create(createNotificationDto);
+    const { userId, ...data } = createNotificationDto;
+    const notification = this.notificationsRepository.create({
+      ...data,
+      user: { id: userId } as any
+    });
     return this.notificationsRepository.save(notification);
   }
 
   findAllForUser(userId: string) {
     return this.notificationsRepository.find({
-      where: { userId },
+      where: { user: { id: userId } },
       order: { createdAt: 'DESC' },
     });
   }
@@ -29,7 +33,15 @@ export class NotificationsService {
   }
   
   async markAllAsRead(userId: string) {
-      await this.notificationsRepository.update({ userId, read: false }, { read: true });
+      // update doesn't support relation filtering easily, so we might need to fetch or use query builder
+      // simpler: update where userId column (if it exists)
+      // Since we kept userId column but potentially as duplicate, let's use QueryBuilder to be safe
+      await this.notificationsRepository.createQueryBuilder()
+        .update(Notification)
+        .set({ read: true })
+        .where("userId = :userId", { userId })
+        .andWhere("read = :read", { read: false })
+        .execute();
       return { success: true };
   }
 }

@@ -6,12 +6,12 @@ export class Notification {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
-  userId: string;
-
   @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
   user: User;
+
+  @Column({ nullable: true, insert: false, update: false })
+  userId: string;
 
   @Column()
   title: string;
