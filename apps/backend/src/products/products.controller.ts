@@ -47,6 +47,28 @@ export class ProductsController {
     return this.productsService.findAll();
   }
 
+  @Get('debug/files')
+  debugFiles() {
+    const uploadDir = path.join(process.cwd(), 'uploads', 'products');
+    try {
+      if (!fs.existsSync(uploadDir)) {
+        return { message: 'Directory does not exist', path: uploadDir, cwd: process.cwd() };
+      }
+      const files = fs.readdirSync(uploadDir);
+      return { 
+        path: uploadDir,
+        cwd: process.cwd(),
+        count: files.length,
+        files: files.sort((a, b) => {
+            return fs.statSync(path.join(uploadDir, b)).mtime.getTime() - 
+                   fs.statSync(path.join(uploadDir, a)).mtime.getTime();
+        }).slice(0, 10) // Newest 10 files
+      };
+    } catch (e) {
+      return { error: e.message, path: uploadDir };
+    }
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.productsService.findOne(id);
