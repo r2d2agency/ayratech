@@ -35,47 +35,28 @@ import { NotificationsModule } from './notifications/notifications.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        const databaseUrl = configService.get<string>('DATABASE_URL');
-        const dbSslEnv = configService.get<string>('DB_SSL');
-        
-        // Determine SSL configuration
-        let sslConfig: any = undefined;
-        if (dbSslEnv === 'true') {
-          sslConfig = { rejectUnauthorized: false };
-        } else if (dbSslEnv === 'false') {
-          sslConfig = undefined; // Explicitly disabled
-        } else if (databaseUrl) {
-          // If DATABASE_URL is present and no explicit DB_SSL setting, 
-          // assume SSL might be needed (safe default for cloud DBs)
-          sslConfig = { rejectUnauthorized: false };
-        }
-        
-        let dbConfig: any = {
+        const dbConfig: any = {
           type: 'postgres',
+          host: configService.get<string>('DB_HOST', 'localhost'),
+          port: configService.get<number>('DB_PORT', 5432),
+          username: configService.get<string>('DB_USERNAME', 'postgres'),
+          password: configService.get<string>('DB_PASSWORD', 'password'),
+          database: configService.get<string>('DB_DATABASE', 'ayratech_db'),
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize: true, // Auto-create tables (dev only)
+          synchronize: true,
           autoLoadEntities: true,
-          ssl: sslConfig,
         };
 
+        const databaseUrl = configService.get<string>('DATABASE_URL');
         if (databaseUrl) {
           dbConfig.url = databaseUrl;
-        } else {
-          dbConfig = {
-            ...dbConfig,
-            host: configService.get<string>('DB_HOST', 'localhost'),
-            port: configService.get<number>('DB_PORT', 5432),
-            username: configService.get<string>('DB_USERNAME', 'postgres'),
-            password: configService.get<string>('DB_PASSWORD', 'password'),
-            database: configService.get<string>('DB_DATABASE', 'ayratech_db'),
-          };
         }
 
-        console.log('Attempting to connect to DB with:', { 
-          ...dbConfig, 
-          url: dbConfig.url ? '***' : undefined,
-          password: '***' 
-        });
+        if (configService.get<string>('DB_SSL') === 'true') {
+          dbConfig.ssl = { rejectUnauthorized: false };
+        }
+
+        console.log('DB Config:', { ...dbConfig, password: '***', url: dbConfig.url ? '***' : undefined });
         return dbConfig;
       },
       inject: [ConfigService],
