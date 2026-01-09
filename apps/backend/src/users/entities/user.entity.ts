@@ -13,14 +13,14 @@ export class User {
   @Column({ name: 'password_hash' })
   password: string; // password_hash
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, insert: false, update: false })
   employeeId: string;
 
   @ManyToOne(() => Employee, { nullable: true })
   @JoinColumn({ name: 'employeeId' })
   employee: Employee;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, insert: false, update: false })
   roleId: string;
 
   @ManyToOne(() => Role, { nullable: true })

@@ -6,7 +6,7 @@ export class TimeBalance {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ insert: false, update: false })
   employeeId: string;
 
   @ManyToOne(() => Employee)

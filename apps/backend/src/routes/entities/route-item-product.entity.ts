@@ -11,18 +11,27 @@ export class RouteItemProduct {
   @JoinColumn({ name: 'routeItemId' })
   routeItem: RouteItem;
 
-  @Column()
+  @Column({ insert: false, update: false })
   routeItemId: string;
 
   @ManyToOne(() => Product, { eager: true })
   @JoinColumn({ name: 'productId' })
   product: Product;
 
-  @Column()
+  @Column({ insert: false, update: false })
   productId: string;
 
   @Column({ default: false })
   checked: boolean;
+
+  @Column({ default: false })
+  isStockout: boolean;
+
+  @Column({ nullable: true })
+  stockoutType: string; // 'VIRTUAL', 'PHYSICAL'
+
+  @Column('simple-array', { nullable: true })
+  photos: string[];
 
   @Column({ nullable: true })
   observation: string;

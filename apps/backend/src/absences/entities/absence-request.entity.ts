@@ -6,7 +6,7 @@ export class AbsenceRequest {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ insert: false, update: false })
   employeeId: string;
 
   @ManyToOne(() => Employee)
@@ -31,7 +31,7 @@ export class AbsenceRequest {
   @Column({ default: 'pending' })
   status: string; // pendente | aprovado | recusado
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, insert: false, update: false })
   approverId: string;
 
   @ManyToOne(() => Employee, { nullable: true })

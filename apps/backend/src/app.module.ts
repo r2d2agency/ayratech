@@ -26,6 +26,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { AppSyncModule } from './app-sync/app-sync.module';
 import { ImageAnalysisModule } from './integrations/image-analysis/image-analysis.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { MessagesModule } from './messages/messages.module';
 
 @Module({
   imports: [
@@ -86,6 +87,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     AppSyncModule,
     ImageAnalysisModule,
     NotificationsModule,
+    MessagesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

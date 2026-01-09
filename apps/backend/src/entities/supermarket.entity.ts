@@ -17,7 +17,7 @@ export class Supermarket {
   @JoinColumn({ name: 'groupId' })
   group: SupermarketGroup;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, insert: false, update: false })
   groupId: string; // Helpful for DTO mapping
 
   @Column()

@@ -57,8 +57,8 @@ export class RoutesController {
   checkProduct(
     @Param('itemId') itemId: string,
     @Param('productId') productId: string,
-    @Body() body: { checked: boolean; observation?: string },
+    @Body() body: { checked?: boolean; observation?: string; isStockout?: boolean; stockoutType?: string; photos?: string[] },
   ) {
-    return this.routesService.checkProduct(itemId, productId, body.checked, body.observation);
+    return this.routesService.checkProduct(itemId, productId, body);
   }
 }

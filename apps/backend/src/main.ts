@@ -21,7 +21,7 @@ async function bootstrap() {
   
   // Configure CORS
   app.enableCors({
-    origin: ['https://ayratech.app.br', 'http://localhost:5173', 'http://localhost:3000'],
+    origin: true, // Allow all origins for development/mobile access
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     allowedHeaders: 'Content-Type, Accept, Authorization',

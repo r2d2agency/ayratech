@@ -28,7 +28,7 @@ export class EmployeesService {
   ) {}
 
   async create(createEmployeeDto: CreateEmployeeDto) {
-    const { baseSalary, transportVoucher, mealVoucher, createAccess, appPassword, weeklyHours, ...employeeData } = createEmployeeDto;
+    const { baseSalary, transportVoucher, mealVoucher, createAccess, appPassword, weeklyHours, roleId, supervisorId, ...employeeData } = createEmployeeDto;
     
     // Check if email already exists in employees
     const existingEmployee = await this.employeesRepository.findOne({ where: { email: employeeData.email } });
@@ -36,7 +36,11 @@ export class EmployeesService {
         throw new BadRequestException('Email já cadastrado para outro funcionário.');
     }
 
-    const employee = this.employeesRepository.create(employeeData);
+    const employee = this.employeesRepository.create({
+      ...employeeData,
+      role: roleId ? { id: roleId } : null,
+      supervisor: supervisorId ? { id: supervisorId } : null,
+    });
     const savedEmployee = await this.employeesRepository.save(employee);
 
     if (baseSalary) {
@@ -146,11 +150,15 @@ export class EmployeesService {
   }
 
   async update(id: string, updateEmployeeDto: UpdateEmployeeDto) {
-    const { baseSalary, transportVoucher, mealVoucher, weeklyHours, createAccess, appPassword, ...employeeData } = updateEmployeeDto;
+    const { baseSalary, transportVoucher, mealVoucher, weeklyHours, createAccess, appPassword, roleId, supervisorId, ...employeeData } = updateEmployeeDto;
 
     // Update basic info if there are fields to update
-    if (Object.keys(employeeData).length > 0) {
-      await this.employeesRepository.update(id, employeeData);
+    const updatePayload: any = { ...employeeData };
+    if (roleId !== undefined) updatePayload.role = roleId ? { id: roleId } : null;
+    if (supervisorId !== undefined) updatePayload.supervisor = supervisorId ? { id: supervisorId } : null;
+
+    if (Object.keys(updatePayload).length > 0) {
+      await this.employeesRepository.save({ id, ...updatePayload });
     }
 
     const employee = await this.findOne(id);

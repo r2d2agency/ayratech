@@ -35,10 +35,19 @@ export class SupermarketsService {
   }
 
   async update(id: string, updateSupermarketDto: UpdateSupermarketDto) {
-    const { clientIds, ...rest } = updateSupermarketDto;
+    const { clientIds, groupId, ...rest } = updateSupermarketDto;
     
-    // First update basic fields
-    await this.supermarketsRepository.update(id, rest);
+    // Handle groupId update
+    if (groupId) {
+        await this.supermarketsRepository.save({
+            id,
+            ...rest,
+            group: { id: groupId }
+        });
+    } else {
+        // First update basic fields
+        await this.supermarketsRepository.update(id, rest);
+    }
     
     // If clientIds provided, we need to update the relationship
     if (clientIds) {

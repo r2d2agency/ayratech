@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { Client } from './client.entity';
 import { Product } from './product.entity';
 
@@ -11,9 +11,10 @@ export class Brand {
   name: string;
 
   @ManyToOne(() => Client, { nullable: true })
+  @JoinColumn({ name: 'clientId' })
   client: Client;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, insert: false, update: false })
   clientId: string;
 
   @OneToMany(() => Product, product => product.brand)

@@ -56,7 +56,11 @@ export class WorkSchedulesService {
   }
 
   createException(createExceptionDto: CreateWorkScheduleExceptionDto) {
-    const exception = this.exceptionsRepository.create(createExceptionDto);
+    const { employeeId, ...exceptionData } = createExceptionDto;
+    const exception = this.exceptionsRepository.create({
+        ...exceptionData,
+        employee: { id: employeeId }
+    });
     return this.exceptionsRepository.save(exception);
   }
 }

@@ -16,7 +16,11 @@ export class TimeClockService {
   ) {}
 
   create(createTimeClockEventDto: CreateTimeClockEventDto) {
-    const event = this.eventsRepository.create(createTimeClockEventDto);
+    const { employeeId, ...eventData } = createTimeClockEventDto;
+    const event = this.eventsRepository.create({
+        ...eventData,
+        employee: { id: employeeId }
+    });
     return this.eventsRepository.save(event);
   }
 

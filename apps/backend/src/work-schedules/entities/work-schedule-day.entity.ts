@@ -6,7 +6,7 @@ export class WorkScheduleDay {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ insert: false, update: false })
   workScheduleId: string;
 
   @ManyToOne(() => WorkSchedule, schedule => schedule.days, { onDelete: 'CASCADE' })

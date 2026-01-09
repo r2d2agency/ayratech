@@ -29,7 +29,15 @@ export class BrandsService {
   }
 
   update(id: string, updateBrandDto: UpdateBrandDto) {
-    return this.brandsRepository.update(id, updateBrandDto);
+    const { clientId, ...brandData } = updateBrandDto;
+    if (clientId) {
+      return this.brandsRepository.save({
+        id,
+        ...brandData,
+        client: { id: clientId }
+      });
+    }
+    return this.brandsRepository.update(id, brandData);
   }
 
   remove(id: string) {

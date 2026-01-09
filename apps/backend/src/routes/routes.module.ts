@@ -11,5 +11,6 @@ import { RouteRule } from './entities/route-rule.entity';
   imports: [TypeOrmModule.forFeature([Route, RouteItem, RouteItemProduct, RouteRule])],
   controllers: [RoutesController],
   providers: [RoutesService],
+  exports: [RoutesService],
 })
 export class RoutesModule {}

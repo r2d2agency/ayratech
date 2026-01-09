@@ -4,6 +4,7 @@ import { EmployeesService } from '../employees/employees.service';
 import { RoutesService } from '../routes/routes.service';
 import { SupermarketsService } from '../supermarkets/supermarkets.service';
 import { ImageAnalysisService } from '../integrations/image-analysis/image-analysis.service';
+import { UsersService } from '../users/users.service';
 
 interface OfflineAction {
   type: 'CHECK_IN' | 'CHECK_OUT' | 'TIME_CLOCK' | 'PHOTO' | 'FORM_SUBMISSION';
@@ -22,6 +23,7 @@ export class AppSyncService {
     private routesService: RoutesService,
     private supermarketsService: SupermarketsService,
     private imageAnalysisService: ImageAnalysisService,
+    private usersService: UsersService,
   ) {}
 
   /**
@@ -44,6 +46,9 @@ export class AppSyncService {
             break;
           case 'CHECK_IN':
             result = await this.handleCheckIn(action.payload);
+            break;
+          case 'CHECK_OUT':
+            result = await this.handleCheckOut(action.payload);
             break;
           // Add other handlers
         }
@@ -91,7 +96,7 @@ export class AppSyncService {
    * Handle Route Check-in with Geo-fencing
    */
   private async handleCheckIn(payload: any) {
-    const { routeItemId, latitude, longitude, supermarketId } = payload;
+    const { routeItemId, latitude, longitude, supermarketId, timestamp } = payload;
     
     const supermarket = await this.supermarketsService.findOne(supermarketId);
     if (!supermarket) throw new BadRequestException('Supermarket not found');
@@ -104,9 +109,12 @@ export class AppSyncService {
     }
 
     // Update Route Item status
-    // Note: You'll need to expose a method in RoutesService to update Item Status specifically
-    // For now we assume a generic update or we need to add it to RoutesService
-    return { success: true, distance: 'valid' }; 
+    return this.routesService.updateRouteItemStatus(routeItemId, 'CHECKIN', timestamp ? new Date(timestamp) : new Date());
+  }
+
+  private async handleCheckOut(payload: any) {
+      const { routeItemId, timestamp } = payload;
+      return this.routesService.updateRouteItemStatus(routeItemId, 'CHECKOUT', timestamp ? new Date(timestamp) : new Date());
   }
 
   /**
@@ -131,14 +139,29 @@ export class AppSyncService {
    * Fetch updates for the app (Routes, Messages, etc.)
    */
   async fetchUpdates(userId: string, lastSync: string) {
-      // This would query DB for records updated > lastSync
-      // For now, return full week schedule for the user
-      // We need to resolve Employee ID from User ID first (this logic belongs in UsersService usually)
+      const user = await this.usersService.findById(userId);
+      if (!user) {
+          throw new BadRequestException('User not found');
+      }
       
-      // Stub implementation
+      // If user is admin, maybe return all routes? Or nothing?
+      // Assuming app users are promoters/employees.
+      if (!user.employee) {
+           // For testing/admin, maybe return all routes or empty?
+           // Let's return empty if not an employee to be safe.
+           return {
+               timestamp: new Date().toISOString(),
+               routes: [],
+               messages: []
+           };
+      }
+
+      const employeeId = user.employee.id;
+      const routes = await this.routesService.findByPromoter(employeeId);
+      
       return {
           timestamp: new Date().toISOString(),
-          routes: [], // fetch from RoutesService
+          routes: routes,
           messages: []
       };
   }

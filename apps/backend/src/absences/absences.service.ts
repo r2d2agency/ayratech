@@ -13,7 +13,12 @@ export class AbsencesService {
   ) {}
 
   create(createAbsenceRequestDto: CreateAbsenceRequestDto) {
-    const absence = this.absencesRepository.create(createAbsenceRequestDto);
+    const { employeeId, approverId, ...absenceData } = createAbsenceRequestDto;
+    const absence = this.absencesRepository.create({
+        ...absenceData,
+        employee: { id: employeeId },
+        approver: approverId ? { id: approverId } : null
+    });
     return this.absencesRepository.save(absence);
   }
 

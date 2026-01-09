@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { Employee } from '../../employees/entities/employee.entity';
 import { RouteItem } from './route-item.entity';
 
@@ -11,9 +11,10 @@ export class Route {
   date: string;
 
   @ManyToOne(() => Employee, { eager: true, nullable: true })
+  @JoinColumn({ name: 'promoterId' })
   promoter: Employee;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, insert: false, update: false })
   promoterId: string;
 
   @Column({ default: 'DRAFT' }) // DRAFT, CONFIRMED, COMPLETED

@@ -6,6 +6,7 @@ import { EmployeesModule } from '../employees/employees.module';
 import { RoutesModule } from '../routes/routes.module';
 import { ImageAnalysisModule } from '../integrations/image-analysis/image-analysis.module';
 import { SupermarketsModule } from '../supermarkets/supermarkets.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -13,7 +14,8 @@ import { SupermarketsModule } from '../supermarkets/supermarkets.module';
     EmployeesModule,
     RoutesModule,
     ImageAnalysisModule,
-    SupermarketsModule
+    SupermarketsModule,
+    UsersModule
   ],
   controllers: [AppSyncController],
   providers: [AppSyncService],

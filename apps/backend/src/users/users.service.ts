@@ -106,9 +106,14 @@ export class UsersService implements OnModuleInit {
 
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(createUserDto.password || '123456', salt);
+    
+    const { roleId, employeeId, ...userData } = createUserDto;
+    
     const newUser = this.usersRepository.create({
-      ...createUserDto,
+      ...userData,
       password: hashedPassword,
+      role: roleId ? { id: roleId } : null,
+      employee: employeeId ? { id: employeeId } : null,
     });
     
     try {
@@ -155,9 +160,14 @@ export class UsersService implements OnModuleInit {
     }
     
     try {
+      const { roleId, employeeId, ...userData } = updateUserDto;
+      const updatePayload: any = { ...userData };
+      
+      if (roleId !== undefined) updatePayload.role = roleId ? { id: roleId } : null;
+      if (employeeId !== undefined) updatePayload.employee = employeeId ? { id: employeeId } : null;
+
       // Use save instead of update to handle listeners/subscribers if any, and better error return
-      // But update is fine for partial.
-      return await this.usersRepository.update(id, updateUserDto);
+      return await this.usersRepository.save({ id, ...updatePayload });
     } catch (err: any) {
       console.error('Erro ao atualizar usuário:', err);
       if (err?.code === '23505') {
