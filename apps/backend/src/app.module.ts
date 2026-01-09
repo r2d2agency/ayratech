@@ -35,23 +35,39 @@ import { NotificationsModule } from './notifications/notifications.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        const dbConfig = {
+        const databaseUrl = configService.get<string>('DATABASE_URL');
+        
+        let dbConfig: any = {
           type: 'postgres',
-          host: configService.get<string>('DB_HOST', 'localhost'),
-          port: configService.get<number>('DB_PORT', 5432),
-          username: configService.get<string>('DB_USERNAME', 'postgres'),
-          password: configService.get<string>('DB_PASSWORD', 'password'),
-          database: configService.get<string>('DB_DATABASE', 'ayratech_db'),
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
           synchronize: true, // Auto-create tables (dev only)
-          ssl: configService.get<string>('DB_SSL', 'false') === 'true' ? { rejectUnauthorized: false } : undefined,
           autoLoadEntities: true,
         };
+
+        if (databaseUrl) {
+          dbConfig = {
+            ...dbConfig,
+            url: databaseUrl,
+            ssl: { rejectUnauthorized: false }, // Force SSL for external DBs
+          };
+        } else {
+          dbConfig = {
+            ...dbConfig,
+            host: configService.get<string>('DB_HOST', 'localhost'),
+            port: configService.get<number>('DB_PORT', 5432),
+            username: configService.get<string>('DB_USERNAME', 'postgres'),
+            password: configService.get<string>('DB_PASSWORD', 'password'),
+            database: configService.get<string>('DB_DATABASE', 'ayratech_db'),
+            ssl: configService.get<string>('DB_SSL', 'false') === 'true' ? { rejectUnauthorized: false } : undefined,
+          };
+        }
+
         console.log('Attempting to connect to DB with:', { 
           ...dbConfig, 
+          url: dbConfig.url ? '***' : undefined,
           password: '***' 
         });
-        return dbConfig as any;
+        return dbConfig;
       },
       inject: [ConfigService],
     }),
