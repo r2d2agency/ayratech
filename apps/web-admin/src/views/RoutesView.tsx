@@ -391,7 +391,7 @@ const RoutesView: React.FC = () => {
                       }`}
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs font-bold text-slate-500">{route.promoter?.name.split(' ')[0]}</span>
+                        <span className="text-xs font-bold text-slate-500">{route.promoter?.name?.split(' ')[0] || 'S/ Promotor'}</span>
                         <span className={`w-2 h-2 rounded-full ${
                           route.status === 'CONFIRMED' ? 'bg-green-500' : 'bg-slate-300'
                         }`} />
