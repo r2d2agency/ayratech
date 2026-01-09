@@ -26,6 +26,9 @@ export class Product {
   @Column({ nullable: true })
   barcode: string;
 
+  @Column({ default: 'active' })
+  status: string;
+
   @ManyToOne(() => Client, (client) => client.products)
   client: Client;
 
