@@ -36,9 +36,19 @@ import { NotificationsModule } from './notifications/notifications.module';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
         const databaseUrl = configService.get<string>('DATABASE_URL');
-        const sslConfig = configService.get<string>('DB_SSL', 'false') === 'true' 
-          ? { rejectUnauthorized: false } 
-          : undefined;
+        const dbSslEnv = configService.get<string>('DB_SSL');
+        
+        // Determine SSL configuration
+        let sslConfig: any = undefined;
+        if (dbSslEnv === 'true') {
+          sslConfig = { rejectUnauthorized: false };
+        } else if (dbSslEnv === 'false') {
+          sslConfig = undefined; // Explicitly disabled
+        } else if (databaseUrl) {
+          // If DATABASE_URL is present and no explicit DB_SSL setting, 
+          // assume SSL might be needed (safe default for cloud DBs)
+          sslConfig = { rejectUnauthorized: false };
+        }
         
         let dbConfig: any = {
           type: 'postgres',

@@ -5,11 +5,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 async function bootstrap() {
-  // Ensure uploads directory exists
-  const uploadsPath = path.join(process.cwd(), 'uploads');
-  if (!fs.existsSync(uploadsPath)) {
-    console.log(`Creating uploads directory at: ${uploadsPath}`);
-    fs.mkdirSync(uploadsPath, { recursive: true });
+  try {
+    // Ensure uploads directory exists
+    const uploadsPath = path.join(process.cwd(), 'uploads');
+    if (!fs.existsSync(uploadsPath)) {
+      console.log(`Creating uploads directory at: ${uploadsPath}`);
+      fs.mkdirSync(uploadsPath, { recursive: true });
+    }
+  } catch (err) {
+    console.error('Warning: Could not create uploads directory:', err);
   }
 
   const app = await NestFactory.create(AppModule);
