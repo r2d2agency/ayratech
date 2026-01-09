@@ -302,19 +302,33 @@ const EmployeesView: React.FC = () => {
       {/* Employees Tab */}
       {activeTab === 'employees' && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+          <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row justify-between items-center bg-slate-50 gap-4">
             <h2 className="font-semibold text-slate-700">Lista de Funcionários</h2>
-            <button
-              onClick={() => {
-                setEditingEmployee(null);
-                resetEmployeeForm();
-                setShowEmployeeModal(true);
-              }}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus size={20} />
-              Novo Funcionário
-            </button>
+            
+            <div className="flex flex-1 w-full md:w-auto gap-4 justify-end">
+              <div className="relative w-full md:w-64">
+                <input
+                  type="text"
+                  placeholder="Buscar funcionário..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              </div>
+              
+              <button
+                onClick={() => {
+                  setEditingEmployee(null);
+                  resetEmployeeForm();
+                  setShowEmployeeModal(true);
+                }}
+                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shrink-0"
+              >
+                <Plus size={20} />
+                Novo Funcionário
+              </button>
+            </div>
           </div>
           
           <div className="overflow-x-auto">
@@ -329,7 +343,7 @@ const EmployeesView: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {employees.map((emp) => (
+                {filteredEmployees.map((emp) => (
                   <tr key={emp.id} className="hover:bg-slate-50">
                     <td className="p-4">
                       <div className="font-medium text-slate-900">{emp.fullName}</div>

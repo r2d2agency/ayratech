@@ -8,9 +8,14 @@ const RoutesView: React.FC = () => {
   
   const [activeTab, setActiveTab] = useState<'planner' | 'editor' | 'templates' | 'rules'>('planner');
   const [promoters, setPromoters] = useState<any[]>([]);
+  const [allEmployees, setAllEmployees] = useState<any[]>([]);
   const [supermarkets, setSupermarkets] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   
+  // Filters
+  const [filterPromoterId, setFilterPromoterId] = useState<string>('');
+  const [filterSupervisorId, setFilterSupervisorId] = useState<string>('');
+
   // Editor State
   const [selectedPromoter, setSelectedPromoter] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -345,24 +350,57 @@ const RoutesView: React.FC = () => {
       {/* --- PLANNER TAB --- */}
       {activeTab === 'planner' && (
         <div className="space-y-6">
-          <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200">
-             <button onClick={() => {
-                const d = new Date(weekStart);
-                d.setDate(d.getDate() - 7);
-                setWeekStart(d);
-             }} className="p-2 hover:bg-slate-100 rounded-lg font-bold text-slate-600">
-               &larr; Semana Anterior
-             </button>
-             <h3 className="text-lg font-black text-slate-900">
-               {weekDays[0].toLocaleDateString()} - {weekDays[6].toLocaleDateString()}
-             </h3>
-             <button onClick={() => {
-                const d = new Date(weekStart);
-                d.setDate(d.getDate() + 7);
-                setWeekStart(d);
-             }} className="p-2 hover:bg-slate-100 rounded-lg font-bold text-slate-600">
-               Próxima Semana &rarr;
-             </button>
+          <div className="flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 gap-4">
+            <div className="flex items-center gap-4">
+               <button onClick={() => {
+                  const d = new Date(weekStart);
+                  d.setDate(d.getDate() - 7);
+                  setWeekStart(d);
+               }} className="p-2 hover:bg-slate-100 rounded-lg font-bold text-slate-600">
+                 &larr; Semana Anterior
+               </button>
+               <h3 className="text-lg font-black text-slate-900">
+                 {weekDays[0].toLocaleDateString()} - {weekDays[6].toLocaleDateString()}
+               </h3>
+               <button onClick={() => {
+                  const d = new Date(weekStart);
+                  d.setDate(d.getDate() + 7);
+                  setWeekStart(d);
+               }} className="p-2 hover:bg-slate-100 rounded-lg font-bold text-slate-600">
+                 Próxima Semana &rarr;
+               </button>
+            </div>
+
+            <div className="flex gap-4 w-full md:w-auto">
+               <select 
+                 value={filterPromoterId}
+                 onChange={(e) => setFilterPromoterId(e.target.value)}
+                 className="px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-600"
+               >
+                 <option value="">Todos os Promotores</option>
+                 {promoters.map(p => (
+                   <option key={p.id} value={p.id}>{p.name}</option>
+                 ))}
+               </select>
+
+               <select 
+                 value={filterSupervisorId}
+                 onChange={(e) => setFilterSupervisorId(e.target.value)}
+                 className="px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-600"
+               >
+                 <option value="">Todos os Supervisores</option>
+                 {/* Filter employees to show only potential supervisors (e.g., have 'supervisor' in role or are assigned as supervisor) 
+                     For simplicity, we'll list all employees or filter by role if possible.
+                     Let's assume supervisors have 'Supervisor' in their role name.
+                 */}
+                 {allEmployees
+                   .filter(e => e.role && e.role.name.toLowerCase().includes('supervisor'))
+                   .map(s => (
+                     <option key={s.id} value={s.id}>{s.name}</option>
+                   ))
+                 }
+               </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-7 gap-4 overflow-x-auto min-w-[1000px]">
