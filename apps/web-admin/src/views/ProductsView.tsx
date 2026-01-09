@@ -58,22 +58,30 @@ const ProductsView: React.FC = () => {
       setBrands(brandsRes.data);
       setCategories(categoriesRes.data);
 
-      const mappedProducts = productsRes.data.map((p: any) => ({
+      const mappedProducts = productsRes.data.map((p: any) => {
+        const imgUrl = p.image 
+          ? (p.image.startsWith('http') ? p.image : `${API_URL}${p.image}`)
+          : 'https://via.placeholder.com/150';
+        
+        // Debug image URL issues
+        if (p.image && !p.image.startsWith('http')) {
+           // console.log(`Product ${p.name} raw image: ${p.image}, mapped: ${imgUrl}`);
+        }
+
+        return {
         id: p.id,
         nome: p.name,
         sku: p.sku,
         categoria: p.category,
         categoryId: p.categoryRef?.id,
-        imagem: p.image 
-          ? (p.image.startsWith('http') ? p.image : `${API_URL}${p.image}`)
-          : 'https://via.placeholder.com/150',
+        imagem: imgUrl,
         brandId: p.brand?.id,
         clientId: p.client?.id,
         barcode: p.barcode,
         subcategory: p.subcategory,
         status: p.status,
         categoryRef: p.categoryRef
-      }));
+      }});
       setProducts(mappedProducts);
 
     } catch (error) {
@@ -212,6 +220,18 @@ const ProductsView: React.FC = () => {
         pId = product.categoryRef.id;
         sId = '';
       }
+    } else if (product.categoryId) {
+       // Fallback: try to find category by ID in our list
+       const cat = categories.find(c => c.id === product.categoryId);
+       if (cat) {
+         if (cat.parent) {
+            pId = cat.parent.id;
+            sId = cat.id;
+         } else {
+            pId = cat.id;
+            sId = '';
+         }
+       }
     }
 
     setSelectedParentId(pId);
@@ -221,7 +241,7 @@ const ProductsView: React.FC = () => {
       name: product.nome,
       sku: product.sku,
       category: product.categoria,
-      categoryId: product.categoryId || '',
+      categoryId: product.categoryId || product.categoryRef?.id || '',
       image: product.imagem === 'https://via.placeholder.com/150' ? '' : product.imagem,
       brandId: product.brandId || '',
       clientId: product.clientId || '',

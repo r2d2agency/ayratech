@@ -30,7 +30,15 @@ export class ProductsService {
       return await this.productsRepository.save(product);
     } catch (error) {
       if (error.code === '23505') {
-        throw new ConflictException('Já existe um produto cadastrado com este SKU ou nome.');
+        const detail = error.detail || '';
+        if (detail.includes('sku')) {
+          throw new ConflictException('Já existe um produto cadastrado com este SKU.');
+        } else if (detail.includes('barcode')) {
+          throw new ConflictException('Já existe um produto cadastrado com este Código de Barras.');
+        } else if (detail.includes('name')) {
+          throw new ConflictException('Já existe um produto cadastrado com este Nome.');
+        }
+        throw new ConflictException('Já existe um produto cadastrado com este SKU, Nome ou Código de Barras.');
       }
       console.error('Error creating product:', error);
       throw error;
@@ -69,7 +77,15 @@ export class ProductsService {
       return this.findOne(id);
     } catch (error) {
       if (error.code === '23505') {
-        throw new ConflictException('Já existe um produto cadastrado com este SKU ou nome.');
+        const detail = error.detail || '';
+        if (detail.includes('sku')) {
+          throw new ConflictException('Já existe um produto cadastrado com este SKU.');
+        } else if (detail.includes('barcode')) {
+          throw new ConflictException('Já existe um produto cadastrado com este Código de Barras.');
+        } else if (detail.includes('name')) {
+          throw new ConflictException('Já existe um produto cadastrado com este Nome.');
+        }
+        throw new ConflictException('Já existe um produto cadastrado com este SKU, Nome ou Código de Barras.');
       }
       console.error('Error updating product:', error);
       throw error;
