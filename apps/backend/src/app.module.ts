@@ -36,20 +36,20 @@ import { NotificationsModule } from './notifications/notifications.module';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
         const databaseUrl = configService.get<string>('DATABASE_URL');
+        const sslConfig = configService.get<string>('DB_SSL', 'false') === 'true' 
+          ? { rejectUnauthorized: false } 
+          : undefined;
         
         let dbConfig: any = {
           type: 'postgres',
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
           synchronize: true, // Auto-create tables (dev only)
           autoLoadEntities: true,
+          ssl: sslConfig,
         };
 
         if (databaseUrl) {
-          dbConfig = {
-            ...dbConfig,
-            url: databaseUrl,
-            ssl: { rejectUnauthorized: false }, // Force SSL for external DBs
-          };
+          dbConfig.url = databaseUrl;
         } else {
           dbConfig = {
             ...dbConfig,
@@ -58,7 +58,6 @@ import { NotificationsModule } from './notifications/notifications.module';
             username: configService.get<string>('DB_USERNAME', 'postgres'),
             password: configService.get<string>('DB_PASSWORD', 'password'),
             database: configService.get<string>('DB_DATABASE', 'ayratech_db'),
-            ssl: configService.get<string>('DB_SSL', 'false') === 'true' ? { rejectUnauthorized: false } : undefined,
           };
         }
 
