@@ -13,9 +13,10 @@ export class SupermarketsService {
   ) {}
 
   async create(createSupermarketDto: CreateSupermarketDto) {
-    const { clientIds, ...supermarketData } = createSupermarketDto;
+    const { clientIds, groupId, ...supermarketData } = createSupermarketDto;
     const supermarket = this.supermarketsRepository.create({
       ...supermarketData,
+      group: groupId ? { id: groupId } : null,
       clients: clientIds ? clientIds.map(id => ({ id })) : []
     });
     return this.supermarketsRepository.save(supermarket);

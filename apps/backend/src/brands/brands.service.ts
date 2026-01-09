@@ -13,7 +13,11 @@ export class BrandsService {
   ) {}
 
   create(createBrandDto: CreateBrandDto) {
-    const brand = this.brandsRepository.create(createBrandDto);
+    const { clientId, ...brandData } = createBrandDto;
+    const brand = this.brandsRepository.create({
+      ...brandData,
+      client: clientId ? { id: clientId } : null
+    });
     return this.brandsRepository.save(brand);
   }
 

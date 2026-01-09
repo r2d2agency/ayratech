@@ -274,7 +274,10 @@ export class EmployeesService {
 
   // Methods for compensation and documents could be added here or in separate services
   async addCompensation(data: any) {
-    const compensation = this.compensationRepository.create(data);
+    const compensation = this.compensationRepository.create({
+      ...data,
+      employee: { id: data.employeeId }
+    });
     return this.compensationRepository.save(compensation);
   }
 
@@ -288,6 +291,7 @@ export class EmployeesService {
   async addDocument(data: any) {
     const document = this.documentsRepository.create({
       ...data,
+      employee: { id: data.employeeId },
       sentAt: new Date()
     });
     const savedDoc = await this.documentsRepository.save(document);
