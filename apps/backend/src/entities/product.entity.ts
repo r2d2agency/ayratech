@@ -23,6 +23,9 @@ export class Product {
   @Column({ nullable: true })
   image: string;
 
+  @Column({ nullable: true })
+  barcode: string;
+
   @ManyToOne(() => Client, (client) => client.products)
   client: Client;
 
