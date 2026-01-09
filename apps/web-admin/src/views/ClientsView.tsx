@@ -25,6 +25,7 @@ const ClientsView: React.FC = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [detailsClient, setDetailsClient] = useState<any | null>(null);
   const [detailsTab, setDetailsTab] = useState<'products' | 'pdvs'>('products');
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Client Form State
   const [newClient, setNewClient] = useState({
@@ -286,6 +287,13 @@ const ClientsView: React.FC = () => {
       alert('Erro ao excluir cliente.');
     }
   };
+
+  const filteredClients = clients.filter(client => 
+    (client.razaoSocial || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (client.nomeFantasia || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (client.cnpj || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (client.emailPrincipal || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading) return <div className="p-8">Carregando clientes...</div>;
 

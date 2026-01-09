@@ -26,6 +26,7 @@ const EmployeesView: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Modals
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
