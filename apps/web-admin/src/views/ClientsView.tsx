@@ -148,7 +148,9 @@ const ClientsView: React.FC = () => {
   };
 
   const filteredClients = clients.filter(c => 
-    c.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.nome || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.razaoSocial || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.nomeFantasia || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (c.cnpj && c.cnpj.includes(searchTerm)) ||
     (c.emailPrincipal && c.emailPrincipal.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -287,13 +289,6 @@ const ClientsView: React.FC = () => {
       alert('Erro ao excluir cliente.');
     }
   };
-
-  const filteredClients = clients.filter(client => 
-    (client.razaoSocial || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (client.nomeFantasia || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (client.cnpj || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (client.emailPrincipal || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   if (loading) return <div className="p-8">Carregando clientes...</div>;
 
