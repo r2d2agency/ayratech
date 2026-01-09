@@ -16,7 +16,8 @@ import CategoriesView from './views/CategoriesView';
 import BrandsView from './views/BrandsView';
 import EmployeesView from './views/EmployeesView';
 import SupervisorsView from './views/SupervisorsView';
-import LoginView from './views/LoginView';
+import AppAccessView from './views/AppAccessView';
+import DocumentsView from './views/DocumentsView';
 import { BrandingProvider } from './context/BrandingContext';
 import { jwtDecode } from 'jwt-decode';
 
