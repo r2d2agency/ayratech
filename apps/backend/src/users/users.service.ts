@@ -47,14 +47,14 @@ export class UsersService implements OnModuleInit {
   async findOne(email: string): Promise<User | undefined> {
     return this.usersRepository.findOne({ 
       where: { email },
-      relations: ['role', 'employee']
+      relations: ['role']
     });
   }
 
   async findById(id: string): Promise<User | undefined> {
     return this.usersRepository.findOne({ 
       where: { id },
-      relations: ['role', 'employee']
+      relations: ['role']
     });
   }
 
