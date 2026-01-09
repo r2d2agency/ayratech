@@ -58,6 +58,13 @@ export class UsersService implements OnModuleInit {
     });
   }
 
+  async findByEmployeeId(employeeId: string): Promise<User | undefined> {
+    return this.usersRepository.findOne({ 
+      where: { employee: { id: employeeId } },
+      relations: ['role']
+    });
+  }
+
   async findAll(): Promise<User[]> {
     try {
       // Temporarily removed 'employee' relation to isolate the issue causing 500 error

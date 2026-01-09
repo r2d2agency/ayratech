@@ -58,6 +58,9 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
           {activeView === 'employees' && (
             canViewEmployees ? <EmployeesView /> : <div className="p-8 text-center text-red-500">Acesso não autorizado</div>
           )}
+          {activeView === 'supervisors' && (
+            canViewEmployees ? <SupervisorsView /> : <div className="p-8 text-center text-red-500">Acesso não autorizado</div>
+          )}
           {activeView === 'admin' && <AdminView />}
         </main>
       </div>

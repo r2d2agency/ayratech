@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import api from '../api/client';
+import api, { API_URL } from '../api/client';
 import { useBranding } from '../context/BrandingContext';
 
 interface Employee {
@@ -268,6 +268,8 @@ const EmployeesView: React.FC = () => {
       weeklyHours: 44
     });
     setFormTab('general');
+    setFacialPhotoFile(null);
+    setFacialPhotoPreview('');
   };
 
   const openEditEmployee = async (emp: any) => {
@@ -304,6 +306,16 @@ const EmployeesView: React.FC = () => {
         weeklyHours = sortedSched[0].weeklyHours;
       }
 
+      // Handle Photo
+      if (fullEmp.facialPhotoUrl) {
+          const photoUrl = fullEmp.facialPhotoUrl.startsWith('http') 
+            ? fullEmp.facialPhotoUrl 
+            : `${API_URL}/${fullEmp.facialPhotoUrl.replace(/^\//, '')}`;
+          setFacialPhotoPreview(photoUrl);
+      } else {
+          setFacialPhotoPreview('');
+      }
+
       setEmployeeForm({
         ...fullEmp,
         roleId: fullEmp.role?.id || '',
@@ -313,7 +325,9 @@ const EmployeesView: React.FC = () => {
         baseSalary: baseSalary || '',
         transportVoucher: transportVoucher || '',
         mealVoucher: mealVoucher || '',
-        weeklyHours: weeklyHours || 44
+        weeklyHours: weeklyHours || 44,
+        createAccess: !!fullEmp.appAccessEnabled,
+        appPassword: ''
       });
     } catch (error) {
       console.error('Error fetching employee details:', error);

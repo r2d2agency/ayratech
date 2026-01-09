@@ -99,11 +99,18 @@ export class EmployeesService {
     return this.employeesRepository.find({ relations: ['role', 'supervisor'] });
   }
 
-  findOne(id: string) {
-    return this.employeesRepository.findOne({ 
+  async findOne(id: string) {
+    const employee = await this.employeesRepository.findOne({ 
       where: { id }, 
-      relations: ['role', 'supervisor', 'compensations', 'workSchedules'] 
+      relations: ['role', 'supervisor', 'compensations', 'workSchedules', 'subordinates'] 
     });
+
+    if (employee) {
+      const user = await this.usersService.findByEmployeeId(employee.id);
+      (employee as any).appAccessEnabled = !!user;
+    }
+
+    return employee;
   }
 
   async update(id: string, updateEmployeeDto: UpdateEmployeeDto) {
@@ -161,6 +168,47 @@ export class EmployeesService {
         });
         await this.workScheduleRepository.save(schedule);
       }
+    }
+
+    // Handle App Access (User creation/update)
+    // createAccess might be 'true' string or boolean
+    const shouldHaveAccess = createAccess === true || createAccess === 'true' || createAccess === 'on';
+    const hasUser = (employee as any).appAccessEnabled;
+
+    if (shouldHaveAccess && !hasUser) {
+        // Create User
+        try {
+            const allRoles = await this.rolesService.findAll();
+            const promoterRole = allRoles.find(r => 
+                r.name.toLowerCase() === 'promotor' || 
+                r.name.toLowerCase() === 'promoter' || 
+                r.name.toLowerCase() === 'app_user'
+            );
+
+            if (promoterRole) {
+                 await this.usersService.create({
+                    email: employee.email,
+                    password: appPassword || 'mudar123',
+                    roleId: promoterRole.id,
+                    employeeId: employee.id,
+                    status: 'active'
+                });
+            }
+        } catch (e) {
+            console.error('Error creating user on update:', e);
+        }
+    } else if (!shouldHaveAccess && hasUser) {
+        // Remove User
+        const user = await this.usersService.findByEmployeeId(id);
+        if (user) {
+            await this.usersService.remove(user.id);
+        }
+    } else if (shouldHaveAccess && hasUser && appPassword) {
+        // Update Password
+        const user = await this.usersService.findByEmployeeId(id);
+        if (user) {
+             await this.usersService.update(user.id, { password: appPassword });
+        }
     }
 
     return this.findOne(id);

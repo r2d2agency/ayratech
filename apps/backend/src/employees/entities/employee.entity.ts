@@ -64,6 +64,9 @@ export class Employee {
   @JoinColumn({ name: 'supervisorId' })
   supervisor: Employee;
 
+  @OneToMany(() => Employee, employee => employee.supervisor)
+  subordinates: Employee[];
+
   @Column({ nullable: true })
   region: string; // unidade_regiao
 

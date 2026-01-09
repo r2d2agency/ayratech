@@ -45,7 +45,19 @@ export class EmployeesController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto) {
+  @UseInterceptors(FileInterceptor('facialPhoto', {
+    storage: diskStorage({
+      destination: './uploads/employees',
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
+      },
+    }),
+  }))
+  update(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto, @UploadedFile() file: Express.Multer.File) {
+    if (file) {
+      updateEmployeeDto.facialPhotoUrl = `/uploads/employees/${file.filename}`;
+    }
     return this.employeesService.update(id, updateEmployeeDto);
   }
 

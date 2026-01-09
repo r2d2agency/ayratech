@@ -148,6 +148,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
                 Funcionários
               </button>
               )}
+              {canViewEmployees && (
+              <button 
+                onClick={() => onNavigate('supervisors')}
+                className={`w-full text-left p-2 rounded-lg text-xs font-bold transition-all ${activeView === 'supervisors' ? 'text-[var(--primary-color)] bg-blue-50' : 'text-slate-500 hover:text-[var(--primary-color)]'}`}
+              >
+                Supervisores
+              </button>
+              )}
               <button 
                 onClick={() => onNavigate('products')}
                 className={`w-full text-left p-2 rounded-lg text-xs font-bold transition-all ${activeView === 'products' ? 'text-[var(--primary-color)] bg-blue-50' : 'text-slate-500 hover:text-[var(--primary-color)]'}`}
