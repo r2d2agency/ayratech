@@ -288,7 +288,20 @@ const RoutesView: React.FC = () => {
   const weekDays = getDaysOfWeek(weekStart);
 
   const getRoutesForDay = (dateStr: string) => {
-    return weekRoutes.filter(r => r.date === dateStr);
+    return weekRoutes.filter(r => {
+      const matchesDate = r.date === dateStr;
+      const matchesPromoter = !filterPromoterId || r.promoterId === filterPromoterId;
+      
+      let matchesSupervisor = true;
+      if (filterSupervisorId) {
+         // Find promoter to check supervisor
+         const promoter = allEmployees.find(e => e.id === r.promoterId);
+         // Check direct supervisorId or nested supervisor object
+         matchesSupervisor = !!(promoter && (promoter.supervisorId === filterSupervisorId || (promoter.supervisor && promoter.supervisor.id === filterSupervisorId)));
+      }
+
+      return matchesDate && matchesPromoter && matchesSupervisor;
+    });
   };
 
   const handleEditRoute = (route: any) => {
