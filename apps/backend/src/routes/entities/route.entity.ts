@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany } from 'typeorm';
-import { User } from '../../users/entities/user.entity';
+import { Employee } from '../../employees/entities/employee.entity';
 import { RouteItem } from './route-item.entity';
 
 @Entity()
@@ -10,8 +10,8 @@ export class Route {
   @Column({ type: 'date' })
   date: string;
 
-  @ManyToOne(() => User, { eager: true })
-  promoter: User;
+  @ManyToOne(() => Employee, { eager: true })
+  promoter: Employee;
 
   @Column()
   promoterId: string;
