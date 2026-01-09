@@ -25,6 +25,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { AppSyncModule } from './app-sync/app-sync.module';
 import { ImageAnalysisModule } from './integrations/image-analysis/image-analysis.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [

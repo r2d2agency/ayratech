@@ -217,7 +217,7 @@ export class EmployeesService {
     // Only proceed if createAccess is present in the update payload
     if (createAccess !== undefined) {
       // createAccess might be 'true' string or boolean
-      const shouldHaveAccess = createAccess === true || createAccess === 'true' || createAccess === 'on';
+      const shouldHaveAccess = String(createAccess) === 'true' || createAccess === 'on';
       const hasUser = (employee as any).appAccessEnabled;
 
       if (shouldHaveAccess && !hasUser) {
@@ -293,7 +293,7 @@ export class EmployeesService {
           title: 'Novo Documento Recebido',
           message: `Você recebeu um novo documento: ${data.type} - ${data.description || ''}`,
           type: 'document',
-          relatedId: savedDoc.id
+          relatedId: (savedDoc as any).id
         });
       }
     } catch (e) {
@@ -325,7 +325,7 @@ export class EmployeesService {
       await this.notificationsService.create({
         userId: document.senderId,
         title: 'Documento Visualizado',
-        message: `${document.employee.fullName || document.employee.name} visualizou o documento: ${document.type}`,
+        message: `${document.employee.fullName} visualizou o documento: ${document.type}`,
         type: 'info',
         relatedId: document.id
       });
