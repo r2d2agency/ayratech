@@ -5,12 +5,13 @@ import { EmployeesController } from './employees.controller';
 import { Employee } from './entities/employee.entity';
 import { EmployeeCompensation } from './entities/employee-compensation.entity';
 import { EmployeeDocument } from './entities/employee-document.entity';
+import { WorkSchedule } from '../work-schedules/entities/work-schedule.entity';
 import { UsersModule } from '../users/users.module';
 import { RolesModule } from '../roles/roles.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Employee, EmployeeCompensation, EmployeeDocument]),
+    TypeOrmModule.forFeature([Employee, EmployeeCompensation, EmployeeDocument, WorkSchedule]),
     UsersModule,
     RolesModule
   ],

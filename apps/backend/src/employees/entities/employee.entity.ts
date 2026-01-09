@@ -1,5 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { Role } from '../../roles/entities/role.entity';
+import type { EmployeeCompensation } from './employee-compensation.entity';
+import type { WorkSchedule } from '../../work-schedules/entities/work-schedule.entity';
 
 @Entity('employees')
 export class Employee {
@@ -96,9 +98,9 @@ export class Employee {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToMany(() => EmployeeCompensation, compensation => compensation.employee)
+  @OneToMany('EmployeeCompensation', (compensation: EmployeeCompensation) => compensation.employee)
   compensations: EmployeeCompensation[];
 
-  @OneToMany(() => WorkSchedule, schedule => schedule.employee)
+  @OneToMany('WorkSchedule', (schedule: WorkSchedule) => schedule.employee)
   workSchedules: WorkSchedule[];
 }
