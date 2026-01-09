@@ -22,6 +22,12 @@ export class EmployeeDocument {
   @Column()
   fileUrl: string; // arquivo_url
 
+  @Column({ nullable: true, type: 'text' })
+  description: string;
+
+  @Column({ nullable: true })
+  senderId: string; // ID do usuário que enviou (RH/Admin)
+
   @Column({ type: 'timestamp', nullable: true })
   sentAt: Date; // enviado_em
 

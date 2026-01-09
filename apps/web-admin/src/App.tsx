@@ -57,12 +57,16 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
           {activeView === 'supermarket_groups_list' && <SupermarketGroupsListView onNavigate={handleNavigate} />}
           {activeView === 'supermarket_group_form' && <SupermarketGroupFormView onNavigate={handleNavigate} />}
           {activeView === 'employees' && (
-            canViewEmployees ? <EmployeesView /> : <div className="p-8 text-center text-red-500">Acesso não autorizado</div>
+            <div className="animate-in fade-in duration-500">
+              <EmployeesView />
+            </div>
           )}
-          {activeView === 'supervisors' && (
-            canViewEmployees ? <SupervisorsView /> : <div className="p-8 text-center text-red-500">Acesso não autorizado</div>
+          {activeView === 'app_access' && (
+            canViewEmployees ? <AppAccessView /> : <div className="p-8 text-center text-red-500">Acesso não autorizado</div>
           )}
+          {activeView === 'supervisors' && <SupervisorsView />}
           {activeView === 'admin' && <AdminView />}
+          {activeView === 'documents' && <DocumentsView />}
         </main>
       </div>
     </div>

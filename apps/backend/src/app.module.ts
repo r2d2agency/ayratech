@@ -76,6 +76,7 @@ import { ImageAnalysisModule } from './integrations/image-analysis/image-analysi
     DashboardModule,
     AppSyncModule,
     ImageAnalysisModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

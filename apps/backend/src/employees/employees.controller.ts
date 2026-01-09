@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFile, Request } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -71,8 +71,37 @@ export class EmployeesController {
     return this.employeesService.addCompensation({ ...data, employeeId: id });
   }
 
+  @Get('documents/all')
+  findAllDocuments() {
+    return this.employeesService.findAllDocuments();
+  }
+
   @Post(':id/documents')
-  addDocument(@Param('id') id: string, @Body() data: any) {
-    return this.employeesService.addDocument({ ...data, employeeId: id });
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: './uploads/documents',
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
+      },
+    }),
+  }))
+  addDocument(@Param('id') id: string, @Body() data: any, @UploadedFile() file: Express.Multer.File, @Request() req: any) {
+    const fileUrl = file ? `/uploads/documents/${file.filename}` : data.fileUrl;
+    
+    // req.user is populated by JwtAuthGuard (if used on this route, which it is at controller level)
+    const senderId = req.user?.userId;
+
+    return this.employeesService.addDocument({ 
+      ...data, 
+      employeeId: id,
+      fileUrl,
+      senderId
+    });
+  }
+
+  @Patch('documents/:id/read')
+  markDocumentAsRead(@Param('id') id: string) {
+    return this.employeesService.markDocumentAsRead(id);
   }
 }

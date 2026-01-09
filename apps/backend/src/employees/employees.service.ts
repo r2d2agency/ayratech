@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { Employee } from './entities/employee.entity';
 import { EmployeeCompensation } from './entities/employee-compensation.entity';
 import { EmployeeDocument } from './entities/employee-document.entity';
@@ -9,6 +9,7 @@ import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { UsersService } from '../users/users.service';
 import { RolesService } from '../roles/roles.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class EmployeesService {
@@ -23,6 +24,7 @@ export class EmployeesService {
     private workScheduleRepository: Repository<WorkSchedule>,
     private usersService: UsersService,
     private rolesService: RolesService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async create(createEmployeeDto: CreateEmployeeDto) {
@@ -50,6 +52,25 @@ export class EmployeesService {
     }
 
     if (weeklyHours) {
+      // Close previous schedule
+      const previousSchedule = await this.workScheduleRepository.findOne({
+        where: { 
+          employeeId: savedEmployee.id,
+          validTo: IsNull()
+        },
+        order: { validFrom: 'DESC' }
+      });
+
+      if (previousSchedule) {
+          const newStart = new Date();
+          const prevEnd = new Date(newStart);
+          prevEnd.setDate(prevEnd.getDate() - 1);
+          
+          await this.workScheduleRepository.update(previousSchedule.id, {
+            validTo: prevEnd
+          });
+      }
+
       const schedule = this.workScheduleRepository.create({
         employee: savedEmployee,
         validFrom: new Date(),
@@ -95,14 +116,25 @@ export class EmployeesService {
     return savedEmployee;
   }
 
-  findAll() {
-    return this.employeesRepository.find({ relations: ['role', 'supervisor'] });
+  async findAll() {
+    const employees = await this.employeesRepository.find({ relations: ['role', 'supervisor'] });
+    
+    // Populate appAccessEnabled for all employees
+    // This is not the most efficient way (N+1), but works for now. 
+    // Optimization: Fetch all users with employeeId once.
+    const users = await this.usersService.findAll(); // Assuming findAll exists and returns all users
+    const userEmployeeIds = new Set(users.map(u => u.employeeId).filter(id => !!id));
+
+    return employees.map(emp => ({
+      ...emp,
+      appAccessEnabled: userEmployeeIds.has(emp.id)
+    }));
   }
 
   async findOne(id: string) {
     const employee = await this.employeesRepository.findOne({ 
       where: { id }, 
-      relations: ['role', 'supervisor', 'compensations', 'workSchedules', 'subordinates'] 
+      relations: ['role', 'supervisor', 'compensations', 'workSchedules', 'workSchedules.days', 'subordinates'] 
     });
 
     if (employee) {
@@ -160,6 +192,17 @@ export class EmployeesService {
       const isDifferent = !currentSchedule || Number(currentSchedule.weeklyHours) !== Number(weeklyHours);
 
       if (isDifferent) {
+        // Close previous schedule
+        if (currentSchedule && !currentSchedule.validTo) {
+             const newStart = new Date();
+             const prevEnd = new Date(newStart);
+             prevEnd.setDate(prevEnd.getDate() - 1);
+             
+             await this.workScheduleRepository.update(currentSchedule.id, {
+               validTo: prevEnd
+             });
+        }
+
         const schedule = this.workScheduleRepository.create({
           employee: employee,
           validFrom: new Date(),
@@ -171,44 +214,47 @@ export class EmployeesService {
     }
 
     // Handle App Access (User creation/update)
-    // createAccess might be 'true' string or boolean
-    const shouldHaveAccess = createAccess === 'true' || createAccess === 'on';
-    const hasUser = (employee as any).appAccessEnabled;
+    // Only proceed if createAccess is present in the update payload
+    if (createAccess !== undefined) {
+      // createAccess might be 'true' string or boolean
+      const shouldHaveAccess = createAccess === true || createAccess === 'true' || createAccess === 'on';
+      const hasUser = (employee as any).appAccessEnabled;
 
-    if (shouldHaveAccess && !hasUser) {
-        // Create User
-        try {
-            const allRoles = await this.rolesService.findAll();
-            const promoterRole = allRoles.find(r => 
-                r.name.toLowerCase() === 'promotor' || 
-                r.name.toLowerCase() === 'promoter' || 
-                r.name.toLowerCase() === 'app_user'
-            );
+      if (shouldHaveAccess && !hasUser) {
+          // Create User
+          try {
+              const allRoles = await this.rolesService.findAll();
+              const promoterRole = allRoles.find(r => 
+                  r.name.toLowerCase() === 'promotor' || 
+                  r.name.toLowerCase() === 'promoter' || 
+                  r.name.toLowerCase() === 'app_user'
+              );
 
-            if (promoterRole) {
-                 await this.usersService.create({
-                    email: employee.email,
-                    password: appPassword || 'mudar123',
-                    roleId: promoterRole.id,
-                    employeeId: employee.id,
-                    status: 'active'
-                });
-            }
-        } catch (e) {
-            console.error('Error creating user on update:', e);
-        }
-    } else if (!shouldHaveAccess && hasUser) {
-        // Remove User
-        const user = await this.usersService.findByEmployeeId(id);
-        if (user) {
-            await this.usersService.remove(user.id);
-        }
-    } else if (shouldHaveAccess && hasUser && appPassword) {
-        // Update Password
-        const user = await this.usersService.findByEmployeeId(id);
-        if (user) {
-             await this.usersService.update(user.id, { password: appPassword });
-        }
+              if (promoterRole) {
+                  await this.usersService.create({
+                      email: employee.email,
+                      password: appPassword || 'mudar123',
+                      roleId: promoterRole.id,
+                      employeeId: employee.id,
+                      status: 'active'
+                  });
+              }
+          } catch (e) {
+              console.error('Error creating user on update:', e);
+          }
+      } else if (!shouldHaveAccess && hasUser) {
+          // Remove User
+          const user = await this.usersService.findByEmployeeId(id);
+          if (user) {
+              await this.usersService.remove(user.id);
+          }
+      } else if (shouldHaveAccess && hasUser && appPassword) {
+          // Update Password
+          const user = await this.usersService.findByEmployeeId(id);
+          if (user) {
+              await this.usersService.update(user.id, { password: appPassword });
+          }
+      }
     }
 
     return this.findOne(id);
@@ -224,8 +270,67 @@ export class EmployeesService {
     return this.compensationRepository.save(compensation);
   }
 
+  async findAllDocuments() {
+    return this.documentsRepository.find({
+      relations: ['employee'],
+      order: { sentAt: 'DESC' }
+    });
+  }
+
   async addDocument(data: any) {
-    const document = this.documentsRepository.create(data);
-    return this.documentsRepository.save(document);
+    const document = this.documentsRepository.create({
+      ...data,
+      sentAt: new Date()
+    });
+    const savedDoc = await this.documentsRepository.save(document);
+
+    // Notify User if they have app access
+    try {
+      const user = await this.usersService.findByEmployeeId(data.employeeId);
+      if (user) {
+        await this.notificationsService.create({
+          userId: user.id,
+          title: 'Novo Documento Recebido',
+          message: `Você recebeu um novo documento: ${data.type} - ${data.description || ''}`,
+          type: 'document',
+          relatedId: savedDoc.id
+        });
+      }
+    } catch (e) {
+      console.error('Error notifying user about document:', e);
+    }
+
+    return savedDoc;
+  }
+
+  async markDocumentAsRead(documentId: string) {
+    const document = await this.documentsRepository.findOne({
+      where: { id: documentId },
+      relations: ['employee']
+    });
+
+    if (!document) {
+      throw new BadRequestException('Document not found');
+    }
+
+    if (document.readAt) {
+      return document; // Already read
+    }
+
+    document.readAt = new Date();
+    await this.documentsRepository.save(document);
+
+    // Notify Sender (Admin/RH) if senderId exists
+    if (document.senderId) {
+      await this.notificationsService.create({
+        userId: document.senderId,
+        title: 'Documento Visualizado',
+        message: `${document.employee.fullName || document.employee.name} visualizou o documento: ${document.type}`,
+        type: 'info',
+        relatedId: document.id
+      });
+    }
+
+    return document;
   }
 }
