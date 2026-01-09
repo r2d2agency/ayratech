@@ -22,6 +22,7 @@ import { TimeClockModule } from './time-clock/time-clock.module';
 import { AbsencesModule } from './absences/absences.module';
 import { UploadModule } from './upload/upload.module';
 import { CategoriesModule } from './categories/categories.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { CategoriesModule } from './categories/categories.module';
     AbsencesModule,
     UploadModule,
     CategoriesModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
