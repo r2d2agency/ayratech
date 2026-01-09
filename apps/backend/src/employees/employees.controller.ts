@@ -55,7 +55,9 @@ export class EmployeesController {
     }),
   }))
   update(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto, @UploadedFile() file: Express.Multer.File) {
+    console.log(`Updating employee ${id} with data:`, JSON.stringify(updateEmployeeDto, null, 2));
     if (file) {
+      console.log('Uploaded file:', file.filename);
       updateEmployeeDto.facialPhotoUrl = `/uploads/employees/${file.filename}`;
     }
     return this.employeesService.update(id, updateEmployeeDto);

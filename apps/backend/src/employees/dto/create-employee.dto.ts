@@ -101,8 +101,7 @@ export class CreateEmployeeDto {
   mealVoucher?: number;
 
   @IsOptional()
-  @IsString()
-  createAccess?: string; // Passed as string from FormData
+  createAccess?: string | boolean; // Can be string (FormData) or boolean (JSON)
 
   @IsOptional()
   @IsString()
