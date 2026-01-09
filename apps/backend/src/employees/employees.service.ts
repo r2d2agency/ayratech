@@ -229,16 +229,36 @@ export class EmployeesService {
       const hasUser = (employee as any).appAccessEnabled;
 
       if (shouldHaveAccess && !hasUser) {
-          // Create User
-          try {
-              const allRoles = await this.rolesService.findAll();
-              const promoterRole = allRoles.find(r => 
-                  r.name.toLowerCase() === 'promotor' || 
-                  r.name.toLowerCase() === 'promoter' || 
-                  r.name.toLowerCase() === 'app_user'
-              );
+          // Check if user exists with this email
+          const existingUser = await this.usersService.findOne(employee.email);
+          
+          const allRoles = await this.rolesService.findAll();
+          const promoterRole = allRoles.find(r => 
+              r.name.toLowerCase() === 'promotor' || 
+              r.name.toLowerCase() === 'promoter' || 
+              r.name.toLowerCase() === 'app_user'
+          );
 
-              if (promoterRole) {
+          if (!promoterRole) {
+             console.error('Cannot grant access: Promoter role not found');
+             return;
+          }
+
+          if (existingUser) {
+              // User exists but not linked to this employee (otherwise hasUser would be true)
+              if (!existingUser.employee || !existingUser.employee.id) {
+                  // Link existing user to this employee
+                  await this.usersService.update(existingUser.id, {
+                      employeeId: employee.id,
+                      roleId: promoterRole.id, // Ensure they have the right role
+                      status: 'active'
+                  });
+              } else {
+                  console.error(`User with email ${employee.email} is already linked to another employee`);
+              }
+          } else {
+              // Create User
+              try {
                   await this.usersService.create({
                       email: employee.email,
                       password: appPassword || 'mudar123',
@@ -246,15 +266,18 @@ export class EmployeesService {
                       employeeId: employee.id,
                       status: 'active'
                   });
+              } catch (e) {
+                  console.error('Error creating user on update:', e);
               }
-          } catch (e) {
-              console.error('Error creating user on update:', e);
           }
       } else if (!shouldHaveAccess && hasUser) {
-          // Remove User
+          // Deactivate User and Unlink Employee (instead of deleting to preserve history)
           const user = await this.usersService.findByEmployeeId(id);
           if (user) {
-              await this.usersService.remove(user.id);
+              await this.usersService.update(user.id, { 
+                   employeeId: null as any,
+                   status: 'inactive'
+               });
           }
       } else if (shouldHaveAccess && hasUser && appPassword) {
           // Update Password
@@ -289,12 +312,29 @@ export class EmployeesService {
   }
 
   async addDocument(data: any) {
+    if (!data.employeeId) {
+        throw new BadRequestException('ID do funcionário é obrigatório.');
+    }
+    if (!data.type) {
+        throw new BadRequestException('Tipo do documento é obrigatório.');
+    }
+    if (!data.fileUrl) {
+        throw new BadRequestException('Arquivo do documento é obrigatório.');
+    }
+
     const document = this.documentsRepository.create({
       ...data,
       employee: { id: data.employeeId },
       sentAt: new Date()
     });
-    const savedDoc = await this.documentsRepository.save(document);
+
+    let savedDoc;
+    try {
+        savedDoc = await this.documentsRepository.save(document);
+    } catch (error) {
+        console.error('Error saving document:', error);
+        throw new BadRequestException('Erro ao salvar documento. Verifique os dados enviados.');
+    }
 
     // Notify User if they have app access
     try {

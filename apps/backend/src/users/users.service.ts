@@ -47,7 +47,7 @@ export class UsersService implements OnModuleInit {
   async findOne(email: string): Promise<User | undefined> {
     return this.usersRepository.findOne({ 
       where: { email },
-      relations: ['role']
+      relations: ['role', 'employee']
     });
   }
 
