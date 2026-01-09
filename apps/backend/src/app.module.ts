@@ -44,6 +44,8 @@ import { NotificationsModule } from './notifications/notifications.module';
           database: configService.get<string>('DB_DATABASE', 'ayratech_db'),
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
           synchronize: true, // Auto-create tables (dev only)
+          ssl: configService.get<string>('DB_SSL', 'false') === 'true' ? { rejectUnauthorized: false } : undefined,
+          autoLoadEntities: true,
         };
         console.log('Attempting to connect to DB with:', { 
           ...dbConfig, 
