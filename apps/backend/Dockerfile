@@ -35,6 +35,7 @@ COPY --from=builder /app/package*.json ./
 
 # Create uploads directory
 RUN mkdir -p /app/uploads
+VOLUME ["/app/uploads"]
 
 # Expose the application port
 EXPOSE 3000

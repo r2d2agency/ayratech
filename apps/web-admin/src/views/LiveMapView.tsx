@@ -65,7 +65,11 @@ const LiveMapView: React.FC<LiveMapViewProps> = ({ onNavigate }) => {
       
       // Filter Supervisors
       const sups = allEmployees.filter((e: any) => 
-        e.role && (e.role.name.toLowerCase() === 'supervisor')
+        e.role && (
+          e.role.name.toLowerCase().includes('supervisor') ||
+          e.role.name.toLowerCase().includes('coordenador') ||
+          e.role.name.toLowerCase().includes('gerente')
+        )
       );
 
       setPromoters(prom);
@@ -171,7 +175,7 @@ const LiveMapView: React.FC<LiveMapViewProps> = ({ onNavigate }) => {
                 className="px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-blue-100"
               >
                 <option value="">Todos os Clientes</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.nome || c.fantasyName}</option>)}
+                {clients.map(c => <option key={c.id} value={c.id}>{c.nomeFantasia || c.razaoSocial || c.nome || c.fantasyName}</option>)}
               </select>
 
               <select
