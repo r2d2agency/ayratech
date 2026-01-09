@@ -23,6 +23,8 @@ import { AbsencesModule } from './absences/absences.module';
 import { UploadModule } from './upload/upload.module';
 import { CategoriesModule } from './categories/categories.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { AppSyncModule } from './app-sync/app-sync.module';
+import { ImageAnalysisModule } from './integrations/image-analysis/image-analysis.module';
 
 @Module({
   imports: [
@@ -72,6 +74,8 @@ import { DashboardModule } from './dashboard/dashboard.module';
     UploadModule,
     CategoriesModule,
     DashboardModule,
+    AppSyncModule,
+    ImageAnalysisModule,
   ],
   controllers: [AppController],
   providers: [AppService],
