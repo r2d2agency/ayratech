@@ -18,6 +18,7 @@ import EmployeesView from './views/EmployeesView';
 import SupervisorsView from './views/SupervisorsView';
 import AppAccessView from './views/AppAccessView';
 import DocumentsView from './views/DocumentsView';
+import LoginView from './views/LoginView';
 import { BrandingProvider } from './context/BrandingContext';
 import { jwtDecode } from 'jwt-decode';
 
