@@ -499,6 +499,7 @@ const EmployeesView: React.FC = () => {
 
             <form onSubmit={handleSaveEmployee} className="overflow-y-auto p-6 flex-1">
               {formTab === 'general' && (
+                <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="col-span-2">
                     <label className="block text-sm font-medium text-slate-700 mb-1">Nome Completo</label>
@@ -672,6 +673,7 @@ const EmployeesView: React.FC = () => {
                     </div>
                   )}
                 </div>
+                </>
               )}
 
               {formTab === 'address' && (
