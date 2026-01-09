@@ -57,8 +57,12 @@ const EmployeesView: React.FC = () => {
     transportVoucher: '',
     mealVoucher: '',
     // Schedule (simplified)
-    weeklyHours: 44
+    weeklyHours: 44,
+    facialPhotoUrl: ''
   });
+
+  const [facialPhotoFile, setFacialPhotoFile] = useState<File | null>(null);
+  const [facialPhotoPreview, setFacialPhotoPreview] = useState<string>('');
 
   const [roleForm, setRoleForm] = useState({
     name: '',
@@ -172,70 +176,42 @@ const EmployeesView: React.FC = () => {
 
   const handleSaveEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateCPF(employeeForm.cpf)) {
-      alert('CPF inválido. Por favor, verifique os dígitos.');
-      setCpfError('CPF inválido');
+    if (cpfError) {
+      alert('Corrija o CPF antes de salvar.');
       return;
     }
-    setCpfError('');
 
     try {
-      // Validate required fields that might be in other tabs
-      const requiredFields = [
-        { field: 'addressZip', label: 'CEP' },
-        { field: 'addressStreet', label: 'Logradouro' },
-        { field: 'addressNumber', label: 'Número' },
-        { field: 'addressDistrict', label: 'Bairro' },
-        { field: 'addressCity', label: 'Cidade' },
-        { field: 'addressState', label: 'Estado' },
-        { field: 'internalCode', label: 'Matrícula Interna' },
-        { field: 'admissionDate', label: 'Data de Admissão' }
-      ];
-
-      const missingFields = requiredFields.filter(f => !employeeForm[f.field as keyof typeof employeeForm]);
+      const formData = new FormData();
       
-      if (missingFields.length > 0) {
-        const missingLabels = missingFields.map(f => f.label).join(', ');
-        alert(`Por favor, preencha os seguintes campos obrigatórios: ${missingLabels}`);
-        return;
+      // Append all form fields
+      Object.keys(employeeForm).forEach(key => {
+        const value = (employeeForm as any)[key];
+        if (value !== null && value !== undefined && value !== '') {
+            formData.append(key, value);
+        }
+      });
+
+      if (facialPhotoFile) {
+        formData.append('facialPhoto', facialPhotoFile);
       }
 
-      const payload = {
-        ...employeeForm,
-        birthDate: employeeForm.birthDate || undefined,
-        roleId: employeeForm.roleId || undefined,
-        supervisorId: employeeForm.supervisorId || undefined,
-        baseSalary: employeeForm.baseSalary ? Number(employeeForm.baseSalary) : undefined,
-        transportVoucher: employeeForm.transportVoucher ? Number(employeeForm.transportVoucher) : undefined,
-        mealVoucher: employeeForm.mealVoucher ? Number(employeeForm.mealVoucher) : undefined,
-      };
-      console.log('Sending employee payload:', payload);
       if (editingEmployee) {
-        await api.patch(`/employees/${editingEmployee.id}`, payload);
+        await api.patch(`/employees/${editingEmployee.id}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        alert('Funcionário atualizado com sucesso!');
       } else {
-        await api.post('/employees', payload);
+        await api.post('/employees', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        alert('Funcionário cadastrado com sucesso!');
       }
       setShowEmployeeModal(false);
-      setEditingEmployee(null);
-      resetEmployeeForm();
       fetchEmployees();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving employee:', error);
-      
-      if (error?.response?.status === 401) {
-        alert('Sessão expirada ou não autenticado. Faça login para continuar.');
-      } else if (error?.response?.data) {
-        // Show full error details for debugging
-        const errorData = error.response.data;
-        const errorMessage = typeof errorData === 'object' 
-          ? JSON.stringify(errorData, null, 2)
-          : String(errorData);
-        alert(`Erro ao salvar (Detalhes do Servidor):\n${errorMessage}`);
-        console.error('Server error details:', errorData);
-      } else {
-        alert('Erro ao salvar funcionário. Verifique se o CPF ou Matrícula já existem.');
-      }
+      alert('Erro ao salvar funcionário.');
     }
   };
 

@@ -25,13 +25,23 @@ const RoutesView: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const [usersRes, supermarketsRes] = await Promise.all([
-        api.get('/users'),
+      const [employeesRes, supermarketsRes] = await Promise.all([
+        api.get('/employees'),
         api.get('/supermarkets')
       ]);
       
-      const promotersList = usersRes.data.filter((u: any) => u.role === 'promoter');
-      setPromoters(promotersList);
+      // Filter for employees with role 'Promotor' (case insensitive)
+      const promotersList = employeesRes.data.filter((e: any) => 
+        e.role && (e.role.name.toLowerCase() === 'promotor' || e.role.name.toLowerCase() === 'promoter')
+      );
+      
+      // Map fullName to name for consistency with UI
+      const formattedPromoters = promotersList.map((p: any) => ({
+        ...p,
+        name: p.fullName || p.name || 'Sem Nome'
+      }));
+
+      setPromoters(formattedPromoters);
       setSupermarkets(supermarketsRes.data);
       fetchRules();
     } catch (error) {

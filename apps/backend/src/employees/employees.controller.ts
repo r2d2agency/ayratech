@@ -16,7 +16,7 @@ export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor('photo', {
+  @UseInterceptors(FileInterceptor('facialPhoto', {
     storage: diskStorage({
       destination: './uploads/employees',
       filename: (req, file, cb) => {
