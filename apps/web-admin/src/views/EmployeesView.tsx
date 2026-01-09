@@ -176,6 +176,12 @@ const EmployeesView: React.FC = () => {
     }
   };
 
+  const filteredEmployees = employees.filter(emp => 
+    emp.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    emp.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (emp.role && emp.role.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
   const handleSaveEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cpfError) {

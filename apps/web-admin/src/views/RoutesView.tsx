@@ -75,6 +75,7 @@ const RoutesView: React.FC = () => {
       }));
 
       setPromoters(formattedPromoters);
+      setAllEmployees(employeesRes.data);
       setSupermarkets(supermarketsRes.data);
       setProducts(productsRes.data);
       setTemplates(templatesRes.data);

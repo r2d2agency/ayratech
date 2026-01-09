@@ -146,6 +146,12 @@ const ClientsView: React.FC = () => {
     }
   };
 
+  const filteredClients = clients.filter(c => 
+    c.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.cnpj && c.cnpj.includes(searchTerm)) ||
+    (c.emailPrincipal && c.emailPrincipal.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
   const handleCreateContract = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
