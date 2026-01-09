@@ -408,9 +408,15 @@ const RoutesView: React.FC = () => {
                      Let's assume supervisors have 'Supervisor' in their role name.
                  */}
                  {allEmployees
-                   .filter(e => e.role && e.role.name.toLowerCase().includes('supervisor'))
+                   .filter(e => 
+                     e.role && (
+                       e.role.name.toLowerCase().includes('supervisor') ||
+                       e.role.name.toLowerCase().includes('coordenador') ||
+                       e.role.name.toLowerCase().includes('gerente')
+                     )
+                   )
                    .map(s => (
-                     <option key={s.id} value={s.id}>{s.name}</option>
+                     <option key={s.id} value={s.id}>{s.fullName || s.name}</option>
                    ))
                  }
                </select>
