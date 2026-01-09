@@ -107,4 +107,9 @@ export class CreateEmployeeDto {
   @IsOptional()
   @IsString()
   appPassword?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  weeklyHours?: number;
 }

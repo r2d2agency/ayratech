@@ -270,14 +270,63 @@ const EmployeesView: React.FC = () => {
     setFormTab('general');
   };
 
-  const openEditEmployee = (emp: any) => {
+  const openEditEmployee = async (emp: any) => {
     setEditingEmployee(emp);
-    setEmployeeForm({
-      ...emp,
-      roleId: emp.role?.id || '',
-      birthDate: emp.birthDate ? emp.birthDate.split('T')[0] : '',
-      admissionDate: emp.admissionDate ? emp.admissionDate.split('T')[0] : '',
-    });
+    
+    try {
+      // Load basic data first to open modal quickly or just wait? 
+      // Let's fetch first to ensure data is there.
+      const response = await api.get(`/employees/${emp.id}`);
+      const fullEmp = response.data;
+
+      // Extract latest compensation
+      let baseSalary = '';
+      let transportVoucher = '';
+      let mealVoucher = '';
+
+      if (fullEmp.compensations && fullEmp.compensations.length > 0) {
+        // Sort by validFrom descending to get the most recent
+        const sortedComp = fullEmp.compensations.sort((a: any, b: any) => 
+          new Date(b.validFrom).getTime() - new Date(a.validFrom).getTime()
+        );
+        const currentComp = sortedComp[0];
+        baseSalary = currentComp.baseSalary;
+        transportVoucher = currentComp.transportVoucher;
+        mealVoucher = currentComp.mealVoucher;
+      }
+
+      // Extract latest schedule
+      let weeklyHours = 44;
+      if (fullEmp.workSchedules && fullEmp.workSchedules.length > 0) {
+        const sortedSched = fullEmp.workSchedules.sort((a: any, b: any) => 
+          new Date(b.validFrom).getTime() - new Date(a.validFrom).getTime()
+        );
+        weeklyHours = sortedSched[0].weeklyHours;
+      }
+
+      setEmployeeForm({
+        ...fullEmp,
+        roleId: fullEmp.role?.id || '',
+        supervisorId: fullEmp.supervisor?.id || '',
+        birthDate: fullEmp.birthDate ? fullEmp.birthDate.split('T')[0] : '',
+        admissionDate: fullEmp.admissionDate ? fullEmp.admissionDate.split('T')[0] : '',
+        baseSalary: baseSalary || '',
+        transportVoucher: transportVoucher || '',
+        mealVoucher: mealVoucher || '',
+        weeklyHours: weeklyHours || 44
+      });
+    } catch (error) {
+      console.error('Error fetching employee details:', error);
+      // Fallback to basic info if fetch fails
+      setEmployeeForm({
+        ...emp,
+        roleId: emp.role?.id || '',
+        supervisorId: emp.supervisor?.id || '',
+        birthDate: emp.birthDate ? emp.birthDate.split('T')[0] : '',
+        admissionDate: emp.admissionDate ? emp.admissionDate.split('T')[0] : '',
+      });
+    }
+
     setShowEmployeeModal(true);
   };
 

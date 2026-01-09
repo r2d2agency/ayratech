@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Employee } from './entities/employee.entity';
 import { EmployeeCompensation } from './entities/employee-compensation.entity';
 import { EmployeeDocument } from './entities/employee-document.entity';
+import { WorkSchedule } from '../work-schedules/entities/work-schedule.entity';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { UsersService } from '../users/users.service';
@@ -18,12 +19,14 @@ export class EmployeesService {
     private compensationRepository: Repository<EmployeeCompensation>,
     @InjectRepository(EmployeeDocument)
     private documentsRepository: Repository<EmployeeDocument>,
+    @InjectRepository(WorkSchedule)
+    private workScheduleRepository: Repository<WorkSchedule>,
     private usersService: UsersService,
     private rolesService: RolesService,
   ) {}
 
   async create(createEmployeeDto: CreateEmployeeDto) {
-    const { baseSalary, transportVoucher, mealVoucher, createAccess, appPassword, ...employeeData } = createEmployeeDto;
+    const { baseSalary, transportVoucher, mealVoucher, createAccess, appPassword, weeklyHours, ...employeeData } = createEmployeeDto;
     
     // Check if email already exists in employees
     const existingEmployee = await this.employeesRepository.findOne({ where: { email: employeeData.email } });
@@ -44,6 +47,16 @@ export class EmployeesService {
         mealVoucher: mealVoucher || 0
       });
       await this.compensationRepository.save(compensation);
+    }
+
+    if (weeklyHours) {
+      const schedule = this.workScheduleRepository.create({
+        employee: savedEmployee,
+        validFrom: new Date(),
+        weeklyHours: weeklyHours,
+        timezone: 'America/Sao_Paulo'
+      });
+      await this.workScheduleRepository.save(schedule);
     }
 
     // Handle User Creation for App Access
@@ -87,11 +100,70 @@ export class EmployeesService {
   }
 
   findOne(id: string) {
-    return this.employeesRepository.findOne({ where: { id }, relations: ['role', 'supervisor'] });
+    return this.employeesRepository.findOne({ 
+      where: { id }, 
+      relations: ['role', 'supervisor', 'compensations', 'workSchedules'] 
+    });
   }
 
-  update(id: string, updateEmployeeDto: UpdateEmployeeDto) {
-    return this.employeesRepository.update(id, updateEmployeeDto);
+  async update(id: string, updateEmployeeDto: UpdateEmployeeDto) {
+    const { baseSalary, transportVoucher, mealVoucher, weeklyHours, createAccess, appPassword, ...employeeData } = updateEmployeeDto;
+
+    // Update basic info if there are fields to update
+    if (Object.keys(employeeData).length > 0) {
+      await this.employeesRepository.update(id, employeeData);
+    }
+
+    const employee = await this.findOne(id);
+    if (!employee) return null;
+
+    // Handle Compensation
+    if (baseSalary !== undefined || transportVoucher !== undefined || mealVoucher !== undefined) {
+      const compensations = employee.compensations || [];
+      const currentComp = compensations.sort((a, b) => new Date(b.validFrom).getTime() - new Date(a.validFrom).getTime())[0];
+
+      const newSalary = baseSalary !== undefined ? baseSalary : currentComp?.baseSalary;
+      const newTransport = transportVoucher !== undefined ? transportVoucher : currentComp?.transportVoucher;
+      const newMeal = mealVoucher !== undefined ? mealVoucher : currentComp?.mealVoucher;
+
+      // Check if anything changed
+      const isDifferent = !currentComp || 
+        Number(currentComp.baseSalary) !== Number(newSalary) || 
+        Number(currentComp.transportVoucher) !== Number(newTransport) || 
+        Number(currentComp.mealVoucher) !== Number(newMeal);
+
+      if (isDifferent && newSalary !== undefined) { // Ensure we have at least a salary
+        const compensation = this.compensationRepository.create({
+          employee: employee,
+          validFrom: new Date(),
+          remunerationType: 'mensal',
+          baseSalary: newSalary,
+          transportVoucher: newTransport || 0,
+          mealVoucher: newMeal || 0
+        });
+        await this.compensationRepository.save(compensation);
+      }
+    }
+
+    // Handle Schedule
+    if (weeklyHours !== undefined) {
+      const schedules = employee.workSchedules || [];
+      const currentSchedule = schedules.sort((a, b) => new Date(b.validFrom).getTime() - new Date(a.validFrom).getTime())[0];
+      
+      const isDifferent = !currentSchedule || Number(currentSchedule.weeklyHours) !== Number(weeklyHours);
+
+      if (isDifferent) {
+        const schedule = this.workScheduleRepository.create({
+          employee: employee,
+          validFrom: new Date(),
+          weeklyHours: weeklyHours,
+          timezone: 'America/Sao_Paulo'
+        });
+        await this.workScheduleRepository.save(schedule);
+      }
+    }
+
+    return this.findOne(id);
   }
 
   remove(id: string) {

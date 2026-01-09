@@ -1,5 +1,7 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { Role } from '../../roles/entities/role.entity';
+import { EmployeeCompensation } from './employee-compensation.entity';
+import { WorkSchedule } from '../../work-schedules/entities/work-schedule.entity';
 
 @Entity('employees')
 export class Employee {
@@ -92,4 +94,10 @@ export class Employee {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @OneToMany(() => EmployeeCompensation, compensation => compensation.employee)
+  compensations: EmployeeCompensation[];
+
+  @OneToMany(() => WorkSchedule, schedule => schedule.employee)
+  workSchedules: WorkSchedule[];
 }
