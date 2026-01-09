@@ -172,7 +172,7 @@ export class EmployeesService {
 
     // Handle App Access (User creation/update)
     // createAccess might be 'true' string or boolean
-    const shouldHaveAccess = createAccess === true || createAccess === 'true' || createAccess === 'on';
+    const shouldHaveAccess = createAccess === 'true' || createAccess === 'on';
     const hasUser = (employee as any).appAccessEnabled;
 
     if (shouldHaveAccess && !hasUser) {
