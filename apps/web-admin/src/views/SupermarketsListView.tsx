@@ -1,11 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Store, Edit, Trash2, X, Search, MapPin } from 'lucide-react';
+import { Store, Edit, Trash2, X, Search, MapPin, Map as MapIcon, List } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 import api from '../api/client';
 import { useBranding } from '../context/BrandingContext';
 import { ViewType, SupermarketGroup } from '../types';
 import MapModal from '../components/MapModal';
 import { validateCNPJ } from '../utils/validators';
 import { formatCNPJ } from '../utils/formatters';
+
+// Fix for default marker icon
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34]
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
 
 interface SupermarketsListViewProps {
   onNavigate: (view: ViewType) => void;
@@ -16,8 +33,12 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
   const [supermarkets, setSupermarkets] = useState<any[]>([]);
   const [groups, setGroups] = useState<SupermarketGroup[]>([]);
   const [clients, setClients] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [filterClient, setFilterClient] = useState('');
+  const [filterProduct, setFilterProduct] = useState('');
   
   // Modal & Form State
   const [showModal, setShowModal] = useState(false);
@@ -45,14 +66,16 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
 
   const fetchData = async () => {
     try {
-      const [supermarketsRes, groupsRes, clientsRes] = await Promise.all([
+      const [supermarketsRes, groupsRes, clientsRes, productsRes] = await Promise.all([
         api.get('/supermarkets'),
         api.get('/supermarket-groups'),
-        api.get('/clients')
+        api.get('/clients'),
+        api.get('/products')
       ]);
       setSupermarkets(supermarketsRes.data);
       setGroups(groupsRes.data);
       setClients(clientsRes.data);
+      setProducts(productsRes.data);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -224,11 +247,25 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
 
   if (loading) return <div className="p-8">Carregando supermercados...</div>;
 
-  const filteredSupermarkets = supermarkets.filter(s => 
-    (s.fantasyName && s.fantasyName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (s.city && s.city.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (s.group?.name && s.group.name.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredSupermarkets = supermarkets.filter(s => {
+    const matchesSearch = (s.fantasyName && s.fantasyName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (s.city && s.city.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (s.group?.name && s.group.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesClient = !filterClient || (s.clients && s.clients.some((c: any) => c.id === filterClient));
+
+    let matchesProduct = true;
+    if (filterProduct) {
+       const product = products.find(p => p.id === filterProduct);
+       if (product && product.clientId) {
+           matchesProduct = s.clients && s.clients.some((c: any) => c.id === product.clientId);
+       } else {
+           matchesProduct = false;
+       }
+    }
+
+    return matchesSearch && matchesClient && matchesProduct;
+  });
 
   return (
     <div className="animate-in fade-in duration-500 space-y-8 relative">
@@ -247,18 +284,56 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
       </div>
 
       <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className="p-6 border-b border-slate-100 flex gap-4">
-            <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                <input 
-                    type="text" 
-                    placeholder="Buscar por nome, cidade ou rede..." 
-                    className="w-full pl-12 h-12 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all text-sm font-medium"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
+        <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row gap-4 justify-between items-center">
+             <div className="flex gap-2 w-full md:w-auto">
+                <button
+                   onClick={() => setViewMode('list')}
+                   className={`p-2 rounded-xl border transition-all ${viewMode === 'list' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'border-slate-200 text-slate-400 hover:bg-slate-50'}`}
+                   title="Visualização em Lista"
+                >
+                   <List size={20} />
+                </button>
+                <button
+                   onClick={() => setViewMode('map')}
+                   className={`p-2 rounded-xl border transition-all ${viewMode === 'map' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'border-slate-200 text-slate-400 hover:bg-slate-50'}`}
+                   title="Visualização em Mapa"
+                >
+                   <MapIcon size={20} />
+                </button>
+             </div>
+
+            <div className="flex flex-col md:flex-row gap-4 flex-1 w-full">
+                 <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                    <input 
+                        type="text" 
+                        placeholder="Buscar por nome, cidade ou rede..." 
+                        className="w-full pl-12 h-12 rounded-xl border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all text-sm font-medium"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                 </div>
+                 
+                 <select
+                    value={filterClient}
+                    onChange={(e) => setFilterClient(e.target.value)}
+                    className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium outline-none focus:ring-4 focus:ring-blue-100 transition-all min-w-[200px]"
+                 >
+                    <option value="">Todos os Clientes</option>
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.nome || c.fantasyName || c.razaoSocial}</option>)}
+                 </select>
+
+                 <select
+                    value={filterProduct}
+                    onChange={(e) => setFilterProduct(e.target.value)}
+                    className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium outline-none focus:ring-4 focus:ring-blue-100 transition-all min-w-[200px]"
+                 >
+                    <option value="">Todos os Produtos</option>
+                    {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                 </select>
             </div>
         </div>
+        {viewMode === 'list' ? (
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-50/80 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
@@ -330,6 +405,35 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
             ))}
           </tbody>
         </table>
+        ) : (
+           <div className="h-[600px] w-full relative z-0">
+              <MapContainer center={[-14.2350, -51.9253]} zoom={4} style={{ height: '100%', width: '100%' }}>
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  />
+                  {filteredSupermarkets.filter(s => s.latitude && s.longitude).map(s => (
+                      <Marker key={s.id} position={[parseFloat(s.latitude), parseFloat(s.longitude)]}>
+                          <Popup>
+                              <div className="min-w-[200px]">
+                                  <strong className="block text-lg mb-1">{s.fantasyName}</strong>
+                                  <p className="text-sm text-gray-600 mb-2">{s.street}, {s.number} - {s.neighborhood}</p>
+                                  <p className="text-sm text-gray-600 mb-2">{s.city} - {s.state}</p>
+                                  <div className="flex gap-2 mt-2">
+                                      <button 
+                                        onClick={() => handleEdit(s)}
+                                        className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition-colors"
+                                      >
+                                        Editar
+                                      </button>
+                                  </div>
+                              </div>
+                          </Popup>
+                      </Marker>
+                  ))}
+              </MapContainer>
+           </div>
+        )}
       </div>
 
       {/* Modal de Cadastro/Edição */}
