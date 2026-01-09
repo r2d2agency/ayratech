@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Route } from './entities/route.entity';
@@ -114,18 +114,64 @@ export class RoutesService {
     });
   }
 
-  update(id: string, updateRouteDto: UpdateRouteDto) {
-    const { promoterId, ...routeData } = updateRouteDto;
-    
-    if (promoterId !== undefined) {
-      return this.routesRepository.save({
+  async update(id: string, updateRouteDto: UpdateRouteDto) {
+    const route = await this.findOne(id);
+    if (!route) {
+        throw new BadRequestException('Route not found');
+    }
+
+    // Check if route can be edited
+    if (route.status === 'COMPLETED') {
+        throw new BadRequestException('Cannot edit a completed route');
+    }
+
+    // Check if any item has started (execution started)
+    const hasStarted = route.items?.some(item => item.checkInTime || (item.status !== 'PENDING' && item.status !== 'SKIPPED'));
+    if (hasStarted) {
+        throw new BadRequestException('Cannot edit a route that has already started execution');
+    }
+
+    const { items, promoterId, ...routeData } = updateRouteDto;
+
+    // Update basic fields
+    await this.routesRepository.save({
         id,
         ...routeData,
-        promoter: promoterId ? { id: promoterId } : null,
-      });
+        promoter: promoterId ? { id: promoterId } : undefined,
+    });
+
+    // Update items if provided
+    if (items) {
+        // Remove existing items (Cascade will handle products)
+        if (route.items && route.items.length > 0) {
+             await this.routeItemsRepository.remove(route.items);
+        }
+
+        // Create new items
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const routeItem = this.routeItemsRepository.create({
+                supermarket: { id: item.supermarketId },
+                route: { id: id },
+                order: item.order || i + 1,
+                startTime: item.startTime,
+                estimatedDuration: item.estimatedDuration
+            });
+            const savedItem = await this.routeItemsRepository.save(routeItem);
+
+            if (item.productIds && item.productIds.length > 0) {
+                const productEntities = item.productIds.map(productId => 
+                    this.routeItemProductsRepository.create({
+                        routeItem: { id: savedItem.id },
+                        product: { id: productId }
+                    })
+                );
+                await this.routeItemProductsRepository.save(productEntities);
+            }
+        }
     }
     
-    return this.routesRepository.update(id, routeData);
+    return this.findOne(id);
   }
 
   remove(id: string) {

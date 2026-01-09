@@ -188,14 +188,7 @@ const RoutesView: React.FC = () => {
       };
 
       if (editingRouteId) {
-        // Update logic would go here if we had a PATCH endpoint for full update
-        // For now, we might rely on recreating or specific update DTOs.
-        // Assuming we just create new ones or need a better update flow.
-        // Let's stick to Create for now as "Save" usually implies creating/overwriting in this simple MVP.
-        // Or better: Delete & Create? No, that loses history.
-        // Ideally we update. I'll use create for now as the 'Update' endpoint is partial.
-        alert('Edição de rota existente ainda não implementada completamente. Criando nova rota.');
-        await api.post('/routes', payload);
+        await api.patch(`/routes/${editingRouteId}`, payload);
       } else {
         await api.post('/routes', payload);
       }
