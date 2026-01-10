@@ -142,7 +142,7 @@ export class RoutesService {
       await this.routesRepository.save({
           id,
           ...routeData,
-          promoter: promoterId === null ? null : (promoterId ? { id: promoterId } : undefined),
+          promoter: (promoterId === null || promoterId === '') ? null : (promoterId ? { id: promoterId } : undefined),
       });
 
       // Update items if provided
@@ -153,9 +153,8 @@ export class RoutesService {
           const existingItemIds = existingItems.map(i => i.id);
 
           if (existingItemIds.length > 0) {
-            // 2. Manually delete products first (ignoring DB cascade state to be safe)
-            // Note: routeItem is the property name in RouteItemProduct
-            await this.routeItemProductsRepository.delete({ routeItem: { id: In(existingItemIds) } });
+            // 2. Manually delete products first using primitive column for safety
+            await this.routeItemProductsRepository.delete({ routeItemId: In(existingItemIds) });
             
             // 3. Delete items
             await this.routeItemsRepository.delete({ id: In(existingItemIds) });
@@ -187,8 +186,10 @@ export class RoutesService {
       
       return this.findOne(id);
     } catch (error) {
-      console.error('Error updating route:', error);
-      throw new BadRequestException('Erro ao atualizar rota: ' + error.message);
+      console.error('Error updating route (Stack):', error.stack);
+      console.error('Error updating route (Message):', error.message);
+      if (error instanceof BadRequestException) throw error;
+      throw new InternalServerErrorException(`Erro ao salvar rota: ${error.message}`);
     }
   }
 
