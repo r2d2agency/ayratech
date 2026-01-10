@@ -126,7 +126,11 @@ export class RoutesService {
     }
 
     // Check if any item has started (execution started)
-    const hasStarted = route.items?.some(item => item.checkInTime || (item.status !== 'PENDING' && item.status !== 'SKIPPED'));
+    const hasStarted = route.items?.some(item => 
+        item.checkInTime || 
+        (item.status !== 'PENDING' && item.status !== 'SKIPPED')
+    );
+
     if (hasStarted) {
         throw new BadRequestException('Cannot edit a route that has already started execution');
     }
@@ -144,7 +148,9 @@ export class RoutesService {
     if (items) {
         // Remove existing items (Cascade will handle products)
         if (route.items && route.items.length > 0) {
-             await this.routeItemsRepository.remove(route.items);
+            // We need to manually delete route items because TypeORM doesn't always handle OneToMany cascade delete perfectly with save() on the parent
+            // especially when replacing the whole collection.
+            await this.routeItemsRepository.remove(route.items);
         }
 
         // Create new items
