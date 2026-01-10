@@ -298,7 +298,7 @@ const RoutesView: React.FC = () => {
   };
 
   const handleEditRoute = (route: any) => {
-    setSelectedPromoter(route.promoterId);
+    setSelectedPromoter(route.promoterId || route.promoter?.id);
     setSelectedDate(route.date);
     setRouteStatus(route.status);
     setEditingRouteId(route.id);
