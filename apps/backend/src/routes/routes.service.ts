@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, DataSource } from 'typeorm';
 import { Route } from './entities/route.entity';
 import { RouteItem } from './entities/route-item.entity';
 import { RouteItemProduct } from './entities/route-item-product.entity';
@@ -19,6 +19,7 @@ export class RoutesService {
     private routeItemProductsRepository: Repository<RouteItemProduct>,
     @InjectRepository(RouteRule)
     private routeRulesRepository: Repository<RouteRule>,
+    private dataSource: DataSource,
   ) {}
 
   async create(createRouteDto: CreateRouteDto) {
