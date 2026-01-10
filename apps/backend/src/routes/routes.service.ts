@@ -137,47 +137,59 @@ export class RoutesService {
 
     const { items, promoterId, ...routeData } = updateRouteDto;
 
-    // Update basic fields
-    await this.routesRepository.save({
-        id,
-        ...routeData,
-        promoter: promoterId ? { id: promoterId } : undefined,
-    });
+    try {
+      // Update basic fields
+      await this.routesRepository.save({
+          id,
+          ...routeData,
+          promoter: promoterId === null ? null : (promoterId ? { id: promoterId } : undefined),
+      });
 
-    // Update items if provided
-    if (items) {
-        // Remove existing items (Cascade will handle products)
-        if (route.items && route.items.length > 0) {
-            // We need to manually delete route items because TypeORM doesn't always handle OneToMany cascade delete perfectly with save() on the parent
-            // especially when replacing the whole collection.
-            await this.routeItemsRepository.remove(route.items);
-        }
+      // Update items if provided
+      if (items) {
+          // Robust deletion strategy:
+          // 1. Identify existing items
+          const existingItems = route.items || [];
+          const existingItemIds = existingItems.map(i => i.id);
 
-        // Create new items
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-            const routeItem = this.routeItemsRepository.create({
-                supermarket: { id: item.supermarketId },
-                route: { id: id },
-                order: item.order || i + 1,
-                startTime: item.startTime,
-                estimatedDuration: item.estimatedDuration
-            });
-            const savedItem = await this.routeItemsRepository.save(routeItem);
+          if (existingItemIds.length > 0) {
+            // 2. Manually delete products first (ignoring DB cascade state to be safe)
+            // Note: routeItem is the property name in RouteItemProduct
+            await this.routeItemProductsRepository.delete({ routeItem: { id: In(existingItemIds) } });
+            
+            // 3. Delete items
+            await this.routeItemsRepository.delete({ id: In(existingItemIds) });
+          }
 
-            if (item.productIds && item.productIds.length > 0) {
-                const productEntities = item.productIds.map(productId => 
-                    this.routeItemProductsRepository.create({
-                        routeItem: { id: savedItem.id },
-                        product: { id: productId }
-                    })
-                );
-                await this.routeItemProductsRepository.save(productEntities);
-            }
-        }
+          // Create new items
+          for (let i = 0; i < items.length; i++) {
+              const item = items[i];
+              const routeItem = this.routeItemsRepository.create({
+                  supermarket: { id: item.supermarketId },
+                  route: { id: id },
+                  order: item.order || i + 1,
+                  startTime: item.startTime,
+                  estimatedDuration: item.estimatedDuration
+              });
+              const savedItem = await this.routeItemsRepository.save(routeItem);
+
+              if (item.productIds && item.productIds.length > 0) {
+                  const productEntities = item.productIds.map(productId => 
+                      this.routeItemProductsRepository.create({
+                          routeItem: { id: savedItem.id },
+                          product: { id: productId }
+                      })
+                  );
+                  await this.routeItemProductsRepository.save(productEntities);
+              }
+          }
+      }
+      
+      return this.findOne(id);
+    } catch (error) {
+      console.error('Error updating route:', error);
+      throw new BadRequestException('Erro ao atualizar rota: ' + error.message);
     }
-    
-    return this.findOne(id);
   }
 
   remove(id: string) {
