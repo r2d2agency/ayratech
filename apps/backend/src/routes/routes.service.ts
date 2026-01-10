@@ -115,81 +115,85 @@ export class RoutesService {
   }
 
   async update(id: string, updateRouteDto: UpdateRouteDto) {
-    const route = await this.findOne(id);
-    if (!route) {
-        throw new BadRequestException('Route not found');
-    }
-
-    // Check if route can be edited
-    if (route.status === 'COMPLETED') {
-        throw new BadRequestException('Cannot edit a completed route');
-    }
-
-    // Check if any item has started (execution started)
-    const hasStarted = route.items?.some(item => 
-        item.checkInTime || 
-        (item.status !== 'PENDING' && item.status !== 'SKIPPED')
-    );
-
-    if (hasStarted) {
-        throw new BadRequestException('Cannot edit a route that has already started execution');
-    }
-
-    const { items, promoterId, ...routeData } = updateRouteDto;
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
     try {
-      // Update basic fields
-      await this.routesRepository.save({
+      // 1. Fetch route with relations using queryRunner
+      const route = await queryRunner.manager.findOne(Route, {
+        where: { id },
+        relations: ['items', 'items.products']
+      });
+
+      if (!route) {
+          throw new BadRequestException('Route not found');
+      }
+
+      // Check if route can be edited
+      if (route.status === 'COMPLETED') {
+          throw new BadRequestException('Cannot edit a completed route');
+      }
+
+      const hasStarted = route.items?.some(item => 
+          item.checkInTime || 
+          (item.status !== 'PENDING' && item.status !== 'SKIPPED')
+      );
+
+      if (hasStarted) {
+          throw new BadRequestException('Cannot edit a route that has already started execution');
+      }
+
+      const { items, promoterId, ...routeData } = updateRouteDto;
+
+      // 2. Update basic fields
+      await queryRunner.manager.save(Route, {
           id,
           ...routeData,
           promoter: (promoterId === null || promoterId === '') ? null : (promoterId ? { id: promoterId } : undefined),
       });
 
-      // Update items if provided
+      // 3. Update items if provided
       if (items) {
-          // Robust deletion strategy:
-          // 1. Identify existing items
-          const existingItems = route.items || [];
-          const existingItemIds = existingItems.map(i => i.id);
-
-          if (existingItemIds.length > 0) {
-            // 2. Manually delete products first using primitive column for safety
-            await this.routeItemProductsRepository.delete({ routeItemId: In(existingItemIds) });
-            
-            // 3. Delete items
-            await this.routeItemsRepository.delete({ id: In(existingItemIds) });
+          // Robust deletion: Remove existing items (cascade will handle products)
+          if (route.items && route.items.length > 0) {
+              await queryRunner.manager.remove(route.items);
           }
 
           // Create new items
           for (let i = 0; i < items.length; i++) {
               const item = items[i];
-              const routeItem = this.routeItemsRepository.create({
+              const routeItem = queryRunner.manager.create(RouteItem, {
                   supermarket: { id: item.supermarketId },
                   route: { id: id },
                   order: item.order || i + 1,
                   startTime: item.startTime,
                   estimatedDuration: item.estimatedDuration
               });
-              const savedItem = await this.routeItemsRepository.save(routeItem);
+              const savedItem = await queryRunner.manager.save(routeItem);
 
               if (item.productIds && item.productIds.length > 0) {
                   const productEntities = item.productIds.map(productId => 
-                      this.routeItemProductsRepository.create({
+                      queryRunner.manager.create(RouteItemProduct, {
                           routeItem: { id: savedItem.id },
                           product: { id: productId }
                       })
                   );
-                  await this.routeItemProductsRepository.save(productEntities);
+                  await queryRunner.manager.save(productEntities);
               }
           }
       }
       
+      await queryRunner.commitTransaction();
       return this.findOne(id);
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       console.error('Error updating route (Stack):', error.stack);
       console.error('Error updating route (Message):', error.message);
       if (error instanceof BadRequestException) throw error;
       throw new InternalServerErrorException(`Erro ao salvar rota: ${error.message}`);
+    } finally {
+      await queryRunner.release();
     }
   }
 
