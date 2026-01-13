@@ -24,10 +24,15 @@ const RoutesView: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [editingRouteId, setEditingRouteId] = useState<string | null>(null);
 
+  // Search States
+  const [promoterSearch, setPromoterSearch] = useState('');
+  const [supermarketSearch, setSupermarketSearch] = useState('');
+
   // Product Selection Modal State
   const [showProductModal, setShowProductModal] = useState(false);
   const [currentRouteItemIndex, setCurrentRouteItemIndex] = useState<number | null>(null);
   const [tempSelectedProducts, setTempSelectedProducts] = useState<string[]>([]);
+  const [selectedClientForModal, setSelectedClientForModal] = useState<string | null>(null);
 
   // Planner State
   const [weekRoutes, setWeekRoutes] = useState<any[]>([]);
@@ -489,17 +494,53 @@ const RoutesView: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-500 block mb-1">Promotor</label>
-                <select 
-                  value={selectedPromoter || ''}
-                  onChange={(e) => setSelectedPromoter(e.target.value)}
-                  className="w-full font-bold text-slate-900 bg-slate-50 p-3 rounded-xl outline-none"
-                >
-                  <option value="">Selecione...</option>
-                  {promoters.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  1. Selecione o Promotor *
+                </label>
+                <div className="mb-2">
+                  <input
+                    type="text"
+                    placeholder="Buscar promotor..."
+                    value={promoterSearch}
+                    onChange={(e) => setPromoterSearch(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div className="h-64 overflow-y-auto space-y-2 pr-2">
+                  {promoters
+                    .filter(p => p.name.toLowerCase().includes(promoterSearch.toLowerCase()))
+                    .map(promoter => (
+                    <button 
+                      key={promoter.id}
+                      onClick={() => setSelectedPromoter(promoter.id)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
+                        selectedPromoter === promoter.id 
+                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
+                          : 'bg-white border border-slate-100 hover:bg-slate-50 text-slate-600'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                        selectedPromoter === promoter.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {promoter.name.charAt(0)}
+                      </div>
+                      <div className="text-left">
+                        <p className="font-bold">{promoter.name}</p>
+                        <p className={`text-xs ${selectedPromoter === promoter.id ? 'text-blue-100' : 'text-slate-400'}`}>
+                          {promoter.email}
+                        </p>
+                      </div>
+                      {selectedPromoter === promoter.id && (
+                        <div className="ml-auto">
+                          <CheckCircle size={20} className="text-white" />
+                        </div>
+                      )}
+                    </button>
                   ))}
-                </select>
+                  {promoters.filter(p => p.name.toLowerCase().includes(promoterSearch.toLowerCase())).length === 0 && (
+                     <div className="text-center py-4 text-slate-400 text-sm">Nenhum promotor encontrado</div>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -513,22 +554,46 @@ const RoutesView: React.FC = () => {
             </div>
 
             <div className="bg-white rounded-3xl border border-slate-200 p-6">
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-4">Adicionar PDV</h3>
-              <div className="h-64 overflow-y-auto space-y-2 pr-2">
-                {supermarkets.map(s => (
-                  <button 
-                    key={s.id}
-                    onClick={() => handleAddSupermarket(s.id)}
-                    disabled={!!routeItems.find(i => i.supermarketId === s.id)}
-                    className="w-full flex justify-between items-center p-3 rounded-xl hover:bg-slate-50 border border-slate-100 disabled:opacity-50 disabled:cursor-not-allowed text-left"
-                  >
-                    <div>
-                      <p className="text-sm font-bold text-slate-800">{s.fantasyName}</p>
-                      <p className="text-[10px] text-slate-400">{s.city}</p>
-                    </div>
-                    <Plus size={16} className="text-slate-400" />
-                  </button>
-                ))}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  2. Adicionar Supermercados *
+                </label>
+                <div className="mb-2">
+                  <input
+                    type="text"
+                    placeholder="Buscar supermercado..."
+                    value={supermarketSearch}
+                    onChange={(e) => setSupermarketSearch(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div className="h-64 overflow-y-auto space-y-2 pr-2">
+                  {supermarkets
+                    .filter(s => 
+                      s.fantasyName.toLowerCase().includes(supermarketSearch.toLowerCase()) ||
+                      s.city.toLowerCase().includes(supermarketSearch.toLowerCase())
+                    )
+                    .map(s => (
+                    <button 
+                      key={s.id}
+                      onClick={() => handleAddSupermarket(s.id)}
+                      disabled={!!routeItems.find(i => i.supermarketId === s.id)}
+                      className="w-full flex justify-between items-center p-3 rounded-xl hover:bg-slate-50 border border-slate-100 disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                    >
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">{s.fantasyName}</p>
+                        <p className="text-[10px] text-slate-400">{s.city}</p>
+                      </div>
+                      <Plus size={16} className="text-slate-400" />
+                    </button>
+                  ))}
+                  {supermarkets.filter(s => 
+                      s.fantasyName.toLowerCase().includes(supermarketSearch.toLowerCase()) ||
+                      s.city.toLowerCase().includes(supermarketSearch.toLowerCase())
+                    ).length === 0 && (
+                     <div className="text-center py-4 text-slate-400 text-sm">Nenhum supermercado encontrado</div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -744,49 +809,109 @@ const RoutesView: React.FC = () => {
 
       {/* Product Selection Modal */}
       {showProductModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col p-6 shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-slate-900">Selecionar Produtos</h3>
-              <button onClick={() => setShowProductModal(false)} className="text-slate-400 hover:text-slate-600">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[70vh] flex flex-col p-4 shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-slate-900">
+                {selectedClientForModal ? 'Selecionar Produtos' : 'Selecionar Cliente'}
+              </h3>
+              <button onClick={() => {
+                setShowProductModal(false);
+                setSelectedClientForModal(null);
+              }} className="text-slate-400 hover:text-slate-600">
                 <Settings size={20} className="rotate-45" />
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto space-y-2 pr-2 mb-6">
-              {products.map(product => (
-                <div 
-                  key={product.id} 
-                  onClick={() => handleToggleProductSelection(product.id)}
-                  className={`p-3 rounded-lg border cursor-pointer flex items-center justify-between transition-all ${
-                    tempSelectedProducts.includes(product.id) 
-                      ? 'bg-blue-50 border-blue-200' 
-                      : 'border-slate-100 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-5 h-5 rounded border flex items-center justify-center ${
-                      tempSelectedProducts.includes(product.id) ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
-                    }`}>
-                      {tempSelectedProducts.includes(product.id) && <CheckCircle size={12} className="text-white" />}
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-800">{product.name}</p>
-                      <p className="text-xs text-slate-500">SKU: {product.sku}</p>
-                    </div>
-                  </div>
+            <div className="flex-1 overflow-y-auto space-y-2 pr-2 mb-4">
+              {!selectedClientForModal ? (
+                // Step 1: Select Client
+                <div className="space-y-2">
+                   {Array.from(new Set(products.map(p => p.client?.id).filter(Boolean)))
+                      .map(clientId => {
+                        const client = products.find(p => p.client?.id === clientId)?.client;
+                        const clientProducts = products.filter(p => p.client?.id === clientId);
+                        const selectedCount = clientProducts.filter(p => tempSelectedProducts.includes(p.id)).length;
+                        
+                        return (
+                          <button
+                            key={clientId}
+                            onClick={() => setSelectedClientForModal(clientId)}
+                            className="w-full p-3 rounded-xl border border-slate-100 hover:bg-slate-50 flex items-center justify-between group text-left transition-all"
+                          >
+                            <div>
+                              <p className="font-bold text-slate-800">{client?.fantasyName || 'Cliente sem Nome'}</p>
+                              <p className="text-xs text-slate-500">{clientProducts.length} produtos disponíveis</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                               {selectedCount > 0 && (
+                                 <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                                   {selectedCount} selecionados
+                                 </span>
+                               )}
+                               <div className="p-2 bg-slate-100 rounded-lg group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                                 <Plus size={16} />
+                               </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                   {products.filter(p => p.client).length === 0 && (
+                      <div className="text-center py-8 text-slate-400 text-sm">
+                        Nenhum cliente associado aos produtos encontrados.
+                      </div>
+                   )}
                 </div>
-              ))}
+              ) : (
+                // Step 2: Select Products for selected client
+                <div className="space-y-2">
+                   <button 
+                     onClick={() => setSelectedClientForModal(null)}
+                     className="mb-2 text-xs text-blue-600 font-bold hover:underline flex items-center gap-1"
+                   >
+                     ← Voltar para Clientes
+                   </button>
+                   
+                   {products
+                     .filter(p => p.client?.id === selectedClientForModal)
+                     .map(product => (
+                      <div 
+                        key={product.id} 
+                        onClick={() => handleToggleProductSelection(product.id)}
+                        className={`p-3 rounded-lg border cursor-pointer flex items-center justify-between transition-all ${
+                          tempSelectedProducts.includes(product.id) 
+                            ? 'bg-blue-50 border-blue-200' 
+                            : 'border-slate-100 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded border flex items-center justify-center ${
+                            tempSelectedProducts.includes(product.id) ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
+                          }`}>
+                            {tempSelectedProducts.includes(product.id) && <CheckCircle size={12} className="text-white" />}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-slate-800">{product.name}</p>
+                            <p className="text-xs text-slate-500">SKU: {product.sku}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
-              <button onClick={() => setShowProductModal(false)} className="px-6 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100">Cancelar</button>
+              <button onClick={() => {
+                setShowProductModal(false);
+                setSelectedClientForModal(null);
+              }} className="px-4 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100 text-sm">Cancelar</button>
               <button 
                 onClick={handleSaveProductSelection}
-                className="px-6 py-2 rounded-lg font-bold text-white shadow-lg"
+                className="px-4 py-2 rounded-lg font-bold text-white shadow-lg text-sm"
                 style={{ backgroundColor: settings.primaryColor }}
               >
-                Confirmar
+                Confirmar ({tempSelectedProducts.length})
               </button>
             </div>
           </div>

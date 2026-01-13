@@ -48,6 +48,11 @@ const DocumentsView: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
+  // New State for Bulk/Search
+  const [sendToAll, setSendToAll] = useState(false);
+  const [employeeSearchQuery, setEmployeeSearchQuery] = useState('');
+  const [isEmployeeDropdownOpen, setIsEmployeeDropdownOpen] = useState(false);
+
   useEffect(() => {
     fetchEmployees();
     fetchDocuments();
@@ -76,26 +81,36 @@ const DocumentsView: React.FC = () => {
 
   const handleSendDocument = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedEmployeeId || !file) return;
+    if ((!selectedEmployeeId && !sendToAll) || !file) {
+      alert('Selecione um funcionário (ou enviar para todos) e um arquivo.');
+      return;
+    }
 
     setIsSubmitting(true);
     const formData = new FormData();
     formData.append('type', docType);
     formData.append('description', description);
     formData.append('file', file);
-    // formData.append('employeeId', selectedEmployeeId); // The endpoint is /employees/:id/documents
+    
+    if (sendToAll) {
+      formData.append('sendToAll', 'true');
+    } else {
+      formData.append('employeeIds', selectedEmployeeId);
+    }
 
     try {
-      await api.post(`/employees/${selectedEmployeeId}/documents`, formData, {
+      await api.post(`/employees/documents/bulk`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
       
-      setSuccessMessage('Documento enviado com sucesso!');
+      setSuccessMessage('Documento(s) enviado(s) com sucesso!');
       setFile(null);
       setDescription('');
       setSelectedEmployeeId('');
+      setEmployeeSearchQuery('');
+      setSendToAll(false);
       fetchDocuments(); // Refresh history
       
       setTimeout(() => {
@@ -104,7 +119,7 @@ const DocumentsView: React.FC = () => {
       }, 2000);
     } catch (error) {
       console.error('Error sending document:', error);
-      alert('Erro ao enviar documento.');
+      alert('Erro ao enviar documento. Verifique se o arquivo é válido e tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -160,19 +175,80 @@ const DocumentsView: React.FC = () => {
 
           <form onSubmit={handleSendDocument} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
+              <div className="space-y-2 relative z-20">
                 <label className="text-sm font-medium text-slate-700">Funcionário</label>
-                <select 
-                  className="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
-                  value={selectedEmployeeId}
-                  onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                  required
-                >
-                  <option value="">Selecione um funcionário...</option>
-                  {employees.map(emp => (
-                    <option key={emp.id} value={emp.id}>{emp.fullName || emp.name}</option>
-                  ))}
-                </select>
+                
+                <div className="flex items-center gap-2 mb-2 p-3 bg-slate-50 rounded-xl border border-slate-100 transition-colors hover:bg-slate-100">
+                   <input 
+                     type="checkbox" 
+                     id="sendToAll"
+                     checked={sendToAll}
+                     onChange={(e) => {
+                       setSendToAll(e.target.checked);
+                       if (e.target.checked) {
+                         setSelectedEmployeeId('');
+                         setEmployeeSearchQuery('');
+                         setIsEmployeeDropdownOpen(false);
+                       }
+                     }}
+                     className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                   />
+                   <label htmlFor="sendToAll" className="text-sm font-medium text-slate-700 cursor-pointer select-none flex-1">Enviar para todos os funcionários</label>
+                </div>
+
+                {!sendToAll && (
+                  <div className="relative">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                      <input 
+                        type="text"
+                        placeholder="Buscar funcionário..."
+                        className={`w-full h-11 rounded-xl border bg-white pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all ${!selectedEmployeeId && isSubmitting ? 'border-red-300' : 'border-slate-200'}`}
+                        value={employeeSearchQuery}
+                        onChange={(e) => {
+                          setEmployeeSearchQuery(e.target.value);
+                          setIsEmployeeDropdownOpen(true);
+                          setSelectedEmployeeId('');
+                        }}
+                        onFocus={() => setIsEmployeeDropdownOpen(true)}
+                        onBlur={() => {
+                          // Delayed close to allow clicking items
+                          setTimeout(() => setIsEmployeeDropdownOpen(false), 200);
+                        }}
+                      />
+                      {selectedEmployeeId && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600 animate-in fade-in zoom-in duration-200">
+                           <CheckCircle size={18} />
+                        </div>
+                      )}
+                    </div>
+                    
+                    {isEmployeeDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                        {employees
+                          .filter(emp => (emp.fullName || emp.name).toLowerCase().includes(employeeSearchQuery.toLowerCase()))
+                          .map(emp => (
+                            <button
+                              key={emp.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedEmployeeId(emp.id);
+                                setEmployeeSearchQuery(emp.fullName || emp.name);
+                                setIsEmployeeDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-4 py-3 hover:bg-slate-50 text-sm border-b border-slate-50 last:border-0 transition-colors flex items-center justify-between group ${selectedEmployeeId === emp.id ? 'bg-blue-50 text-blue-700' : 'text-slate-700'}`}
+                            >
+                              <span className="font-medium">{emp.fullName || emp.name}</span>
+                              {selectedEmployeeId === emp.id && <CheckCircle size={16} />}
+                            </button>
+                          ))}
+                        {employees.filter(emp => (emp.fullName || emp.name).toLowerCase().includes(employeeSearchQuery.toLowerCase())).length === 0 && (
+                          <div className="px-4 py-3 text-sm text-slate-500 text-center">Nenhum funcionário encontrado.</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">

@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterc
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import * as fs from 'fs';
 import { EmployeesService } from './employees.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
@@ -18,7 +19,13 @@ export class EmployeesController {
   @Post()
   @UseInterceptors(FileInterceptor('facialPhoto', {
     storage: diskStorage({
-      destination: './uploads/employees',
+      destination: (req, file, cb) => {
+        const uploadPath = './uploads/employees';
+        if (!fs.existsSync(uploadPath)) {
+          fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+      },
       filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
@@ -47,7 +54,13 @@ export class EmployeesController {
   @Patch(':id')
   @UseInterceptors(FileInterceptor('facialPhoto', {
     storage: diskStorage({
-      destination: './uploads/employees',
+      destination: (req, file, cb) => {
+        const uploadPath = './uploads/employees';
+        if (!fs.existsSync(uploadPath)) {
+          fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+      },
       filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
@@ -78,10 +91,43 @@ export class EmployeesController {
     return this.employeesService.findAllDocuments();
   }
 
+  @Post('documents/bulk')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: (req, file, cb) => {
+        const uploadPath = './uploads/documents';
+        if (!fs.existsSync(uploadPath)) {
+          fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
+      },
+    }),
+  }))
+  sendBulkDocuments(@Body() data: any, @UploadedFile() file: Express.Multer.File, @Request() req: any) {
+    const fileUrl = file ? `/uploads/documents/${file.filename}` : data.fileUrl;
+    const senderId = req.user?.userId;
+
+    return this.employeesService.sendBulkDocuments({ 
+      ...data, 
+      fileUrl,
+      senderId
+    });
+  }
+
   @Post(':id/documents')
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
-      destination: './uploads/documents',
+      destination: (req, file, cb) => {
+        const uploadPath = './uploads/documents';
+        if (!fs.existsSync(uploadPath)) {
+          fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+      },
       filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         cb(null, `${uniqueSuffix}${extname(file.originalname)}`);

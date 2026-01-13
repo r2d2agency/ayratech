@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional, IsEmail, IsDateString, IsNumber, Validate } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsEmail, IsDateString, IsNumber, Validate, Allow } from 'class-validator';
 import { Type } from 'class-transformer';
 import { IsCPFConstraint } from '../../utils/validators/cpf.validator';
 
@@ -93,6 +93,26 @@ export class CreateEmployeeDto {
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
+  hourlyRate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  dailyRate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  visitRate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  monthlyAllowance?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
   transportVoucher?: number;
 
   @IsOptional()
@@ -101,6 +121,12 @@ export class CreateEmployeeDto {
   mealVoucher?: number;
 
   @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  chargesPercentage?: number;
+
+  @IsOptional()
+  @Allow()
   createAccess?: string | boolean; // Can be string (FormData) or boolean (JSON)
 
   @IsOptional()

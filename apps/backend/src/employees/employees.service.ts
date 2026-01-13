@@ -150,7 +150,12 @@ export class EmployeesService {
   }
 
   async update(id: string, updateEmployeeDto: UpdateEmployeeDto) {
-    const { baseSalary, transportVoucher, mealVoucher, weeklyHours, createAccess, appPassword, roleId, supervisorId, ...employeeData } = updateEmployeeDto;
+    const { 
+      baseSalary, hourlyRate, dailyRate, visitRate, monthlyAllowance, 
+      transportVoucher, mealVoucher, chargesPercentage,
+      weeklyHours, createAccess, appPassword, roleId, supervisorId, 
+      ...employeeData 
+    } = updateEmployeeDto;
 
     // Update basic info if there are fields to update
     const updatePayload: any = { ...employeeData };
@@ -165,28 +170,46 @@ export class EmployeesService {
     if (!employee) return null;
 
     // Handle Compensation
-    if (baseSalary !== undefined || transportVoucher !== undefined || mealVoucher !== undefined) {
+    if (baseSalary !== undefined || hourlyRate !== undefined || dailyRate !== undefined || 
+        visitRate !== undefined || monthlyAllowance !== undefined || 
+        transportVoucher !== undefined || mealVoucher !== undefined || 
+        chargesPercentage !== undefined) {
       const compensations = employee.compensations || [];
       const currentComp = compensations.sort((a, b) => new Date(b.validFrom).getTime() - new Date(a.validFrom).getTime())[0];
 
       const newSalary = baseSalary !== undefined ? baseSalary : currentComp?.baseSalary;
+      const newHourly = hourlyRate !== undefined ? hourlyRate : currentComp?.hourlyRate;
+      const newDaily = dailyRate !== undefined ? dailyRate : currentComp?.dailyRate;
+      const newVisit = visitRate !== undefined ? visitRate : currentComp?.visitRate;
+      const newAllowance = monthlyAllowance !== undefined ? monthlyAllowance : currentComp?.monthlyAllowance;
       const newTransport = transportVoucher !== undefined ? transportVoucher : currentComp?.transportVoucher;
       const newMeal = mealVoucher !== undefined ? mealVoucher : currentComp?.mealVoucher;
+      const newCharges = chargesPercentage !== undefined ? chargesPercentage : currentComp?.chargesPercentage;
 
       // Check if anything changed
       const isDifferent = !currentComp || 
         Number(currentComp.baseSalary) !== Number(newSalary) || 
+        Number(currentComp.hourlyRate) !== Number(newHourly) || 
+        Number(currentComp.dailyRate) !== Number(newDaily) || 
+        Number(currentComp.visitRate) !== Number(newVisit) || 
+        Number(currentComp.monthlyAllowance) !== Number(newAllowance) || 
         Number(currentComp.transportVoucher) !== Number(newTransport) || 
-        Number(currentComp.mealVoucher) !== Number(newMeal);
+        Number(currentComp.mealVoucher) !== Number(newMeal) ||
+        Number(currentComp.chargesPercentage) !== Number(newCharges);
 
-      if (isDifferent && newSalary !== undefined) { // Ensure we have at least a salary
+      if (isDifferent) {
         const compensation = this.compensationRepository.create({
           employee: employee,
           validFrom: new Date(),
           remunerationType: 'mensal',
-          baseSalary: newSalary,
+          baseSalary: newSalary || 0,
+          hourlyRate: newHourly || 0,
+          dailyRate: newDaily || 0,
+          visitRate: newVisit || 0,
+          monthlyAllowance: newAllowance || 0,
           transportVoucher: newTransport || 0,
-          mealVoucher: newMeal || 0
+          mealVoucher: newMeal || 0,
+          chargesPercentage: newCharges || 0
         });
         await this.compensationRepository.save(compensation);
       }
@@ -384,5 +407,49 @@ export class EmployeesService {
     }
 
     return document;
+  }
+
+  async sendBulkDocuments(data: any) {
+    let targetEmployeeIds: string[] = [];
+
+    if (data.sendToAll === true || data.sendToAll === 'true') {
+        const allEmployees = await this.employeesRepository.find();
+        targetEmployeeIds = allEmployees.map(e => e.id);
+    } else {
+        if (typeof data.employeeIds === 'string') {
+            try {
+                // Try to parse if it's a JSON array string
+                const parsed = JSON.parse(data.employeeIds);
+                targetEmployeeIds = Array.isArray(parsed) ? parsed : [data.employeeIds];
+            } catch {
+                // If not JSON, assume single ID string
+                targetEmployeeIds = [data.employeeIds];
+            }
+        } else if (Array.isArray(data.employeeIds)) {
+            targetEmployeeIds = data.employeeIds;
+        }
+    }
+
+    // Filter unique IDs and remove empty ones
+    targetEmployeeIds = [...new Set(targetEmployeeIds)].filter(id => id);
+
+    if (targetEmployeeIds.length === 0) {
+        throw new BadRequestException('Nenhum funcionário selecionado.');
+    }
+
+    const results = [];
+    for (const empId of targetEmployeeIds) {
+        try {
+            const doc = await this.addDocument({
+                ...data,
+                employeeId: empId
+            });
+            results.push({ status: 'success', employeeId: empId, documentId: doc.id });
+        } catch (err) {
+            console.error(`Failed to send document to employee ${empId}:`, err);
+            results.push({ status: 'error', employeeId: empId, error: err.message });
+        }
+    }
+    return results;
   }
 }

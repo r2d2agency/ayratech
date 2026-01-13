@@ -55,8 +55,13 @@ const EmployeesView: React.FC = () => {
     status: 'active',
     // Compensation (simplified for now)
     baseSalary: '',
+    hourlyRate: '',
+    dailyRate: '',
+    visitRate: '',
+    monthlyAllowance: '',
     transportVoucher: '',
     mealVoucher: '',
+    chargesPercentage: '',
     // Schedule (simplified)
     weeklyHours: 44,
     facialPhotoUrl: '',
@@ -323,8 +328,13 @@ const EmployeesView: React.FC = () => {
         birthDate: fullEmp.birthDate ? fullEmp.birthDate.split('T')[0] : '',
         admissionDate: fullEmp.admissionDate ? fullEmp.admissionDate.split('T')[0] : '',
         baseSalary: baseSalary || '',
+        hourlyRate: hourlyRate || '',
+        dailyRate: dailyRate || '',
+        visitRate: visitRate || '',
+        monthlyAllowance: monthlyAllowance || '',
         transportVoucher: transportVoucher || '',
         mealVoucher: mealVoucher || '',
+        chargesPercentage: chargesPercentage || '',
         weeklyHours: weeklyHours || 44,
         createAccess: !!fullEmp.appAccessEnabled,
         appPassword: ''
@@ -919,25 +929,87 @@ const EmployeesView: React.FC = () => {
                     <h4 className="font-semibold text-slate-800 border-b pb-2 mb-4">Remuneração (Estimativa)</h4>
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Salário Base</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                      value={employeeForm.baseSalary}
-                      onChange={e => setEmployeeForm({...employeeForm, baseSalary: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Vale Transporte</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                      value={employeeForm.transportVoucher}
-                      onChange={e => setEmployeeForm({...employeeForm, transportVoucher: e.target.value})}
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Salário Base</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                        value={employeeForm.baseSalary}
+                        onChange={e => setEmployeeForm({...employeeForm, baseSalary: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Valor Hora</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                        value={employeeForm.hourlyRate}
+                        onChange={e => setEmployeeForm({...employeeForm, hourlyRate: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Valor Diária</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                        value={employeeForm.dailyRate}
+                        onChange={e => setEmployeeForm({...employeeForm, dailyRate: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Valor Visita</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                        value={employeeForm.visitRate}
+                        onChange={e => setEmployeeForm({...employeeForm, visitRate: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Ajuda de Custo (Mensal)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                        value={employeeForm.monthlyAllowance}
+                        onChange={e => setEmployeeForm({...employeeForm, monthlyAllowance: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Vale Transporte</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                        value={employeeForm.transportVoucher}
+                        onChange={e => setEmployeeForm({...employeeForm, transportVoucher: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Vale Refeição/Alimentação</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                        value={employeeForm.mealVoucher}
+                        onChange={e => setEmployeeForm({...employeeForm, mealVoucher: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Encargos (%)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                        value={employeeForm.chargesPercentage}
+                        onChange={e => setEmployeeForm({...employeeForm, chargesPercentage: e.target.value})}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
