@@ -223,7 +223,22 @@ export class RoutesService {
     }
   }
 
-  remove(id: string) {
+  async remove(id: string) {
+    const route = await this.findOne(id);
+    if (!route) {
+      throw new BadRequestException('Route not found');
+    }
+
+    // Check if route has started execution
+    const hasStarted = route.items?.some(item => 
+        item.checkInTime || 
+        (item.status !== 'PENDING' && item.status !== 'SKIPPED')
+    );
+
+    if (hasStarted || route.status === 'COMPLETED' || route.status === 'IN_PROGRESS') {
+        throw new BadRequestException('Cannot delete a route that has already started execution or is completed');
+    }
+
     return this.routesRepository.delete(id);
   }
 

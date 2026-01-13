@@ -50,14 +50,14 @@ export class Employee {
   @Column({ unique: true })
   internalCode: string; // matricula_interna
 
-  @Column({ nullable: true, insert: false, update: false })
+  @Column({ nullable: true })
   roleId: string;
 
   @ManyToOne(() => Role, { nullable: true })
   @JoinColumn({ name: 'roleId' })
   role: Role;
 
-  @Column({ nullable: true, insert: false, update: false })
+  @Column({ nullable: true })
   supervisorId: string;
 
   @ManyToOne(() => Employee, { nullable: true })
