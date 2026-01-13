@@ -228,7 +228,7 @@ export class EmployeesService {
 
       if (isDifferent) {
         const compensation = this.compensationRepository.create({
-          employee: employee,
+          employee: { id: employee.id } as Employee,
           validFrom: new Date(),
           remunerationType: 'mensal',
           baseSalary: newSalary || 0,
@@ -264,7 +264,7 @@ export class EmployeesService {
         }
 
         const schedule = this.workScheduleRepository.create({
-          employee: employee,
+          employee: { id: employee.id } as Employee,
           validFrom: new Date(),
           weeklyHours: weeklyHours,
           timezone: 'America/Sao_Paulo'
