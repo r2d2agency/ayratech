@@ -161,18 +161,28 @@ export class UsersService implements OnModuleInit {
     
     try {
       const { roleId, employeeId, ...userData } = updateUserDto;
-      const updatePayload: any = { ...userData };
+      const updateValues: any = { ...userData };
       
+      // Handle relations by setting FK columns directly
+      // We use explicit column assignment to bypass 'update: false' constraint on the entity definition
       if (roleId !== undefined) {
-        updatePayload.role = (roleId && roleId !== '') ? { id: roleId } : null;
+        updateValues.roleId = (roleId && roleId !== '') ? roleId : null;
       }
       
       if (employeeId !== undefined) {
-        updatePayload.employee = (employeeId && employeeId !== '') ? { id: employeeId } : null;
+        updateValues.employeeId = (employeeId && employeeId !== '') ? employeeId : null;
       }
 
-      // Use save instead of update to handle listeners/subscribers if any, and better error return
-      return await this.usersRepository.save({ id, ...updatePayload });
+      // Only update if there are values
+      if (Object.keys(updateValues).length > 0) {
+          await this.usersRepository.createQueryBuilder()
+              .update(User)
+              .set(updateValues)
+              .where("id = :id", { id })
+              .execute();
+      }
+
+      return this.usersRepository.findOne({ where: { id }, relations: ['role', 'employee'] });
     } catch (err: any) {
       console.error('Erro ao atualizar usuário:', err);
       if (err?.code === '23505') {
