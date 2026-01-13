@@ -288,8 +288,13 @@ const EmployeesView: React.FC = () => {
 
       // Extract latest compensation
       let baseSalary = '';
+      let hourlyRate = '';
+      let dailyRate = '';
+      let visitRate = '';
+      let monthlyAllowance = '';
       let transportVoucher = '';
       let mealVoucher = '';
+      let chargesPercentage = '';
 
       if (fullEmp.compensations && fullEmp.compensations.length > 0) {
         // Sort by validFrom descending to get the most recent
@@ -298,8 +303,13 @@ const EmployeesView: React.FC = () => {
         );
         const currentComp = sortedComp[0];
         baseSalary = currentComp.baseSalary;
+        hourlyRate = currentComp.hourlyRate;
+        dailyRate = currentComp.dailyRate;
+        visitRate = currentComp.visitRate;
+        monthlyAllowance = currentComp.monthlyAllowance;
         transportVoucher = currentComp.transportVoucher;
         mealVoucher = currentComp.mealVoucher;
+        chargesPercentage = currentComp.chargesPercentage;
       }
 
       // Extract latest schedule

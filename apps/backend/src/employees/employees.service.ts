@@ -160,17 +160,22 @@ export class EmployeesService {
   }
 
   async findOne(id: string) {
-    const employee = await this.employeesRepository.findOne({ 
-      where: { id }, 
-      relations: ['role', 'supervisor', 'compensations', 'workSchedules', 'workSchedules.days', 'subordinates'] 
-    });
+    try {
+      const employee = await this.employeesRepository.findOne({ 
+        where: { id }, 
+        relations: ['role', 'supervisor', 'compensations', 'workSchedules', 'workSchedules.days', 'subordinates'] 
+      });
 
-    if (employee) {
-      const user = await this.usersService.findByEmployeeId(employee.id);
-      (employee as any).appAccessEnabled = !!user;
+      if (employee) {
+        const user = await this.usersService.findByEmployeeId(employee.id);
+        (employee as any).appAccessEnabled = !!user;
+      }
+
+      return employee;
+    } catch (error) {
+      console.error(`Error finding employee ${id}:`, error);
+      throw new BadRequestException(`Erro ao buscar funcionário: ${error.message}`);
     }
-
-    return employee;
   }
 
   async update(id: string, updateEmployeeDto: UpdateEmployeeDto) {
