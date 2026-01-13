@@ -813,7 +813,7 @@ const RoutesView: React.FC = () => {
           <div className="bg-white rounded-2xl w-full max-w-lg max-h-[70vh] flex flex-col p-4 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-slate-900">
-                {selectedClientForModal ? 'Selecionar Produtos' : 'Selecionar Cliente'}
+                {selectedClientForModal ? 'Selecionar Produtos para Agendamento' : 'Selecionar Cliente'}
               </h3>
               <button onClick={() => {
                 setShowProductModal(false);
@@ -827,9 +827,30 @@ const RoutesView: React.FC = () => {
               {!selectedClientForModal ? (
                 // Step 1: Select Client
                 <div className="space-y-2">
-                   {Array.from(new Set(products.map(p => p.client?.id).filter(Boolean)))
-                      .map(clientId => {
-                        const client = products.find(p => p.client?.id === clientId)?.client;
+                   {(() => {
+                      const currentSupermarket = currentRouteItemIndex !== null ? routeItems[currentRouteItemIndex].supermarket : null;
+                      // Use supermarket clients if available, otherwise fallback to all clients from products
+                      const availableClients = (currentSupermarket?.clients && currentSupermarket.clients.length > 0)
+                        ? currentSupermarket.clients
+                        : Array.from(new Set(products.map(p => p.client?.id).filter(Boolean))).map(id => ({ id }));
+                        
+                      // Filter out clients that don't have any products in the global list (optional optimization)
+                      const clientsWithProducts = availableClients.filter((c: any) => 
+                        products.some(p => p.client?.id === c.id)
+                      );
+                      
+                      // Remove duplicates just in case
+                      const uniqueClients = Array.from(new Set(clientsWithProducts.map((c: any) => c.id)))
+                        .map(id => {
+                            // Find full client data either from supermarket.clients or from product.client
+                            const fromSup = currentSupermarket?.clients?.find((c: any) => c.id === id);
+                            const fromProd = products.find(p => p.client?.id === id)?.client;
+                            return fromSup?.fantasyName ? fromSup : fromProd;
+                        })
+                        .filter(Boolean);
+
+                      return uniqueClients.map((client: any) => {
+                        const clientId = client.id;
                         const clientProducts = products.filter(p => p.client?.id === clientId);
                         const selectedCount = clientProducts.filter(p => tempSelectedProducts.includes(p.id)).length;
                         
@@ -840,27 +861,18 @@ const RoutesView: React.FC = () => {
                             className="w-full p-3 rounded-xl border border-slate-100 hover:bg-slate-50 flex items-center justify-between group text-left transition-all"
                           >
                             <div>
-                              <p className="font-bold text-slate-800">{client?.fantasyName || 'Cliente sem Nome'}</p>
+                              <p className="font-bold text-slate-800">{client.nomeFantasia || client.fantasyName || client.razaoSocial || client.nome || 'Cliente sem Nome'}</p>
                               <p className="text-xs text-slate-500">{clientProducts.length} produtos disponíveis</p>
                             </div>
-                            <div className="flex items-center gap-2">
-                               {selectedCount > 0 && (
-                                 <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                                   {selectedCount} selecionados
-                                 </span>
-                               )}
-                               <div className="p-2 bg-slate-100 rounded-lg group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                                 <Plus size={16} />
-                               </div>
-                            </div>
+                            {selectedCount > 0 && (
+                              <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">
+                                {selectedCount} selecionados
+                              </span>
+                            )}
                           </button>
                         );
-                      })}
-                   {products.filter(p => p.client).length === 0 && (
-                      <div className="text-center py-8 text-slate-400 text-sm">
-                        Nenhum cliente associado aos produtos encontrados.
-                      </div>
-                   )}
+                      });
+                   })()}
                 </div>
               ) : (
                 // Step 2: Select Products for selected client

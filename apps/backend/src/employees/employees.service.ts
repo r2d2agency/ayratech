@@ -41,7 +41,31 @@ export class EmployeesService {
       role: roleId ? { id: roleId } : null,
       supervisor: supervisorId ? { id: supervisorId } : null,
     });
-    const savedEmployee = await this.employeesRepository.save(employee);
+    
+    let savedEmployee;
+    try {
+      savedEmployee = await this.employeesRepository.save(employee);
+    } catch (error) {
+      if (error.code === '23505') { // Unique Violation
+          const detail = error.detail || '';
+          if (detail.includes('cpf')) {
+             throw new BadRequestException('CPF já cadastrado.');
+          } else if (detail.includes('email')) {
+             throw new BadRequestException('Email já cadastrado.');
+          } else if (detail.includes('internalCode') || detail.includes('matricula')) {
+             throw new BadRequestException('Matrícula Interna já cadastrada.');
+          }
+      } else if (error.code === '23503') { // Foreign Key Violation
+          const detail = error.detail || '';
+          if (detail.includes('roleId')) {
+             throw new BadRequestException('Cargo selecionado inválido ou inexistente.');
+          } else if (detail.includes('supervisorId')) {
+             throw new BadRequestException('Supervisor selecionado inválido ou inexistente.');
+          }
+      }
+      console.error('Error creating employee:', error);
+      throw error;
+    }
 
     if (baseSalary) {
       const compensation = this.compensationRepository.create({

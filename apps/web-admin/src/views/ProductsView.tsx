@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, X, Edit, Trash } from 'lucide-react';
+import { Search, Plus, X, Edit, Trash, ChevronDown, Check } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import api, { API_URL } from '../api/client';
 
@@ -33,6 +33,10 @@ const ProductsView: React.FC = () => {
 
   const [selectedParentId, setSelectedParentId] = useState('');
   const [selectedSubId, setSelectedSubId] = useState('');
+
+  // Client Search State
+  const [clientSearch, setClientSearch] = useState('');
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -249,6 +253,11 @@ const ProductsView: React.FC = () => {
       subcategory: product.subcategory || '',
       status: product.status || 'active'
     });
+    
+    // Set initial client search value
+    const client = clients.find(c => c.id === (product.clientId || ''));
+    setClientSearch(client ? client.nome : '');
+
     setImagePreview(product.imagem === 'https://via.placeholder.com/150' ? '' : product.imagem);
     setImageFile(null);
     setShowModal(true);
@@ -269,6 +278,7 @@ const ProductsView: React.FC = () => {
     });
     setSelectedParentId('');
     setSelectedSubId('');
+    setClientSearch('');
     setImagePreview('');
     setImageFile(null);
   };
@@ -386,8 +396,8 @@ const ProductsView: React.FC = () => {
               </button>
             </div>
             
-            <form onSubmit={handleSaveProduct} className="p-8 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <form onSubmit={handleSaveProduct} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Nome do Produto</label>
                   <input
@@ -462,12 +472,19 @@ const ProductsView: React.FC = () => {
                     onChange={e => {
                       const selectedBrandId = e.target.value;
                       const brand = brands.find(b => b.id === selectedBrandId);
+                      const newClientId = brand?.client?.id || productForm.clientId;
+                      
                       setProductForm(prev => ({
                         ...prev, 
                         brandId: selectedBrandId,
                         // Auto-select client if brand has one
-                        clientId: brand?.client?.id || prev.clientId
+                        clientId: newClientId
                       }));
+                      
+                      // Update search text if client changed
+                      if (brand?.client) {
+                        setClientSearch(brand.client.nome || brand.client.fantasyName || '');
+                      }
                     }}
                   >
                     <option value="">Selecione...</option>
@@ -479,17 +496,61 @@ const ProductsView: React.FC = () => {
                   </select>
                 </div>
 
-                <div>
+                <div className="relative">
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Fabricante/Cliente</label>
-                  <select
-                    required
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium bg-white"
-                    value={productForm.clientId}
-                    onChange={e => setProductForm({...productForm, clientId: e.target.value})}
-                  >
-                    <option value="">Selecione o Cliente</option>
-                    {clients.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-                  </select>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      placeholder="Buscar Cliente..."
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium bg-white"
+                      value={clientSearch}
+                      onChange={e => {
+                         setClientSearch(e.target.value);
+                         if (!showClientDropdown) setShowClientDropdown(true);
+                         if (productForm.clientId) {
+                             const currentClient = clients.find(c => c.id === productForm.clientId);
+                             if (currentClient && currentClient.nome !== e.target.value) {
+                                 setProductForm(prev => ({ ...prev, clientId: '' }));
+                             }
+                         }
+                      }}
+                      onFocus={() => setShowClientDropdown(true)}
+                      onBlur={() => setShowClientDropdown(false)}
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                      <ChevronDown size={16} />
+                    </div>
+                  </div>
+                  
+                  {showClientDropdown && (
+                    <div 
+                        className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto"
+                        onMouseDown={(e) => e.preventDefault()}
+                    >
+                        {clients
+                           .filter(c => c.nome.toLowerCase().includes(clientSearch.toLowerCase()))
+                           .slice(0, 50)
+                           .map(c => (
+                             <div 
+                               key={c.id}
+                               className="px-4 py-2 hover:bg-slate-50 cursor-pointer flex items-center justify-between"
+                               onClick={() => {
+                                 setProductForm(prev => ({ ...prev, clientId: c.id }));
+                                 setClientSearch(c.nome);
+                                 setShowClientDropdown(false);
+                               }}
+                             >
+                               <span className="font-medium text-slate-700">{c.nome}</span>
+                               {productForm.clientId === c.id && <Check size={16} className="text-blue-500" />}
+                             </div>
+                           ))
+                        }
+                        {clients.filter(c => c.nome.toLowerCase().includes(clientSearch.toLowerCase())).length === 0 && (
+                            <div className="px-4 py-3 text-sm text-slate-500 text-center">Nenhum cliente encontrado</div>
+                        )}
+                    </div>
+                  )}
                 </div>
 
                 <div>
