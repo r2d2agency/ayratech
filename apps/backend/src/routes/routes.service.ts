@@ -32,6 +32,18 @@ export class RoutesService {
     const savedRoute = await this.routesRepository.save(route);
 
     if (items && items.length > 0) {
+      // Validate promoter availability for all items first
+      if (savedRoute.promoterId) {
+        for (const item of items) {
+          await this.checkPromoterAvailability(
+            savedRoute.promoterId,
+            savedRoute.date,
+            item.startTime,
+            item.estimatedDuration
+          );
+        }
+      }
+
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         const routeItem = this.routeItemsRepository.create({
@@ -50,7 +62,9 @@ export class RoutesService {
           const productEntities = item.productIds.map(productId => 
             this.routeItemProductsRepository.create({
               routeItem: { id: savedItem.id },
-              product: { id: productId }
+              routeItemId: savedItem.id,
+              product: { id: productId },
+              productId: productId
             })
           );
           await this.routeItemProductsRepository.save(productEntities);
@@ -172,6 +186,24 @@ export class RoutesService {
 
       // 3. Update items if provided
       if (items) {
+          // Validate schedule availability for new items
+          if (promoterId || route.promoterId) { // use new promoterId or existing one
+             const targetPromoterId = promoterId !== undefined ? promoterId : route.promoter?.id || route.promoterId;
+             const targetDate = routeData.date || route.date;
+             
+             if (targetPromoterId && targetDate) {
+                 for (const item of items) {
+                     await this.checkPromoterAvailability(
+                         targetPromoterId,
+                         targetDate,
+                         item.startTime,
+                         item.estimatedDuration,
+                         id // exclude current route
+                     );
+                 }
+             }
+          }
+
           // Robust deletion: Find and remove items to handle cascades/constraints safely
           const existingItems = await queryRunner.manager.find(RouteItem, { 
               where: { route: { id } },
@@ -287,5 +319,49 @@ export class RoutesService {
       updateData.checkOutTime = time || new Date();
     }
     return this.routeItemsRepository.update(id, updateData);
+  }
+
+  private async checkPromoterAvailability(promoterId: string, date: string, startTime: string, estimatedDuration: number, excludeRouteId?: string) {
+    if (!promoterId || !date || !startTime || !estimatedDuration) return;
+
+    // Convert time to minutes
+    const startMinutes = this.timeToMinutes(startTime);
+    const endMinutes = startMinutes + estimatedDuration;
+
+    // Find other routes for this promoter on this date
+    const routes = await this.routesRepository.find({
+      where: { 
+        promoter: { id: promoterId },
+        date: date
+      },
+      relations: ['items', 'items.supermarket']
+    });
+
+    for (const route of routes) {
+      if (excludeRouteId && route.id === excludeRouteId) continue;
+
+      for (const item of route.items) {
+        if (!item.startTime || !item.estimatedDuration) continue;
+
+        const itemStart = this.timeToMinutes(item.startTime);
+        const itemEnd = itemStart + item.estimatedDuration;
+
+        // Check overlap: (StartA < EndB) && (EndA > StartB)
+        if (startMinutes < itemEnd && endMinutes > itemStart) {
+           throw new BadRequestException(`O promotor já possui um agendamento conflitante neste horário (PDV: ${item.supermarket?.fantasyName || 'Desconhecido'}, ${item.startTime} - ${this.minutesToTime(itemEnd)}).`);
+        }
+      }
+    }
+  }
+
+  private timeToMinutes(time: string): number {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  private minutesToTime(minutes: number): string {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
   }
 }

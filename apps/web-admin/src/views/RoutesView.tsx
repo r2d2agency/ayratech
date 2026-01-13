@@ -10,11 +10,14 @@ const RoutesView: React.FC = () => {
   const [promoters, setPromoters] = useState<any[]>([]);
   const [allEmployees, setAllEmployees] = useState<any[]>([]);
   const [supermarkets, setSupermarkets] = useState<any[]>([]);
+  const [groups, setGroups] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   
   // Filters
   const [filterPromoterId, setFilterPromoterId] = useState<string>('');
   const [filterSupervisorId, setFilterSupervisorId] = useState<string>('');
+  const [filterGroupId, setFilterGroupId] = useState<string>('');
+  const [filterSupermarketId, setFilterSupermarketId] = useState<string>('');
 
   // Editor State
   const [selectedPromoter, setSelectedPromoter] = useState<string | null>(null);
@@ -65,11 +68,12 @@ const RoutesView: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const [employeesRes, supermarketsRes, productsRes, templatesRes] = await Promise.all([
+      const [employeesRes, supermarketsRes, productsRes, templatesRes, groupsRes] = await Promise.all([
         api.get('/employees'),
         api.get('/supermarkets'),
         api.get('/products'),
-        api.get('/routes/templates/all')
+        api.get('/routes/templates/all'),
+        api.get('/supermarket-groups')
       ]);
       
       const promotersList = employeesRes.data.filter((e: any) => 
@@ -86,6 +90,7 @@ const RoutesView: React.FC = () => {
       setSupermarkets(supermarketsRes.data);
       setProducts(productsRes.data);
       setTemplates(templatesRes.data);
+      setGroups(groupsRes.data);
       fetchRules();
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -360,14 +365,37 @@ const RoutesView: React.FC = () => {
       
       let matchesSupervisor = true;
       if (filterSupervisorId) {
-         // Find promoter to check supervisor
          const promoter = allEmployees.find(e => e.id === r.promoterId);
-         // Check direct supervisorId or nested supervisor object
          matchesSupervisor = !!(promoter && (promoter.supervisorId === filterSupervisorId || (promoter.supervisor && promoter.supervisor.id === filterSupervisorId)));
       }
 
-      return matchesDate && matchesPromoter && matchesSupervisor;
+      let matchesGroup = true;
+      if (filterGroupId) {
+        matchesGroup = r.items?.some((item: any) => 
+          item.supermarket?.groupId === filterGroupId || 
+          item.supermarket?.group?.id === filterGroupId
+        );
+      }
+
+      let matchesPDV = true;
+      if (filterSupermarketId) {
+        matchesPDV = r.items?.some((item: any) => item.supermarket?.id === filterSupermarketId);
+      }
+
+      return matchesDate && matchesPromoter && matchesSupervisor && matchesGroup && matchesPDV;
     });
+  };
+
+  const handleQuickDelete = async (e: React.MouseEvent, routeId: string) => {
+    e.stopPropagation();
+    if (!window.confirm('Tem certeza que deseja excluir esta rota?')) return;
+    try {
+      await api.delete(`/routes/${routeId}`);
+      fetchRoutesForWeek();
+    } catch (error) {
+      console.error('Error deleting route:', error);
+      alert('Erro ao excluir rota.');
+    }
   };
 
   const handleEditRoute = (route: any) => {
@@ -451,7 +479,31 @@ const RoutesView: React.FC = () => {
                </button>
             </div>
 
-            <div className="flex gap-4 w-full md:w-auto">
+            <div className="flex flex-wrap gap-4 w-full md:w-auto">
+               <select 
+                 value={filterGroupId}
+                 onChange={(e) => setFilterGroupId(e.target.value)}
+                 className="px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-600"
+               >
+                 <option value="">Todas as Redes</option>
+                 {groups.map(g => (
+                   <option key={g.id} value={g.id}>{g.name}</option>
+                 ))}
+               </select>
+
+               <select 
+                 value={filterSupermarketId}
+                 onChange={(e) => setFilterSupermarketId(e.target.value)}
+                 className="px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-600"
+               >
+                 <option value="">Todos os PDVs</option>
+                 {supermarkets
+                   .filter(s => !filterGroupId || s.groupId === filterGroupId || s.group?.id === filterGroupId)
+                   .map(s => (
+                   <option key={s.id} value={s.id}>{s.fantasyName}</option>
+                 ))}
+               </select>
+
                <select 
                  value={filterPromoterId}
                  onChange={(e) => setFilterPromoterId(e.target.value)}
@@ -515,12 +567,26 @@ const RoutesView: React.FC = () => {
                       }`}
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs font-bold text-slate-500">{(route.promoter?.fullName || route.promoter?.name || '').split(' ')[0] || 'S/ Promotor'}</span>
-                        <span className={`w-2 h-2 rounded-full ${
-                          route.status === 'CONFIRMED' ? 'bg-green-500' : 'bg-slate-300'
-                        }`} />
+                        <span className="text-xs font-bold text-slate-700">{(route.promoter?.fullName || route.promoter?.name || 'S/ Promotor')}</span>
+                        <div className="flex items-center gap-1">
+                            <span className={`w-2 h-2 rounded-full ${
+                            route.status === 'CONFIRMED' ? 'bg-green-500' : 'bg-slate-300'
+                            }`} />
+                            <button 
+                                onClick={(e) => handleQuickDelete(e, route.id)}
+                                className="p-1 hover:bg-red-100 rounded-full text-red-500 transition-colors"
+                                title="Excluir Rota"
+                            >
+                                <Trash2 size={12} />
+                            </button>
+                        </div>
                       </div>
-                      <p className="text-xs font-bold text-slate-800 mb-1">{route.items?.length || 0} PDVs</p>
+                      <p className="text-xs font-bold text-slate-500 mb-1">{route.items?.length || 0} PDVs</p>
+                      {route.items && route.items.length > 0 && (
+                          <p className="text-[10px] text-slate-400 truncate">
+                              {route.items.map((i: any) => i.supermarket?.fantasyName).join(', ')}
+                          </p>
+                      )}
                     </div>
                   ))}
 
