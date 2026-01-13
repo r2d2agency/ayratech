@@ -56,31 +56,37 @@ export class AllExceptionsFilter implements ExceptionFilter {
         }
     }
     
-    // Log to console as well
-    this.logger.error(
-      `Exception caught: ${message}`,
-      stack,
-      `${method} ${path}`,
-    );
+    // Determine log level
+    const level = httpStatus >= 500 ? 'error' : 'warn';
 
-    // Save to DB
-    try {
-      await this.systemLogsService.create({
-        level: 'error',
-        message,
-        stack,
-        context: `${method} ${path}`,
-        userId,
-        metadata: {
-            statusCode: httpStatus,
-            body: request.body,
-            query: request.query,
-            params: request.params,
-            ...metadata
-        },
-      });
-    } catch (logError) {
-      console.error('Failed to save system log:', logError);
+    // Log to console
+    if (httpStatus >= 500) {
+        this.logger.error(`Exception caught: ${message}`, stack, `${method} ${path}`);
+    } else {
+        this.logger.warn(`Exception caught (${httpStatus}): ${message} - ${method} ${path}`);
+    }
+
+    // Save to DB (skip 404 to avoid noise, treat 401/403 as warn)
+    // We can also skip stack trace for 4xx errors to save space
+    if (httpStatus !== 404) { // Optionally skip 404
+        try {
+          await this.systemLogsService.create({
+            level,
+            message,
+            stack: httpStatus >= 500 ? stack : undefined, // Only save stack for server errors
+            context: `${method} ${path}`,
+            userId,
+            metadata: {
+                statusCode: httpStatus,
+                body: request.body,
+                query: request.query,
+                params: request.params,
+                ...metadata
+            },
+          });
+        } catch (logError) {
+          console.error('Failed to save system log:', logError);
+        }
     }
 
     const responseBody = {
