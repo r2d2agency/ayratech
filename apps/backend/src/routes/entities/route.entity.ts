@@ -14,7 +14,7 @@ export class Route {
   @JoinColumn({ name: 'promoterId' })
   promoter: Employee;
 
-  @Column({ nullable: true, insert: false, update: false })
+  @Column({ nullable: true })
   promoterId: string;
 
   @Column({ default: 'DRAFT' }) // DRAFT, CONFIRMED, COMPLETED

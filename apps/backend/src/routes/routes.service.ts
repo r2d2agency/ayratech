@@ -27,6 +27,7 @@ export class RoutesService {
     
     const route = this.routesRepository.create({
       ...routeData,
+      promoterId: routeData.promoterId,
       promoter: routeData.promoterId ? { id: routeData.promoterId } : null,
     });
     const savedRoute = await this.routesRepository.save(route);
