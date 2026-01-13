@@ -204,7 +204,9 @@ export class RoutesService {
                   const itemProducts = item.productIds.map(productId => 
                       queryRunner.manager.create(RouteItemProduct, {
                           routeItem: savedItem,
+                          routeItemId: savedItem.id,
                           product: { id: productId },
+                          productId: productId,
                           checked: false
                       })
                   );

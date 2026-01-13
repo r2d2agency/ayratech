@@ -11,14 +11,14 @@ export class RouteItemProduct {
   @JoinColumn({ name: 'routeItemId' })
   routeItem: RouteItem;
 
-  @Column({ insert: false, update: false })
+  @Column()
   routeItemId: string;
 
   @ManyToOne(() => Product, { eager: true })
   @JoinColumn({ name: 'productId' })
   product: Product;
 
-  @Column({ insert: false, update: false })
+  @Column()
   productId: string;
 
   @Column({ default: false })
