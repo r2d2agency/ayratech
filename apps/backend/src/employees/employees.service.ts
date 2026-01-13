@@ -285,15 +285,25 @@ export class EmployeesService {
           const existingUser = await this.usersService.findOne(employee.email);
           
           const allRoles = await this.rolesService.findAll();
-          const promoterRole = allRoles.find(r => 
+          let promoterRole = allRoles.find(r => 
               r.name.toLowerCase() === 'promotor' || 
               r.name.toLowerCase() === 'promoter' || 
               r.name.toLowerCase() === 'app_user'
           );
 
           if (!promoterRole) {
-             console.error('Cannot grant access: Promoter role not found');
-             return;
+             console.log('Promoter role not found, creating it...');
+             try {
+                 promoterRole = await this.rolesService.create({
+                     name: 'Promotor',
+                     description: 'Acesso básico ao aplicativo móvel',
+                     accessLevel: 'basic',
+                     permissions: []
+                 });
+             } catch (err) {
+                 console.error('Failed to create Promoter role:', err);
+                 throw new BadRequestException('Não foi possível criar o perfil de acesso Promotor.');
+             }
           }
 
           if (existingUser) {

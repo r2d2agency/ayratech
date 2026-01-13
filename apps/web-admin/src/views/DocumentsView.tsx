@@ -108,13 +108,26 @@ const DocumentsView: React.FC = () => {
     }
 
     try {
-      await api.post(`/employees/documents/bulk`, formData, {
+      const response = await api.post(`/employees/documents/bulk`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
       
-      setSuccessMessage('Documento(s) enviado(s) com sucesso!');
+      const results = response.data;
+      // Check if results is an array and has errors
+      if (Array.isArray(results)) {
+          const errors = results.filter((r: any) => r.status === 'error');
+          if (errors.length > 0) {
+              console.error('Some documents failed:', errors);
+              alert(`Alguns documentos falharam ao enviar: ${errors.length} erro(s). Verifique o console.`);
+          } else {
+              setSuccessMessage('Documento(s) enviado(s) com sucesso!');
+          }
+      } else {
+          setSuccessMessage('Documento(s) enviado(s) com sucesso!');
+      }
+      
       setFile(null);
       setDescription('');
       setSelectedEmployeeId('');
