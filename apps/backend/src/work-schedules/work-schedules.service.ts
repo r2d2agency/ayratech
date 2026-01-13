@@ -35,7 +35,11 @@ export class WorkSchedulesService {
       });
     }
 
-    const schedule = this.schedulesRepository.create(createWorkScheduleDto);
+    const { employeeId, ...scheduleData } = createWorkScheduleDto;
+    const schedule = this.schedulesRepository.create({
+      ...scheduleData,
+      employee: { id: employeeId }
+    });
     return this.schedulesRepository.save(schedule);
   }
 
