@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
 import { 
   AlertCircle, 
@@ -26,7 +25,6 @@ interface SystemLog {
 }
 
 const SystemLogsView: React.FC = () => {
-  const { user } = useAuth();
   const [logs, setLogs] = useState<SystemLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
