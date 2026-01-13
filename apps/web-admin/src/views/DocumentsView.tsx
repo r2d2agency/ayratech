@@ -421,6 +421,7 @@ const DocumentsView: React.FC = () => {
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Data</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Enviado Por</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Funcionário</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Tipo</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Descrição</th>
@@ -431,11 +432,11 @@ const DocumentsView: React.FC = () => {
               <tbody className="divide-y divide-slate-100">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500">Carregando...</td>
+                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500">Carregando...</td>
                   </tr>
                 ) : filteredDocuments.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500">Nenhum documento encontrado.</td>
+                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500">Nenhum documento encontrado.</td>
                   </tr>
                 ) : (
                   filteredDocuments.map((doc) => (
