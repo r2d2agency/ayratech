@@ -27,6 +27,8 @@ const RoutesView: React.FC = () => {
   // Search States
   const [promoterSearch, setPromoterSearch] = useState('');
   const [supermarketSearch, setSupermarketSearch] = useState('');
+  const [clientSearch, setClientSearch] = useState('');
+  const [productSearch, setProductSearch] = useState('');
 
   // Product Selection Modal State
   const [showProductModal, setShowProductModal] = useState(false);
@@ -905,6 +907,18 @@ const RoutesView: React.FC = () => {
               {!selectedClientForModal ? (
                 // Step 1: Select Client
                 <div className="space-y-2">
+                   <div className="mb-2 sticky top-0 bg-white z-10 pt-1 pb-2">
+                     <div className="relative">
+                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                       <input
+                         type="text"
+                         placeholder="Buscar cliente..."
+                         value={clientSearch}
+                         onChange={(e) => setClientSearch(e.target.value)}
+                         className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                       />
+                     </div>
+                   </div>
                    {(() => {
                       const currentSupermarket = currentRouteItemIndex !== null ? routeItems[currentRouteItemIndex].supermarket : null;
                       // Use supermarket clients if available, otherwise fallback to all clients from products
@@ -926,7 +940,15 @@ const RoutesView: React.FC = () => {
                             // Prioritize the client object from supermarket relation, then from product
                             return fromSup || fromProd;
                         })
-                        .filter(Boolean);
+                        .filter(Boolean)
+                        .filter((client: any) => {
+                           const name = client.nomeFantasia || client.fantasyName || client.razaoSocial || client.nome || '';
+                           return name.toLowerCase().includes(clientSearch.toLowerCase());
+                        });
+
+                      if (uniqueClients.length === 0) {
+                        return <div className="text-center py-4 text-slate-400 text-sm">Nenhum cliente encontrado</div>;
+                      }
 
                       return uniqueClients.map((client: any) => {
                         const clientId = client.id;
@@ -956,15 +978,31 @@ const RoutesView: React.FC = () => {
               ) : (
                 // Step 2: Select Products for selected client
                 <div className="space-y-2">
-                   <button 
-                     onClick={() => setSelectedClientForModal(null)}
-                     className="mb-2 text-xs text-blue-600 font-bold hover:underline flex items-center gap-1"
-                   >
-                     ← Voltar para Clientes
-                   </button>
+                   <div className="flex flex-col gap-2 sticky top-0 bg-white z-10 pt-1 pb-2">
+                     <button 
+                       onClick={() => setSelectedClientForModal(null)}
+                       className="text-xs text-blue-600 font-bold hover:underline flex items-center gap-1 self-start"
+                     >
+                       ← Voltar para Clientes
+                     </button>
+                     <div className="relative w-full">
+                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                       <input
+                         type="text"
+                         placeholder="Buscar produto (Nome ou SKU)..."
+                         value={productSearch}
+                         onChange={(e) => setProductSearch(e.target.value)}
+                         className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                       />
+                     </div>
+                   </div>
                    
                    {products
                      .filter(p => p.client?.id === selectedClientForModal)
+                     .filter(p => {
+                        const search = productSearch.toLowerCase();
+                        return p.name.toLowerCase().includes(search) || (p.sku && p.sku.toLowerCase().includes(search));
+                     })
                      .map(product => (
                       <div 
                         key={product.id} 
