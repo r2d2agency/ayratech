@@ -477,11 +477,13 @@ export class EmployeesService {
   }
 
   async sendBulkDocuments(data: any) {
+    console.log('Processing bulk documents for:', data);
     let targetEmployeeIds: string[] = [];
 
     if (data.sendToAll === true || data.sendToAll === 'true') {
         const allEmployees = await this.employeesRepository.find();
         targetEmployeeIds = allEmployees.map(e => e.id);
+        console.log(`Sending to all ${targetEmployeeIds.length} employees`);
     } else {
         if (typeof data.employeeIds === 'string') {
             try {
@@ -499,8 +501,10 @@ export class EmployeesService {
 
     // Filter unique IDs and remove empty ones
     targetEmployeeIds = [...new Set(targetEmployeeIds)].filter(id => id);
+    console.log('Target Employee IDs:', targetEmployeeIds);
 
     if (targetEmployeeIds.length === 0) {
+        console.warn('No target employees found/selected');
         throw new BadRequestException('Nenhum funcionário selecionado.');
     }
 
@@ -517,6 +521,7 @@ export class EmployeesService {
             results.push({ status: 'error', employeeId: empId, error: err.message });
         }
     }
+    console.log('Bulk send results:', results);
     return results;
   }
 }

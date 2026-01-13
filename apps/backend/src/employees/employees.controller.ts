@@ -63,6 +63,12 @@ export class EmployeesController {
     }),
   }))
   sendBulkDocuments(@Body() data: any, @UploadedFile() file: Express.Multer.File, @Request() req: any) {
+    console.log('Received bulk document request:', { data, file: file?.filename, user: req.user });
+    
+    if (!file && !data.fileUrl) {
+      console.error('No file provided for bulk document upload');
+    }
+
     const fileUrl = file ? `/uploads/documents/${file.filename}` : data.fileUrl;
     const senderId = req.user?.userId;
 
