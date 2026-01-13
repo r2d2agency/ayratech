@@ -19,7 +19,7 @@ export class RouteItem {
   @JoinColumn({ name: 'supermarketId' })
   supermarket: Supermarket;
 
-  @Column({ insert: false, update: false })
+  @Column()
   supermarketId: string;
 
   @Column()

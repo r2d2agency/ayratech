@@ -36,7 +36,9 @@ export class RoutesService {
         const item = items[i];
         const routeItem = this.routeItemsRepository.create({
           supermarket: { id: item.supermarketId },
+          supermarketId: item.supermarketId,
           route: { id: savedRoute.id },
+          routeId: savedRoute.id,
           order: item.order || i + 1,
           startTime: item.startTime,
           endTime: item.endTime,
@@ -185,10 +187,11 @@ export class RoutesService {
 
           for (const item of items) {
               const routeItem = queryRunner.manager.create(RouteItem, {
-                  route: { id: id } as Route,
-                  routeId: id, // Explicitly set foreign key
-                  supermarket: { id: item.supermarketId },
-                  order: item.order,
+                route: { id: id } as Route,
+                routeId: id, // Explicitly set foreign key
+                supermarket: { id: item.supermarketId },
+                supermarketId: item.supermarketId, // Explicitly set foreign key
+                order: item.order,
                   startTime: item.startTime,
                   endTime: item.endTime,
                   estimatedDuration: item.estimatedDuration,
