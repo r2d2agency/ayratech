@@ -27,6 +27,9 @@ import { AppSyncModule } from './app-sync/app-sync.module';
 import { ImageAnalysisModule } from './integrations/image-analysis/image-analysis.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MessagesModule } from './messages/messages.module';
+import { SystemLogsModule } from './system-logs/system-logs.module';
+import { APP_FILTER } from '@nestjs/core';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 @Module({
   imports: [

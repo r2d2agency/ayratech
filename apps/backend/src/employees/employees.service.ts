@@ -496,13 +496,18 @@ export class EmployeesService {
         console.log(`Sending to all ${targetEmployeeIds.length} employees`);
     } else {
         if (typeof data.employeeIds === 'string') {
-            try {
-                // Try to parse if it's a JSON array string
-                const parsed = JSON.parse(data.employeeIds);
-                targetEmployeeIds = Array.isArray(parsed) ? parsed : [data.employeeIds];
-            } catch {
-                // If not JSON, assume single ID string
-                targetEmployeeIds = [data.employeeIds];
+            // Check if it's a comma-separated string
+            if (data.employeeIds.includes(',')) {
+                targetEmployeeIds = data.employeeIds.split(',').map(id => id.trim());
+            } else {
+                try {
+                    // Try to parse if it's a JSON array string
+                    const parsed = JSON.parse(data.employeeIds);
+                    targetEmployeeIds = Array.isArray(parsed) ? parsed : [data.employeeIds];
+                } catch {
+                    // If not JSON, assume single ID string
+                    targetEmployeeIds = [data.employeeIds];
+                }
             }
         } else if (Array.isArray(data.employeeIds)) {
             targetEmployeeIds = data.employeeIds;

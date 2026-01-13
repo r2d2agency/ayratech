@@ -69,6 +69,7 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
           {activeView === 'supervisors' && <SupervisorsView />}
           {activeView === 'admin' && <AdminView />}
           {activeView === 'documents' && <DocumentsView />}
+          {activeView === 'logs' && <LogsView />}
         </main>
       </div>
     </div>

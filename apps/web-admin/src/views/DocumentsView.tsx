@@ -147,12 +147,34 @@ const DocumentsView: React.FC = () => {
     }
   };
 
-  const filteredDocuments = documents.filter(doc => 
-    doc.employee?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    doc.employee?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    doc.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    doc.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredDocuments = documents.filter(doc => {
+    // Search Term
+    const matchesSearch = 
+      (doc.employee?.fullName || doc.employee?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doc.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (doc.description || '').toLowerCase().includes(searchTerm.toLowerCase());
+
+    // Filters
+    const docDate = new Date(doc.sentAt);
+    const matchesStartDate = !filterStartDate || docDate >= new Date(filterStartDate);
+    
+    // For end date, we set it to the end of the day
+    let endDate = null;
+    if (filterEndDate) {
+        endDate = new Date(filterEndDate);
+        endDate.setHours(23, 59, 59, 999);
+    }
+    const matchesEndDate = !endDate || docDate <= endDate;
+
+    const matchesType = !filterType || doc.type === filterType;
+    const matchesEmployee = !filterEmployeeId || doc.employee?.id === filterEmployeeId;
+
+    return matchesSearch && matchesStartDate && matchesEndDate && matchesType && matchesEmployee;
+  }).sort((a, b) => {
+    const dateA = new Date(a.sentAt).getTime();
+    const dateB = new Date(b.sentAt).getTime();
+    return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+  });
 
   return (
     <div className="p-6 max-w-7xl mx-auto">

@@ -205,7 +205,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
         <p className={`text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 mb-2 h-4 overflow-hidden transition-all ${expanded ? 'opacity-100' : 'opacity-0'}`}>
           Sistema
         </p>
-        {navItem('admin', <Settings size={20} />, 'Administração')}
+        {navItem('admin', <Settings size={20} />, 'Configurações')}
+        
+        {userRole === 'admin' && (
+          <>
+            <div className="h-px bg-slate-200 my-2 mx-4" />
+            {navItem('logs', <Shield size={20} />, 'Logs do Sistema')}
+          </>
+        )}
       </div>
 
       {/* Footer Actions */}
