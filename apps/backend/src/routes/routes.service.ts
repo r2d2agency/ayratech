@@ -169,10 +169,13 @@ export class RoutesService {
           if (existingItems.length > 0) {
               await queryRunner.manager.remove(existingItems);
           }
+          
+          // Clear items in the local route object to avoid confusion and ensure clean relation
+          route.items = [];
 
           for (const item of items) {
               const routeItem = queryRunner.manager.create(RouteItem, {
-                  route: { id },
+                  route: route, // Use the full entity instead of { id }
                   supermarket: { id: item.supermarketId },
                   order: item.order,
                   startTime: item.startTime,
