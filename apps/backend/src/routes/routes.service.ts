@@ -81,10 +81,18 @@ export class RoutesService {
   }
 
   findAll() {
-    return this.routesRepository.find({
+    const routes = this.routesRepository.find({
       relations: ['items', 'items.supermarket', 'promoter', 'items.products', 'items.products.product'],
       order: { date: 'DESC' }
     });
+    // Log the first route's promoter for debugging (if any)
+    routes.then(rs => {
+      if (rs.length > 0) {
+        console.log('RoutesService.findAll debug: First route promoter:', JSON.stringify(rs[0].promoter));
+        console.log('RoutesService.findAll debug: First route promoterId:', rs[0].promoterId);
+      }
+    });
+    return routes;
   }
 
   findByPromoter(promoterId: string) {
