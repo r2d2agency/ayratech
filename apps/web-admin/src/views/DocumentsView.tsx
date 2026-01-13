@@ -117,14 +117,15 @@ const DocumentsView: React.FC = () => {
       const results = response.data;
       // Check if results is an array and has errors
       if (Array.isArray(results)) {
-          const errors = results.filter((r: any) => r.status === 'error');
-          if (errors.length > 0) {
-              console.error('Some documents failed:', errors);
-              alert(`Alguns documentos falharam ao enviar: ${errors.length} erro(s). Verifique o console.`);
-          } else {
-              setSuccessMessage('Documento(s) enviado(s) com sucesso!');
-          }
-      } else {
+           const errors = results.filter((r: any) => r.status === 'error');
+           if (errors.length > 0) {
+               console.error('Failed documents details:', JSON.stringify(errors, null, 2));
+               const errorMsg = errors.map((e: any) => `Func. ID ${e.employeeId.substring(0,8)}... : ${e.error}`).join('\n');
+               alert(`Alguns documentos não puderam ser enviados:\n${errorMsg}\n\nVerifique os dados e tente novamente.`);
+           } else {
+               setSuccessMessage('Documento(s) enviado(s) com sucesso!');
+           }
+       } else {
           setSuccessMessage('Documento(s) enviado(s) com sucesso!');
       }
       

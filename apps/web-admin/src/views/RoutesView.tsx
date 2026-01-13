@@ -241,9 +241,10 @@ const RoutesView: React.FC = () => {
       // Clear form
       setRouteItems([]);
       setEditingRouteId(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving route:', error);
-      alert('Erro ao salvar rota.');
+      const errorMsg = error.response?.data?.message || error.message || 'Erro desconhecido';
+      alert(`Erro ao salvar rota: ${errorMsg}`);
     } finally {
       setLoading(false);
     }

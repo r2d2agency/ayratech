@@ -242,8 +242,10 @@ const EmployeesView: React.FC = () => {
       setShowRoleModal(false);
       setRoleForm({ name: '', description: '', accessLevel: 'basic' });
       fetchRoles();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving role:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Erro ao salvar cargo.';
+      alert(`Erro: ${Array.isArray(errorMessage) ? errorMessage.join(', ') : errorMessage}`);
     }
   };
 

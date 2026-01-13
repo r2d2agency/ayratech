@@ -160,14 +160,15 @@ export class RoutesService {
 
       // 3. Update items if provided
       if (items) {
-          // Robust deletion: Remove existing items (cascade will handle products)
-          // We can't just delete all items because of foreign keys or logs maybe? 
-          // For now, simpler to delete and recreate as per requirements.
-          // But wait, if we delete, we lose checkIn/checkOut times if we are just editing the plan?
-          // The check `hasStarted` above prevents editing started routes.
-          // So it is safe to delete items.
+          // Robust deletion: Find and remove items to handle cascades/constraints safely
+          const existingItems = await queryRunner.manager.find(RouteItem, { 
+              where: { route: { id } },
+              relations: ['products'] 
+          });
           
-          await queryRunner.manager.delete(RouteItem, { route: { id } });
+          if (existingItems.length > 0) {
+              await queryRunner.manager.remove(existingItems);
+          }
 
           for (const item of items) {
               const routeItem = queryRunner.manager.create(RouteItem, {

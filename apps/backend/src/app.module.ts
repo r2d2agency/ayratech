@@ -91,8 +91,15 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     ImageAnalysisModule,
     NotificationsModule,
     MessagesModule,
+    SystemLogsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter,
+    },
+  ],
 })
 export class AppModule {}

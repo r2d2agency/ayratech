@@ -25,7 +25,7 @@ interface SystemLog {
   createdAt: string;
 }
 
-const LogsView: React.FC = () => {
+const SystemLogsView: React.FC = () => {
   const { user } = useAuth();
   const [logs, setLogs] = useState<SystemLog[]>([]);
   const [loading, setLoading] = useState(false);
@@ -203,4 +203,4 @@ const LogsView: React.FC = () => {
   );
 };
 
-export default LogsView;
+export default SystemLogsView;

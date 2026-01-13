@@ -18,6 +18,7 @@ import EmployeesView from './views/EmployeesView';
 import SupervisorsView from './views/SupervisorsView';
 import AppAccessView from './views/AppAccessView';
 import DocumentsView from './views/DocumentsView';
+import SystemLogsView from './views/SystemLogsView';
 import LoginView from './views/LoginView';
 import { BrandingProvider } from './context/BrandingContext';
 import { jwtDecode } from 'jwt-decode';
@@ -69,7 +70,7 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
           {activeView === 'supervisors' && <SupervisorsView />}
           {activeView === 'admin' && <AdminView />}
           {activeView === 'documents' && <DocumentsView />}
-          {activeView === 'logs' && <LogsView />}
+          {activeView === 'logs' && <SystemLogsView />}
         </main>
       </div>
     </div>

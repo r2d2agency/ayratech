@@ -94,9 +94,10 @@ const AppAccessView: React.FC = () => {
           : emp
       ));
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error toggling app access:', error);
-      alert('Erro ao alterar acesso do aplicativo.');
+      const msg = error.response?.data?.message || error.message || 'Erro ao alterar acesso do aplicativo.';
+      alert(`Erro: ${Array.isArray(msg) ? msg.join(', ') : msg}`);
     }
   };
 
@@ -138,9 +139,10 @@ const AppAccessView: React.FC = () => {
 
         setScheduleForm(formDays);
         setShowScheduleModal(true);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error loading schedule:', error);
-        alert('Erro ao carregar horários.');
+        const msg = error.response?.data?.message || error.message || 'Erro ao carregar horários.';
+        alert(`Erro: ${Array.isArray(msg) ? msg.join(', ') : msg}`);
     }
   };
 
@@ -164,9 +166,10 @@ const AppAccessView: React.FC = () => {
         fetchEmployees(); // Refresh to get updated data
         alert('Horários atualizados com sucesso!');
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error saving schedule:', error);
-        alert('Erro ao salvar horários.');
+        const msg = error.response?.data?.message || error.message || 'Erro ao salvar horários.';
+        alert(`Erro: ${Array.isArray(msg) ? msg.join(', ') : msg}`);
     } finally {
         setSavingSchedule(false);
     }
