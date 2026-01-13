@@ -151,12 +151,22 @@ export class RoutesService {
 
       const { items, promoterId, ...routeData } = updateRouteDto;
 
-      // 2. Update basic fields
-      await queryRunner.manager.save(Route, {
-          id,
-          ...routeData,
-          promoter: (promoterId === null || promoterId === '') ? null : (promoterId ? { id: promoterId } : undefined),
-      });
+      // 2. Update basic fields using update() to ignore @Column({ update: false }) on promoterId if needed
+      // and ensuring we only pass fields that are present.
+      const updatePayload: any = { ...routeData };
+      
+      // Handle promoter update explicitly
+      if (promoterId !== undefined) {
+         // We update the relation column directly via the relation property if possible,
+         // or if we use update(), we can try setting the relation id.
+         // However, standard TypeORM update({ id }, { promoter: { id: ... } }) works.
+         updatePayload.promoter = (promoterId === null || promoterId === '') ? null : { id: promoterId };
+      }
+
+      // Ensure we have something to update to avoid "update values are not defined"
+      if (Object.keys(updatePayload).length > 0) {
+        await queryRunner.manager.update(Route, id, updatePayload);
+      }
 
       // 3. Update items if provided
       if (items) {
