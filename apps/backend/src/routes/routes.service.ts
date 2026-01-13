@@ -23,6 +23,7 @@ export class RoutesService {
   ) {}
 
   async create(createRouteDto: CreateRouteDto) {
+    console.log('RoutesService.create input:', JSON.stringify(createRouteDto));
     const { items, ...routeData } = createRouteDto;
     
     const route = this.routesRepository.create({
@@ -30,7 +31,10 @@ export class RoutesService {
       promoterId: routeData.promoterId,
       promoter: routeData.promoterId ? { id: routeData.promoterId } : null,
     });
+    console.log('RoutesService.create entity before save:', JSON.stringify(route));
+    
     const savedRoute = await this.routesRepository.save(route);
+    console.log('RoutesService.create saved entity:', JSON.stringify(savedRoute));
 
     if (items && items.length > 0) {
       // Validate promoter availability for all items first
@@ -168,22 +172,16 @@ export class RoutesService {
 
       const { items, promoterId, ...routeData } = updateRouteDto;
 
-      // 2. Update basic fields using update() to ignore @Column({ update: false }) on promoterId if needed
-      // and ensuring we only pass fields that are present.
-      const updatePayload: any = { ...routeData };
+      // 2. Update basic fields using save() to ensure relations are handled correctly
+      Object.assign(route, routeData);
       
       // Handle promoter update explicitly
       if (promoterId !== undefined) {
-         // We update the relation column directly via the relation property if possible,
-         // or if we use update(), we can try setting the relation id.
-         // However, standard TypeORM update({ id }, { promoter: { id: ... } }) works.
-         updatePayload.promoter = (promoterId === null || promoterId === '') ? null : { id: promoterId };
+         route.promoterId = promoterId;
+         route.promoter = (promoterId === null || promoterId === '') ? null : { id: promoterId } as any;
       }
 
-      // Ensure we have something to update to avoid "update values are not defined"
-      if (Object.keys(updatePayload).length > 0) {
-        await queryRunner.manager.update(Route, id, updatePayload);
-      }
+      await queryRunner.manager.save(Route, route);
 
       // 3. Update items if provided
       if (items) {
