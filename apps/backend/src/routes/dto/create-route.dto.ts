@@ -13,6 +13,10 @@ class RouteItemDto {
   startTime?: string;
 
   @IsOptional()
+  @IsString()
+  endTime?: string;
+
+  @IsOptional()
   estimatedDuration?: number;
 
   @IsOptional()

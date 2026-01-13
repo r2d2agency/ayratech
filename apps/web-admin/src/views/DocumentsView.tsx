@@ -28,6 +28,7 @@ interface Document {
   readAt?: string;
   senderId?: string;
   employee: {
+    id: string;
     name: string;
     fullName: string;
   };
@@ -39,6 +40,14 @@ const DocumentsView: React.FC = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Filter States
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [filterEmployeeId, setFilterEmployeeId] = useState('');
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
   // Form State
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
@@ -334,11 +343,78 @@ const DocumentsView: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <button className="h-10 px-4 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-2 text-sm font-medium">
+            <button 
+              onClick={() => setShowFilters(!showFilters)}
+              className={`h-10 px-4 rounded-xl border transition-colors flex items-center gap-2 text-sm font-medium ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+            >
               <Filter size={18} />
               Filtros
             </button>
           </div>
+
+          {showFilters && (
+            <div className="p-4 border-b border-slate-100 bg-slate-50/50 grid grid-cols-1 md:grid-cols-5 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-500">Data Inicial</label>
+                <input 
+                  type="date" 
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
+                  value={filterStartDate}
+                  onChange={(e) => setFilterStartDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-500">Data Final</label>
+                <input 
+                  type="date" 
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
+                  value={filterEndDate}
+                  onChange={(e) => setFilterEndDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-500">Tipo</label>
+                <select 
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                >
+                  <option value="">Todos</option>
+                  <option value="Holerite">Holerite</option>
+                  <option value="Comunicado">Comunicado</option>
+                  <option value="Ata">Ata</option>
+                  <option value="Solicitação de Documentos">Solicitação de Documentos</option>
+                  <option value="Contrato">Contrato</option>
+                  <option value="Advertência">Advertência</option>
+                  <option value="Outros">Outros</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-500">Funcionário</label>
+                <select 
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
+                  value={filterEmployeeId}
+                  onChange={(e) => setFilterEmployeeId(e.target.value)}
+                >
+                  <option value="">Todos</option>
+                  {employees.map(emp => (
+                    <option key={emp.id} value={emp.id}>{emp.fullName || emp.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-500">Ordenação</label>
+                <select 
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                >
+                  <option value="desc">Mais recentes</option>
+                  <option value="asc">Mais antigos</option>
+                </select>
+              </div>
+            </div>
+          )}
 
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -364,43 +440,57 @@ const DocumentsView: React.FC = () => {
                 ) : (
                   filteredDocuments.map((doc) => (
                     <tr key={doc.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                        {new Date(doc.sentAt).toLocaleDateString()} <span className="text-slate-400 text-xs">{new Date(doc.sentAt).toLocaleTimeString()}</span>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-slate-900">
+                          {new Date(doc.sentAt).toLocaleDateString()}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          {new Date(doc.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-slate-900">{doc.employee?.fullName || doc.employee?.name}</div>
+                        <div className="text-sm text-slate-700">
+                          {doc.sender?.employee?.fullName || doc.sender?.employee?.name || doc.sender?.email || 'Sistema'}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-medium border border-blue-100">
+                        <div className="text-sm font-medium text-slate-900">{doc.employee?.fullName || doc.employee?.name || 'Desconhecido'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           {doc.type}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate" title={doc.description}>
-                        {doc.description || '-'}
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-slate-600 truncate max-w-xs">{doc.description || '-'}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {doc.readAt ? (
-                          <span className="flex items-center gap-1.5 text-green-600 text-xs font-medium bg-green-50 px-2.5 py-1 rounded-lg border border-green-100 w-fit">
-                            <CheckCircle size={14} />
-                            Lido em {new Date(doc.readAt).toLocaleDateString()}
-                          </span>
+                          <div>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mb-1">
+                              <CheckCircle size={12} />
+                              Lido
+                            </span>
+                            <div className="text-xs text-slate-500">
+                              {new Date(doc.readAt).toLocaleString()}
+                            </div>
+                          </div>
                         ) : (
-                          <span className="flex items-center gap-1.5 text-slate-500 text-xs font-medium bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 w-fit">
-                            <Clock size={14} />
-                            Enviado
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <Clock size={12} />
+                            Pendente
                           </span>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <a 
-                          href={`${API_URL.replace('/api', '')}${doc.fileUrl}`} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
+                        <button 
+                          onClick={() => handleMarkAsRead(doc)}
                           className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded-lg transition-colors inline-block"
-                          title="Baixar Documento"
+                          title="Abrir e Marcar como Lido"
                         >
                           <Download size={18} />
-                        </a>
+                        </button>
                       </td>
                     </tr>
                   ))

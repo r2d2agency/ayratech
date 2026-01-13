@@ -114,7 +114,7 @@ const ClientsView: React.FC = () => {
   };
 
   const getLogoUrl = (url: string) => {
-    if (!url) return 'https://via.placeholder.com/150';
+    if (!url) return 'https://placehold.co/150';
     if (url.startsWith('http')) return url;
     if (url.startsWith('/')) return `${API_URL}${url}`;
     return `https://${url}`;

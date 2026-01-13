@@ -39,6 +39,7 @@ export class RoutesService {
           route: { id: savedRoute.id },
           order: item.order || i + 1,
           startTime: item.startTime,
+          endTime: item.endTime,
           estimatedDuration: item.estimatedDuration
         });
         const savedItem = await this.routeItemsRepository.save(routeItem);
@@ -100,6 +101,7 @@ export class RoutesService {
         supermarketId: item.supermarketId,
         order: item.order,
         startTime: item.startTime,
+        endTime: item.endTime,
         estimatedDuration: item.estimatedDuration,
         productIds: item.products.map(p => p.productId)
       }))
@@ -121,6 +123,8 @@ export class RoutesService {
     await queryRunner.startTransaction();
 
     try {
+      console.log(`Updating route ${id}`, JSON.stringify(updateRouteDto));
+
       // 1. Fetch route with relations using queryRunner
       const route = await queryRunner.manager.findOne(Route, {
         where: { id },
@@ -157,30 +161,36 @@ export class RoutesService {
       // 3. Update items if provided
       if (items) {
           // Robust deletion: Remove existing items (cascade will handle products)
-          if (route.items && route.items.length > 0) {
-              await queryRunner.manager.remove(route.items);
-          }
+          // We can't just delete all items because of foreign keys or logs maybe? 
+          // For now, simpler to delete and recreate as per requirements.
+          // But wait, if we delete, we lose checkIn/checkOut times if we are just editing the plan?
+          // The check `hasStarted` above prevents editing started routes.
+          // So it is safe to delete items.
+          
+          await queryRunner.manager.delete(RouteItem, { route: { id } });
 
-          // Create new items
-          for (let i = 0; i < items.length; i++) {
-              const item = items[i];
+          for (const item of items) {
               const routeItem = queryRunner.manager.create(RouteItem, {
+                  route: { id },
                   supermarket: { id: item.supermarketId },
-                  route: { id: id },
-                  order: item.order || i + 1,
+                  order: item.order,
                   startTime: item.startTime,
-                  estimatedDuration: item.estimatedDuration
+                  endTime: item.endTime,
+                  estimatedDuration: item.estimatedDuration,
+                  status: 'PENDING'
               });
-              const savedItem = await queryRunner.manager.save(routeItem);
+              
+              const savedItem = await queryRunner.manager.save(RouteItem, routeItem);
 
               if (item.productIds && item.productIds.length > 0) {
-                  const productEntities = item.productIds.map(productId => 
+                  const itemProducts = item.productIds.map(productId => 
                       queryRunner.manager.create(RouteItemProduct, {
-                          routeItem: { id: savedItem.id },
-                          product: { id: productId }
+                          routeItem: savedItem,
+                          product: { id: productId },
+                          checked: false
                       })
                   );
-                  await queryRunner.manager.save(productEntities);
+                  await queryRunner.manager.save(RouteItemProduct, itemProducts);
               }
           }
       }
@@ -191,6 +201,7 @@ export class RoutesService {
       await queryRunner.rollbackTransaction();
       console.error('Error updating route (Stack):', error.stack);
       console.error('Error updating route (Message):', error.message);
+      console.error('Error updating route (Full):', JSON.stringify(error, null, 2));
       if (error instanceof BadRequestException) throw error;
       throw new InternalServerErrorException(`Erro ao salvar rota: ${error.message}`);
     } finally {

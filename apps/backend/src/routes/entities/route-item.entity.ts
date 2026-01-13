@@ -29,6 +29,9 @@ export class RouteItem {
   startTime: string; // HH:mm
 
   @Column({ nullable: true })
+  endTime: string; // HH:mm
+
+  @Column({ nullable: true })
   estimatedDuration: number; // in minutes
 
   @Column({ default: 'PENDING' }) // PENDING, CHECKIN, CHECKOUT, SKIPPED

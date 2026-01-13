@@ -292,19 +292,46 @@ export class EmployeesService {
           }
 
           if (existingUser) {
+              // Check if any OTHER user is already linked to this employee (to avoid unique constraint violation)
+              const userLinkedToEmployee = await this.usersService.findByEmployeeId(employee.id);
+              if (userLinkedToEmployee && userLinkedToEmployee.id !== existingUser.id) {
+                  // Unlink the other user
+                  console.warn(`Unlinking employee ${employee.id} from previous user ${userLinkedToEmployee.email}`);
+                  await this.usersService.update(userLinkedToEmployee.id, { employeeId: null as any });
+              }
+
               // User exists but not linked to this employee (otherwise hasUser would be true)
-              if (!existingUser.employee || !existingUser.employee.id) {
+              if (!existingUser.employee || !existingUser.employee.id || existingUser.employee.id !== employee.id) {
                   // Link existing user to this employee
-                  await this.usersService.update(existingUser.id, {
-                      employeeId: employee.id,
-                      roleId: promoterRole.id, // Ensure they have the right role
-                      status: 'active'
-                  });
+                  try {
+                      await this.usersService.update(existingUser.id, {
+                          employeeId: employee.id,
+                          roleId: promoterRole.id, // Ensure they have the right role
+                          status: 'active'
+                      });
+                  } catch (e) {
+                      console.error('Error linking user to employee:', e);
+                      throw new BadRequestException(`Erro ao vincular usuário: ${e.message}`);
+                  }
               } else {
                   console.error(`User with email ${employee.email} is already linked to another employee`);
+                  // IMPORTANT: Throw error so frontend knows it failed
+                  throw new BadRequestException(`O email ${employee.email} já está vinculado a outro funcionário.`);
               }
           } else {
               // Create User
+              // Check if any OTHER user is already linked to this employee
+              const userLinkedToEmployee = await this.usersService.findByEmployeeId(employee.id);
+              if (userLinkedToEmployee) {
+                  // Unlink the other user
+                  console.warn(`Unlinking employee ${employee.id} from previous user ${userLinkedToEmployee.email}`);
+                  try {
+                      await this.usersService.update(userLinkedToEmployee.id, { employeeId: null as any });
+                  } catch (e) {
+                      console.error('Error unlinking user:', e);
+                  }
+              }
+
               try {
                   await this.usersService.create({
                       email: employee.email,
@@ -315,22 +342,33 @@ export class EmployeesService {
                   });
               } catch (e) {
                   console.error('Error creating user on update:', e);
+                  throw new BadRequestException(`Erro ao criar usuário: ${e.message}`);
               }
           }
       } else if (!shouldHaveAccess && hasUser) {
           // Deactivate User and Unlink Employee (instead of deleting to preserve history)
           const user = await this.usersService.findByEmployeeId(id);
           if (user) {
-              await this.usersService.update(user.id, { 
-                   employeeId: null as any,
-                   status: 'inactive'
-               });
+              try {
+                  await this.usersService.update(user.id, { 
+                       employeeId: null as any,
+                       status: 'inactive'
+                   });
+              } catch (e) {
+                  console.error('Error deactivating user:', e);
+                  throw new BadRequestException(`Erro ao desativar acesso: ${e.message}`);
+              }
           }
       } else if (shouldHaveAccess && hasUser && appPassword) {
           // Update Password
           const user = await this.usersService.findByEmployeeId(id);
           if (user) {
-              await this.usersService.update(user.id, { password: appPassword });
+              try {
+                  await this.usersService.update(user.id, { password: appPassword });
+              } catch (e) {
+                  console.error('Error updating password:', e);
+                  throw new BadRequestException(`Erro ao atualizar senha: ${e.message}`);
+              }
           }
       }
     }
@@ -353,7 +391,7 @@ export class EmployeesService {
 
   async findAllDocuments() {
     return this.documentsRepository.find({
-      relations: ['employee'],
+      relations: ['employee', 'sender', 'sender.employee'],
       order: { sentAt: 'DESC' }
     });
   }

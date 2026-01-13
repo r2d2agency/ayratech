@@ -56,7 +56,7 @@ const ProductsView: React.FC = () => {
         nome: c.nomeFantasia || c.razaoSocial,
         logo: c.logo
           ? (c.logo.startsWith('http') ? c.logo : `${API_URL}${c.logo}`)
-          : 'https://via.placeholder.com/150'
+          : 'https://placehold.co/150'
       }));
       setClients(mappedClients);
       setBrands(brandsRes.data);
@@ -65,7 +65,7 @@ const ProductsView: React.FC = () => {
       const mappedProducts = productsRes.data.map((p: any) => {
         const imgUrl = p.image 
           ? (p.image.startsWith('http') ? p.image : `${API_URL}${p.image}`)
-          : 'https://via.placeholder.com/150';
+          : 'https://placehold.co/150';
         
         // Debug image URL issues
         if (p.image && !p.image.startsWith('http')) {

@@ -1,5 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 import { Employee } from './employee.entity';
+import { User } from '../../users/entities/user.entity';
 
 @Entity('employee_documents')
 export class EmployeeDocument {
@@ -27,6 +28,10 @@ export class EmployeeDocument {
 
   @Column({ nullable: true })
   senderId: string; // ID do usuário que enviou (RH/Admin)
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'senderId' })
+  sender: User;
 
   @Column({ type: 'timestamp', nullable: true })
   sentAt: Date; // enviado_em

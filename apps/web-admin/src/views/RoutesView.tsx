@@ -124,6 +124,12 @@ const RoutesView: React.FC = () => {
     }
   };
 
+  const handleUpdateItemTime = (index: number, field: 'startTime' | 'endTime', value: string) => {
+    const newItems = [...routeItems];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setRouteItems(newItems);
+  };
+
   const handleRemoveItem = (index: number) => {
     const newItems = [...routeItems];
     newItems.splice(index, 1);
@@ -143,7 +149,37 @@ const RoutesView: React.FC = () => {
 
   const handleUpdateItem = (index: number, field: string, value: any) => {
     const newItems = [...routeItems];
-    newItems[index] = { ...newItems[index], [field]: value };
+    const newItem = { ...newItems[index], [field]: value };
+
+    // Check for time conflict if time fields are changing
+    if ((field === 'startTime' || field === 'estimatedDuration') && newItem.startTime && newItem.estimatedDuration) {
+       const newStart = parseInt(newItem.startTime.split(':')[0]) * 60 + parseInt(newItem.startTime.split(':')[1]);
+       const newEnd = newStart + parseInt(newItem.estimatedDuration);
+
+       let hasConflict = false;
+       for (let i = 0; i < routeItems.length; i++) {
+         if (i === index) continue; // Skip self
+         const item = routeItems[i];
+         if (!item.startTime || !item.estimatedDuration) continue;
+
+         const itemStart = parseInt(item.startTime.split(':')[0]) * 60 + parseInt(item.startTime.split(':')[1]);
+         const itemEnd = itemStart + parseInt(item.estimatedDuration);
+
+         // Check overlap: (StartA < EndB) and (EndA > StartB)
+         if (newStart < itemEnd && newEnd > itemStart) {
+           hasConflict = true;
+           break;
+         }
+       }
+
+       if (hasConflict) {
+         if (!window.confirm('Existe um conflito de horário com outro ponto nesta rota. Deseja manter este horário mesmo assim?')) {
+           return; // Cancel update
+         }
+       }
+    }
+
+    newItems[index] = newItem;
     setRouteItems(newItems);
   };
 
@@ -187,7 +223,8 @@ const RoutesView: React.FC = () => {
           supermarketId: item.supermarketId,
           order: index + 1,
           startTime: item.startTime,
-          estimatedDuration: parseInt(item.estimatedDuration),
+          endTime: item.endTime,
+          estimatedDuration: item.estimatedDuration ? parseInt(item.estimatedDuration) : undefined,
           productIds: item.productIds || []
         }))
       };
@@ -644,42 +681,82 @@ const RoutesView: React.FC = () => {
                             </button>
                           </div>
 
-                          <div className="flex flex-wrap gap-4 p-3 bg-slate-50 rounded-xl">
-                            <div className="flex items-center gap-2">
-                              <Clock size={16} className="text-slate-400" />
-                              <div className="flex flex-col">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase">Chegada</label>
-                                <input 
-                                  type="time" 
-                                  value={item.startTime}
-                                  onChange={e => handleUpdateItem(index, 'startTime', e.target.value)}
-                                  className="bg-transparent font-bold text-sm text-slate-700 outline-none w-20"
-                                />
+                            <div className="flex flex-wrap gap-4 p-3 bg-slate-50 rounded-xl">
+                              <div className="flex items-center gap-2">
+                                <Clock size={16} className="text-slate-400" />
+                                <div className="flex flex-col">
+                                  <label className="text-[10px] font-bold text-slate-400 uppercase">Início</label>
+                                  <input 
+                                    type="time" 
+                                    value={item.startTime || ''}
+                                    onChange={e => handleUpdateItem(index, 'startTime', e.target.value)}
+                                    className="bg-transparent font-bold text-sm text-slate-700 outline-none w-24"
+                                  />
+                                </div>
+                              </div>
+                              <div className="w-px bg-slate-200 h-8" />
+                              <div className="flex items-center gap-2">
+                                <div className="flex flex-col">
+                                  <label className="text-[10px] font-bold text-slate-400 uppercase">Fim</label>
+                                  <input 
+                                    type="time" 
+                                    value={item.endTime || ''}
+                                    onChange={e => handleUpdateItem(index, 'endTime', e.target.value)}
+                                    className="bg-transparent font-bold text-sm text-slate-700 outline-none w-24"
+                                  />
+                                </div>
                               </div>
                             </div>
-                            <div className="w-px bg-slate-200 h-8" />
-                            <div className="flex items-center gap-2">
-                              <div className="flex flex-col">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase">Duração (min)</label>
-                                <input 
-                                  type="number" 
-                                  value={item.estimatedDuration}
-                                  onChange={e => handleUpdateItem(index, 'estimatedDuration', e.target.value)}
-                                  className="bg-transparent font-bold text-sm text-slate-700 outline-none w-16"
-                                />
-                              </div>
-                            </div>
-                          </div>
 
-                          <button 
-                            onClick={() => handleOpenProductModal(index)}
-                            className="w-full py-2 border border-blue-100 bg-blue-50 text-blue-600 rounded-lg text-sm font-bold hover:bg-blue-100 transition-all flex items-center justify-center gap-2"
-                          >
-                            <CheckCircle size={16} />
-                            {item.productIds && item.productIds.length > 0 
-                              ? `${item.productIds.length} Produtos Selecionados` 
-                              : 'Selecionar Produtos para Conferência'}
-                          </button>
+                            <div className="mt-4">
+                              <div className="flex justify-between items-center mb-2">
+                                <h5 className="text-xs font-black text-slate-500 uppercase">Produtos ({item.productIds?.length || 0})</h5>
+                                <button 
+                                  onClick={() => handleOpenProductModal(index)}
+                                  className="text-blue-600 hover:text-blue-700 text-xs font-bold flex items-center gap-1"
+                                >
+                                  <Plus size={14} /> Adicionar/Gerenciar
+                                </button>
+                              </div>
+                              
+                              <div className="space-y-4">
+                                {(() => {
+                                  // Group products by Client
+                                  const groupedProducts: Record<string, any[]> = {};
+                                  item.productIds?.forEach((pid: string) => {
+                                    const product = products.find(p => p.id === pid);
+                                    if (product) {
+                                      const clientName = product.client?.fantasyName || product.client?.name || 'Outros';
+                                      if (!groupedProducts[clientName]) groupedProducts[clientName] = [];
+                                      groupedProducts[clientName].push(product);
+                                    }
+                                  });
+
+                                  if (Object.keys(groupedProducts).length === 0) {
+                                    return (
+                                      <p className="text-xs text-slate-400 italic">Nenhum produto selecionado para este ponto.</p>
+                                    );
+                                  }
+
+                                  return Object.entries(groupedProducts).map(([clientName, clientProducts], gIndex) => (
+                                    <div key={clientName} className="border-l-2 border-slate-200 pl-3">
+                                      <h6 className="text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">{clientName}</h6>
+                                      <div className="space-y-2">
+                                        {clientProducts.map((product, pIndex) => (
+                                          <div key={product.id} className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg border border-slate-100">
+                                            <span className="text-xs font-bold text-slate-400 w-6">{(gIndex + 1)}.{pIndex + 1}</span>
+                                            <div className="flex-1">
+                                              <p className="text-sm font-bold text-slate-700">{product.name}</p>
+                                              <p className="text-xs text-slate-400">{product.ean || ''}</p>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  ));
+                                })()}
+                              </div>
+                            </div>
                         </div>
                       </div>
                     </div>
@@ -845,7 +922,8 @@ const RoutesView: React.FC = () => {
                             // Find full client data either from supermarket.clients or from product.client
                             const fromSup = currentSupermarket?.clients?.find((c: any) => c.id === id);
                             const fromProd = products.find(p => p.client?.id === id)?.client;
-                            return fromSup?.fantasyName ? fromSup : fromProd;
+                            // Prioritize the client object from supermarket relation, then from product
+                            return fromSup || fromProd;
                         })
                         .filter(Boolean);
 
