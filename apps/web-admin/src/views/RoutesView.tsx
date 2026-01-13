@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPinned, Plus, Trash2, CheckCircle, Save, Settings, List, Clock, MoveUp, MoveDown, Copy, FileText, Check } from 'lucide-react';
+import { Calendar, MapPinned, Plus, Trash2, CheckCircle, Save, Settings, List, Clock, MoveUp, MoveDown, Copy, FileText, Check, Search } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import api from '../api/client';
 
@@ -206,6 +206,34 @@ const RoutesView: React.FC = () => {
       setRouteItems(newItems);
       setShowProductModal(false);
       setCurrentRouteItemIndex(null);
+    }
+  };
+
+  const handleDeleteRoute = async () => {
+    if (!editingRouteId) return;
+    
+    // Check if route can be deleted (e.g. not COMPLETED)
+    if (routeStatus === 'COMPLETED' || routeStatus === 'IN_PROGRESS') {
+        alert('Não é possível excluir uma rota que já foi iniciada ou concluída.');
+        return;
+    }
+
+    if (!window.confirm('Tem certeza que deseja excluir esta rota? Esta ação não pode ser desfeita.')) return;
+    
+    setLoading(true);
+    try {
+      await api.delete(`/routes/${editingRouteId}`);
+      alert('Rota excluída com sucesso!');
+      fetchRoutesForWeek();
+      setActiveTab('planner');
+      setRouteItems([]);
+      setEditingRouteId(null);
+      setRouteStatus('DRAFT');
+    } catch (error: any) {
+      console.error('Error deleting route:', error);
+      alert('Erro ao excluir rota.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -768,20 +796,30 @@ const RoutesView: React.FC = () => {
               </div>
 
               <div className="flex gap-4 mt-8 pt-8 border-t border-slate-200">
+                {editingRouteId && (
+                    <button 
+                      onClick={handleDeleteRoute}
+                      disabled={loading || routeStatus === 'COMPLETED' || routeStatus === 'IN_PROGRESS'}
+                      className="px-6 py-4 bg-red-50 border border-red-100 text-red-600 rounded-xl font-black shadow-sm hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      title="Excluir Rota"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                )}
                 <button 
                   onClick={() => handleSaveRoute('DRAFT')}
-                  disabled={loading}
-                  className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 rounded-xl font-black shadow-sm hover:bg-slate-50"
+                  disabled={loading || routeStatus === 'COMPLETED' || routeStatus === 'IN_PROGRESS'}
+                  className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 rounded-xl font-black shadow-sm hover:bg-slate-50 disabled:opacity-50"
                 >
-                  Salvar Rascunho
+                  {routeStatus === 'CONFIRMED' ? 'Reverter para Rascunho' : 'Salvar Rascunho'}
                 </button>
                 <button 
                   onClick={() => handleSaveRoute('CONFIRMED')}
-                  disabled={loading}
-                  className="flex-1 py-4 text-white rounded-xl font-black shadow-lg hover:opacity-90 flex items-center justify-center gap-2"
+                  disabled={loading || routeStatus === 'COMPLETED' || routeStatus === 'IN_PROGRESS'}
+                  className="flex-1 py-4 text-white rounded-xl font-black shadow-lg hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50"
                   style={{ backgroundColor: settings.primaryColor }}
                 >
-                  <Check size={20} /> Confirmar Rota
+                  <Check size={20} /> {routeStatus === 'CONFIRMED' ? 'Salvar Alterações' : 'Confirmar Rota'}
                 </button>
               </div>
             </div>
