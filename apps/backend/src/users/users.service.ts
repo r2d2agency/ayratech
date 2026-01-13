@@ -163,17 +163,30 @@ export class UsersService implements OnModuleInit {
       const { roleId, employeeId, ...userData } = updateUserDto;
       const updatePayload: any = { ...userData };
       
-      if (roleId !== undefined) updatePayload.role = roleId ? { id: roleId } : null;
-      if (employeeId !== undefined) updatePayload.employee = employeeId ? { id: employeeId } : null;
+      if (roleId !== undefined) {
+        updatePayload.role = (roleId && roleId !== '') ? { id: roleId } : null;
+      }
+      
+      if (employeeId !== undefined) {
+        updatePayload.employee = (employeeId && employeeId !== '') ? { id: employeeId } : null;
+      }
 
       // Use save instead of update to handle listeners/subscribers if any, and better error return
       return await this.usersRepository.save({ id, ...updatePayload });
     } catch (err: any) {
       console.error('Erro ao atualizar usuário:', err);
       if (err?.code === '23505') {
-        throw new BadRequestException('Email já cadastrado');
+        if (err.detail && err.detail.includes('email')) {
+          throw new BadRequestException('Email já cadastrado');
+        }
+        throw new BadRequestException('Dados já cadastrados no sistema (email ou vínculo duplicado).');
       }
-      throw new BadRequestException('Erro ao atualizar usuário. Verifique os dados.');
+      // Handle FK violations
+      if (err?.code === '23503') {
+         throw new BadRequestException('Erro de relacionamento (Cargo ou Funcionário inválido).');
+      }
+      
+      throw new BadRequestException(`Erro ao atualizar usuário: ${err.message || 'Verifique os dados'}`);
     }
   }
 
