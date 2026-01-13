@@ -41,6 +41,38 @@ export class EmployeesController {
     return this.employeesService.create(createEmployeeDto);
   }
 
+  @Get('documents/all')
+  findAllDocuments() {
+    return this.employeesService.findAllDocuments();
+  }
+
+  @Post('documents/bulk')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: (req, file, cb) => {
+        const uploadPath = './uploads/documents';
+        if (!fs.existsSync(uploadPath)) {
+          fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
+      },
+    }),
+  }))
+  sendBulkDocuments(@Body() data: any, @UploadedFile() file: Express.Multer.File, @Request() req: any) {
+    const fileUrl = file ? `/uploads/documents/${file.filename}` : data.fileUrl;
+    const senderId = req.user?.userId;
+
+    return this.employeesService.sendBulkDocuments({ 
+      ...data, 
+      fileUrl,
+      senderId
+    });
+  }
+
   @Get()
   findAll() {
     return this.employeesService.findAll();
@@ -84,38 +116,6 @@ export class EmployeesController {
   @Post(':id/compensation')
   addCompensation(@Param('id') id: string, @Body() data: any) {
     return this.employeesService.addCompensation({ ...data, employeeId: id });
-  }
-
-  @Get('documents/all')
-  findAllDocuments() {
-    return this.employeesService.findAllDocuments();
-  }
-
-  @Post('documents/bulk')
-  @UseInterceptors(FileInterceptor('file', {
-    storage: diskStorage({
-      destination: (req, file, cb) => {
-        const uploadPath = './uploads/documents';
-        if (!fs.existsSync(uploadPath)) {
-          fs.mkdirSync(uploadPath, { recursive: true });
-        }
-        cb(null, uploadPath);
-      },
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
-      },
-    }),
-  }))
-  sendBulkDocuments(@Body() data: any, @UploadedFile() file: Express.Multer.File, @Request() req: any) {
-    const fileUrl = file ? `/uploads/documents/${file.filename}` : data.fileUrl;
-    const senderId = req.user?.userId;
-
-    return this.employeesService.sendBulkDocuments({ 
-      ...data, 
-      fileUrl,
-      senderId
-    });
   }
 
   @Post(':id/documents')

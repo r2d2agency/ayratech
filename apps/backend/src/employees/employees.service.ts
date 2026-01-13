@@ -356,7 +356,7 @@ export class EmployeesService {
         savedDoc = await this.documentsRepository.save(document);
     } catch (error) {
         console.error('Error saving document:', error);
-        throw new BadRequestException('Erro ao salvar documento. Verifique os dados enviados.');
+        throw new BadRequestException(`Erro ao salvar documento: ${error.message}`);
     }
 
     // Notify User if they have app access
