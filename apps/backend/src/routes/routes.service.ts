@@ -186,6 +186,7 @@ export class RoutesService {
           for (const item of items) {
               const routeItem = queryRunner.manager.create(RouteItem, {
                   route: { id: id } as Route,
+                  routeId: id, // Explicitly set foreign key
                   supermarket: { id: item.supermarketId },
                   order: item.order,
                   startTime: item.startTime,

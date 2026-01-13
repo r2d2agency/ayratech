@@ -12,7 +12,7 @@ export class RouteItem {
   @JoinColumn({ name: 'routeId' })
   route: Route;
 
-  @Column({ insert: false, update: false })
+  @Column({ nullable: true })
   routeId: string;
 
   @ManyToOne(() => Supermarket, { eager: true, onDelete: 'CASCADE' })
