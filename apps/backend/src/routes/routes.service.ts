@@ -185,7 +185,7 @@ export class RoutesService {
 
           for (const item of items) {
               const routeItem = queryRunner.manager.create(RouteItem, {
-                  route: route, // Use the full entity instead of { id }
+                  route: { id: id } as Route,
                   supermarket: { id: item.supermarketId },
                   order: item.order,
                   startTime: item.startTime,
