@@ -34,7 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const { settings } = useBranding();
   
-  const canViewEmployees = userRole && ['admin', 'rh', 'manager'].includes(userRole);
+  const canViewEmployees = userRole && ['admin', 'rh', 'manager', 'superadmin', 'administrador do sistema', 'supervisor de operações'].includes(userRole.toLowerCase());
 
   const toggleSubmenu = (id: string) => {
     if (!expanded) {
@@ -214,7 +214,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
         </p>
         {navItem('admin', <Settings size={20} />, 'Configurações')}
         
-        {userRole === 'admin' && (
+        {['admin', 'superadmin', 'administrador do sistema'].includes(userRole?.toLowerCase() || '') && (
           <>
             <div className="h-px bg-slate-200 my-2 mx-4" />
             {navItem('logs', <Shield size={20} />, 'Logs do Sistema')}

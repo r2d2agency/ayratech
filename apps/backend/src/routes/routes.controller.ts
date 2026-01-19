@@ -33,13 +33,13 @@ export class RoutesController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateRouteDto: UpdateRouteDto) {
-    return this.routesService.update(id, updateRouteDto);
+  update(@Param('id') id: string, @Body() updateRouteDto: UpdateRouteDto, @Req() req: any) {
+    return this.routesService.update(id, updateRouteDto, req.user);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.routesService.remove(id);
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.routesService.remove(id, req.user);
   }
 
   // Rules Endpoints

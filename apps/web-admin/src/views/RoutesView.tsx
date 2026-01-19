@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, MapPinned, Plus, Trash2, CheckCircle, Save, Settings, List, Clock, MoveUp, MoveDown, Copy, FileText, Check, Search } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import api from '../api/client';
+import { jwtDecode } from "jwt-decode";
 
 const RoutesView: React.FC = () => {
   const { settings } = useBranding();
   
   const [activeTab, setActiveTab] = useState<'planner' | 'editor' | 'templates' | 'rules'>('planner');
+  const [isAdmin, setIsAdmin] = useState(false);
   const [promoters, setPromoters] = useState<any[]>([]);
   const [allEmployees, setAllEmployees] = useState<any[]>([]);
   const [supermarkets, setSupermarkets] = useState<any[]>([]);
@@ -58,9 +60,23 @@ const RoutesView: React.FC = () => {
   const [newRule, setNewRule] = useState({ name: '', description: '', value: '' });
 
   useEffect(() => {
+    checkAdmin();
     fetchData();
     fetchRoutesForWeek();
   }, []);
+
+  const checkAdmin = () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded: any = jwtDecode(token);
+        const role = decoded.role?.toLowerCase() || '';
+        setIsAdmin(['admin', 'manager', 'superadmin', 'administrador do sistema', 'supervisor de operações'].includes(role));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
 
   useEffect(() => {
     fetchRoutesForWeek();
@@ -218,7 +234,7 @@ const RoutesView: React.FC = () => {
     if (!editingRouteId) return;
     
     // Check if route can be deleted (e.g. not COMPLETED)
-    if (routeStatus === 'COMPLETED' || routeStatus === 'IN_PROGRESS') {
+    if (!isAdmin && (routeStatus === 'COMPLETED' || routeStatus === 'IN_PROGRESS')) {
         alert('Não é possível excluir uma rota que já foi iniciada ou concluída.');
         return;
     }
@@ -242,7 +258,7 @@ const RoutesView: React.FC = () => {
     }
   };
 
-  const handleSaveRoute = async (status: 'DRAFT' | 'CONFIRMED' = 'DRAFT') => {
+  const handleSaveRoute = async (status: 'DRAFT' | 'CONFIRMED' | 'COMPLETED' = 'DRAFT') => {
     if (!selectedPromoter || !selectedDate || routeItems.length === 0) {
       alert('Selecione um promotor, uma data e adicione pontos de venda.');
       return;
@@ -400,7 +416,7 @@ const RoutesView: React.FC = () => {
 
   const handleEditRoute = (route: any) => {
     setSelectedPromoter(route.promoterId || route.promoter?.id);
-    setSelectedDate(route.date);
+    setSelectedDate(route.date.split('T')[0]);
     setRouteStatus(route.status);
     setEditingRouteId(route.id);
     
@@ -865,7 +881,7 @@ const RoutesView: React.FC = () => {
                 {editingRouteId && (
                     <button 
                       onClick={handleDeleteRoute}
-                      disabled={loading || routeStatus === 'COMPLETED' || routeStatus === 'IN_PROGRESS'}
+                      disabled={loading || (!isAdmin && (routeStatus === 'COMPLETED' || routeStatus === 'IN_PROGRESS'))}
                       className="px-6 py-4 bg-red-50 border border-red-100 text-red-600 rounded-xl font-black shadow-sm hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       title="Excluir Rota"
                     >
@@ -874,18 +890,18 @@ const RoutesView: React.FC = () => {
                 )}
                 <button 
                   onClick={() => handleSaveRoute('DRAFT')}
-                  disabled={loading || routeStatus === 'COMPLETED' || routeStatus === 'IN_PROGRESS'}
+                  disabled={loading || (!isAdmin && (routeStatus === 'COMPLETED' || routeStatus === 'IN_PROGRESS'))}
                   className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 rounded-xl font-black shadow-sm hover:bg-slate-50 disabled:opacity-50"
                 >
-                  {routeStatus === 'CONFIRMED' ? 'Reverter para Rascunho' : 'Salvar Rascunho'}
+                  {routeStatus === 'CONFIRMED' || routeStatus === 'COMPLETED' ? 'Reverter para Rascunho' : 'Salvar Rascunho'}
                 </button>
                 <button 
-                  onClick={() => handleSaveRoute('CONFIRMED')}
-                  disabled={loading || routeStatus === 'COMPLETED' || routeStatus === 'IN_PROGRESS'}
+                  onClick={() => handleSaveRoute(routeStatus === 'COMPLETED' ? 'COMPLETED' : 'CONFIRMED')}
+                  disabled={loading || (!isAdmin && (routeStatus === 'COMPLETED' || routeStatus === 'IN_PROGRESS'))}
                   className="flex-1 py-4 text-white rounded-xl font-black shadow-lg hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50"
                   style={{ backgroundColor: settings.primaryColor }}
                 >
-                  <Check size={20} /> {routeStatus === 'CONFIRMED' ? 'Salvar Alterações' : 'Confirmar Rota'}
+                  <Check size={20} /> {routeStatus === 'CONFIRMED' || routeStatus === 'COMPLETED' ? 'Salvar Alterações' : 'Confirmar Rota'}
                 </button>
               </div>
             </div>

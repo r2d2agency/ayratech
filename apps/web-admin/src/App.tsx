@@ -33,7 +33,7 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
     setActiveView(view);
   };
   
-  const canViewEmployees = ['admin', 'rh', 'manager'].includes(userRole);
+  const canViewEmployees = ['admin', 'rh', 'manager', 'superadmin', 'administrador do sistema', 'supervisor de operações'].includes(userRole);
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
@@ -92,7 +92,7 @@ const App: React.FC = () => {
       setIsAuthenticated(true);
       try {
         const decoded: any = jwtDecode(token);
-        setUserRole(decoded.role || 'user');
+        setUserRole(decoded.role?.toLowerCase() || 'user');
       } catch (e) {
         console.error("Invalid token", e);
       }

@@ -83,7 +83,8 @@ const RoutesReportView: React.FC = () => {
   const { settings } = useBranding();
   const [loading, setLoading] = useState(false);
   const [routes, setRoutes] = useState<RouteReportItem[]>([]);
-  const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedRoute, setSelectedRoute] = useState<RouteReportItem | null>(null);
   
   // Computed stats
@@ -119,14 +120,15 @@ const RoutesReportView: React.FC = () => {
   useEffect(() => {
     checkAdmin();
     fetchRoutes();
-  }, [dateFilter]);
+  }, [startDate, endDate]);
 
   const checkAdmin = () => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
         const decoded: any = jwtDecode(token);
-        const admin = ['admin', 'manager', 'superadmin'].includes(decoded.role);
+        const role = decoded.role?.toLowerCase() || '';
+        const admin = ['admin', 'manager', 'superadmin', 'administrador do sistema', 'supervisor de operações'].includes(role);
         setIsAdmin(admin);
         if (admin) fetchPromoters();
       } catch (e) {
@@ -269,8 +271,11 @@ const RoutesReportView: React.FC = () => {
       const res = await api.get('/routes');
       const allRoutes: RouteReportItem[] = res.data;
 
-      // Filter by date
-      const filtered = allRoutes.filter(r => r.date.startsWith(dateFilter));
+      // Filter by date range
+      const filtered = allRoutes.filter(r => {
+        const routeDate = r.date.split('T')[0];
+        return routeDate >= startDate && routeDate <= endDate;
+      });
       
       processData(filtered);
       setRoutes(filtered);
@@ -370,11 +375,20 @@ const RoutesReportView: React.FC = () => {
           <span className="font-bold text-sm">Filtros:</span>
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-xs font-bold text-slate-400 uppercase">Data</label>
+          <label className="text-xs font-bold text-slate-400 uppercase">De</label>
           <input 
             type="date" 
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-bold text-slate-400 uppercase">Até</label>
+          <input 
+            type="date" 
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
             className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
           />
         </div>

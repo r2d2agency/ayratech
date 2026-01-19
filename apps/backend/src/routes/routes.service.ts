@@ -146,7 +146,7 @@ export class RoutesService {
     });
   }
 
-  async update(id: string, updateRouteDto: UpdateRouteDto) {
+  async update(id: string, updateRouteDto: UpdateRouteDto, user?: any) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -165,17 +165,21 @@ export class RoutesService {
       }
 
       // Check if route can be edited
-      if (route.status === 'COMPLETED') {
-          throw new BadRequestException('Cannot edit a completed route');
-      }
+      const isAdmin = user && ['admin', 'manager', 'superadmin'].includes(user.role);
 
-      const hasStarted = route.items?.some(item => 
-          item.checkInTime || 
-          (item.status !== 'PENDING' && item.status !== 'SKIPPED')
-      );
+      if (!isAdmin) {
+        if (route.status === 'COMPLETED') {
+            throw new BadRequestException('Cannot edit a completed route');
+        }
 
-      if (hasStarted) {
-          throw new BadRequestException('Cannot edit a route that has already started execution');
+        const hasStarted = route.items?.some(item => 
+            item.checkInTime || 
+            (item.status !== 'PENDING' && item.status !== 'SKIPPED')
+        );
+
+        if (hasStarted) {
+            throw new BadRequestException('Cannot edit a route that has already started execution');
+        }
       }
 
       const { items, promoterId, ...routeData } = updateRouteDto;
@@ -268,20 +272,24 @@ export class RoutesService {
     }
   }
 
-  async remove(id: string) {
+  async remove(id: string, user?: any) {
     const route = await this.findOne(id);
     if (!route) {
       throw new BadRequestException('Route not found');
     }
 
     // Check if route has started execution
-    const hasStarted = route.items?.some(item => 
-        item.checkInTime || 
-        (item.status !== 'PENDING' && item.status !== 'SKIPPED')
-    );
+    const isAdmin = user && ['admin', 'manager', 'superadmin'].includes(user.role);
 
-    if (hasStarted || route.status === 'COMPLETED' || route.status === 'IN_PROGRESS') {
-        throw new BadRequestException('Cannot delete a route that has already started execution or is completed');
+    if (!isAdmin) {
+      const hasStarted = route.items?.some(item => 
+          item.checkInTime || 
+          (item.status !== 'PENDING' && item.status !== 'SKIPPED')
+      );
+
+      if (hasStarted || route.status === 'COMPLETED' || route.status === 'IN_PROGRESS') {
+          throw new BadRequestException('Cannot delete a route that has already started execution or is completed');
+      }
     }
 
     return this.routesRepository.delete(id);
