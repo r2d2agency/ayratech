@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useBranding } from '../context/BrandingContext';
 import SectionHeader from '../components/SectionHeader';
 import StatCard from '../components/StatCard';
@@ -15,8 +15,15 @@ import {
   MapPin,
   Clock,
   User,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Upload,
+  Camera,
+  Save,
+  Edit,
+  Grid,
+  List
 } from 'lucide-react';
+import { jwtDecode } from "jwt-decode";
 import api from '../api/client';
 import { 
   BarChart, 
@@ -48,6 +55,7 @@ interface RouteReportItem {
     checkInTime?: string;
     checkOutTime?: string;
     supermarket: {
+      id: string;
       fantasyName: string;
       city?: string;
       state?: string;
@@ -61,6 +69,7 @@ interface RouteReportItem {
       product: {
         id: string;
         name: string;
+        sku?: string;
         brand?: {
           name: string;
         };
@@ -75,7 +84,18 @@ const RoutesReportView: React.FC = () => {
   const [routes, setRoutes] = useState<RouteReportItem[]>([]);
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
   const [selectedRoute, setSelectedRoute] = useState<RouteReportItem | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'gallery'>('list');
   
+  // Gallery Filters
+  const [galleryFilters, setGalleryFilters] = useState({
+    pdv: '',
+    product: '',
+    sku: '',
+    client: '', // Assuming Client ~ Supermarket or Brand? Let's assume Supermarket/PDV covers "Cliente" or maybe Brand. User said "Cliente", usually means the retail chain or the principal. I'll map to Brand or just generic text.
+    promoter: '',
+    supervisor: ''
+  });
+
   // Computed stats
   const [stats, setStats] = useState({
     total: 0,
@@ -87,9 +107,168 @@ const RoutesReportView: React.FC = () => {
   const [supervisorData, setSupervisorData] = useState<any[]>([]);
   const [promoterData, setPromoterData] = useState<any[]>([]);
 
+  // Manual Entry State
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [promotersList, setPromotersList] = useState<any[]>([]);
+  const [manualForm, setManualForm] = useState<{
+    itemId: string;
+    checkInTime: string;
+    checkOutTime: string;
+    promoterId: string;
+    products: { 
+      productId: string; 
+      checked: boolean; 
+      isStockout: boolean; 
+      observation: string; 
+      photos: string[];
+      productName: string;
+    }[];
+  } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
   useEffect(() => {
+    checkAdmin();
     fetchRoutes();
   }, [dateFilter]);
+
+  const checkAdmin = () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded: any = jwtDecode(token);
+        const admin = ['admin', 'manager'].includes(decoded.role);
+        setIsAdmin(admin);
+        if (admin) fetchPromoters();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
+  const fetchPromoters = async () => {
+    try {
+      const res = await api.get('/employees');
+      setPromotersList(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const resizeImage = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const maxSize = 600;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxSize) {
+              height *= maxSize / width;
+              width = maxSize;
+            }
+          } else {
+            if (height > maxSize) {
+              width *= maxSize / height;
+              height = maxSize;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const resizedFile = new File([blob], file.name, {
+                type: file.type,
+                lastModified: Date.now(),
+              });
+              resolve(resizedFile);
+            } else {
+              reject(new Error('Canvas to Blob failed'));
+            }
+          }, file.type, 0.9);
+        };
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const handlePhotoUpload = async (file: File, productIndex: number) => {
+    try {
+      const resized = await resizeImage(file);
+      const formData = new FormData();
+      formData.append('file', resized);
+
+      const res = await api.post('/upload', formData);
+      const url = res.data.url;
+
+      if (manualForm) {
+        const newProducts = [...manualForm.products];
+        newProducts[productIndex].photos = [...(newProducts[productIndex].photos || []), url];
+        setManualForm({ ...manualForm, products: newProducts });
+      }
+    } catch (err) {
+      console.error('Upload failed', err);
+      alert('Erro ao enviar foto.');
+    }
+  };
+
+  const openManualEntry = (item: any, routePromoterId: string) => {
+    // Determine initial times
+    const now = new Date();
+    const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+    
+    // Format for datetime-local: YYYY-MM-DDTHH:mm
+    const toLocalISO = (date: Date) => {
+      const pad = (n: number) => n < 10 ? '0' + n : n;
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    };
+
+    setManualForm({
+      itemId: item.id,
+      checkInTime: toLocalISO(now),
+      checkOutTime: toLocalISO(oneHourLater),
+      promoterId: routePromoterId,
+      products: item.products.map((p: any) => ({
+        productId: p.product.id,
+        checked: p.checked || false,
+        isStockout: p.isStockout || false,
+        observation: p.observation || '',
+        photos: p.photos || [],
+        productName: p.product.name
+      }))
+    });
+  };
+
+  const submitManualEntry = async () => {
+    if (!manualForm) return;
+    setSubmitting(true);
+    try {
+      await api.post(`/routes/items/${manualForm.itemId}/manual-execution`, {
+        checkInTime: manualForm.checkInTime,
+        checkOutTime: manualForm.checkOutTime,
+        promoterId: manualForm.promoterId,
+        products: manualForm.products
+      });
+      alert('Lançamento realizado com sucesso!');
+      setManualForm(null);
+      setSelectedRoute(null); // Close detail modal to refresh
+      fetchRoutes(); // Refresh data
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao realizar lançamento manual.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const fetchRoutes = async () => {
     setLoading(true);
@@ -183,6 +362,30 @@ const RoutesReportView: React.FC = () => {
     return new Date(dateStr).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Gallery Data
+  const galleryPhotos = useMemo(() => {
+    return routes.flatMap(route => 
+      route.items.flatMap(item => 
+        item.products.flatMap(product => 
+          (product.photos || []).map(photo => ({
+            url: photo,
+            route,
+            item,
+            product
+          }))
+        )
+      )
+    ).filter(p => {
+      // Filters
+      if (galleryFilters.pdv && !p.item.supermarket.fantasyName.toLowerCase().includes(galleryFilters.pdv.toLowerCase())) return false;
+      if (galleryFilters.product && !p.product.product.name.toLowerCase().includes(galleryFilters.product.toLowerCase())) return false;
+      if (galleryFilters.sku && !p.product.product.sku?.toLowerCase().includes(galleryFilters.sku.toLowerCase())) return false;
+      if (galleryFilters.promoter && !p.route.promoter.fullName.toLowerCase().includes(galleryFilters.promoter.toLowerCase())) return false;
+      if (galleryFilters.supervisor && !p.route.promoter.supervisor?.fullName.toLowerCase().includes(galleryFilters.supervisor.toLowerCase())) return false;
+      return true;
+    });
+  }, [routes, galleryFilters]);
+
   return (
     <div className="p-8 max-w-[1600px] mx-auto space-y-8">
       <SectionHeader 
@@ -191,8 +394,8 @@ const RoutesReportView: React.FC = () => {
         subtitle="Análise de execução, performance e rupturas"
       />
 
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+      {/* Filters & Actions */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-2 text-slate-500">
           <Filter size={20} />
           <span className="font-bold text-sm">Filtros:</span>
@@ -206,6 +409,25 @@ const RoutesReportView: React.FC = () => {
             className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
           />
         </div>
+        
+        {/* View Toggle */}
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+          <button 
+            onClick={() => setViewMode('list')}
+            className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+            title="Lista Detalhada"
+          >
+            <List size={20} />
+          </button>
+          <button 
+            onClick={() => setViewMode('gallery')}
+            className={`p-2 rounded-lg transition-all ${viewMode === 'gallery' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+            title="Galeria de Fotos"
+          >
+            <Grid size={20} />
+          </button>
+        </div>
+
         <div className="ml-auto">
           <button className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors">
             <Download size={16} />
@@ -214,143 +436,213 @@ const RoutesReportView: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatCard 
-          icon={<Calendar />}
-          label="Total de Rotas"
-          value={stats.total.toString()}
-          color="bg-blue-50 text-blue-600"
-        />
-        <StatCard 
-          icon={<CheckCircle2 />}
-          label="Executadas"
-          value={stats.executed.toString()}
-          sub={`${((stats.executed / (stats.total || 1)) * 100).toFixed(1)}% do total`}
-          color="bg-emerald-50 text-emerald-600"
-        />
-        <StatCard 
-          icon={<XCircle />}
-          label="Não Executadas"
-          value={stats.notExecuted.toString()}
-          color="bg-rose-50 text-rose-600"
-        />
-        <StatCard 
-          icon={<AlertTriangle />}
-          label="Com Ruptura"
-          value={stats.withIssues.toString()}
-          color="bg-amber-50 text-amber-600"
-        />
-      </div>
+      {viewMode === 'list' ? (
+        <>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <StatCard 
+              icon={<Calendar />}
+              label="Total de Rotas"
+              value={stats.total.toString()}
+              color="bg-blue-50 text-blue-600"
+            />
+            <StatCard 
+              icon={<CheckCircle2 />}
+              label="Executadas"
+              value={stats.executed.toString()}
+              sub={`${((stats.executed / (stats.total || 1)) * 100).toFixed(1)}% do total`}
+              color="bg-emerald-50 text-emerald-600"
+            />
+            <StatCard 
+              icon={<XCircle />}
+              label="Não Executadas"
+              value={stats.notExecuted.toString()}
+              color="bg-rose-50 text-rose-600"
+            />
+            <StatCard 
+              icon={<AlertTriangle />}
+              label="Com Ruptura"
+              value={stats.withIssues.toString()}
+              color="bg-amber-50 text-amber-600"
+            />
+          </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Supervisor Chart */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-          <h3 className="font-black text-lg text-slate-800 mb-6 flex items-center gap-2">
-            <Users size={20} className="text-slate-400" />
-            Execução por Supervisor
-          </h3>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={supervisorData} layout="vertical" margin={{ left: 40 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={false} />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={100} tick={{fontSize: 12}} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="executed" name="Executadas" fill="#10B981" radius={[0, 4, 4, 0]} />
-                <Bar dataKey="total" name="Total" fill="#E2E8F0" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+              <h3 className="font-black text-lg text-slate-800 mb-6 flex items-center gap-2">
+                <Users size={20} className="text-slate-400" />
+                Execução por Supervisor
+              </h3>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={supervisorData} layout="vertical" margin={{ left: 40 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={false} />
+                    <XAxis type="number" />
+                    <YAxis dataKey="name" type="category" width={100} tick={{fontSize: 12}} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="executed" name="Executadas" fill="#10B981" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="total" name="Total" fill="#E2E8F0" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+              <h3 className="font-black text-lg text-slate-800 mb-6 flex items-center gap-2">
+                <Users size={20} className="text-slate-400" />
+                Execução por Promotor
+              </h3>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={promoterData.slice(0, 10)} layout="vertical" margin={{ left: 40 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={false} />
+                    <XAxis type="number" />
+                    <YAxis dataKey="name" type="category" width={100} tick={{fontSize: 12}} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="executed" name="Executadas" fill="#3B82F6" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="total" name="Total" fill="#E2E8F0" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* Detailed List */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+              <h3 className="font-black text-lg text-slate-800">Detalhamento das Rotas</h3>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/50">
+                    <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Data</th>
+                    <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Promotor</th>
+                    <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Supervisor</th>
+                    <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">PDVs</th>
+                    <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {routes.map((route) => (
+                    <tr 
+                      key={route.id} 
+                      onClick={() => setSelectedRoute(route)}
+                      className="hover:bg-slate-50 transition-colors group cursor-pointer"
+                    >
+                      <td className="p-4">
+                        <span className="font-bold text-slate-700 text-sm">
+                          {new Date(route.date).toLocaleDateString('pt-BR')}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
+                            {route.promoter.fullName.substring(0, 2).toUpperCase()}
+                          </div>
+                          <span className="font-bold text-slate-700 text-sm">{route.promoter.fullName}</span>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <span className="text-sm font-medium text-slate-500">
+                          {route.promoter.supervisor?.fullName || '-'}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <span className="text-sm font-medium text-slate-500">
+                          {route.items.length} lojas
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        {getStatusBadge(route)}
+                      </td>
+                    </tr>
+                  ))}
+                  {routes.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-slate-400 font-medium">
+                        Nenhuma rota encontrada para esta data.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      ) : (
+        /* Gallery View */
+        <div className="space-y-6">
+          {/* Gallery Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <input 
+              placeholder="Filtrar por PDV" 
+              value={galleryFilters.pdv}
+              onChange={e => setGalleryFilters({...galleryFilters, pdv: e.target.value})}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
+            />
+            <input 
+              placeholder="Filtrar por Produto" 
+              value={galleryFilters.product}
+              onChange={e => setGalleryFilters({...galleryFilters, product: e.target.value})}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
+            />
+            <input 
+              placeholder="Filtrar por SKU" 
+              value={galleryFilters.sku}
+              onChange={e => setGalleryFilters({...galleryFilters, sku: e.target.value})}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
+            />
+            <input 
+              placeholder="Filtrar por Promotor" 
+              value={galleryFilters.promoter}
+              onChange={e => setGalleryFilters({...galleryFilters, promoter: e.target.value})}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
+            />
+             <input 
+              placeholder="Filtrar por Supervisor" 
+              value={galleryFilters.supervisor}
+              onChange={e => setGalleryFilters({...galleryFilters, supervisor: e.target.value})}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
+            />
+          </div>
+
+          {/* Gallery Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {galleryPhotos.map((photo, i) => (
+              <div key={i} className="group relative bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-all">
+                <div className="aspect-square bg-slate-100 relative overflow-hidden">
+                  <img src={photo.url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
+                    <p className="text-white text-xs font-bold truncate">{photo.product.product.name}</p>
+                    <p className="text-white/80 text-[10px] truncate">{photo.item.supermarket.fantasyName}</p>
+                  </div>
+                </div>
+                <div className="p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <User size={12} className="text-slate-400" />
+                    <span className="text-xs text-slate-600 truncate">{photo.route.promoter.fullName}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar size={12} className="text-slate-400" />
+                    <span className="text-xs text-slate-600 truncate">{new Date(photo.route.date).toLocaleDateString('pt-BR')}</span>
+                  </div>
+                </div>
+                <a href={photo.url} target="_blank" rel="noopener noreferrer" className="absolute inset-0 z-10" />
+              </div>
+            ))}
+            {galleryPhotos.length === 0 && (
+               <div className="col-span-full p-12 text-center text-slate-400">
+                 Nenhuma foto encontrada com os filtros atuais.
+               </div>
+            )}
           </div>
         </div>
-
-        {/* Promoter Chart */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-          <h3 className="font-black text-lg text-slate-800 mb-6 flex items-center gap-2">
-            <Users size={20} className="text-slate-400" />
-            Execução por Promotor
-          </h3>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={promoterData.slice(0, 10)} layout="vertical" margin={{ left: 40 }}> {/* Top 10 */}
-                <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={false} />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={100} tick={{fontSize: 12}} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="executed" name="Executadas" fill="#3B82F6" radius={[0, 4, 4, 0]} />
-                <Bar dataKey="total" name="Total" fill="#E2E8F0" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-
-      {/* Detailed List */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="font-black text-lg text-slate-800">Detalhamento das Rotas</h3>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/50">
-                <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Data</th>
-                <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Promotor</th>
-                <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Supervisor</th>
-                <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">PDVs</th>
-                <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {routes.map((route) => (
-                <tr 
-                  key={route.id} 
-                  onClick={() => setSelectedRoute(route)}
-                  className="hover:bg-slate-50 transition-colors group cursor-pointer"
-                >
-                  <td className="p-4">
-                    <span className="font-bold text-slate-700 text-sm">
-                      {new Date(route.date).toLocaleDateString('pt-BR')}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
-                        {route.promoter.fullName.substring(0, 2).toUpperCase()}
-                      </div>
-                      <span className="font-bold text-slate-700 text-sm">{route.promoter.fullName}</span>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <span className="text-sm font-medium text-slate-500">
-                      {route.promoter.supervisor?.fullName || '-'}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <span className="text-sm font-medium text-slate-500">
-                      {route.items.length} lojas
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    {getStatusBadge(route)}
-                  </td>
-                </tr>
-              ))}
-              {routes.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="p-8 text-center text-slate-400 font-medium">
-                    Nenhuma rota encontrada para esta data.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      )}
 
       {/* Detail Modal */}
       {selectedRoute && (
@@ -402,6 +694,16 @@ const RoutesReportView: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
+                      {isAdmin && !['CHECKOUT', 'COMPLETED'].includes(item.status) && (
+                         <button 
+                           onClick={() => openManualEntry(item, selectedRoute.promoterId || selectedRoute.promoter.id)}
+                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-colors"
+                         >
+                           <Edit size={14} />
+                           Lançamento Manual
+                         </button>
+                      )}
+
                       <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
                         <Clock size={14} className="text-slate-400" />
                         <span>In: {formatTime(item.checkInTime)}</span>
@@ -484,6 +786,168 @@ const RoutesReportView: React.FC = () => {
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Manual Entry Modal */}
+      {manualForm && (
+        <div className="fixed inset-0 bg-slate-900/50 z-[110] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+           <div className="bg-white w-full max-w-3xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+               <h2 className="text-xl font-black text-slate-900">Lançamento Manual de Visita</h2>
+               <button 
+                  onClick={() => setManualForm(null)}
+                  className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-all"
+                >
+                  <X size={20} />
+                </button>
+             </div>
+             
+             <div className="flex-1 overflow-y-auto p-6 space-y-6">
+               {/* Header Inputs */}
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Horário Entrada</label>
+                    <input 
+                      type="datetime-local" 
+                      value={manualForm.checkInTime}
+                      onChange={e => setManualForm({...manualForm, checkInTime: e.target.value})}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Horário Saída</label>
+                    <input 
+                      type="datetime-local" 
+                      value={manualForm.checkOutTime}
+                      onChange={e => setManualForm({...manualForm, checkOutTime: e.target.value})}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Promotor Responsável</label>
+                    <select 
+                      value={manualForm.promoterId}
+                      onChange={e => setManualForm({...manualForm, promoterId: e.target.value})}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
+                    >
+                      <option value="">Selecione um promotor...</option>
+                      {promotersList.map(p => (
+                        <option key={p.id} value={p.id}>{p.fullName}</option>
+                      ))}
+                    </select>
+                  </div>
+               </div>
+
+               {/* Products List */}
+               <div className="space-y-4">
+                 <h3 className="font-bold text-slate-800">Produtos da Rota</h3>
+                 {manualForm.products.map((prod, idx) => (
+                   <div key={prod.productId} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+                     <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-700">{prod.productName}</span>
+                        <div className="flex items-center gap-4">
+                          <label className="flex items-center gap-2 text-sm font-medium text-slate-600 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={prod.checked}
+                              onChange={e => {
+                                const newProds = [...manualForm.products];
+                                newProds[idx].checked = e.target.checked;
+                                setManualForm({...manualForm, products: newProds});
+                              }}
+                              className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                            />
+                            Conferido
+                          </label>
+                          <label className="flex items-center gap-2 text-sm font-medium text-red-600 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={prod.isStockout}
+                              onChange={e => {
+                                const newProds = [...manualForm.products];
+                                newProds[idx].isStockout = e.target.checked;
+                                setManualForm({...manualForm, products: newProds});
+                              }}
+                              className="w-4 h-4 rounded text-red-600 focus:ring-red-500"
+                            />
+                            Ruptura
+                          </label>
+                        </div>
+                     </div>
+                     
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       <input 
+                          type="text" 
+                          placeholder="Observação (opcional)"
+                          value={prod.observation}
+                          onChange={e => {
+                            const newProds = [...manualForm.products];
+                            newProds[idx].observation = e.target.value;
+                            setManualForm({...manualForm, products: newProds});
+                          }}
+                          className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                       />
+                       <div className="flex items-center gap-2">
+                         <label className="flex-1 cursor-pointer flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-500 hover:bg-slate-50 transition-colors">
+                           <Camera size={16} />
+                           <span className="truncate">Adicionar Foto</span>
+                           <input 
+                             type="file" 
+                             accept="image/*"
+                             className="hidden"
+                             onChange={(e) => {
+                               if (e.target.files?.[0]) {
+                                 handlePhotoUpload(e.target.files[0], idx);
+                               }
+                             }}
+                           />
+                         </label>
+                       </div>
+                     </div>
+
+                     {/* Thumbnails */}
+                     {prod.photos && prod.photos.length > 0 && (
+                       <div className="flex gap-2 overflow-x-auto py-1">
+                         {prod.photos.map((pUrl, pIdx) => (
+                           <div key={pIdx} className="w-16 h-16 rounded-lg overflow-hidden border border-slate-200 relative group">
+                             <img src={pUrl} alt="" className="w-full h-full object-cover" />
+                             <button 
+                               onClick={() => {
+                                 const newProds = [...manualForm.products];
+                                 newProds[idx].photos = newProds[idx].photos.filter((_, i) => i !== pIdx);
+                                 setManualForm({...manualForm, products: newProds});
+                               }}
+                               className="absolute top-0.5 right-0.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                             >
+                               <X size={12} />
+                             </button>
+                           </div>
+                         ))}
+                       </div>
+                     )}
+                   </div>
+                 ))}
+               </div>
+             </div>
+
+             <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+               <button 
+                 onClick={() => setManualForm(null)}
+                 className="px-4 py-2 text-slate-600 font-bold hover:bg-slate-200 rounded-xl transition-colors"
+               >
+                 Cancelar
+               </button>
+               <button 
+                 onClick={submitManualEntry}
+                 disabled={submitting}
+                 className="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+               >
+                 {submitting ? 'Salvando...' : 'Salvar Lançamento'}
+                 <Save size={18} />
+               </button>
+             </div>
+           </div>
         </div>
       )}
     </div>
