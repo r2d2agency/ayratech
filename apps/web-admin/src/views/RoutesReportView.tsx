@@ -384,7 +384,6 @@ const RoutesReportView: React.FC = () => {
         </div>
       </div>
 
-        <>
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <StatCard 
@@ -520,7 +519,6 @@ const RoutesReportView: React.FC = () => {
               </table>
             </div>
           </div>
-        </>
 
       {/* Detail Modal */}
       {selectedRoute && (
