@@ -126,7 +126,7 @@ const RoutesReportView: React.FC = () => {
     if (token) {
       try {
         const decoded: any = jwtDecode(token);
-        const admin = ['admin', 'manager'].includes(decoded.role);
+        const admin = ['admin', 'manager', 'superadmin'].includes(decoded.role);
         setIsAdmin(admin);
         if (admin) fetchPromoters();
       } catch (e) {
@@ -222,10 +222,13 @@ const RoutesReportView: React.FC = () => {
       return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
     };
 
+    const initialCheckIn = item.checkInTime ? new Date(item.checkInTime) : now;
+    const initialCheckOut = item.checkOutTime ? new Date(item.checkOutTime) : oneHourLater;
+
     setManualForm({
       itemId: item.id,
-      checkInTime: toLocalISO(now),
-      checkOutTime: toLocalISO(oneHourLater),
+      checkInTime: toLocalISO(initialCheckIn),
+      checkOutTime: toLocalISO(initialCheckOut),
       promoterId: routePromoterId,
       products: item.products.map((p: any) => ({
         productId: p.product.id,
