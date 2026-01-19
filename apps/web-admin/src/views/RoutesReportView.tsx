@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useBranding } from '../context/BrandingContext';
 import SectionHeader from '../components/SectionHeader';
 import StatCard from '../components/StatCard';
@@ -20,8 +20,6 @@ import {
   Camera,
   Save,
   Edit,
-  Grid,
-  List,
   Shield
 } from 'lucide-react';
 import { jwtDecode } from "jwt-decode";
@@ -386,7 +384,6 @@ const RoutesReportView: React.FC = () => {
         </div>
       </div>
 
-      {viewMode === 'list' ? (
         <>
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -524,75 +521,6 @@ const RoutesReportView: React.FC = () => {
             </div>
           </div>
         </>
-      ) : (
-        /* Gallery View */
-        <div className="space-y-6">
-          {/* Gallery Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-            <input 
-              placeholder="Filtrar por PDV" 
-              value={galleryFilters.pdv}
-              onChange={e => setGalleryFilters({...galleryFilters, pdv: e.target.value})}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
-            />
-            <input 
-              placeholder="Filtrar por Produto" 
-              value={galleryFilters.product}
-              onChange={e => setGalleryFilters({...galleryFilters, product: e.target.value})}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
-            />
-            <input 
-              placeholder="Filtrar por SKU" 
-              value={galleryFilters.sku}
-              onChange={e => setGalleryFilters({...galleryFilters, sku: e.target.value})}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
-            />
-            <input 
-              placeholder="Filtrar por Promotor" 
-              value={galleryFilters.promoter}
-              onChange={e => setGalleryFilters({...galleryFilters, promoter: e.target.value})}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
-            />
-             <input 
-              placeholder="Filtrar por Supervisor" 
-              value={galleryFilters.supervisor}
-              onChange={e => setGalleryFilters({...galleryFilters, supervisor: e.target.value})}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
-            />
-          </div>
-
-          {/* Gallery Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {galleryPhotos.map((photo, i) => (
-              <div key={i} className="group relative bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-all">
-                <div className="aspect-square bg-slate-100 relative overflow-hidden">
-                  <img src={photo.url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
-                    <p className="text-white text-xs font-bold truncate">{photo.product.product.name}</p>
-                    <p className="text-white/80 text-[10px] truncate">{photo.item.supermarket.fantasyName}</p>
-                  </div>
-                </div>
-                <div className="p-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <User size={12} className="text-slate-400" />
-                    <span className="text-xs text-slate-600 truncate">{photo.route.promoter.fullName}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar size={12} className="text-slate-400" />
-                    <span className="text-xs text-slate-600 truncate">{new Date(photo.route.date).toLocaleDateString('pt-BR')}</span>
-                  </div>
-                </div>
-                <a href={photo.url} target="_blank" rel="noopener noreferrer" className="absolute inset-0 z-10" />
-              </div>
-            ))}
-            {galleryPhotos.length === 0 && (
-               <div className="col-span-full p-12 text-center text-slate-400">
-                 Nenhuma foto encontrada com os filtros atuais.
-               </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Detail Modal */}
       {selectedRoute && (
