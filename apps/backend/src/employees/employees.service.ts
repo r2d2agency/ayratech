@@ -151,7 +151,7 @@ export class EmployeesService {
     // This is not the most efficient way (N+1), but works for now. 
     // Optimization: Fetch all users with employeeId once.
     const users = await this.usersService.findAll(); // Assuming findAll exists and returns all users
-    const userEmployeeIds = new Set(users.map(u => u.employeeId).filter(id => !!id));
+    const userEmployeeIds = new Set(users.map(u => u.employee?.id || u.employeeId).filter(id => !!id));
 
     return employees.map(emp => ({
       ...emp,

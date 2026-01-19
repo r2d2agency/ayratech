@@ -30,6 +30,7 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   try {
     console.log(`Starting application on port ${port}...`);
+    // Force reload trigger
     await app.listen(port, '0.0.0.0');
     console.log(`Application is running on: ${await app.getUrl()}`);
     console.log(`Server bound to 0.0.0.0:${port}`);

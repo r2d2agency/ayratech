@@ -160,27 +160,30 @@ export class UsersService implements OnModuleInit {
     }
     
     try {
+      const user = await this.usersRepository.findOne({ where: { id } });
+      if (!user) {
+          throw new BadRequestException('Usuário não encontrado.');
+      }
+
       const { roleId, employeeId, ...userData } = updateUserDto;
-      const updateValues: any = { ...userData };
       
-      // Handle relations by setting FK columns directly
-      // We use explicit column assignment to bypass 'update: false' constraint on the entity definition
+      // Merge basic fields
+      Object.assign(user, userData);
+      
+      // Handle relations by setting FK columns and relations explicitly
       if (roleId !== undefined) {
-        updateValues.roleId = (roleId && roleId !== '') ? roleId : null;
+        const newRoleId = (roleId && roleId !== '') ? roleId : null;
+        user.roleId = newRoleId;
+        user.role = newRoleId ? { id: newRoleId } as any : null;
       }
       
       if (employeeId !== undefined) {
-        updateValues.employeeId = (employeeId && employeeId !== '') ? employeeId : null;
+        const newEmployeeId = (employeeId && employeeId !== '') ? employeeId : null;
+        user.employeeId = newEmployeeId;
+        user.employee = newEmployeeId ? { id: newEmployeeId } as any : null;
       }
 
-      // Only update if there are values
-      if (Object.keys(updateValues).length > 0) {
-          await this.usersRepository.createQueryBuilder()
-              .update(User)
-              .set(updateValues)
-              .where("id = :id", { id })
-              .execute();
-      }
+      await this.usersRepository.save(user);
 
       return this.usersRepository.findOne({ where: { id }, relations: ['role', 'employee'] });
     } catch (err: any) {
