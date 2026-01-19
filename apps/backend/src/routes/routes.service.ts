@@ -82,7 +82,7 @@ export class RoutesService {
 
   findAll() {
     const routes = this.routesRepository.find({
-      relations: ['items', 'items.supermarket', 'promoter', 'promoter.supervisor', 'items.products', 'items.products.product'],
+      relations: ['items', 'items.supermarket', 'promoter', 'promoter.supervisor', 'items.products', 'items.products.product', 'items.products.product.brand'],
       order: { date: 'DESC' }
     });
     // Log the first route's promoter for debugging (if any)
