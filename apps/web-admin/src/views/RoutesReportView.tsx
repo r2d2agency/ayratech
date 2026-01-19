@@ -21,7 +21,8 @@ import {
   Save,
   Edit,
   Grid,
-  List
+  List,
+  Shield
 } from 'lucide-react';
 import { jwtDecode } from "jwt-decode";
 import api from '../api/client';
@@ -54,6 +55,8 @@ interface RouteReportItem {
     status: string;
     checkInTime?: string;
     checkOutTime?: string;
+    manualEntryBy?: string;
+    manualEntryAt?: string;
     supermarket: {
       id: string;
       fantasyName: string;
@@ -84,18 +87,7 @@ const RoutesReportView: React.FC = () => {
   const [routes, setRoutes] = useState<RouteReportItem[]>([]);
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
   const [selectedRoute, setSelectedRoute] = useState<RouteReportItem | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'gallery'>('list');
   
-  // Gallery Filters
-  const [galleryFilters, setGalleryFilters] = useState({
-    pdv: '',
-    product: '',
-    sku: '',
-    client: '', // Assuming Client ~ Supermarket or Brand? Let's assume Supermarket/PDV covers "Cliente" or maybe Brand. User said "Cliente", usually means the retail chain or the principal. I'll map to Brand or just generic text.
-    promoter: '',
-    supervisor: ''
-  });
-
   // Computed stats
   const [stats, setStats] = useState({
     total: 0,
@@ -362,30 +354,6 @@ const RoutesReportView: React.FC = () => {
     return new Date(dateStr).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Gallery Data
-  const galleryPhotos = useMemo(() => {
-    return routes.flatMap(route => 
-      route.items.flatMap(item => 
-        item.products.flatMap(product => 
-          (product.photos || []).map(photo => ({
-            url: photo,
-            route,
-            item,
-            product
-          }))
-        )
-      )
-    ).filter(p => {
-      // Filters
-      if (galleryFilters.pdv && !p.item.supermarket.fantasyName.toLowerCase().includes(galleryFilters.pdv.toLowerCase())) return false;
-      if (galleryFilters.product && !p.product.product.name.toLowerCase().includes(galleryFilters.product.toLowerCase())) return false;
-      if (galleryFilters.sku && !p.product.product.sku?.toLowerCase().includes(galleryFilters.sku.toLowerCase())) return false;
-      if (galleryFilters.promoter && !p.route.promoter.fullName.toLowerCase().includes(galleryFilters.promoter.toLowerCase())) return false;
-      if (galleryFilters.supervisor && !p.route.promoter.supervisor?.fullName.toLowerCase().includes(galleryFilters.supervisor.toLowerCase())) return false;
-      return true;
-    });
-  }, [routes, galleryFilters]);
-
   return (
     <div className="p-8 max-w-[1600px] mx-auto space-y-8">
       <SectionHeader 
@@ -410,24 +378,6 @@ const RoutesReportView: React.FC = () => {
           />
         </div>
         
-        {/* View Toggle */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
-          <button 
-            onClick={() => setViewMode('list')}
-            className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-            title="Lista Detalhada"
-          >
-            <List size={20} />
-          </button>
-          <button 
-            onClick={() => setViewMode('gallery')}
-            className={`p-2 rounded-lg transition-all ${viewMode === 'gallery' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-            title="Galeria de Fotos"
-          >
-            <Grid size={20} />
-          </button>
-        </div>
-
         <div className="ml-auto">
           <button className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors">
             <Download size={16} />
@@ -694,13 +644,13 @@ const RoutesReportView: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      {isAdmin && !['CHECKOUT', 'COMPLETED'].includes(item.status) && (
+                      {isAdmin && (
                          <button 
                            onClick={() => openManualEntry(item, selectedRoute.promoterId || selectedRoute.promoter.id)}
                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-colors"
                          >
                            <Edit size={14} />
-                           Lançamento Manual
+                           {['CHECKOUT', 'COMPLETED'].includes(item.status) ? 'Editar Execução' : 'Lançamento Manual'}
                          </button>
                       )}
 
@@ -710,6 +660,14 @@ const RoutesReportView: React.FC = () => {
                         <span className="text-slate-300">|</span>
                         <span>Out: {formatTime(item.checkOutTime)}</span>
                       </div>
+                      
+                      {item.manualEntryBy && (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200" title={`Lançado manualmente por ${item.manualEntryBy} em ${new Date(item.manualEntryAt!).toLocaleString('pt-BR')}`}>
+                          <Shield size={14} />
+                          Manual
+                        </div>
+                      )}
+
                       <div className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${
                         ['CHECKOUT', 'COMPLETED'].includes(item.status) 
                           ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 

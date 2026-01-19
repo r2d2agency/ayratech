@@ -318,6 +318,71 @@ export class RoutesService {
     throw new Error('Product not linked to this route item');
   }
 
+  async manualExecution(itemId: string, data: { 
+    checkInTime: string; 
+    checkOutTime: string; 
+    promoterId?: string;
+    products: { 
+      productId: string; 
+      checked: boolean; 
+      isStockout: boolean; 
+      observation?: string; 
+      photos?: string[] 
+    }[] 
+  }, user?: any) {
+    const item = await this.routeItemsRepository.findOne({ 
+      where: { id: itemId },
+      relations: ['route']
+    });
+
+    if (!item) throw new BadRequestException('Route Item not found');
+
+    // Update Item Times and Status
+    item.checkInTime = new Date(data.checkInTime);
+    item.checkOutTime = new Date(data.checkOutTime);
+    item.status = 'COMPLETED';
+    
+    // Audit
+    if (user) {
+      item.manualEntryBy = user.email || user.username || user.id || 'Admin';
+      item.manualEntryAt = new Date();
+    }
+    
+    await this.routeItemsRepository.save(item);
+
+    // Update Route Promoter if provided
+    if (data.promoterId && item.route && item.route.promoterId !== data.promoterId) {
+       await this.routesRepository.update(item.route.id, { promoter: { id: data.promoterId }, promoterId: data.promoterId });
+    }
+
+    // Update Products
+    if (data.products && data.products.length > 0) {
+      for (const p of data.products) {
+        let productRel = await this.routeItemProductsRepository.findOne({
+          where: { routeItemId: itemId, productId: p.productId }
+        });
+
+        if (!productRel) {
+          productRel = this.routeItemProductsRepository.create({
+            routeItemId: itemId,
+            productId: p.productId,
+            routeItem: item,
+            product: { id: p.productId }
+          });
+        }
+
+        productRel.checked = p.checked;
+        productRel.isStockout = p.isStockout;
+        productRel.observation = p.observation;
+        productRel.photos = p.photos;
+        
+        await this.routeItemProductsRepository.save(productRel);
+      }
+    }
+
+    return this.findOne(item.routeId);
+  }
+
   async updateRouteItemStatus(id: string, status: string, time?: Date) {
     const updateData: any = { status };
     if (status === 'CHECKIN' || status === 'IN_PROGRESS') {

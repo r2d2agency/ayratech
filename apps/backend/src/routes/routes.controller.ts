@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req } from '@nestjs/common';
 import { RoutesService } from './routes.service';
 import { CreateRouteDto } from './dto/create-route.dto';
 import { UpdateRouteDto } from './dto/update-route.dto';
@@ -60,5 +60,25 @@ export class RoutesController {
     @Body() body: { checked?: boolean; observation?: string; isStockout?: boolean; stockoutType?: string; photos?: string[] },
   ) {
     return this.routesService.checkProduct(itemId, productId, body);
+  }
+
+  @Post('items/:itemId/manual-execution')
+  manualExecution(
+    @Param('itemId') itemId: string,
+    @Body() body: { 
+      checkInTime: string; 
+      checkOutTime: string; 
+      promoterId?: string;
+      products: { 
+        productId: string; 
+        checked: boolean; 
+        isStockout: boolean; 
+        observation?: string; 
+        photos?: string[] 
+      }[] 
+    },
+    @Req() req: any
+  ) {
+    return this.routesService.manualExecution(itemId, body, req.user);
   }
 }

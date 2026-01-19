@@ -206,6 +206,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
           Relatórios
         </p>
         {navItem('reports_routes', <FileText size={20} />, 'Relatório de Rotas')}
+        {navItem('gallery', <Camera size={20} />, 'Galeria de Fotos')}
 
         <div className="pt-4" />
         <p className={`text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 mb-2 h-4 overflow-hidden transition-all ${expanded ? 'opacity-100' : 'opacity-0'}`}>
