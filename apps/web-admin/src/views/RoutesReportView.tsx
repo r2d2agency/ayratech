@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useBranding } from '../context/BrandingContext';
 import SectionHeader from '../components/SectionHeader';
 import StatCard from '../components/StatCard';
-import { BarChart2, CheckCircle2, XCircle, AlertTriangle, Calendar, Filter, Download } from 'lucide-react';
+import { BarChart2, CheckCircle2, XCircle, AlertTriangle, Calendar, Filter, Download, Users } from 'lucide-react';
 import api from '../api/client';
 import { 
   BarChart, 
