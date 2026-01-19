@@ -7,9 +7,13 @@ import {
   Filter, 
   User,
   Search,
-  Grid
+  Grid,
+  MapPin,
+  Clock,
+  X,
+  ChevronRight
 } from 'lucide-react';
-import api from '../api/client';
+import api, { API_URL } from '../api/client';
 
 interface RouteReportItem {
   id: string;
@@ -26,9 +30,13 @@ interface RouteReportItem {
   items: Array<{
     id: string;
     status: string;
+    checkInTime?: string;
+    checkOutTime?: string;
     supermarket: {
       id: string;
       fantasyName: string;
+      city?: string;
+      state?: string;
     };
     products: Array<{
       id: string;
@@ -37,6 +45,9 @@ interface RouteReportItem {
         id: string;
         name: string;
         sku?: string;
+        brand?: {
+          name: string;
+        };
       };
     }>;
   }>;
@@ -46,27 +57,30 @@ const PhotoGalleryView: React.FC = () => {
   const { settings } = useBranding();
   const [loading, setLoading] = useState(false);
   const [routes, setRoutes] = useState<RouteReportItem[]>([]);
-  const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedVisit, setSelectedVisit] = useState<{route: RouteReportItem, item: RouteReportItem['items'][0]} | null>(null);
   
   // Gallery Filters
   const [galleryFilters, setGalleryFilters] = useState({
     pdv: '',
-    product: '',
-    sku: '',
     promoter: '',
     supervisor: ''
   });
 
   useEffect(() => {
     fetchRoutes();
-  }, [dateFilter]);
+  }, [startDate, endDate]);
 
   const fetchRoutes = async () => {
     setLoading(true);
     try {
       const res = await api.get('/routes');
       const allRoutes: RouteReportItem[] = res.data;
-      const filtered = allRoutes.filter(r => r.date.startsWith(dateFilter));
+      const filtered = allRoutes.filter(r => {
+        const rDate = r.date.split('T')[0];
+        return rDate >= startDate && rDate <= endDate;
+      });
       setRoutes(filtered);
     } catch (err) {
       console.error('Error fetching routes:', err);
@@ -75,36 +89,69 @@ const PhotoGalleryView: React.FC = () => {
     }
   };
 
-  // Gallery Data
-  const galleryPhotos = useMemo(() => {
-    return routes.flatMap(route => 
-      route.items.flatMap(item => 
-        item.products.flatMap(product => 
-          (product.photos || []).map(photo => ({
-            url: photo,
+  const getImageUrl = (url: string) => {
+    if (!url) return '';
+    if (url.startsWith('data:')) return url;
+    
+    // Fix for images saved with localhost or different domains
+    if (url.includes('/uploads/')) {
+      const relativePath = url.substring(url.indexOf('/uploads/'));
+      return `${API_URL}${relativePath}`;
+    }
+    
+    // If it's a full URL, we need to check if it's mixed content (http on https)
+    // or if it points to localhost when we are in production
+    if (url.startsWith('http')) {
+        // If we are in prod (https) and the url is http, try to upgrade or fix
+        if (window.location.protocol === 'https:' && url.startsWith('http:')) {
+             // If it's our own API but with http, replace with API_URL (which should be https in prod)
+             // Or if it's localhost, also replace with API_URL
+             if (url.includes('localhost') || url.includes('api.ayratech.app.br')) {
+                 // Try to extract the path part
+                 const pathPart = url.split('/uploads/')[1];
+                 if (pathPart) {
+                     return `${API_URL}/uploads/${pathPart}`;
+                 }
+             }
+        }
+        return url;
+    }
+
+    return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+  };
+
+  // Group by Visits (Route Items) that have photos
+  const visitsWithPhotos = useMemo(() => {
+    const visits: { route: RouteReportItem, item: RouteReportItem['items'][0], photoCount: number, previewPhotos: string[] }[] = [];
+
+    routes.forEach(route => {
+      route.items.forEach(item => {
+        const itemPhotos = item.products.flatMap(p => p.photos || []);
+        if (itemPhotos.length > 0) {
+          // Check Filters
+          if (galleryFilters.pdv && !item.supermarket.fantasyName.toLowerCase().includes(galleryFilters.pdv.toLowerCase())) return;
+          if (galleryFilters.promoter && !route.promoter.fullName.toLowerCase().includes(galleryFilters.promoter.toLowerCase())) return;
+          if (galleryFilters.supervisor && !route.promoter.supervisor?.fullName.toLowerCase().includes(galleryFilters.supervisor.toLowerCase())) return;
+
+          visits.push({
             route,
             item,
-            product
-          }))
-        )
-      )
-    ).filter(p => {
-      // Filters
-      if (galleryFilters.pdv && !p.item.supermarket.fantasyName.toLowerCase().includes(galleryFilters.pdv.toLowerCase())) return false;
-      if (galleryFilters.product && !p.product.product.name.toLowerCase().includes(galleryFilters.product.toLowerCase())) return false;
-      if (galleryFilters.sku && !p.product.product.sku?.toLowerCase().includes(galleryFilters.sku.toLowerCase())) return false;
-      if (galleryFilters.promoter && !p.route.promoter.fullName.toLowerCase().includes(galleryFilters.promoter.toLowerCase())) return false;
-      if (galleryFilters.supervisor && !p.route.promoter.supervisor?.fullName.toLowerCase().includes(galleryFilters.supervisor.toLowerCase())) return false;
-      return true;
+            photoCount: itemPhotos.length,
+            previewPhotos: itemPhotos.slice(0, 4)
+          });
+        }
+      });
     });
+
+    return visits;
   }, [routes, galleryFilters]);
 
   return (
     <div className="p-8 max-w-[1600px] mx-auto space-y-8">
       <SectionHeader 
         icon={<ImageIcon className="text-blue-600" />}
-        title="Galeria de Fotos"
-        subtitle="Visualize e filtre as fotos das execuções em campo"
+        title="Galeria de Fotos por Visita"
+        subtitle="Visualize as fotos agrupadas por visita ao PDV"
       />
 
       {/* Filters */}
@@ -115,48 +162,39 @@ const PhotoGalleryView: React.FC = () => {
             <span className="font-bold text-sm">Filtros:</span>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs font-bold text-slate-400 uppercase">Data</label>
+            <label className="text-xs font-bold text-slate-400 uppercase">De</label>
             <input 
               type="date" 
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-slate-400 uppercase">Até</label>
+            <input 
+              type="date" 
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
               className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input 
-              placeholder="PDV / Loja" 
+              placeholder="Buscar PDV / Loja..." 
               value={galleryFilters.pdv}
               onChange={e => setGalleryFilters({...galleryFilters, pdv: e.target.value})}
               className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
             />
           </div>
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input 
-              placeholder="Produto" 
-              value={galleryFilters.product}
-              onChange={e => setGalleryFilters({...galleryFilters, product: e.target.value})}
-              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
-            />
-          </div>
-          <div className="relative">
-             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-             <input 
-              placeholder="SKU" 
-              value={galleryFilters.sku}
-              onChange={e => setGalleryFilters({...galleryFilters, sku: e.target.value})}
-              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
-            />
-          </div>
-          <div className="relative">
              <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
              <input 
-              placeholder="Promotor" 
+              placeholder="Buscar Promotor..." 
               value={galleryFilters.promoter}
               onChange={e => setGalleryFilters({...galleryFilters, promoter: e.target.value})}
               className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
@@ -165,7 +203,7 @@ const PhotoGalleryView: React.FC = () => {
           <div className="relative">
              <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
              <input 
-              placeholder="Supervisor" 
+              placeholder="Buscar Supervisor..." 
               value={galleryFilters.supervisor}
               onChange={e => setGalleryFilters({...galleryFilters, supervisor: e.target.value})}
               className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
@@ -174,43 +212,157 @@ const PhotoGalleryView: React.FC = () => {
         </div>
       </div>
 
-      {/* Gallery Grid */}
+      {/* Visits Grid */}
       {loading ? (
         <div className="flex justify-center p-12">
           <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {galleryPhotos.map((photo, i) => (
-            <div key={i} className="group relative bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-all">
-              <div className="aspect-square bg-slate-100 relative overflow-hidden">
-                <img src={photo.url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
-                  <p className="text-white text-xs font-bold truncate">{photo.product.product.name}</p>
-                  <p className="text-white/80 text-[10px] truncate">{photo.item.supermarket.fantasyName}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {visitsWithPhotos.map((visit, i) => (
+            <div 
+              key={i} 
+              onClick={() => setSelectedVisit(visit)}
+              className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all cursor-pointer overflow-hidden group flex flex-col"
+            >
+              {/* Card Header */}
+              <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+                <div className="flex justify-between items-start mb-2">
+                   <h3 className="font-bold text-slate-800 line-clamp-1" title={visit.item.supermarket.fantasyName}>
+                     {visit.item.supermarket.fantasyName}
+                   </h3>
+                   <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-white px-2 py-1 rounded-full border border-slate-100">
+                     <ImageIcon size={10} />
+                     {visit.photoCount}
+                   </span>
+                </div>
+                
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <MapPin size={12} className="text-slate-400" />
+                    <span className="truncate">{visit.item.supermarket.city || 'Cidade não inf.'} - {visit.item.supermarket.state || 'UF'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <Calendar size={12} className="text-slate-400" />
+                    <span>{new Date(visit.route.date).toLocaleDateString('pt-BR')}</span>
+                    {visit.item.checkInTime && (
+                      <>
+                        <span className="text-slate-300">|</span>
+                        <Clock size={12} className="text-slate-400" />
+                        <span>{new Date(visit.item.checkInTime).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <User size={12} className="text-slate-400" />
+                    <span className="truncate">{visit.route.promoter.fullName}</span>
+                  </div>
                 </div>
               </div>
-              <div className="p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <User size={12} className="text-slate-400" />
-                  <span className="text-xs text-slate-600 truncate">{photo.route.promoter.fullName}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar size={12} className="text-slate-400" />
-                  <span className="text-xs text-slate-600 truncate">{new Date(photo.route.date).toLocaleDateString('pt-BR')}</span>
-                </div>
+
+              {/* Preview Grid */}
+              <div className="p-2 grid grid-cols-2 gap-1.5 bg-slate-50/30 flex-1 content-start">
+                {visit.previewPhotos.map((url, idx) => (
+                  <div key={idx} className="aspect-square rounded-lg overflow-hidden border border-slate-100 relative">
+                    <img src={getImageUrl(url)} className="w-full h-full object-cover" alt="" />
+                    {idx === 3 && visit.photoCount > 4 && (
+                      <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center text-white font-bold text-sm">
+                        +{visit.photoCount - 4}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-              <a href={photo.url} target="_blank" rel="noopener noreferrer" className="absolute inset-0 z-10" />
+
+              <div className="p-3 border-t border-slate-100 flex justify-center text-blue-600 text-xs font-bold group-hover:bg-blue-50 transition-colors">
+                Ver Detalhes e Fotos
+              </div>
             </div>
           ))}
-          {galleryPhotos.length === 0 && (
+          
+          {visitsWithPhotos.length === 0 && (
               <div className="col-span-full p-12 text-center text-slate-400 flex flex-col items-center gap-4">
                 <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-slate-300">
                   <ImageIcon size={32} />
                 </div>
-                <p>Nenhuma foto encontrada com os filtros atuais.</p>
+                <p>Nenhuma visita com fotos encontrada para os filtros selecionados.</p>
               </div>
           )}
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {selectedVisit && (
+        <div className="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-6xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="p-6 border-b border-slate-100 flex justify-between items-start bg-slate-50/50">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900">{selectedVisit.item.supermarket.fantasyName}</h2>
+                <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-slate-500">
+                  <span className="flex items-center gap-1.5">
+                    <Calendar size={14} />
+                    {new Date(selectedVisit.route.date).toLocaleDateString('pt-BR')}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <User size={14} />
+                    Promotor: <strong className="text-slate-700">{selectedVisit.route.promoter.fullName}</strong>
+                  </span>
+                  {selectedVisit.route.promoter.supervisor && (
+                    <span className="flex items-center gap-1.5">
+                      <User size={14} />
+                      Supervisor: <strong className="text-slate-700">{selectedVisit.route.promoter.supervisor.fullName}</strong>
+                    </span>
+                  )}
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedVisit(null)}
+                className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-red-500 transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 bg-slate-50/30 space-y-8">
+              {selectedVisit.item.products
+                .filter(p => p.photos && p.photos.length > 0)
+                .map((product, idx) => (
+                <div key={idx} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                    <div>
+                      <h3 className="font-bold text-slate-800">{product.product.name}</h3>
+                      <div className="text-xs text-slate-500 mt-0.5">{product.product.brand?.name}</div>
+                    </div>
+                    <span className="text-xs font-bold text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-200">
+                      {product.photos?.length} foto(s)
+                    </span>
+                  </div>
+                  <div className="p-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                      {product.photos?.map((photo, pIdx) => (
+                        <a 
+                          key={pIdx}
+                          href={getImageUrl(photo)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group relative aspect-square rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:ring-4 ring-blue-100 transition-all"
+                        >
+                          <img 
+                            src={getImageUrl(photo)} 
+                            alt="" 
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

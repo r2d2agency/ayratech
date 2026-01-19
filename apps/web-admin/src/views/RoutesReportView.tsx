@@ -23,7 +23,7 @@ import {
   Shield
 } from 'lucide-react';
 import { jwtDecode } from "jwt-decode";
-import api from '../api/client';
+import api, { API_URL } from '../api/client';
 import { 
   BarChart, 
   Bar, 
@@ -106,6 +106,7 @@ const RoutesReportView: React.FC = () => {
     checkInTime: string;
     checkOutTime: string;
     promoterId: string;
+    observation: string;
     products: { 
       productId: string; 
       checked: boolean; 
@@ -193,6 +194,37 @@ const RoutesReportView: React.FC = () => {
     });
   };
 
+  const getImageUrl = (url: string) => {
+    if (!url) return '';
+    if (url.startsWith('data:')) return url;
+    
+    // Fix for images saved with localhost or different domains
+    if (url.includes('/uploads/')) {
+      const relativePath = url.substring(url.indexOf('/uploads/'));
+      return `${API_URL}${relativePath}`;
+    }
+    
+    // If it's a full URL, we need to check if it's mixed content (http on https)
+    // or if it points to localhost when we are in production
+    if (url.startsWith('http')) {
+        // If we are in prod (https) and the url is http, try to upgrade or fix
+        if (window.location.protocol === 'https:' && url.startsWith('http:')) {
+             // If it's our own API but with http, replace with API_URL (which should be https in prod)
+             // Or if it's localhost, also replace with API_URL
+             if (url.includes('localhost') || url.includes('api.ayratech.app.br')) {
+                 // Try to extract the path part
+                 const pathPart = url.split('/uploads/')[1];
+                 if (pathPart) {
+                     return `${API_URL}/uploads/${pathPart}`;
+                 }
+             }
+        }
+        return url;
+    }
+
+    return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+  };
+
   const handlePhotoUpload = async (file: File, productIndex: number) => {
     try {
       const resized = await resizeImage(file);
@@ -200,7 +232,8 @@ const RoutesReportView: React.FC = () => {
       formData.append('file', resized);
 
       const res = await api.post('/upload', formData);
-      const url = res.data.url;
+      // Prefer using the relative path if available to avoid domain issues
+      const url = res.data.path || res.data.url;
 
       if (manualForm) {
         const newProducts = [...manualForm.products];
@@ -232,6 +265,7 @@ const RoutesReportView: React.FC = () => {
       checkInTime: toLocalISO(initialCheckIn),
       checkOutTime: toLocalISO(initialCheckOut),
       promoterId: routePromoterId,
+      observation: item.observation || '',
       products: item.products.map((p: any) => ({
         productId: p.product.id,
         checked: p.checked || false,
@@ -605,9 +639,9 @@ const RoutesReportView: React.FC = () => {
                       </div>
                       
                       {item.manualEntryBy && (
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200" title={`Lançado manualmente por ${item.manualEntryBy} em ${new Date(item.manualEntryAt!).toLocaleString('pt-BR')}`}>
-                          <Shield size={14} />
-                          Manual
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200" title={`Lançado manualmente por ${item.manualEntryBy} em ${new Date(item.manualEntryAt!).toLocaleString('pt-BR')}`}>
+                          <Monitor size={14} />
+                          Verificado por {item.manualEntryBy} em {new Date(item.manualEntryAt!).toLocaleString('pt-BR')}
                         </div>
                       )}
 
@@ -792,16 +826,13 @@ const RoutesReportView: React.FC = () => {
                        <div className="flex items-center gap-2">
                          <label className="flex-1 cursor-pointer flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-500 hover:bg-slate-50 transition-colors">
                            <Camera size={16} />
-                           <span className="truncate">Adicionar Foto</span>
+                           <span className="truncate">Adicionar Fotos</span>
                            <input 
                              type="file" 
                              accept="image/*"
+                             multiple
                              className="hidden"
-                             onChange={(e) => {
-                               if (e.target.files?.[0]) {
-                                 handlePhotoUpload(e.target.files[0], idx);
-                               }
-                             }}
+                             onChange={(e) => handlePhotoUpload(e.target.files, idx)}
                            />
                          </label>
                        </div>
@@ -812,8 +843,12 @@ const RoutesReportView: React.FC = () => {
                        <div className="flex gap-2 overflow-x-auto py-1">
                          {prod.photos.map((pUrl, pIdx) => (
                            <div key={pIdx} className="w-16 h-16 rounded-lg overflow-hidden border border-slate-200 relative group">
-                             <img src={pUrl} alt="" className="w-full h-full object-cover" />
-                             <button 
+                              <img 
+                                src={getImageUrl(pUrl)} 
+                                alt="" 
+                                className="w-full h-full object-cover" 
+                              />
+                              <button 
                                onClick={() => {
                                  const newProds = [...manualForm.products];
                                  newProds[idx].photos = newProds[idx].photos.filter((_, i) => i !== pIdx);

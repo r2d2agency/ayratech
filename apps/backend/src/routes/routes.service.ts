@@ -330,6 +330,7 @@ export class RoutesService {
     checkInTime: string; 
     checkOutTime: string; 
     promoterId?: string;
+    observation?: string;
     products: { 
       productId: string; 
       checked: boolean; 
@@ -349,13 +350,10 @@ export class RoutesService {
     item.checkInTime = new Date(data.checkInTime);
     item.checkOutTime = new Date(data.checkOutTime);
     item.status = 'COMPLETED';
-    
-    // Audit
-    if (user) {
-      item.manualEntryBy = user.email || user.username || user.id || 'Admin';
-      item.manualEntryAt = new Date();
-    }
-    
+    item.manualEntryBy = user?.email || 'admin';
+    item.manualEntryAt = new Date();
+    if (data.observation) item.observation = data.observation;
+
     await this.routeItemsRepository.save(item);
 
     // Update Route Promoter if provided

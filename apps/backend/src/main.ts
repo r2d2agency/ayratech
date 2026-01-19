@@ -21,10 +21,17 @@ async function bootstrap() {
   
   // Configure CORS
   app.enableCors({
-    origin: true, // Allow all origins for development/mobile access
+    origin: [
+      'https://ayratech.app.br',
+      'https://www.ayratech.app.br',
+      'https://api.ayratech.app.br',
+      'http://localhost:5173',
+      'http://localhost:4173',
+      'http://localhost:3000',
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
-    allowedHeaders: 'Content-Type, Accept, Authorization',
+    allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
   });
 
   const port = process.env.PORT || 3000;

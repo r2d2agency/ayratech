@@ -49,6 +49,9 @@ export class RouteItem {
   @Column({ nullable: true, type: 'timestamp' })
   manualEntryAt: Date;
 
+  @Column({ nullable: true, type: 'text' })
+  observation: string;
+}
   @OneToMany(() => RouteItemProduct, (product) => product.routeItem, { cascade: true, eager: true })
   products: RouteItemProduct[];
 }
