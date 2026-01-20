@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Plus, X, Edit, Trash, ChevronDown, Check } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import api, { API_URL } from '../api/client';
+import { getImageUrl } from '../utils/image';
 
 const ProductsView: React.FC = () => {
   const { settings } = useBranding();
@@ -54,24 +55,15 @@ const ProductsView: React.FC = () => {
       const mappedClients = clientsRes.data.map((c: any) => ({
         id: c.id,
         nome: c.nomeFantasia || c.razaoSocial,
-        logo: c.logo
-          ? (c.logo.startsWith('http') ? c.logo : `${API_URL}${c.logo}`)
-          : 'https://placehold.co/150'
+        logo: getImageUrl(c.logo) || 'https://placehold.co/150'
       }));
       setClients(mappedClients);
       setBrands(brandsRes.data);
       setCategories(categoriesRes.data);
 
       const mappedProducts = productsRes.data.map((p: any) => {
-        const imgUrl = p.image 
-          ? (p.image.startsWith('http') ? p.image : `${API_URL}${p.image}`)
-          : 'https://placehold.co/150';
+        const imgUrl = getImageUrl(p.image);
         
-        // Debug image URL issues
-        if (p.image && !p.image.startsWith('http')) {
-           // console.log(`Product ${p.name} raw image: ${p.image}, mapped: ${imgUrl}`);
-        }
-
         return {
         id: p.id,
         nome: p.name,

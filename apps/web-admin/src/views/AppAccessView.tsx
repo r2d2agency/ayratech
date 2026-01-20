@@ -9,7 +9,7 @@ import {
   Smartphone,
   Calendar
 } from 'lucide-react';
-import api, { API_URL } from '../api/client';
+import api from '../api/client';
 
 interface Employee {
   id: string;

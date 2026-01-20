@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import api, { API_URL } from '../api/client';
+import api from '../api/client';
 import { useBranding } from '../context/BrandingContext';
+import { getImageUrl } from '../utils/image';
 
 interface Employee {
   id: string;
@@ -12,6 +13,7 @@ interface Employee {
   role?: { id: string; name: string };
   status: string;
   createdAt: string;
+  facialPhotoUrl?: string;
 }
 
 interface Role {
@@ -325,10 +327,7 @@ const EmployeesView: React.FC = () => {
 
       // Handle Photo
       if (fullEmp.facialPhotoUrl) {
-          const photoUrl = fullEmp.facialPhotoUrl.startsWith('http') 
-            ? fullEmp.facialPhotoUrl 
-            : `${API_URL}/${fullEmp.facialPhotoUrl.replace(/^\//, '')}`;
-          setFacialPhotoPreview(photoUrl);
+          setFacialPhotoPreview(getImageUrl(fullEmp.facialPhotoUrl));
       } else {
           setFacialPhotoPreview('');
       }
@@ -444,8 +443,25 @@ const EmployeesView: React.FC = () => {
                 {filteredEmployees.map((emp) => (
                   <tr key={emp.id} className="hover:bg-slate-50">
                     <td className="p-4">
-                      <div className="font-medium text-slate-900">{emp.fullName}</div>
-                      <div className="text-xs text-slate-500">CPF: {emp.cpf}</div>
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-slate-100 overflow-hidden flex-shrink-0">
+                          {emp.facialPhotoUrl ? (
+                            <img 
+                              src={getImageUrl(emp.facialPhotoUrl)} 
+                              alt="" 
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center text-slate-400 font-medium">
+                              {emp.fullName.charAt(0)}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-medium text-slate-900">{emp.fullName}</div>
+                          <div className="text-xs text-slate-500">CPF: {emp.cpf}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className="p-4 text-slate-600">{emp.role?.name || '-'}</td>
                     <td className="p-4">
@@ -700,8 +716,16 @@ const EmployeesView: React.FC = () => {
                         </button>
                       </div>
                     ) : (
-                      <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-white text-gray-400">
-                        <span className="text-xs text-center p-2">Sem foto</span>
+                      <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-white text-gray-400 overflow-hidden">
+                        {employeeForm.facialPhotoUrl ? (
+                           <img 
+                             src={getImageUrl(employeeForm.facialPhotoUrl)} 
+                             alt="Atual" 
+                             className="w-full h-full object-cover" 
+                           />
+                        ) : (
+                          <span className="text-xs text-center p-2">Sem foto</span>
+                        )}
                       </div>
                     )}
                     

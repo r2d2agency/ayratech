@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useBranding } from '../context/BrandingContext';
 import { Save, Shield, Palette, Users, Trash2, Edit } from 'lucide-react';
 import SectionHeader from '../components/SectionHeader';
-import api, { API_URL } from '../api/client';
+import api from '../api/client';
 
 const AdminView: React.FC = () => {
   const { settings, updateSettings } = useBranding();
@@ -345,7 +345,7 @@ const AdminView: React.FC = () => {
               {brandingForm.logoUrl && (
                 <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100 inline-block">
                   <img 
-                    src={brandingForm.logoUrl.startsWith('/') ? `${API_URL}${brandingForm.logoUrl}` : brandingForm.logoUrl} 
+                    src={getImageUrl(brandingForm.logoUrl)} 
                     alt="Preview" 
                     className="h-12 object-contain" 
                   />

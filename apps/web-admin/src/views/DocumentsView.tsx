@@ -10,7 +10,8 @@ import {
   AlertCircle,
   Plus
 } from 'lucide-react';
-import api, { API_URL } from '../api/client';
+import api from '../api/client';
+import { getImageUrl } from '../utils/image';
 
 interface Employee {
   id: string;
@@ -145,6 +146,12 @@ const DocumentsView: React.FC = () => {
       alert('Erro ao enviar documento. Verifique se o arquivo é válido e tente novamente.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleMarkAsRead = (doc: Document) => {
+    if (doc.fileUrl) {
+      window.open(getImageUrl(doc.fileUrl), '_blank');
     }
   };
 

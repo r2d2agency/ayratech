@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Trash2, Edit, Eye, Store, Package } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
-import api, { API_URL } from '../api/client';
+import api from '../api/client';
+import { getImageUrl } from '../utils/image';
 
 const ClientsView: React.FC = () => {
   const { settings } = useBranding();
@@ -111,13 +112,6 @@ const ClientsView: React.FC = () => {
     } catch (error) {
       console.error("Failed to fetch templates", error);
     }
-  };
-
-  const getLogoUrl = (url: string) => {
-    if (!url) return 'https://placehold.co/150';
-    if (url.startsWith('http')) return url;
-    if (url.startsWith('/')) return `${API_URL}${url}`;
-    return `https://${url}`;
   };
 
   const fetchClients = async () => {
@@ -896,7 +890,7 @@ const ClientsView: React.FC = () => {
               <div className="relative z-10">
                 <div className="flex justify-between items-start mb-8">
                   <div className="h-16 w-16 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center justify-center p-3">
-                    <img src={c.logo} className="object-contain" alt={c.nome} />
+                    <img src={getImageUrl(c.logo)} className="object-contain" alt={c.nome} />
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${c.status === 'ativo' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-gray-50 text-gray-600 border-gray-100'}`}>
@@ -989,7 +983,7 @@ const ClientsView: React.FC = () => {
 
             <div className="flex items-center gap-4 mb-6">
               <div className="h-16 w-16 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center justify-center p-3">
-                <img src={detailsClient.logo} className="object-contain" alt={detailsClient.nome} />
+                <img src={getImageUrl(detailsClient.logo)} className="object-contain" alt={detailsClient.nome} />
               </div>
               <div>
                 <h2 className="text-2xl font-black text-slate-900">{detailsClient.nome}</h2>
@@ -1026,7 +1020,7 @@ const ClientsView: React.FC = () => {
                        <div key={p.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex gap-3 items-center">
                           <div className="h-12 w-12 bg-white rounded-lg flex items-center justify-center border border-slate-100">
                             {p.image ? (
-                              <img src={p.image} className="h-10 w-10 object-contain" />
+                              <img src={getImageUrl(p.image)} className="h-10 w-10 object-contain" />
                             ) : (
                               <Package size={20} className="text-slate-300" />
                             )}

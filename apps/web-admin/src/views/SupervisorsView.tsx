@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Users, Building2, ChevronRight, User } from 'lucide-react';
-import api, { API_URL } from '../api/client';
+import api from '../api/client';
+import { getImageUrl } from '../utils/image';
 import { useBranding } from '../context/BrandingContext';
 
 interface Employee {
@@ -112,10 +113,7 @@ const SupervisorsView: React.FC = () => {
     sup.region?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getPhotoUrl = (url?: string) => {
-    if (!url) return null;
-    return url.startsWith('http') ? url : `${API_URL}/${url.replace(/^\/+/, '')}`;
-  };
+  /* getPhotoUrl removed in favor of imported util */
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -167,7 +165,7 @@ const SupervisorsView: React.FC = () => {
                       <div className="w-12 h-12 rounded-full bg-slate-100 overflow-hidden flex-shrink-0 border-2 border-white shadow-sm">
                         {supervisor.facialPhotoUrl ? (
                           <img 
-                            src={getPhotoUrl(supervisor.facialPhotoUrl) || ''} 
+                            src={getImageUrl(supervisor.facialPhotoUrl) || ''} 
                             alt={supervisor.fullName}
                             className="w-full h-full object-cover"
                           />
@@ -209,7 +207,7 @@ const SupervisorsView: React.FC = () => {
                       <div className="w-24 h-24 rounded-2xl bg-white shadow-lg overflow-hidden border-4 border-white">
                         {selectedSupervisor.facialPhotoUrl ? (
                           <img 
-                            src={getPhotoUrl(selectedSupervisor.facialPhotoUrl) || ''} 
+                            src={getImageUrl(selectedSupervisor.facialPhotoUrl) || ''} 
                             alt={selectedSupervisor.fullName}
                             className="w-full h-full object-cover"
                           />
@@ -256,7 +254,7 @@ const SupervisorsView: React.FC = () => {
                               <div key={sub.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
                                 <div className="w-8 h-8 rounded-full bg-white border border-slate-200 overflow-hidden flex-shrink-0">
                                   {sub.facialPhotoUrl ? (
-                                    <img src={getPhotoUrl(sub.facialPhotoUrl) || ''} className="w-full h-full object-cover" />
+                                    <img src={getImageUrl(sub.facialPhotoUrl) || ''} className="w-full h-full object-cover" />
                                   ) : (
                                     <div className="w-full h-full flex items-center justify-center text-slate-300">
                                       <User size={12} />

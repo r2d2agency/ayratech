@@ -105,7 +105,7 @@ const App: React.FC = () => {
     if (token) {
       try {
         const decoded: any = jwtDecode(token);
-        setUserRole(decoded.role || 'user');
+        setUserRole(decoded.role?.toLowerCase() || 'user');
       } catch (e) {
         console.error("Invalid token", e);
       }
