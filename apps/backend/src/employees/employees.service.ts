@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository, IsNull, ILike } from 'typeorm';
 import { Employee } from './entities/employee.entity';
 import { EmployeeCompensation } from './entities/employee-compensation.entity';
 import { EmployeeDocument } from './entities/employee-document.entity';
@@ -160,8 +160,18 @@ export class EmployeesService {
     return savedEmployee;
   }
 
-  async findAll() {
-    const employees = await this.employeesRepository.find({ relations: ['role', 'supervisor'] });
+  async findAll(search?: string) {
+    const where: any = {};
+    if (search) {
+        where.fullName = ILike(`%${search}%`);
+    }
+
+    const employees = await this.employeesRepository.find({ 
+        where,
+        relations: ['role', 'supervisor'],
+        order: { fullName: 'ASC' },
+        take: search ? 50 : undefined // Limit results if searching
+    });
     
     // Populate appAccessEnabled for all employees
     // This is not the most efficient way (N+1), but works for now. 

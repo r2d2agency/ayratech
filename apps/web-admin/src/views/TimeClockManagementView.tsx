@@ -1,32 +1,96 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar, User, Clock, Plus, Filter, Search, FileText, Download } from 'lucide-react';
-import api from '../api/client';
+import { Calendar, User, Clock, Plus, Filter, Search, FileText, Download, AlertTriangle, X } from 'lucide-react';
+import api, { API_URL } from '../api/client';
 import SectionHeader from '../components/SectionHeader';
 import { toast } from 'react-hot-toast';
+import { io } from 'socket.io-client';
+
+interface Alert {
+  id: string;
+  employeeName: string;
+  label: string;
+  scheduledTime: string;
+  delayMinutes: number;
+  message: string;
+  timestamp: Date;
+}
 
 const TimeClockManagementView = () => {
   const [events, setEvents] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [filters, setFilters] = useState({
     startDate: format(new Date(), 'yyyy-MM-dd'),
     endDate: format(new Date(), 'yyyy-MM-dd'),
     employeeId: ''
   });
   const [showModal, setShowModal] = useState(false);
-  const [newEvent, setNewEvent] = useState({
+  const initialEventState = {
     employeeId: '',
     date: format(new Date(), 'yyyy-MM-dd'),
     time: '08:00',
     eventType: 'ENTRY',
     observation: ''
-  });
+  };
+
+  const [newEvent, setNewEvent] = useState(initialEventState);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredEmployees, setFilteredEmployees] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     fetchEmployees();
     fetchEvents();
+
+    const socket = io(API_URL + '/time-clock');
+
+    socket.on('connect', () => {
+      console.log('Connected to TimeClock WebSocket');
+    });
+
+    socket.on('hr-alert', (alert: any) => {
+      console.log('Received HR Alert:', alert);
+      toast((t) => (
+        <div className="flex items-start gap-2">
+           <AlertTriangle className="text-red-500" size={24} />
+           <div>
+             <p className="font-bold">Alerta de Ponto</p>
+             <p className="text-sm">{alert.message}</p>
+           </div>
+        </div>
+      ), { duration: 5000 });
+
+      setAlerts(prev => [{ ...alert, id: Math.random().toString(36).substr(2, 9), timestamp: new Date() }, ...prev]);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []); // Initial load
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (searchTerm) {
+        setIsSearching(true);
+        try {
+          const response = await api.get(`/employees?search=${searchTerm}`);
+          setFilteredEmployees(response.data);
+        } catch (error) {
+          console.error('Error searching employees', error);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setFilteredEmployees([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
 
   const fetchEmployees = async () => {
     try {
@@ -92,12 +156,19 @@ const TimeClockManagementView = () => {
             observation: newEvent.observation
         });
 
-        toast.success('Registro adicionado com sucesso!');
-        setShowModal(false);
-        fetchEvents();
+        toast.success('Registro manual adicionado com sucesso!');
+      setShowModal(false);
+      setNewEvent(initialEventState);
+      setSearchTerm('');
+      setFilteredEmployees([]);
+      fetchEvents();
     } catch (error) {
         toast.error('Erro ao adicionar registro manual');
     }
+  };
+
+  const removeAlert = (id: string) => {
+    setAlerts(prev => prev.filter(a => a.id !== id));
   };
 
   const getEventTypeLabel = (type: string) => {
@@ -136,13 +207,48 @@ const TimeClockManagementView = () => {
             <Download size={20} /> Exportar Excel
           </button>
           <button 
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+                setNewEvent(initialEventState);
+                setSearchTerm('');
+                setFilteredEmployees([]);
+                setShowModal(true);
+            }}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 font-medium"
           >
             <Plus size={20} /> Lançamento Manual
           </button>
         </div>
         </div>
+
+        {/* Alerts */}
+        {alerts.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="font-semibold text-red-600 flex items-center gap-2">
+              <AlertTriangle size={20} />
+              Alertas de Ponto ({alerts.length})
+            </h3>
+            <div className="grid gap-2">
+              {alerts.map(alert => (
+                <div key={alert.id} className="bg-red-50 border border-red-200 p-4 rounded-lg flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-red-100 rounded-full text-red-600">
+                      <AlertTriangle size={20} />
+                    </div>
+                    <div>
+                      <p className="font-medium text-red-900">{alert.message}</p>
+                      <p className="text-sm text-red-700">
+                        {format(new Date(alert.timestamp), "HH:mm")} - {alert.employeeName} ({alert.label} agendado para {alert.scheduledTime})
+                      </p>
+                    </div>
+                  </div>
+                  <button onClick={() => removeAlert(alert.id)} className="text-red-400 hover:text-red-600">
+                    <X size={20} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end">
@@ -244,16 +350,47 @@ const TimeClockManagementView = () => {
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium mb-1">Colaborador</label>
-                            <select 
-                                className="w-full border rounded-lg p-2"
-                                value={newEvent.employeeId}
-                                onChange={(e) => setNewEvent({...newEvent, employeeId: e.target.value})}
-                            >
-                                <option value="">Selecione...</option>
-                                {employees.map((emp: any) => (
-                                    <option key={emp.id} value={emp.id}>{emp.fullName}</option>
-                                ))}
-                            </select>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="Digite para buscar..."
+                                    value={searchTerm}
+                                    onChange={(e) => {
+                                        setSearchTerm(e.target.value);
+                                        setIsDropdownOpen(true);
+                                    }}
+                                    onFocus={() => setIsDropdownOpen(true)}
+                                />
+                                {isSearching && (
+                                    <div className="absolute right-3 top-3">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                    </div>
+                                )}
+                                {isDropdownOpen && filteredEmployees.length > 0 && (
+                                    <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto">
+                                        {filteredEmployees.map((emp: any) => (
+                                            <div
+                                                key={emp.id}
+                                                className="p-2 hover:bg-gray-50 cursor-pointer flex flex-col"
+                                                onClick={() => {
+                                                    setNewEvent({ ...newEvent, employeeId: emp.id });
+                                                    setSearchTerm(emp.fullName);
+                                                    setIsDropdownOpen(false);
+                                                }}
+                                            >
+                                                <span className="font-medium">{emp.fullName}</span>
+                                                <span className="text-xs text-gray-500">{emp.email}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                {newEvent.employeeId && !isDropdownOpen && (
+                                    <div className="text-xs text-green-600 mt-1 font-medium">
+                                        Selecionado: {filteredEmployees.find((e: any) => e.id === newEvent.employeeId)?.fullName || searchTerm}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>

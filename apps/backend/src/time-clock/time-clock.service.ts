@@ -24,7 +24,6 @@ export class TimeClockService {
 
     events.forEach(event => {
       const empId = event.employee.id;
-      const empName = event.employee.name;
       const dateKey = event.timestamp.toISOString().split('T')[0];
       
       if (!groupedData.has(empId)) {
@@ -88,7 +87,7 @@ export class TimeClockService {
         const formatTime = (date?: Date) => date ? date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-';
 
         worksheet.addRow({
-          employee: dayEvents[0].employee.name,
+          employee: dayEvents[0].employee.fullName,
           date: new Date(dateKey).toLocaleDateString('pt-BR'),
           entry: formatTime(entry?.timestamp),
           lunchStart: formatTime(lunchStart?.timestamp),
