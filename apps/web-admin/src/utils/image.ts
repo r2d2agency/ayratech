@@ -28,5 +28,11 @@ export const getImageUrl = (url: string) => {
       return url;
   }
 
+  // Case 3: Relative path without /uploads/ (presumably)
+  // If it's a bare filename, assume it's in uploads
+  if (!url.includes('/') && !url.startsWith('http')) {
+    return `${API_URL}/uploads/${url}`;
+  }
+
   return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
 };
