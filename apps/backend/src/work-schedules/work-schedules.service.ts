@@ -39,18 +39,34 @@ export class WorkSchedulesService {
     }
 
     const { employeeId, ...scheduleData } = createWorkScheduleDto;
+
+    // Sanitize days to ensure empty strings for time fields become null
+    if (scheduleData.days) {
+        scheduleData.days = scheduleData.days.map(day => ({
+            ...day,
+            startTime: day.startTime || '08:00',
+            endTime: day.endTime || '17:00',
+            breakStart: day.breakStart === '' ? undefined : day.breakStart,
+            breakEnd: day.breakEnd === '' ? undefined : day.breakEnd,
+        })) as any;
+    }
     
     const employee = await this.employeesRepository.findOneBy({ id: employeeId });
     if (!employee) {
         throw new NotFoundException(`Employee with ID ${employeeId} not found`);
     }
 
-    const schedule = this.schedulesRepository.create({
-      ...scheduleData,
-    });
-    schedule.employee = employee;
-    
-    return this.schedulesRepository.save(schedule);
+    try {
+      const schedule = this.schedulesRepository.create({
+        ...scheduleData,
+      });
+      schedule.employee = employee;
+      
+      return await this.schedulesRepository.save(schedule);
+    } catch (error) {
+      console.error('Error saving work schedule:', error);
+      throw error;
+    }
   }
 
   findAll() {

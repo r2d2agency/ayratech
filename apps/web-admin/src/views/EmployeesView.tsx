@@ -431,10 +431,10 @@ const EmployeesView: React.FC = () => {
               days: scheduleForm.map(day => ({
                   dayOfWeek: day.dayOfWeek,
                   active: day.active,
-                  startTime: day.startTime,
-                  endTime: day.endTime,
-                  breakStart: day.breakStart,
-                  breakEnd: day.breakEnd,
+                  startTime: day.startTime || '08:00',
+                  endTime: day.endTime || '17:00',
+                  breakStart: day.breakStart || undefined,
+                  breakEnd: day.breakEnd || undefined,
                   toleranceMinutes: Number(day.toleranceMinutes)
               }))
           };
