@@ -24,13 +24,17 @@ const DashboardView = () => {
       const response = await client.get('/routes');
       const today = new Date().toISOString().split('T')[0];
       
-      const filtered = response.data.filter((r: any) => 
-        r.date.startsWith(today) && 
-        // Filter by promoter if we had the promoter ID in context clearly
-        // Assuming backend filters or we see all for now (demo)
-        // Ideally: r.promoter?.id === user?.employee?.id
-        (!user?.employee?.id || r.promoter?.id === user.employee.id)
-      );
+      const filtered = response.data.filter((r: any) => {
+        // Check if user is a manager (admin, supervisor, etc.)
+        const userRole = user?.role?.toLowerCase() || '';
+        const isManager = ['admin', 'superadmin', 'supervisor', 'gerente', 'coordenador'].some(role => userRole.includes(role));
+
+        return r.date.startsWith(today) && (
+          isManager || // Managers see all routes
+          !user?.employee?.id || // Fallback if no employee linked
+          r.promoter?.id === user.employee.id // Promoters see only their routes
+        );
+      });
       
       setTodaysRoutes(filtered);
     } catch (error) {
