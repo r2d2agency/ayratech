@@ -22,9 +22,15 @@ async function bootstrap() {
 
   // Enable standard CORS with credentials support
   app.enableCors({
-    origin: true, // Reflects the request origin
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      // Allow any origin dynamically
+      return callback(null, true);
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
+    allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
   });
 
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
