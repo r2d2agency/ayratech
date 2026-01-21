@@ -3,6 +3,7 @@ import { useBranding } from '../context/BrandingContext';
 import { Save, Shield, Palette, Users, Trash2, Edit } from 'lucide-react';
 import SectionHeader from '../components/SectionHeader';
 import api from '../api/client';
+import { getImageUrl } from '../utils/image';
 
 const AdminView: React.FC = () => {
   const { settings, updateSettings } = useBranding();
