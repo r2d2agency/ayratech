@@ -1,15 +1,32 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, BadRequestException } from '@nestjs/common';
 import { TimeClockService } from './time-clock.service';
 import { CreateTimeClockEventDto, CreateTimeBalanceDto } from './dto/create-time-clock.dto';
 import { UpdateTimeClockEventDto } from './dto/update-time-clock.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('time-clock')
 export class TimeClockController {
   constructor(private readonly timeClockService: TimeClockService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() createTimeClockEventDto: CreateTimeClockEventDto) {
-    return this.timeClockService.create(createTimeClockEventDto);
+  create(@Body() createTimeClockEventDto: CreateTimeClockEventDto, @Req() req: any) {
+    if (!req.user?.employee?.id) {
+        throw new BadRequestException('Usuário não vinculado a um funcionário. Contate o RH.');
+    }
+    return this.timeClockService.create({
+        ...createTimeClockEventDto,
+        employeeId: req.user.employee.id
+    });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('status/today')
+  getTodayStatus(@Req() req: any) {
+    if (!req.user?.employee?.id) {
+        throw new BadRequestException('Usuário não vinculado a um funcionário. Contate o RH.');
+    }
+    return this.timeClockService.getTodayStatus(req.user.employee.id);
   }
 
   @Get()

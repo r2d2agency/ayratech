@@ -6,6 +6,7 @@ import DashboardView from './views/DashboardView';
 import RouteDetailsView from './views/RouteDetailsView';
 import CalendarView from './views/CalendarView';
 import DocumentsView from './views/DocumentsView';
+import TimeClockView from './views/TimeClockView';
 import BottomNav from './components/BottomNav';
 
 const ProtectedLayout = () => {
@@ -35,6 +36,7 @@ const App = () => {
             <Route path="/routes/:id" element={<RouteDetailsView />} />
             <Route path="/calendar" element={<CalendarView />} />
             <Route path="/documents" element={<DocumentsView />} />
+            <Route path="/time-clock" element={<TimeClockView />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

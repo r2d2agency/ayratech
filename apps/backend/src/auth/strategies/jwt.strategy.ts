@@ -21,6 +21,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
     // Check if user still exists in DB? Usually not needed for JWT but good for security
     // For now, let's just log success
-    return { userId: payload.sub, username: payload.username, role: payload.role };
+    return { 
+      userId: payload.sub, 
+      username: payload.username, 
+      role: payload.role,
+      employee: payload.employee 
+    };
   }
 }

@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Calendar, FileText, User } from 'lucide-react';
+import { Home, Calendar, FileText, User, Clock } from 'lucide-react';
 
 const BottomNav = () => {
   const navigate = useNavigate();
@@ -10,6 +10,7 @@ const BottomNav = () => {
   const navItems = [
     { icon: Home, label: 'Início', path: '/' },
     { icon: Calendar, label: 'Agenda', path: '/calendar' },
+    { icon: Clock, label: 'Ponto', path: '/time-clock' },
     { icon: FileText, label: 'Arquivos', path: '/documents' },
     // { icon: User, label: 'Perfil', path: '/profile' },
   ];
