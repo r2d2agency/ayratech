@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('time-clock')
 export class TimeClockController {
+  // Controller for managing time clock events
   constructor(private readonly timeClockService: TimeClockService) {}
 
   @UseGuards(JwtAuthGuard)
