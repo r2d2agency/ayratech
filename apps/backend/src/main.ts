@@ -32,6 +32,8 @@ async function bootstrap() {
       'http://192.168.0.7:5173',
       'http://192.168.0.7:5174',
       'https://ayratech-promoter-pwa.isyhhh.easypanel.host',
+      'https://promotor.ayratech.app.br',
+      'https://www.promotor.ayratech.app.br',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
