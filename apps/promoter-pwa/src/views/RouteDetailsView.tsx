@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import client from '../api/client';
-import { MapPin, ArrowLeft, CheckCircle, Circle, Camera } from 'lucide-react';
+import { MapPin, ArrowLeft, CheckCircle, Circle, Camera, Navigation } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast, Toaster } from 'react-hot-toast';
 
@@ -33,8 +33,24 @@ const RouteDetailsView = () => {
   // State for active item (being visited)
   const [activeItem, setActiveItem] = useState<any>(null);
 
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+
   useEffect(() => {
     fetchRoute();
+    // Start watching position for distance updates
+    if ('geolocation' in navigator) {
+      const watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => console.error('Error watching position:', error),
+        { enableHighAccuracy: true }
+      );
+      return () => navigator.geolocation.clearWatch(watchId);
+    }
   }, [id]);
 
   const fetchRoute = async () => {
@@ -152,6 +168,15 @@ const RouteDetailsView = () => {
     }
   };
 
+  const openGoogleMaps = (lat?: number, lng?: number) => {
+    if (!lat || !lng) {
+      toast.error('Localização do supermercado não disponível');
+      return;
+    }
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+    window.open(url, '_blank');
+  };
+
   if (loading) return <div className="p-8 text-center">Carregando...</div>;
   if (!route) return <div className="p-8 text-center">Rota não encontrada</div>;
 
@@ -175,31 +200,59 @@ const RouteDetailsView = () => {
            const isActive = activeItem?.id === item.id;
            const isCompleted = item.status === 'CHECKOUT' || item.status === 'COMPLETED';
            // const isPending = item.status === 'PENDING' || !item.status;
+           
+           let distanceText = '';
+           if (userLocation && item.supermarket?.latitude && item.supermarket?.longitude) {
+             const dist = getDistanceFromLatLonInM(
+               userLocation.lat,
+               userLocation.lng,
+               Number(item.supermarket.latitude),
+               Number(item.supermarket.longitude)
+             );
+             distanceText = dist > 1000 ? `${(dist/1000).toFixed(1)}km` : `${Math.round(dist)}m`;
+           }
 
            return (
              <div key={item.id} className={`bg-white rounded-xl shadow-sm border overflow-hidden ${isActive ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-100'}`}>
                <div className="p-4">
                  <div className="flex justify-between items-start mb-2">
-                   <div className="flex items-center gap-3">
+                   <div className="flex items-center gap-3 flex-1">
                      <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
                        isCompleted ? 'bg-green-100 text-green-600' : 
                        isActive ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'
                      }`}>
                        {isCompleted ? <CheckCircle size={16} /> : <span className="text-xs font-bold">{index + 1}</span>}
                      </div>
-                     <div>
-                      <h3 className="font-bold text-gray-800">{item.supermarket?.fantasyName || item.supermarket?.name || 'Supermercado sem nome'}</h3>
-                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                     <div className="flex-1 min-w-0" onClick={() => openGoogleMaps(item.supermarket?.latitude, item.supermarket?.longitude)}>
+                      <h3 className="font-bold text-gray-800 truncate">{item.supermarket?.fantasyName || item.supermarket?.name || 'Supermercado sem nome'}</h3>
+                      <p className="text-xs text-gray-500 flex items-center gap-1 truncate">
                         <MapPin size={10} /> {item.supermarket?.address || `${item.supermarket?.street || ''}, ${item.supermarket?.number || ''}`}
                       </p>
+                      {distanceText && (
+                        <p className="text-xs text-blue-600 font-medium mt-1 flex items-center gap-1">
+                          <Navigation size={10} /> {distanceText}
+                        </p>
+                      )}
                     </div>
                    </div>
-                   <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
-                     isCompleted ? 'bg-green-50 text-green-700' :
-                     isActive ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'
-                   }`}>
-                     {isActive ? 'Em Andamento' : isCompleted ? 'Concluído' : 'Pendente'}
-                   </span>
+                   <div className="flex flex-col items-end gap-2">
+                     <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
+                       isCompleted ? 'bg-green-50 text-green-700' :
+                       isActive ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'
+                     }`}>
+                       {isActive ? 'Em Andamento' : isCompleted ? 'Concluído' : 'Pendente'}
+                     </span>
+                     <button 
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         openGoogleMaps(item.supermarket?.latitude, item.supermarket?.longitude);
+                       }}
+                       className="p-1.5 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition-colors"
+                       title="Abrir no Google Maps"
+                     >
+                       <Navigation size={14} />
+                     </button>
+                   </div>
                  </div>
 
                  {/* Actions Area */}
