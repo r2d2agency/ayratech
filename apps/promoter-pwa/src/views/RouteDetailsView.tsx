@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import client from '../api/client';
 import { offlineService } from '../services/offline.service';
-import { MapPin, ArrowLeft, CheckCircle, Circle, Camera, Navigation, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { processImage } from '../utils/image-processor';
+import { MapPin, ArrowLeft, CheckCircle, Circle, Camera, Navigation, Wifi, WifiOff, RefreshCw, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast, Toaster } from 'react-hot-toast';
 
@@ -35,6 +36,11 @@ const RouteDetailsView = () => {
   
   // State for active item (being visited)
   const [activeItem, setActiveItem] = useState<any>(null);
+
+  // Photo Capture State
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showPhotoPreview, setShowPhotoPreview] = useState(false);
+  const [currentPhoto, setCurrentPhoto] = useState<{ blob: Blob, url: string } | null>(null);
 
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
 
@@ -73,6 +79,126 @@ const RouteDetailsView = () => {
         fetchRoute();
         updatePendingCount();
       });
+    }
+  };
+
+  const handlePhotoCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0 || !activeItem) return;
+    
+    const file = event.target.files[0];
+    setProcessing(true);
+
+    try {
+        // Need to fetch current user/promoter name. 
+        // Assuming it's stored in localStorage or decoded from JWT.
+        // For now, using a placeholder or decoding JWT if available.
+        // In a real app, use a proper AuthContext.
+        const token = localStorage.getItem('accessToken');
+        let promoterName = 'Promotor';
+        if (token) {
+             // Simple parse to get name if available in payload
+             try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                promoterName = payload.name || payload.sub || 'Promotor';
+             } catch (e) {}
+        }
+
+        const result = await processImage(file, {
+            supermarketName: activeItem.supermarket.name,
+            promoterName: promoterName,
+            timestamp: new Date()
+        });
+        
+        setCurrentPhoto({ blob: result.blob, url: result.previewUrl });
+        setShowPhotoPreview(true);
+    } catch (error: any) {
+        toast.error(`Foto inválida: ${error.message}`);
+    } finally {
+        setProcessing(false);
+        // Reset input
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const confirmPhotoUpload = async () => {
+    if (!currentPhoto || !activeItem) return;
+
+    setProcessing(true);
+    try {
+        // In a real implementation, we would upload the blob.
+        // For offline support, we need to convert blob to base64 or store blob in IndexedDB.
+        // Dexie supports Blobs.
+        
+        // However, standard JSON payloads don't support Blobs. 
+        // If online: Use FormData.
+        // If offline: Store in IndexedDB pending actions. 
+        // NOTE: PendingAction in db.ts stores 'payload' as any. 
+        // We can store the blob directly if we handle it in sync.
+        // But JSON.stringify (often used in logs/debug) fails on Blobs.
+        // Let's convert to Base64 for simplicity in "payload" field, 
+        // or ensure our offline service handles FormData reconstruction.
+        
+        // Strategy: 
+        // 1. Try online upload via FormData.
+        // 2. If offline/fail, convert to Base64 and store in pending action.
+
+        if (isOnline) {
+             const formData = new FormData();
+             formData.append('file', currentPhoto.blob, 'photo.jpg');
+             formData.append('type', 'BEFORE'); // Example type
+             
+             await client.post(`/routes/items/${activeItem.id}/photos`, formData, {
+                 headers: { 'Content-Type': 'multipart/form-data' }
+             });
+             toast.success('Foto enviada com sucesso!');
+        } else {
+             // Convert Blob to Base64 for storage compatibility
+             const reader = new FileReader();
+             reader.readAsDataURL(currentPhoto.blob);
+             reader.onloadend = async () => {
+                 const base64data = reader.result;
+                 await offlineService.addPendingAction(
+                     'PHOTO',
+                     `/routes/items/${activeItem.id}/photos`,
+                     'POST',
+                     { 
+                         file: base64data,
+                         type: 'BEFORE',
+                         isBase64: true 
+                     }
+                 );
+                 toast.success('Foto salva (Offline). Será enviada quando houver conexão.');
+                 updatePendingCount();
+             };
+        }
+        
+        setShowPhotoPreview(false);
+        setCurrentPhoto(null);
+
+    } catch (error) {
+        console.error(error);
+        // Fallback to offline if API error
+        const reader = new FileReader();
+        reader.readAsDataURL(currentPhoto.blob);
+        reader.onloadend = async () => {
+             const base64data = reader.result;
+             await offlineService.addPendingAction(
+                 'PHOTO',
+                 `/routes/items/${activeItem.id}/photos`,
+                 'POST',
+                 { 
+                     file: base64data,
+                     type: 'BEFORE',
+                     isBase64: true 
+                 }
+             );
+             toast.success('Foto salva para envio posterior.');
+             updatePendingCount();
+        };
+        setShowPhotoPreview(false);
+        setCurrentPhoto(null);
+    } finally {
+        setProcessing(false);
     }
   };
 
@@ -427,8 +553,102 @@ const RouteDetailsView = () => {
            );
         })}
       </div>
+
+      {/* Modal Preview Photo */}
+      {showPhotoPreview && currentPhoto && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex flex-col items-center justify-center p-4">
+            <div className="bg-white p-2 rounded-lg max-w-full max-h-[80vh] overflow-hidden flex flex-col gap-4">
+                <img src={currentPhoto.url} alt="Preview" className="max-w-full max-h-[60vh] object-contain" />
+                <div className="flex gap-2 justify-between">
+                    <button 
+                        onClick={() => { setShowPhotoPreview(false); setCurrentPhoto(null); }}
+                        className="flex-1 py-3 bg-gray-200 text-gray-800 rounded-lg font-medium flex items-center justify-center gap-2"
+                    >
+                        <X size={20} /> Cancelar
+                    </button>
+                    <button 
+                        onClick={confirmPhotoUpload}
+                        className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-medium flex items-center justify-center gap-2"
+                        disabled={processing}
+                    >
+                        {processing ? <RefreshCw className="animate-spin" /> : <CheckCircle size={20} />} 
+                        Confirmar Envio
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* Hidden File Input */}
+      <input 
+        type="file" 
+        ref={fileInputRef}
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handlePhotoCapture}
+      />
+
+      {/* Bottom Actions Bar (Only if checked in) */}
+      {activeItem && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-around items-center z-10">
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="flex flex-col items-center gap-1 text-blue-600"
+            disabled={processing}
+          >
+            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+              <Camera size={24} />
+            </div>
+            <span className="text-xs font-medium">Fotos</span>
+          </button>
+
+          <button 
+            className="flex flex-col items-center gap-1 text-gray-400"
+            onClick={() => toast('Em breve: Formulário de Pesquisa')}
+          >
+            <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+              <CheckCircle size={24} />
+            </div>
+            <span className="text-xs font-medium">Pesquisa</span>
+          </button>
+
+          <button 
+            onClick={() => handleCheckOut(activeItem.id)}
+            className="flex flex-col items-center gap-1 text-red-600"
+            disabled={processing}
+          >
+            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+              <LogOut size={24} />
+            </div>
+            <span className="text-xs font-medium">Saída</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };
+
+// Helper icon
+function LogOut(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" x2="9" y1="12" y2="12" />
+    </svg>
+  );
+}
 
 export default RouteDetailsView;
