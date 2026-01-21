@@ -149,9 +149,28 @@ const DocumentsView: React.FC = () => {
     }
   };
 
-  const handleMarkAsRead = (doc: Document) => {
+  const handleMarkAsRead = async (doc: Document) => {
+    // Open file immediately
     if (doc.fileUrl) {
       window.open(getImageUrl(doc.fileUrl), '_blank');
+    }
+
+    // Mark as read in background if not already read
+    if (!doc.readAt) {
+      try {
+        const response = await api.patch(`/employees/documents/${doc.id}/read`);
+        
+        // Update local state
+        setDocuments(prevDocs => 
+          prevDocs.map(d => 
+            d.id === doc.id 
+              ? { ...d, readAt: response.data.readAt || new Date().toISOString() } 
+              : d
+          )
+        );
+      } catch (error) {
+        console.error('Error marking document as read:', error);
+      }
     }
   };
 
