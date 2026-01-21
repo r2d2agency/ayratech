@@ -516,7 +516,10 @@ const RouteDetailsView = () => {
                         </div>
 
                         <div className="flex gap-2">
-                          <button className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-2 rounded-lg text-sm font-medium">
+                          <button 
+                            onClick={() => fileInputRef.current?.click()}
+                            className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-200"
+                          >
                             <Camera size={16} /> Fotos
                           </button>
                           <button 

@@ -83,8 +83,54 @@ export class TimeClockService {
     };
   }
 
-  findAll() {
-    return this.eventsRepository.find({ relations: ['employee'] });
+  async createManual(data: any, editorName: string) {
+    const { employeeId, timestamp, eventType, observation } = data;
+    
+    if (!employeeId) throw new BadRequestException('Employee ID is required');
+
+    const event = this.eventsRepository.create({
+        employee: { id: employeeId },
+        eventType,
+        timestamp: new Date(timestamp),
+        isManual: true,
+        editedBy: editorName,
+        validationReason: observation || 'Ajuste manual',
+        validationStatus: 'approved' // Manual edits are auto-approved usually
+    });
+
+    return this.eventsRepository.save(event);
+  }
+
+  async findAll(startDate?: string, endDate?: string, employeeId?: string) {
+    const where: any = {};
+    
+    if (employeeId) {
+        where.employee = { id: employeeId };
+    }
+
+    if (startDate && endDate) {
+        // Ensure dates cover the full day range if strings are passed
+        const start = new Date(startDate);
+        start.setHours(0,0,0,0);
+        
+        const end = new Date(endDate);
+        end.setHours(23,59,59,999);
+        
+        where.timestamp = Between(start, end);
+    } else if (startDate) {
+        // Just that day
+        const start = new Date(startDate);
+        start.setHours(0,0,0,0);
+        const end = new Date(startDate);
+        end.setHours(23,59,59,999);
+        where.timestamp = Between(start, end);
+    }
+
+    return this.eventsRepository.find({ 
+        where, 
+        relations: ['employee'], 
+        order: { timestamp: 'DESC' } 
+    });
   }
 
   findOne(id: string) {

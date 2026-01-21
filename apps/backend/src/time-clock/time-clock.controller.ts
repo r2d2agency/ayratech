@@ -30,8 +30,19 @@ export class TimeClockController {
   }
 
   @Get()
-  findAll() {
-    return this.timeClockService.findAll();
+  findAll(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('employeeId') employeeId?: string
+  ) {
+    return this.timeClockService.findAll(startDate, endDate, employeeId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('manual')
+  createManual(@Body() data: any, @Req() req: any) {
+     const editorName = req.user?.name || req.user?.email || 'Admin';
+     return this.timeClockService.createManual(data, editorName);
   }
 
   @Get(':id')

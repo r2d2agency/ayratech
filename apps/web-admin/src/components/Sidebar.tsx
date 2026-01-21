@@ -15,7 +15,8 @@ import {
   ChevronLeft,
   Shield,
   FileText,
-  Map
+  Map,
+  Clock
 } from 'lucide-react';
 import { ViewType } from '../types';
 import { useBranding } from '../context/BrandingContext';
@@ -142,22 +143,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
               >
                 Clientes / Indústrias
               </button>
-              {canViewEmployees && (
-              <button 
-                onClick={() => onNavigate('employees')}
-                className={`w-full text-left p-2 rounded-lg text-xs font-bold transition-all ${activeView === 'employees' ? 'text-[var(--primary-color)] bg-blue-50' : 'text-slate-500 hover:text-[var(--primary-color)]'}`}
-              >
-                Funcionários
-              </button>
-              )}
-              {canViewEmployees && (
-              <button 
-                onClick={() => onNavigate('supervisors')}
-                className={`w-full text-left p-2 rounded-lg text-xs font-bold transition-all ${activeView === 'supervisors' ? 'text-[var(--primary-color)] bg-blue-50' : 'text-slate-500 hover:text-[var(--primary-color)]'}`}
-              >
-                Supervisores
-              </button>
-              )}
               <button 
                 onClick={() => onNavigate('products')}
                 className={`w-full text-left p-2 rounded-lg text-xs font-bold transition-all ${activeView === 'products' ? 'text-[var(--primary-color)] bg-blue-50' : 'text-slate-500 hover:text-[var(--primary-color)]'}`}
@@ -191,6 +176,22 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
             </div>
           )}
         </div>
+
+        {/* HR Module */}
+        {canViewEmployees && (
+          <>
+            <div className={`px-4 mt-6 mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider transition-all duration-300 ${
+              expanded ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'
+            }`}>
+              Recursos Humanos
+            </div>
+            <div className="px-3 space-y-1">
+              {navItem('employees', <Users size={20} />, 'Colaboradores')}
+              {navItem('supervisors', <Users size={20} />, 'Supervisores')}
+              {navItem('time_clock', <Clock size={20} />, 'Ponto Eletrônico')}
+            </div>
+          </>
+        )}
 
         {canViewEmployees && navItem('app_access', <Shield size={20} />, 'Gestão de Acesso')}
         {canViewEmployees && navItem('documents', <FileText size={20} />, 'Documentos')}

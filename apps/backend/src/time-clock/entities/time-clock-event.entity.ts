@@ -43,6 +43,12 @@ export class TimeClockEvent {
   @Column({ nullable: true })
   validationReason: string; // validacao_motivo
 
+  @Column({ default: false })
+  isManual: boolean;
+
+  @Column({ nullable: true })
+  editedBy: string;
+
   @CreateDateColumn()
   createdAt: Date;
 }

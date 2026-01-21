@@ -21,6 +21,7 @@ import DocumentsView from './views/DocumentsView';
 import SystemLogsView from './views/SystemLogsView';
 import RoutesReportView from './views/RoutesReportView';
 import PhotoGalleryView from './views/PhotoGalleryView';
+import TimeClockManagementView from './views/TimeClockManagementView';
 import LoginView from './views/LoginView';
 import { BrandingProvider } from './context/BrandingContext';
 import { jwtDecode } from 'jwt-decode';
@@ -75,6 +76,7 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
           {activeView === 'logs' && <SystemLogsView />}
           {activeView === 'reports_routes' && <RoutesReportView />}
           {activeView === 'gallery' && <PhotoGalleryView />}
+          {activeView === 'time_clock' && <TimeClockManagementView />}
         </main>
       </div>
     </div>
