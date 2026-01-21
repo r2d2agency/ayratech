@@ -450,8 +450,8 @@ const RoutesReportView: React.FC = () => {
                 <Users size={20} className="text-slate-400" />
                 Execução por Supervisor
               </h3>
-              <div className="h-80 w-full">
-                <ResponsiveContainer width="99%" height="100%">
+              <div className="h-80 w-full min-h-[320px]">
+                <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={supervisorData} layout="vertical" margin={{ left: 40 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={false} />
                     <XAxis type="number" />
@@ -470,8 +470,8 @@ const RoutesReportView: React.FC = () => {
                 <Users size={20} className="text-slate-400" />
                 Execução por Promotor
               </h3>
-              <div className="h-80 w-full">
-                <ResponsiveContainer width="99%" height="100%">
+              <div className="h-80 w-full min-h-[320px]">
+                <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={promoterData.slice(0, 10)} layout="vertical" margin={{ left: 40 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={false} />
                     <XAxis type="number" />
