@@ -81,4 +81,14 @@ export class RoutesController {
   ) {
     return this.routesService.manualExecution(itemId, body, req.user);
   }
+
+  @Post('items/:itemId/check-in')
+  checkIn(@Param('itemId') itemId: string, @Body() body: { lat: number; lng: number; timestamp: string }) {
+    return this.routesService.checkIn(itemId, body);
+  }
+
+  @Post('items/:itemId/check-out')
+  checkOut(@Param('itemId') itemId: string, @Body() body: { lat: number; lng: number; timestamp: string }) {
+    return this.routesService.checkOut(itemId, body);
+  }
 }

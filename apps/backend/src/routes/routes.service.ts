@@ -400,6 +400,27 @@ export class RoutesService {
     return this.routeItemsRepository.update(id, updateData);
   }
 
+  async checkIn(itemId: string, data: { lat: number; lng: number; timestamp: string }) {
+    const item = await this.routeItemsRepository.findOne({ where: { id: itemId } });
+    if (!item) throw new NotFoundException('Item not found');
+    
+    item.status = 'CHECKIN';
+    item.checkInTime = new Date(data.timestamp);
+    // optionally save location data if we add columns for it
+    
+    return this.routeItemsRepository.save(item);
+  }
+
+  async checkOut(itemId: string, data: { lat: number; lng: number; timestamp: string }) {
+    const item = await this.routeItemsRepository.findOne({ where: { id: itemId } });
+    if (!item) throw new NotFoundException('Item not found');
+    
+    item.status = 'CHECKOUT';
+    item.checkOutTime = new Date(data.timestamp);
+    
+    return this.routeItemsRepository.save(item);
+  }
+
   private async checkPromoterAvailability(promoterId: string, date: string, startTime: string, estimatedDuration: number, excludeRouteId?: string) {
     if (!promoterId || !date || !startTime || !estimatedDuration) return;
 
