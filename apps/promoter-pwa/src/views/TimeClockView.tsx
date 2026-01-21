@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import client from '../api/client';
+import { offlineService } from '../services/offline.service';
 import { toast, Toaster } from 'react-hot-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Clock, MapPin, Coffee, LogIn, LogOut, ArrowLeft } from 'lucide-react';
+import { Clock, MapPin, Coffee, LogIn, LogOut, ArrowLeft, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface TimeClockEvent {
@@ -30,20 +31,53 @@ export default function TimeClockView() {
   const [processing, setProcessing] = useState(false);
   const [data, setData] = useState<TodayStatus | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     fetchStatus();
+    updatePendingCount();
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    
+    const handleStatusChange = () => {
+        setIsOnline(navigator.onLine);
+        if (navigator.onLine) {
+            offlineService.syncPendingActions().then(() => {
+                fetchStatus();
+                updatePendingCount();
+            });
+        }
+    };
+    
+    window.addEventListener('online', handleStatusChange);
+    window.addEventListener('offline', handleStatusChange);
+
+    return () => {
+        clearInterval(timer);
+        window.removeEventListener('online', handleStatusChange);
+        window.removeEventListener('offline', handleStatusChange);
+    };
   }, []);
+
+  const updatePendingCount = async () => {
+      const count = await offlineService.getPendingCount();
+      setPendingCount(count);
+  };
 
   const fetchStatus = async () => {
     try {
       const response = await client.get('/time-clock/status/today');
       setData(response.data);
+      localStorage.setItem('timeClockStatus', JSON.stringify(response.data));
     } catch (error) {
-      console.error(error);
-      toast.error('Erro ao carregar dados do ponto');
+      console.error('Error fetching status, trying local cache', error);
+      const cached = localStorage.getItem('timeClockStatus');
+      if (cached) {
+          setData(JSON.parse(cached));
+          toast('Modo Offline: Usando dados em cache', { icon: '📡' });
+      } else {
+          toast.error('Erro ao carregar dados do ponto');
+      }
     } finally {
       setLoading(false);
     }
@@ -53,32 +87,85 @@ export default function TimeClockView() {
     if (!data) return;
 
     setProcessing(true);
-    if (!navigator.geolocation) {
-      toast.error('Geolocalização não suportada');
-      setProcessing(false);
-      return;
-    }
+    
+    const proceedWithRegister = async (lat: number, lng: number) => {
+        const timestamp = new Date().toISOString();
+        try {
+            await client.post('/time-clock', {
+              eventType: data.nextAction,
+              timestamp,
+              latitude: lat,
+              longitude: lng
+            });
+            toast.success('Ponto registrado com sucesso!');
+            fetchStatus();
+        } catch (error) {
+            console.error('API failed, saving offline action', error);
+            await offlineService.addPendingAction(
+                'TIME_CLOCK',
+                '/time-clock',
+                'POST',
+                {
+                    eventType: data.nextAction,
+                    timestamp,
+                    latitude: lat,
+                    longitude: lng
+                }
+            );
+            
+            // Optimistic Update
+            const newSummary = { ...data.summary };
+            let newStatus: TodayStatus['status'] = data.status;
+            let newNextAction: TodayStatus['nextAction'] = data.nextAction;
 
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      try {
-        await client.post('/time-clock', {
-          eventType: data.nextAction,
-          timestamp: new Date().toISOString(),
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude
-        });
-        toast.success('Ponto registrado com sucesso!');
-        fetchStatus();
-      } catch (error) {
-        console.error(error);
-        toast.error('Erro ao registrar ponto');
-      } finally {
+            if (data.nextAction === 'ENTRY') {
+                newSummary.entry = timestamp;
+                newStatus = 'WORKING';
+                newNextAction = 'LUNCH_START';
+            } else if (data.nextAction === 'LUNCH_START') {
+                newSummary.lunchStart = timestamp;
+                newStatus = 'LUNCH';
+                newNextAction = 'LUNCH_END';
+            } else if (data.nextAction === 'LUNCH_END') {
+                newSummary.lunchEnd = timestamp;
+                newStatus = 'WORKING';
+                newNextAction = 'EXIT';
+            } else if (data.nextAction === 'EXIT') {
+                newSummary.exit = timestamp;
+                newStatus = 'DONE';
+                newNextAction = 'DONE';
+            }
+
+            const newData = {
+                ...data,
+                status: newStatus,
+                nextAction: newNextAction,
+                summary: newSummary
+            };
+            
+            setData(newData);
+            localStorage.setItem('timeClockStatus', JSON.stringify(newData));
+            updatePendingCount();
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => proceedWithRegister(position.coords.latitude, position.coords.longitude),
+            (error) => {
+                toast.error('Erro de localização: ' + error.message);
+                // Allow proceed without location if offline? Maybe strict mode requires it.
+                // For now, let's block if no location, as it is time clock.
+                setProcessing(false);
+            }, 
+            { enableHighAccuracy: true }
+        );
+    } else {
+        toast.error('Geolocalização não suportada');
         setProcessing(false);
-      }
-    }, (error) => {
-      toast.error('Erro de localização: ' + error.message);
-      setProcessing(false);
-    }, { enableHighAccuracy: true });
+    }
   };
 
   const getButtonConfig = () => {
@@ -109,11 +196,30 @@ export default function TimeClockView() {
       <Toaster position="top-center" />
       
       {/* Header */}
-      <div className="bg-white p-4 shadow-sm flex items-center gap-3 sticky top-0 z-10">
-        <button onClick={() => navigate('/')} className="p-1">
-          <ArrowLeft size={24} className="text-gray-600" />
-        </button>
-        <h1 className="font-bold text-gray-800 text-lg">Ponto Eletrônico</h1>
+      <div className="bg-white p-4 shadow-sm flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/')} className="p-1">
+            <ArrowLeft size={24} className="text-gray-600" />
+            </button>
+            <h1 className="font-bold text-gray-800 text-lg">Ponto Eletrônico</h1>
+        </div>
+
+        <div className="flex items-center gap-2">
+            {pendingCount > 0 && (
+                <button 
+                    onClick={() => offlineService.syncPendingActions()}
+                    className="p-2 bg-orange-100 text-orange-600 rounded-full animate-pulse"
+                    title={`${pendingCount} ações pendentes. Clique para sincronizar.`}
+                >
+                    <RefreshCw size={20} />
+                </button>
+            )}
+            {isOnline ? (
+                <Wifi size={20} className="text-green-500" title="Online" />
+            ) : (
+                <WifiOff size={20} className="text-red-500" title="Offline" />
+            )}
+        </div>
       </div>
 
       <div className="p-6 flex flex-col items-center gap-8">

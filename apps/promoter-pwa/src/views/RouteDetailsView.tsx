@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import client from '../api/client';
-import { MapPin, ArrowLeft, CheckCircle, Circle, Camera, Navigation } from 'lucide-react';
+import { offlineService } from '../services/offline.service';
+import { MapPin, ArrowLeft, CheckCircle, Circle, Camera, Navigation, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast, Toaster } from 'react-hot-toast';
 
@@ -29,6 +30,8 @@ const RouteDetailsView = () => {
   const [route, setRoute] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [pendingCount, setPendingCount] = useState(0);
   
   // State for active item (being visited)
   const [activeItem, setActiveItem] = useState<any>(null);
@@ -37,6 +40,12 @@ const RouteDetailsView = () => {
 
   useEffect(() => {
     fetchRoute();
+    updatePendingCount();
+    
+    // Network listeners
+    window.addEventListener('online', handleOnlineStatus);
+    window.addEventListener('offline', handleOnlineStatus);
+
     // Start watching position for distance updates
     if ('geolocation' in navigator) {
       const watchId = navigator.geolocation.watchPosition(
@@ -49,20 +58,49 @@ const RouteDetailsView = () => {
         (error) => console.error('Error watching position:', error),
         { enableHighAccuracy: true }
       );
-      return () => navigator.geolocation.clearWatch(watchId);
+      return () => {
+        navigator.geolocation.clearWatch(watchId);
+        window.removeEventListener('online', handleOnlineStatus);
+        window.removeEventListener('offline', handleOnlineStatus);
+      };
     }
   }, [id]);
+
+  const handleOnlineStatus = () => {
+    setIsOnline(navigator.onLine);
+    if (navigator.onLine) {
+      offlineService.syncPendingActions().then(() => {
+        fetchRoute();
+        updatePendingCount();
+      });
+    }
+  };
+
+  const updatePendingCount = async () => {
+    const count = await offlineService.getPendingCount();
+    setPendingCount(count);
+  };
 
   const fetchRoute = async () => {
     try {
       const response = await client.get(`/routes/${id}`);
       setRoute(response.data);
+      offlineService.saveRoute(response.data); // Cache for offline
+      
       // Find active item (status CHECKIN)
       const active = response.data.items.find((i: any) => i.status === 'CHECKIN');
       setActiveItem(active || null);
     } catch (error) {
-      console.error('Error fetching route:', error);
-      toast.error('Erro ao carregar rota');
+      console.error('Error fetching route from API, trying offline cache:', error);
+      const cachedRoute = await offlineService.getRoute(id!);
+      if (cachedRoute) {
+        setRoute(cachedRoute);
+        const active = cachedRoute.items.find((i: any) => i.status === 'CHECKIN');
+        setActiveItem(active || null);
+        toast('Modo Offline: Exibindo dados em cache', { icon: '📡' });
+      } else {
+        toast.error('Erro ao carregar rota e sem cache offline');
+      }
     } finally {
       setLoading(false);
     }
@@ -79,81 +117,114 @@ const RouteDetailsView = () => {
     if (!itemToCheck) return;
 
     setProcessing(true);
-    try {
-      // Get location
-      if ('geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition(async (position) => {
-          try {
-            const userLat = position.coords.latitude;
-            const userLng = position.coords.longitude;
-
-            // Validate Distance (Max 300 meters)
-            if (itemToCheck.supermarket?.latitude && itemToCheck.supermarket?.longitude) {
-              const distance = getDistanceFromLatLonInM(
-                userLat,
-                userLng,
-                Number(itemToCheck.supermarket.latitude),
-                Number(itemToCheck.supermarket.longitude)
-              );
-
-              if (distance > 300) {
-                toast.error(`Você está a ${Math.round(distance)}m do local. Aproxime-se para fazer check-in (Max: 300m).`);
-                setProcessing(false);
-                return;
-              }
-            } else {
-               // Warn if supermarket has no coordinates but allow check-in (or block depending on strictness)
-               // For now, we proceed but maybe we should warn the user or the admin.
-               console.warn('Supermarket has no coordinates');
-            }
-
+    
+    const proceedWithCheckIn = async (lat: number, lng: number) => {
+        try {
             await client.post(`/routes/items/${itemId}/check-in`, {
-              lat: userLat,
-              lng: userLng,
+              lat,
+              lng,
               timestamp: new Date().toISOString()
             });
             toast.success('Check-in realizado!');
             fetchRoute();
-          } catch (err) {
-            console.error(err);
-            toast.error('Erro ao realizar check-in');
-          }
-        }, (error) => {
-           toast.error('Erro de geolocalização: ' + error.message);
-           setProcessing(false);
-        }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
-      } else {
+        } catch (err) {
+            console.error('API failed, saving offline action', err);
+            await offlineService.addPendingAction(
+                'CHECKIN', 
+                `/routes/items/${itemId}/check-in`, 
+                'POST', 
+                { lat, lng, timestamp: new Date().toISOString() }
+            );
+            
+            // Optimistic update
+            const updatedItems = route.items.map((i: any) => 
+                i.id === itemId ? { ...i, status: 'CHECKIN' } : i
+            );
+            setRoute({ ...route, items: updatedItems });
+            setActiveItem({ ...itemToCheck, status: 'CHECKIN' });
+            updatePendingCount();
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
+
+                // Validate Distance (Max 300 meters)
+                if (itemToCheck.supermarket?.latitude && itemToCheck.supermarket?.longitude) {
+                  const distance = getDistanceFromLatLonInM(
+                    userLat,
+                    userLng,
+                    Number(itemToCheck.supermarket.latitude),
+                    Number(itemToCheck.supermarket.longitude)
+                  );
+
+                  if (distance > 300) {
+                    toast.error(`Você está a ${Math.round(distance)}m do local. Aproxime-se para fazer check-in (Max: 300m).`);
+                    setProcessing(false);
+                    return;
+                  }
+                }
+                
+                proceedWithCheckIn(userLat, userLng);
+            },
+            (error) => {
+               toast.error('Erro de geolocalização: ' + error.message);
+               setProcessing(false);
+            }, 
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    } else {
         toast.error('Geolocalização não suportada');
         setProcessing(false);
-      }
-    } catch (error) {
-      setProcessing(false);
     }
   };
 
   const handleCheckOut = async (itemId: string) => {
     setProcessing(true);
-    try {
-       // Get location
-       navigator.geolocation.getCurrentPosition(async (position) => {
+    
+    const proceedWithCheckOut = async (lat: number, lng: number) => {
         try {
           await client.post(`/routes/items/${itemId}/check-out`, {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
+            lat,
+            lng,
             timestamp: new Date().toISOString()
           });
           toast.success('Visita finalizada!');
           setActiveItem(null);
           fetchRoute();
         } catch (err) {
-          toast.error('Erro ao finalizar visita');
+          console.error('API failed, saving offline action', err);
+          await offlineService.addPendingAction(
+            'CHECKOUT',
+            `/routes/items/${itemId}/check-out`,
+            'POST',
+            { lat, lng, timestamp: new Date().toISOString() }
+          );
+
+          // Optimistic update
+          const updatedItems = route.items.map((i: any) => 
+            i.id === itemId ? { ...i, status: 'CHECKOUT' } : i
+          );
+          setRoute({ ...route, items: updatedItems });
+          setActiveItem(null);
+          updatePendingCount();
         } finally {
           setProcessing(false);
         }
-      });
-    } catch (error) {
-      setProcessing(false);
-    }
+    };
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => proceedWithCheckOut(position.coords.latitude, position.coords.longitude),
+        (error) => {
+            console.error('Geolocation error on checkout, proceeding anyway', error);
+            proceedWithCheckOut(0, 0); // Allow checkout even if geo fails? Or force it?
+        }
+    );
   };
 
   const handleProductCheck = async (itemId: string, productId: string, checked: boolean) => {
@@ -161,10 +232,28 @@ const RouteDetailsView = () => {
       await client.patch(`/routes/items/${itemId}/products/${productId}/check`, {
         checked
       });
-      // Optimistic update or refetch
       fetchRoute();
     } catch (error) {
-      toast.error('Erro ao atualizar produto');
+       console.error('API failed, saving offline action', error);
+       await offlineService.addPendingAction(
+         'FORM',
+         `/routes/items/${itemId}/products/${productId}/check`,
+         'PATCH',
+         { checked }
+       );
+       
+       // Optimistic UI update
+       const updatedItems = route.items.map((item: any) => {
+         if (item.id === itemId) {
+             const updatedProducts = item.products.map((p: any) => 
+                 p.productId === productId ? { ...p, checked } : p
+             );
+             return { ...item, products: updatedProducts };
+         }
+         return item;
+       });
+       setRoute({ ...route, items: updatedItems });
+       updatePendingCount();
     }
   };
 
@@ -185,13 +274,32 @@ const RouteDetailsView = () => {
       <Toaster position="top-center" />
       
       {/* Header */}
-      <div className="bg-white px-4 py-3 shadow-sm flex items-center gap-3 sticky top-0 z-10">
-        <button onClick={() => navigate('/')} className="p-1">
-          <ArrowLeft size={24} className="text-gray-600" />
-        </button>
-        <div>
-          <h1 className="font-bold text-gray-800">Detalhes da Rota</h1>
-          <p className="text-xs text-gray-500">{format(new Date(route.date), 'dd/MM/yyyy')}</p>
+      <div className="bg-white px-4 py-3 shadow-sm flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/')} className="p-1">
+            <ArrowLeft size={24} className="text-gray-600" />
+            </button>
+            <div>
+            <h1 className="font-bold text-gray-800">Detalhes da Rota</h1>
+            <p className="text-xs text-gray-500">{format(new Date(route.date), 'dd/MM/yyyy')}</p>
+            </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+            {pendingCount > 0 && (
+                <button 
+                    onClick={() => offlineService.syncPendingActions()}
+                    className="p-2 bg-orange-100 text-orange-600 rounded-full animate-pulse"
+                    title={`${pendingCount} ações pendentes. Clique para sincronizar.`}
+                >
+                    <RefreshCw size={20} />
+                </button>
+            )}
+            {isOnline ? (
+                <Wifi size={20} className="text-green-500" title="Online" />
+            ) : (
+                <WifiOff size={20} className="text-red-500" title="Offline" />
+            )}
         </div>
       </div>
 
