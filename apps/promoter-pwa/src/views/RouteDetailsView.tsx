@@ -5,6 +5,24 @@ import { MapPin, ArrowLeft, CheckCircle, Circle, Camera } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast, Toaster } from 'react-hot-toast';
 
+// Helper function to calculate distance
+function getDistanceFromLatLonInM(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in km
+  return d * 1000; // Distance in meters
+}
+
+function deg2rad(deg: number) {
+  return deg * (Math.PI / 180);
+}
+
 const RouteDetailsView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -40,26 +58,54 @@ const RouteDetailsView = () => {
       return;
     }
     
+    // Find the item to check coordinates
+    const itemToCheck = route.items.find((i: any) => i.id === itemId);
+    if (!itemToCheck) return;
+
     setProcessing(true);
     try {
       // Get location
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(async (position) => {
           try {
+            const userLat = position.coords.latitude;
+            const userLng = position.coords.longitude;
+
+            // Validate Distance (Max 300 meters)
+            if (itemToCheck.supermarket?.latitude && itemToCheck.supermarket?.longitude) {
+              const distance = getDistanceFromLatLonInM(
+                userLat,
+                userLng,
+                Number(itemToCheck.supermarket.latitude),
+                Number(itemToCheck.supermarket.longitude)
+              );
+
+              if (distance > 300) {
+                toast.error(`Você está a ${Math.round(distance)}m do local. Aproxime-se para fazer check-in (Max: 300m).`);
+                setProcessing(false);
+                return;
+              }
+            } else {
+               // Warn if supermarket has no coordinates but allow check-in (or block depending on strictness)
+               // For now, we proceed but maybe we should warn the user or the admin.
+               console.warn('Supermarket has no coordinates');
+            }
+
             await client.post(`/routes/items/${itemId}/check-in`, {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
+              lat: userLat,
+              lng: userLng,
               timestamp: new Date().toISOString()
             });
             toast.success('Check-in realizado!');
             fetchRoute();
           } catch (err) {
+            console.error(err);
             toast.error('Erro ao realizar check-in');
           }
         }, (error) => {
            toast.error('Erro de geolocalização: ' + error.message);
            setProcessing(false);
-        });
+        }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
       } else {
         toast.error('Geolocalização não suportada');
         setProcessing(false);
