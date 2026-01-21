@@ -99,6 +99,7 @@ const RoutesReportView: React.FC = () => {
   const [selectedClient, setSelectedClient] = useState(''); // Brand
   const [selectedProduct, setSelectedProduct] = useState('');
   const [selectedPDV, setSelectedPDV] = useState('');
+  const [onlyRuptures, setOnlyRuptures] = useState(false);
   
   // View Mode
   const [groupBy, setGroupBy] = useState<'route' | 'pdv'>('route');
@@ -181,6 +182,12 @@ const RoutesReportView: React.FC = () => {
       // However, for correct reporting, we might want to filter the items inside the route too?
       // For now, we'll just filter which Routes show up.
       
+      // Filter by Ruptures
+      if (onlyRuptures) {
+        const hasRuptures = r.items.some(i => i.products.some(p => p.isStockout));
+        if (!hasRuptures) return false;
+      }
+
       const hasPDV = !selectedPDV || r.items.some(i => i.supermarket.fantasyName === selectedPDV);
       if (!hasPDV) return false;
 
@@ -193,7 +200,7 @@ const RoutesReportView: React.FC = () => {
       
       return hasProductOrClient;
     });
-  }, [routes, selectedSupervisor, selectedPromoter, selectedClient, selectedProduct, selectedPDV]);
+  }, [routes, selectedSupervisor, selectedPromoter, selectedClient, selectedProduct, selectedPDV, onlyRuptures]);
 
   // Recalculate Stats when filteredRoutes changes
   useEffect(() => {
@@ -221,6 +228,12 @@ const RoutesReportView: React.FC = () => {
         // Apply item-level filters again for aggregation correctness
         if (selectedPDV && i.supermarket.fantasyName !== selectedPDV) return;
         
+        // Filter by Ruptures (Item Level)
+        if (onlyRuptures) {
+          const hasRuptures = i.products.some(p => p.isStockout);
+          if (!hasRuptures) return;
+        }
+
         const hasMatchingProduct = i.products.some(p => 
           (!selectedProduct || p.product.name === selectedProduct) &&
           (!selectedClient || p.product.brand?.name === selectedClient)
@@ -267,7 +280,7 @@ const RoutesReportView: React.FC = () => {
     });
 
     return Array.from(pdvMap.values()).sort((a, b) => b.visits - a.visits);
-  }, [filteredRoutes, groupBy, selectedPDV, selectedProduct, selectedClient]);
+  }, [filteredRoutes, groupBy, selectedPDV, selectedProduct, selectedClient, onlyRuptures]);
 
 
   const checkAdmin = () => {
@@ -583,7 +596,7 @@ const RoutesReportView: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-end">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-400 uppercase">De</label>
               <input 
@@ -602,6 +615,18 @@ const RoutesReportView: React.FC = () => {
                 className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
               />
             </div>
+            
+            <button
+              onClick={() => setOnlyRuptures(!onlyRuptures)}
+              className={`px-3 py-2 rounded-xl text-sm font-bold border transition-all flex items-center gap-2 ${
+                onlyRuptures 
+                  ? 'bg-red-50 border-red-200 text-red-600' 
+                  : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+              }`}
+            >
+              <AlertTriangle size={16} />
+              {onlyRuptures ? 'Com Rupturas' : 'Rupturas'}
+            </button>
           </div>
         </div>
       </div>
@@ -878,10 +903,22 @@ const RoutesReportView: React.FC = () => {
             {/* Content */}
             <div className="p-6 overflow-y-auto space-y-8 bg-slate-50/30">
               {selectedRoute.items.map((item, index) => (
-                <div key={item.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div key={item.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${
+                  item.products.some(p => p.isStockout) 
+                    ? 'border-red-200 ring-2 ring-red-100 shadow-red-50' 
+                    : 'border-slate-200'
+                }`}>
                   {/* Item Header */}
-                  <div className="p-4 border-b border-slate-100 flex flex-wrap items-center gap-4 bg-slate-50/50">
-                    <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-sm">
+                  <div className={`p-4 border-b flex flex-wrap items-center gap-4 ${
+                    item.products.some(p => p.isStockout)
+                      ? 'bg-red-50/30 border-red-100'
+                      : 'bg-slate-50/50 border-slate-100'
+                  }`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                      item.products.some(p => p.isStockout)
+                        ? 'bg-red-600 text-white'
+                        : 'bg-slate-900 text-white'
+                    }`}>
                       {index + 1}
                     </div>
                     <div className="flex-1">
