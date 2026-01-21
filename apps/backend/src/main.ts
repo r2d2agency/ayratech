@@ -22,22 +22,7 @@ async function bootstrap() {
   
   // Configure CORS
   app.enableCors({
-    origin: (requestOrigin, callback) => {
-      const allowedOrigins = [
-        /ayratech\.app\.br$/,
-        /easypanel\.host$/,
-        /localhost/,
-        /^http:\/\/192\.168\./,
-        /^https:\/\/promotor\.ayratech\.app\.br$/,
-      ];
-      
-      if (!requestOrigin || allowedOrigins.some(regex => regex.test(requestOrigin))) {
-        callback(null, true);
-      } else {
-        console.log(`Blocked CORS for origin: ${requestOrigin}`);
-        callback(null, false); // Don't throw error, just deny
-      }
-    },
+    origin: true, // Allow all origins reflecting the request origin
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
