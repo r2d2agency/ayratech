@@ -404,7 +404,7 @@ export class EmployeesService {
 
     const compensation = this.compensationRepository.create({
       ...data,
-    });
+    } as unknown as EmployeeCompensation);
     compensation.employee = employee;
     return this.compensationRepository.save(compensation);
   }
@@ -427,11 +427,16 @@ export class EmployeesService {
         throw new BadRequestException('Arquivo do documento é obrigatório.');
     }
 
+    const employee = await this.employeesRepository.findOneBy({ id: data.employeeId });
+    if (!employee) {
+        throw new NotFoundException(`Employee with ID ${data.employeeId} not found`);
+    }
+
     const document = this.documentsRepository.create({
       ...data,
-      employee: { id: data.employeeId },
       sentAt: new Date()
-    });
+    } as unknown as EmployeeDocument);
+    document.employee = employee;
 
     let savedDoc;
     try {
