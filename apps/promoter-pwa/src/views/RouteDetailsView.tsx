@@ -605,7 +605,7 @@ const RouteDetailsView = () => {
 
           <button 
             className="flex flex-col items-center gap-1 text-gray-400"
-            onClick={() => toast('Em breve: Formulário de Pesquisa')}
+            onClick={() => navigate(`/routes/${id}/items/${activeItem.id}/check`)}
           >
             <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
               <CheckCircle size={24} />

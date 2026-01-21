@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginView from './views/LoginView';
 import DashboardView from './views/DashboardView';
 import RouteDetailsView from './views/RouteDetailsView';
+import ProductCheckView from './views/ProductCheckView';
 import CalendarView from './views/CalendarView';
 import DocumentsView from './views/DocumentsView';
 import TimeClockView from './views/TimeClockView';
@@ -34,6 +35,7 @@ const App = () => {
           <Route element={<ProtectedLayout />}>
             <Route path="/" element={<DashboardView />} />
             <Route path="/routes/:id" element={<RouteDetailsView />} />
+            <Route path="/routes/:routeId/items/:itemId/check" element={<ProductCheckView />} />
             <Route path="/calendar" element={<CalendarView />} />
             <Route path="/documents" element={<DocumentsView />} />
             <Route path="/time-clock" element={<TimeClockView />} />
