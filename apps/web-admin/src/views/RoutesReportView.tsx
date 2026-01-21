@@ -89,8 +89,16 @@ const RoutesReportView: React.FC = () => {
   const { settings } = useBranding();
   const [loading, setLoading] = useState(false);
   const [routes, setRoutes] = useState<RouteReportItem[]>([]);
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().split('T')[0];
+  });
   const [selectedRoute, setSelectedRoute] = useState<RouteReportItem | null>(null);
 
   // Filter State
@@ -191,14 +199,17 @@ const RoutesReportView: React.FC = () => {
       const hasPDV = !selectedPDV || r.items.some(i => i.supermarket.fantasyName === selectedPDV);
       if (!hasPDV) return false;
 
-      const hasProductOrClient = r.items.some(i => 
-        i.products.some(p => 
-          (!selectedProduct || p.product.name === selectedProduct) &&
-          (!selectedClient || p.product.brand?.name === selectedClient)
-        )
-      );
+      if (selectedProduct || selectedClient) {
+        const hasProductOrClient = r.items.some(i => 
+          i.products.some(p => 
+            (!selectedProduct || p.product.name === selectedProduct) &&
+            (!selectedClient || p.product.brand?.name === selectedClient)
+          )
+        );
+        if (!hasProductOrClient) return false;
+      }
       
-      return hasProductOrClient;
+      return true;
     });
   }, [routes, selectedSupervisor, selectedPromoter, selectedClient, selectedProduct, selectedPDV, onlyRuptures]);
 
