@@ -100,11 +100,11 @@ export class EmployeesService {
       }
 
       const schedule = this.workScheduleRepository.create({
-        employee: savedEmployee,
         validFrom: new Date(),
         weeklyHours: weeklyHours,
         timezone: 'America/Sao_Paulo'
       });
+      schedule.employee = savedEmployee;
       await this.workScheduleRepository.save(schedule);
     }
 
