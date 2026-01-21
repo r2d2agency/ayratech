@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar, User, Clock, Plus, Filter, Search, FileText } from 'lucide-react';
+import { Calendar, User, Clock, Plus, Filter, Search, FileText, Download } from 'lucide-react';
 import api from '../api/client';
 import SectionHeader from '../components/SectionHeader';
 import { toast } from 'react-hot-toast';
@@ -30,10 +30,35 @@ const TimeClockManagementView = () => {
 
   const fetchEmployees = async () => {
     try {
-      const res = await api.get('/employees');
-      setEmployees(res.data);
+      const response = await api.get('/employees');
+      setEmployees(response.data);
     } catch (error) {
-      console.error('Error fetching employees', error);
+      console.error('Erro ao buscar funcionários', error);
+      toast.error('Erro ao carregar funcionários');
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const response = await api.get('/time-clock/export', {
+        params: {
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+          employeeId: filters.employeeId
+        },
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `relatorio_ponto_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Erro ao exportar relatório', error);
+      toast.error('Erro ao exportar relatório');
     }
   };
 
@@ -103,12 +128,20 @@ const TimeClockManagementView = () => {
                 title="Gestão de Ponto Eletrônico" 
                 subtitle="Visualize e gerencie os registros de ponto dos colaboradores."
             />
-            <button 
-                onClick={() => setShowModal(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 font-medium"
-            >
-                <Plus size={20} /> Lançamento Manual
-            </button>
+            <div className="flex gap-2">
+          <button 
+            onClick={handleExport}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 font-medium"
+          >
+            <Download size={20} /> Exportar Excel
+          </button>
+          <button 
+            onClick={() => setShowModal(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 font-medium"
+          >
+            <Plus size={20} /> Lançamento Manual
+          </button>
+        </div>
         </div>
 
         {/* Filters */}

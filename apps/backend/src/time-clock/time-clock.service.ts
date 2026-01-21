@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
+import * as ExcelJS from 'exceljs';
 import { TimeClockEvent } from './entities/time-clock-event.entity';
 import { TimeBalance } from './entities/time-balance.entity';
 import { CreateTimeClockEventDto, CreateTimeBalanceDto } from './dto/create-time-clock.dto';
@@ -14,6 +15,93 @@ export class TimeClockService {
     @InjectRepository(TimeBalance)
     private balancesRepository: Repository<TimeBalance>,
   ) {}
+
+  async generateReport(startDate?: string, endDate?: string, employeeId?: string) {
+    const events = await this.findAll(startDate, endDate, employeeId);
+    
+    // Group by employee and date
+    const groupedData = new Map<string, Map<string, TimeClockEvent[]>>();
+
+    events.forEach(event => {
+      const empId = event.employee.id;
+      const empName = event.employee.name;
+      const dateKey = event.timestamp.toISOString().split('T')[0];
+      
+      if (!groupedData.has(empId)) {
+        groupedData.set(empId, new Map());
+      }
+      
+      const empDates = groupedData.get(empId);
+      if (!empDates.has(dateKey)) {
+        empDates.set(dateKey, []);
+      }
+      
+      empDates.get(dateKey).push(event);
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Relatório de Ponto');
+
+    worksheet.columns = [
+      { header: 'Funcionário', key: 'employee', width: 30 },
+      { header: 'Data', key: 'date', width: 15 },
+      { header: 'Entrada', key: 'entry', width: 15 },
+      { header: 'Início Almoço', key: 'lunchStart', width: 15 },
+      { header: 'Fim Almoço', key: 'lunchEnd', width: 15 },
+      { header: 'Saída', key: 'exit', width: 15 },
+      { header: 'Total Horas', key: 'totalHours', width: 15 },
+      { header: 'Observações', key: 'observations', width: 30 },
+    ];
+
+    groupedData.forEach((dates, empId) => {
+      dates.forEach((dayEvents, dateKey) => {
+        // Sort events by time
+        dayEvents.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+        
+        const entry = dayEvents.find(e => e.eventType === 'ENTRY');
+        const lunchStart = dayEvents.find(e => e.eventType === 'LUNCH_START');
+        const lunchEnd = dayEvents.find(e => e.eventType === 'LUNCH_END');
+        const exit = dayEvents.find(e => e.eventType === 'EXIT');
+
+        let totalMilliseconds = 0;
+        let observations = [];
+
+        if (dayEvents.some(e => e.isManual)) {
+          observations.push('Contém ajustes manuais');
+        }
+
+        // Calculate hours
+        if (entry && lunchStart) {
+          totalMilliseconds += lunchStart.timestamp.getTime() - entry.timestamp.getTime();
+        }
+        if (lunchEnd && exit) {
+          totalMilliseconds += exit.timestamp.getTime() - lunchEnd.timestamp.getTime();
+        }
+        // Fallback for continuous shift (Entry -> Exit)
+        if (entry && exit && !lunchStart && !lunchEnd) {
+          totalMilliseconds += exit.timestamp.getTime() - entry.timestamp.getTime();
+        }
+
+        const totalHours = totalMilliseconds > 0 ? (totalMilliseconds / (1000 * 60 * 60)).toFixed(2) : '0.00';
+
+        // Format times
+        const formatTime = (date?: Date) => date ? date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-';
+
+        worksheet.addRow({
+          employee: dayEvents[0].employee.name,
+          date: new Date(dateKey).toLocaleDateString('pt-BR'),
+          entry: formatTime(entry?.timestamp),
+          lunchStart: formatTime(lunchStart?.timestamp),
+          lunchEnd: formatTime(lunchEnd?.timestamp),
+          exit: formatTime(exit?.timestamp),
+          totalHours: totalHours,
+          observations: observations.join(', ')
+        });
+      });
+    });
+
+    return workbook;
+  }
 
   async create(createTimeClockEventDto: CreateTimeClockEventDto) {
     const { employeeId, ...eventData } = createTimeClockEventDto;

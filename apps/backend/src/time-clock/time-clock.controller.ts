@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, BadRequestException, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, BadRequestException, Query, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { TimeClockService } from './time-clock.service';
 import { CreateTimeClockEventDto, CreateTimeBalanceDto } from './dto/create-time-clock.dto';
 import { UpdateTimeClockEventDto } from './dto/update-time-clock.dto';
@@ -44,6 +45,22 @@ export class TimeClockController {
   createManual(@Body() data: any, @Req() req: any) {
      const editorName = req.user?.name || req.user?.email || 'Admin';
      return this.timeClockService.createManual(data, editorName);
+  }
+
+  @Get('export')
+  async exportReport(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Query('employeeId') employeeId: string,
+    @Res() res: Response
+  ) {
+    const workbook = await this.timeClockService.generateReport(startDate, endDate, employeeId);
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=relatorio_ponto.xlsx');
+    
+    await workbook.xlsx.write(res);
+    res.end();
   }
 
   @Get(':id')
