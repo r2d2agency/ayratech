@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useBranding } from '../context/BrandingContext';
 import SectionHeader from '../components/SectionHeader';
 import StatCard from '../components/StatCard';
@@ -21,7 +21,11 @@ import {
   Save,
   Edit,
   Shield,
-  Monitor
+  Monitor,
+  LayoutGrid,
+  List,
+  Store,
+  Package
 } from 'lucide-react';
 import { jwtDecode } from "jwt-decode";
 import api from '../api/client';
@@ -88,6 +92,16 @@ const RoutesReportView: React.FC = () => {
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedRoute, setSelectedRoute] = useState<RouteReportItem | null>(null);
+
+  // Filter State
+  const [selectedSupervisor, setSelectedSupervisor] = useState('');
+  const [selectedPromoter, setSelectedPromoter] = useState('');
+  const [selectedClient, setSelectedClient] = useState(''); // Brand
+  const [selectedProduct, setSelectedProduct] = useState('');
+  const [selectedPDV, setSelectedPDV] = useState('');
+  
+  // View Mode
+  const [groupBy, setGroupBy] = useState<'route' | 'pdv'>('route');
   
   // Computed stats
   const [stats, setStats] = useState({
@@ -124,6 +138,137 @@ const RoutesReportView: React.FC = () => {
     checkAdmin();
     fetchRoutes();
   }, [startDate, endDate]);
+
+  // Extract unique values for filters
+  const uniqueOptions = useMemo(() => {
+    const supervisors = new Set<string>();
+    const promoters = new Set<string>();
+    const clients = new Set<string>();
+    const products = new Set<string>();
+    const pdvs = new Set<string>();
+
+    routes.forEach(r => {
+      if (r.promoter.supervisor?.fullName) supervisors.add(r.promoter.supervisor.fullName);
+      if (r.promoter.fullName) promoters.add(r.promoter.fullName);
+      
+      r.items.forEach(i => {
+        if (i.supermarket.fantasyName) pdvs.add(i.supermarket.fantasyName);
+        i.products.forEach(p => {
+          if (p.product.name) products.add(p.product.name);
+          if (p.product.brand?.name) clients.add(p.product.brand.name);
+        });
+      });
+    });
+
+    return {
+      supervisors: Array.from(supervisors).sort(),
+      promoters: Array.from(promoters).sort(),
+      clients: Array.from(clients).sort(),
+      products: Array.from(products).sort(),
+      pdvs: Array.from(pdvs).sort()
+    };
+  }, [routes]);
+
+  // Filter Logic
+  const filteredRoutes = useMemo(() => {
+    return routes.filter(r => {
+      // Route-level filters
+      if (selectedSupervisor && r.promoter.supervisor?.fullName !== selectedSupervisor) return false;
+      if (selectedPromoter && r.promoter.fullName !== selectedPromoter) return false;
+      
+      // Item-level filters (Check if ANY item matches)
+      // If a filter is set, the route must contain at least one item that satisfies the criteria
+      // However, for correct reporting, we might want to filter the items inside the route too?
+      // For now, we'll just filter which Routes show up.
+      
+      const hasPDV = !selectedPDV || r.items.some(i => i.supermarket.fantasyName === selectedPDV);
+      if (!hasPDV) return false;
+
+      const hasProductOrClient = r.items.some(i => 
+        i.products.some(p => 
+          (!selectedProduct || p.product.name === selectedProduct) &&
+          (!selectedClient || p.product.brand?.name === selectedClient)
+        )
+      );
+      
+      return hasProductOrClient;
+    });
+  }, [routes, selectedSupervisor, selectedPromoter, selectedClient, selectedProduct, selectedPDV]);
+
+  // Recalculate Stats when filteredRoutes changes
+  useEffect(() => {
+    processData(filteredRoutes);
+  }, [filteredRoutes]);
+
+  // Group By PDV Logic
+  const pdvReport = useMemo(() => {
+    if (groupBy !== 'pdv') return [];
+
+    const pdvMap = new Map<string, {
+      id: string;
+      name: string;
+      city: string;
+      visits: number;
+      productsChecked: number;
+      ruptures: number;
+      promoters: Set<string>;
+      supervisors: Set<string>;
+      items: any[];
+    }>();
+
+    filteredRoutes.forEach(r => {
+      r.items.forEach(i => {
+        // Apply item-level filters again for aggregation correctness
+        if (selectedPDV && i.supermarket.fantasyName !== selectedPDV) return;
+        
+        const hasMatchingProduct = i.products.some(p => 
+          (!selectedProduct || p.product.name === selectedProduct) &&
+          (!selectedClient || p.product.brand?.name === selectedClient)
+        );
+        if (!hasMatchingProduct) return;
+
+        // Key by Supermarket ID
+        const key = i.supermarket.id;
+        if (!pdvMap.has(key)) {
+          pdvMap.set(key, {
+            id: i.supermarket.id,
+            name: i.supermarket.fantasyName,
+            city: `${i.supermarket.city || ''} - ${i.supermarket.state || ''}`,
+            visits: 0,
+            productsChecked: 0,
+            ruptures: 0,
+            promoters: new Set(),
+            supervisors: new Set(),
+            items: []
+          });
+        }
+
+        const entry = pdvMap.get(key)!;
+        
+        // Only count if executed
+        const isExecuted = ['CHECKOUT', 'COMPLETED'].includes(i.status);
+        if (isExecuted) {
+          entry.visits++;
+          entry.items.push({ ...i, date: r.date, promoter: r.promoter });
+          
+          // Count products (respecting filters)
+          const relevantProducts = i.products.filter(p => 
+            (!selectedProduct || p.product.name === selectedProduct) &&
+            (!selectedClient || p.product.brand?.name === selectedClient)
+          );
+          
+          entry.productsChecked += relevantProducts.filter(p => p.checked).length;
+          entry.ruptures += relevantProducts.filter(p => p.isStockout).length;
+          
+          if (r.promoter.fullName) entry.promoters.add(r.promoter.fullName);
+          if (r.promoter.supervisor?.fullName) entry.supervisors.add(r.promoter.supervisor.fullName);
+        }
+      });
+    });
+
+    return Array.from(pdvMap.values()).sort((a, b) => b.visits - a.visits);
+  }, [filteredRoutes, groupBy, selectedPDV, selectedProduct, selectedClient]);
+
 
   const checkAdmin = () => {
     const token = localStorage.getItem('token');
@@ -196,8 +341,6 @@ const RoutesReportView: React.FC = () => {
     });
   };
 
-  /* Removed local getImageUrl in favor of imported util */
-
   const handlePhotoUpload = async (files: FileList | null, productIndex: number) => {
     if (!files || files.length === 0) return;
 
@@ -227,11 +370,9 @@ const RoutesReportView: React.FC = () => {
   };
 
   const openManualEntry = (item: any, routePromoterId: string) => {
-    // Determine initial times
     const now = new Date();
     const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
     
-    // Format for datetime-local: YYYY-MM-DDTHH:mm
     const toLocalISO = (date: Date) => {
       const pad = (n: number) => n < 10 ? '0' + n : n;
       return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
@@ -269,8 +410,8 @@ const RoutesReportView: React.FC = () => {
       });
       alert('Lançamento realizado com sucesso!');
       setManualForm(null);
-      setSelectedRoute(null); // Close detail modal to refresh
-      fetchRoutes(); // Refresh data
+      setSelectedRoute(null);
+      fetchRoutes();
     } catch (err) {
       console.error(err);
       alert('Erro ao realizar lançamento manual.');
@@ -285,13 +426,11 @@ const RoutesReportView: React.FC = () => {
       const res = await api.get('/routes');
       const allRoutes: RouteReportItem[] = res.data;
 
-      // Filter by date range
       const filtered = allRoutes.filter(r => {
         const routeDate = r.date.split('T')[0];
         return routeDate >= startDate && routeDate <= endDate;
       });
       
-      processData(filtered);
       setRoutes(filtered);
     } catch (err) {
       console.error('Error fetching routes report:', err);
@@ -304,7 +443,6 @@ const RoutesReportView: React.FC = () => {
     let executedCount = 0;
     let issuesCount = 0;
     
-    // Groupings
     const supervisors: Record<string, { name: string, executed: number, total: number }> = {};
     const promoters: Record<string, { name: string, executed: number, total: number }> = {};
 
@@ -315,13 +453,11 @@ const RoutesReportView: React.FC = () => {
       const hasIssues = route.items.some(i => i.products.some(p => p.isStockout));
       if (hasIssues) issuesCount++;
 
-      // Supervisor Stats
       const supName = route.promoter.supervisor?.fullName || 'Sem Supervisor';
       if (!supervisors[supName]) supervisors[supName] = { name: supName, executed: 0, total: 0 };
       supervisors[supName].total++;
       if (isExecuted) supervisors[supName].executed++;
 
-      // Promoter Stats
       const promName = route.promoter.fullName || 'Sem Nome';
       if (!promoters[promName]) promoters[promName] = { name: promName, executed: 0, total: 0 };
       promoters[promName].total++;
@@ -375,7 +511,7 @@ const RoutesReportView: React.FC = () => {
   };
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto space-y-8">
+    <div className="p-8 max-w-[1600px] mx-auto space-y-8 pb-32">
       <SectionHeader 
         icon={<BarChart2 className="text-blue-600" />}
         title="Relatório de Rotas"
@@ -383,35 +519,90 @@ const RoutesReportView: React.FC = () => {
       />
 
       {/* Filters & Actions */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 flex-wrap">
-        <div className="flex items-center gap-2 text-slate-500">
-          <Filter size={20} />
-          <span className="font-bold text-sm">Filtros:</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-bold text-slate-400 uppercase">De</label>
-          <input 
-            type="date" 
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-bold text-slate-400 uppercase">Até</label>
-          <input 
-            type="date" 
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
-          />
-        </div>
-        
-        <div className="ml-auto">
-          <button className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors">
-            <Download size={16} />
-            Exportar CSV
-          </button>
+      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+        <div className="flex flex-col md:flex-row gap-6 items-end">
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 w-full">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-400 uppercase">Supervisor</label>
+              <select 
+                value={selectedSupervisor}
+                onChange={e => setSelectedSupervisor(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+              >
+                <option value="">Todos</option>
+                {uniqueOptions.supervisors.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-400 uppercase">Promotor</label>
+              <select 
+                value={selectedPromoter}
+                onChange={e => setSelectedPromoter(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+              >
+                <option value="">Todos</option>
+                {uniqueOptions.promoters.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-400 uppercase">Cliente (Marca)</label>
+              <select 
+                value={selectedClient}
+                onChange={e => setSelectedClient(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+              >
+                <option value="">Todos</option>
+                {uniqueOptions.clients.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-400 uppercase">PDV</label>
+              <select 
+                value={selectedPDV}
+                onChange={e => setSelectedPDV(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+              >
+                <option value="">Todos</option>
+                {uniqueOptions.pdvs.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+
+             <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-400 uppercase">Produto</label>
+              <select 
+                value={selectedProduct}
+                onChange={e => setSelectedProduct(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+              >
+                <option value="">Todos</option>
+                {uniqueOptions.products.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-400 uppercase">De</label>
+              <input 
+                type="date" 
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-400 uppercase">Até</label>
+              <input 
+                type="date" 
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -452,7 +643,7 @@ const RoutesReportView: React.FC = () => {
                 Execução por Supervisor
               </h3>
               <div className="h-80 w-full min-h-[320px]">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="99%" height="100%">
                   <BarChart data={supervisorData} layout="vertical" margin={{ left: 40 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={false} />
                     <XAxis type="number" />
@@ -472,7 +663,7 @@ const RoutesReportView: React.FC = () => {
                 Execução por Promotor
               </h3>
               <div className="h-80 w-full min-h-[320px]">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="99%" height="100%">
                   <BarChart data={promoterData.slice(0, 10)} layout="vertical" margin={{ left: 40 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={false} />
                     <XAxis type="number" />
@@ -487,67 +678,167 @@ const RoutesReportView: React.FC = () => {
             </div>
           </div>
 
-          {/* Detailed List */}
+          {/* View Toggle & List */}
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-black text-lg text-slate-800">Detalhamento das Rotas</h3>
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                <h3 className="font-black text-lg text-slate-800">
+                  {groupBy === 'route' ? 'Detalhamento das Rotas' : 'Relatório por PDV'}
+                </h3>
+                <div className="flex bg-slate-100 p-1 rounded-xl">
+                  <button 
+                    onClick={() => setGroupBy('route')}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      groupBy === 'route' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    <List size={14} />
+                    Por Rota
+                  </button>
+                  <button 
+                    onClick={() => setGroupBy('pdv')}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      groupBy === 'pdv' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    <Store size={14} />
+                    Por PDV
+                  </button>
+                </div>
+              </div>
+              <button className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors">
+                <Download size={16} />
+                Exportar CSV
+              </button>
             </div>
             
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/50">
-                    <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Data</th>
-                    <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Promotor</th>
-                    <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Supervisor</th>
-                    <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">PDVs</th>
-                    <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {routes.map((route) => (
-                    <tr 
-                      key={route.id} 
-                      onClick={() => setSelectedRoute(route)}
-                      className="hover:bg-slate-50 transition-colors group cursor-pointer"
-                    >
-                      <td className="p-4">
-                        <span className="font-bold text-slate-700 text-sm">
-                          {new Date(route.date).toLocaleDateString('pt-BR')}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
-                            {route.promoter.fullName.substring(0, 2).toUpperCase()}
+              {groupBy === 'route' ? (
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/50">
+                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Data</th>
+                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Promotor</th>
+                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Supervisor</th>
+                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">PDVs</th>
+                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredRoutes.map((route) => (
+                      <tr 
+                        key={route.id} 
+                        onClick={() => setSelectedRoute(route)}
+                        className="hover:bg-slate-50 transition-colors group cursor-pointer"
+                      >
+                        <td className="p-4">
+                          <span className="font-bold text-slate-700 text-sm">
+                            {new Date(route.date).toLocaleDateString('pt-BR')}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
+                              {route.promoter.fullName.substring(0, 2).toUpperCase()}
+                            </div>
+                            <span className="font-bold text-slate-700 text-sm">{route.promoter.fullName}</span>
                           </div>
-                          <span className="font-bold text-slate-700 text-sm">{route.promoter.fullName}</span>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <span className="text-sm font-medium text-slate-500">
-                          {route.promoter.supervisor?.fullName || '-'}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <span className="text-sm font-medium text-slate-500">
-                          {route.items.length} lojas
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        {getStatusBadge(route)}
-                      </td>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-sm font-medium text-slate-500">
+                            {route.promoter.supervisor?.fullName || '-'}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-sm font-medium text-slate-500">
+                            {route.items.length} lojas
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          {getStatusBadge(route)}
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredRoutes.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="p-8 text-center text-slate-400 font-medium">
+                          Nenhuma rota encontrada para os filtros selecionados.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              ) : (
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/50">
+                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">PDV</th>
+                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Localização</th>
+                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider text-center">Visitas</th>
+                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider text-center">Prod. Verificados</th>
+                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider text-center">Rupturas</th>
+                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Promotores</th>
                     </tr>
-                  ))}
-                  {routes.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="p-8 text-center text-slate-400 font-medium">
-                        Nenhuma rota encontrada para esta data.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {pdvReport.map((pdv) => (
+                      <tr 
+                        key={pdv.id} 
+                        className="hover:bg-slate-50 transition-colors"
+                      >
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xs">
+                              <Store size={14} />
+                            </div>
+                            <span className="font-bold text-slate-700 text-sm">{pdv.name}</span>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-sm font-medium text-slate-500">
+                            {pdv.city}
+                          </span>
+                        </td>
+                        <td className="p-4 text-center">
+                          <span className="font-bold text-slate-900 bg-slate-100 px-2 py-1 rounded-lg text-xs">
+                            {pdv.visits}
+                          </span>
+                        </td>
+                        <td className="p-4 text-center">
+                          <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg text-xs">
+                            {pdv.productsChecked}
+                          </span>
+                        </td>
+                         <td className="p-4 text-center">
+                          {pdv.ruptures > 0 ? (
+                            <span className="font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg text-xs">
+                              {pdv.ruptures}
+                            </span>
+                          ) : (
+                            <span className="text-slate-300">-</span>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex flex-wrap gap-1">
+                            {Array.from(pdv.promoters).map((prom, i) => (
+                              <span key={i} className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded-full border border-blue-100">
+                                {prom}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {pdvReport.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="p-8 text-center text-slate-400 font-medium">
+                          Nenhum dado de PDV encontrado para os filtros selecionados.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
 
@@ -871,3 +1162,4 @@ const RoutesReportView: React.FC = () => {
 };
 
 export default RoutesReportView;
+}
