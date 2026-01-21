@@ -20,7 +20,8 @@ import {
   Camera,
   Save,
   Edit,
-  Shield
+  Shield,
+  Monitor
 } from 'lucide-react';
 import { jwtDecode } from "jwt-decode";
 import api from '../api/client';
