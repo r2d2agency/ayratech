@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { WorkSchedule } from './entities/work-schedule.entity';
 import { WorkScheduleException } from './entities/work-schedule-exception.entity';
+import { Employee } from '../employees/entities/employee.entity';
 import { CreateWorkScheduleDto, CreateWorkScheduleExceptionDto } from './dto/create-work-schedule.dto';
 import { UpdateWorkScheduleDto } from './dto/update-work-schedule.dto';
 
@@ -13,6 +14,8 @@ export class WorkSchedulesService {
     private schedulesRepository: Repository<WorkSchedule>,
     @InjectRepository(WorkScheduleException)
     private exceptionsRepository: Repository<WorkScheduleException>,
+    @InjectRepository(Employee)
+    private employeesRepository: Repository<Employee>,
   ) {}
 
   async create(createWorkScheduleDto: CreateWorkScheduleDto) {
@@ -36,10 +39,17 @@ export class WorkSchedulesService {
     }
 
     const { employeeId, ...scheduleData } = createWorkScheduleDto;
+    
+    const employee = await this.employeesRepository.findOneBy({ id: employeeId });
+    if (!employee) {
+        throw new NotFoundException(`Employee with ID ${employeeId} not found`);
+    }
+
     const schedule = this.schedulesRepository.create({
       ...scheduleData,
-      employee: { id: employeeId }
     });
+    schedule.employee = employee;
+    
     return this.schedulesRepository.save(schedule);
   }
 
@@ -59,12 +69,18 @@ export class WorkSchedulesService {
     return this.schedulesRepository.delete(id);
   }
 
-  createException(createExceptionDto: CreateWorkScheduleExceptionDto) {
+  async createException(createExceptionDto: CreateWorkScheduleExceptionDto) {
     const { employeeId, ...exceptionData } = createExceptionDto;
+
+    const employee = await this.employeesRepository.findOneBy({ id: employeeId });
+    if (!employee) {
+        throw new NotFoundException(`Employee with ID ${employeeId} not found`);
+    }
+
     const exception = this.exceptionsRepository.create({
         ...exceptionData,
-        employee: { id: employeeId }
     });
+    exception.employee = employee;
     return this.exceptionsRepository.save(exception);
   }
 }

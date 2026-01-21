@@ -228,7 +228,6 @@ export class EmployeesService {
 
       if (isDifferent) {
         const compensation = this.compensationRepository.create({
-          employee: { id: employee.id } as Employee,
           validFrom: new Date(),
           remunerationType: 'mensal',
           baseSalary: newSalary || 0,
@@ -240,6 +239,7 @@ export class EmployeesService {
           mealVoucher: newMeal || 0,
           chargesPercentage: newCharges || 0
         });
+        compensation.employee = employee;
         await this.compensationRepository.save(compensation);
       }
     }
@@ -264,11 +264,11 @@ export class EmployeesService {
         }
 
         const schedule = this.workScheduleRepository.create({
-          employee: { id: employee.id } as Employee,
           validFrom: new Date(),
           weeklyHours: weeklyHours,
           timezone: 'America/Sao_Paulo'
         });
+        schedule.employee = employee;
         await this.workScheduleRepository.save(schedule);
       }
     }
@@ -397,10 +397,15 @@ export class EmployeesService {
 
   // Methods for compensation and documents could be added here or in separate services
   async addCompensation(data: any) {
+    const employee = await this.employeesRepository.findOneBy({ id: data.employeeId });
+    if (!employee) {
+        throw new NotFoundException(`Employee with ID ${data.employeeId} not found`);
+    }
+
     const compensation = this.compensationRepository.create({
       ...data,
-      employee: { id: data.employeeId }
     });
+    compensation.employee = employee;
     return this.compensationRepository.save(compensation);
   }
 
