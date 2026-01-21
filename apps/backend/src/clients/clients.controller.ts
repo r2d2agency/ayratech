@@ -1,10 +1,11 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname, join } from 'path';
 import { ClientsService } from './clients.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
+import { UPLOAD_ROOT } from '../config/upload.config';
 
 @Controller('clients')
 export class ClientsController {
@@ -14,10 +15,9 @@ export class ClientsController {
   @UseInterceptors(FileInterceptor('logo', {
     storage: diskStorage({
       destination: (req, file, cb) => {
-        const uploadPath = './uploads/clients';
+        const uploadPath = join(UPLOAD_ROOT, 'clients');
         // Ensure directory exists - though better to do this at startup
         // but fs.mkdirSync is synchronous.
-        // For now, assume main.ts created './uploads', but we need './uploads/clients'
         const fs = require('fs');
         if (!fs.existsSync(uploadPath)) {
           fs.mkdirSync(uploadPath, { recursive: true });
@@ -52,7 +52,7 @@ export class ClientsController {
   @UseInterceptors(FileInterceptor('logo', {
     storage: diskStorage({
       destination: (req, file, cb) => {
-        const uploadPath = './uploads/clients';
+        const uploadPath = join(UPLOAD_ROOT, 'clients');
         const fs = require('fs');
         if (!fs.existsSync(uploadPath)) {
           fs.mkdirSync(uploadPath, { recursive: true });

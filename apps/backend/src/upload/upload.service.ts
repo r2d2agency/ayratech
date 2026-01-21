@@ -3,6 +3,7 @@ import * as sharp from 'sharp';
 import * as fs from 'fs';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { UPLOAD_ROOT } from '../config/upload.config';
 
 @Injectable()
 export class UploadService {
@@ -11,7 +12,7 @@ export class UploadService {
       throw new BadRequestException('No file uploaded');
     }
 
-    const uploadDir = path.join(process.cwd(), 'uploads');
+    const uploadDir = UPLOAD_ROOT;
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }

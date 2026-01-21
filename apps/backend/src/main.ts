@@ -3,11 +3,12 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import * as fs from 'fs';
 import * as path from 'path';
+import { UPLOAD_ROOT } from './config/upload.config';
 
 async function bootstrap() {
   try {
     // Ensure uploads directory exists
-    const uploadsPath = path.join(process.cwd(), 'uploads');
+    const uploadsPath = UPLOAD_ROOT;
     if (!fs.existsSync(uploadsPath)) {
       console.log(`Creating uploads directory at: ${uploadsPath}`);
       fs.mkdirSync(uploadsPath, { recursive: true });

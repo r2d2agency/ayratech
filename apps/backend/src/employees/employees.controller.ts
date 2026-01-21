@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFile, Request } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname, join } from 'path';
 import * as fs from 'fs';
 import { EmployeesService } from './employees.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
@@ -9,6 +9,7 @@ import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { UPLOAD_ROOT } from '../config/upload.config';
 
 @Controller('employees')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -20,7 +21,7 @@ export class EmployeesController {
   @UseInterceptors(FileInterceptor('facialPhoto', {
     storage: diskStorage({
       destination: (req, file, cb) => {
-        const uploadPath = './uploads/employees';
+        const uploadPath = join(UPLOAD_ROOT, 'employees');
         if (!fs.existsSync(uploadPath)) {
           fs.mkdirSync(uploadPath, { recursive: true });
         }
@@ -128,7 +129,7 @@ export class EmployeesController {
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
       destination: (req, file, cb) => {
-        const uploadPath = './uploads/documents';
+        const uploadPath = join(UPLOAD_ROOT, 'documents');
         if (!fs.existsSync(uploadPath)) {
           fs.mkdirSync(uploadPath, { recursive: true });
         }

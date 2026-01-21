@@ -6,6 +6,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as sharp from 'sharp';
+import { UPLOAD_ROOT } from '../config/upload.config';
 
 @Controller('products')
 export class ProductsController {
@@ -17,7 +18,7 @@ export class ProductsController {
     try {
       if (file) {
         const filename = `product-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
-        const uploadDir = path.join(process.cwd(), 'uploads', 'products');
+        const uploadDir = path.join(UPLOAD_ROOT, 'products');
         if (!fs.existsSync(uploadDir)) {
           fs.mkdirSync(uploadDir, { recursive: true });
         }
@@ -49,7 +50,7 @@ export class ProductsController {
 
   @Get('debug/files')
   debugFiles() {
-    const uploadDir = path.join(process.cwd(), 'uploads', 'products');
+    const uploadDir = path.join(UPLOAD_ROOT, 'products');
     try {
       if (!fs.existsSync(uploadDir)) {
         return { message: 'Directory does not exist', path: uploadDir, cwd: process.cwd() };
@@ -80,7 +81,7 @@ export class ProductsController {
     try {
       if (file) {
         const filename = `product-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
-        const uploadDir = path.join(process.cwd(), 'uploads', 'products');
+        const uploadDir = path.join(UPLOAD_ROOT, 'products');
         if (!fs.existsSync(uploadDir)) {
           fs.mkdirSync(uploadDir, { recursive: true });
         }

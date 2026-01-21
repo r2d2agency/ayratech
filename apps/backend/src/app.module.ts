@@ -31,6 +31,8 @@ import { SystemLogsModule } from './system-logs/system-logs.module';
 import { APP_FILTER } from '@nestjs/core';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
+import { UPLOAD_ROOT } from './config/upload.config';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -66,7 +68,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
       inject: [ConfigService],
     }),
     ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'uploads'),
+      rootPath: UPLOAD_ROOT,
       serveRoot: '/uploads',
     }),
     ClientsModule,
