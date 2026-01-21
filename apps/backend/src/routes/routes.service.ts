@@ -165,7 +165,8 @@ export class RoutesService {
       }
 
       // Check if route can be edited
-      const isAdmin = user && ['admin', 'manager', 'superadmin'].includes(user.role);
+      const userRole = user?.role?.toLowerCase() || '';
+      const isAdmin = ['admin', 'manager', 'superadmin', 'administrador do sistema', 'supervisor de operações'].includes(userRole);
 
       if (!isAdmin) {
         if (route.status === 'COMPLETED') {

@@ -13,7 +13,7 @@ import { UPLOAD_ROOT } from '../config/upload.config';
 
 @Controller('employees')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin', 'rh', 'manager') // Default allowed roles for employee management
+@Roles('admin', 'rh', 'manager', 'supervisor de operações') // Default allowed roles for employee management
 export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 
@@ -51,7 +51,7 @@ export class EmployeesController {
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
       destination: (req, file, cb) => {
-        const uploadPath = './uploads/documents';
+        const uploadPath = join(UPLOAD_ROOT, 'documents');
         if (!fs.existsSync(uploadPath)) {
           fs.mkdirSync(uploadPath, { recursive: true });
         }
@@ -94,7 +94,7 @@ export class EmployeesController {
   @UseInterceptors(FileInterceptor('facialPhoto', {
     storage: diskStorage({
       destination: (req, file, cb) => {
-        const uploadPath = './uploads/employees';
+        const uploadPath = join(UPLOAD_ROOT, 'employees');
         if (!fs.existsSync(uploadPath)) {
           fs.mkdirSync(uploadPath, { recursive: true });
         }

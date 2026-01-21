@@ -126,7 +126,7 @@ const ClientsView: React.FC = () => {
           ...c,
           id: c.id,
           nome: c.nomeFantasia || c.razaoSocial, // Display Fantasy Name, fallback to Corporate Name
-          logo: getLogoUrl(c.logo),
+          logo: getImageUrl(c.logo),
           totalProdutos: allProducts.length,
           totalPdvs: c.supermarkets ? c.supermarkets.length : 0,
           status: c.status,
