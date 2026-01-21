@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, CheckCircle, XCircle, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 import api from '../api/client';
 import { useBranding } from '../context/BrandingContext';
 import { getImageUrl } from '../utils/image';
@@ -22,6 +22,16 @@ interface Role {
   description: string;
 }
 
+interface WorkScheduleDay {
+  dayOfWeek: number;
+  active: boolean;
+  startTime: string;
+  endTime: string;
+  breakStart?: string;
+  breakEnd?: string;
+  toleranceMinutes: number;
+}
+
 const EmployeesView: React.FC = () => {
   const { settings } = useBranding();
   const [activeTab, setActiveTab] = useState<'employees' | 'roles'>('employees');
@@ -34,6 +44,11 @@ const EmployeesView: React.FC = () => {
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
+
+  // Schedule Modal State
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [selectedEmployeeForSchedule, setSelectedEmployeeForSchedule] = useState<Employee | null>(null);
+  const [scheduleForm, setScheduleForm] = useState<WorkScheduleDay[]>([]);
 
   // Forms
   const [employeeForm, setEmployeeForm] = useState({
@@ -365,6 +380,75 @@ const EmployeesView: React.FC = () => {
     setShowEmployeeModal(true);
   };
 
+  const openScheduleModal = async (employee: Employee) => {
+    setSelectedEmployeeForSchedule(employee);
+    
+    try {
+        const response = await api.get(`/employees/${employee.id}`);
+        const fullEmp = response.data;
+        
+        let currentDays: WorkScheduleDay[] = [];
+        
+        if (fullEmp.workSchedules && fullEmp.workSchedules.length > 0) {
+            const sorted = fullEmp.workSchedules.sort((a: any, b: any) => 
+                new Date(b.validFrom).getTime() - new Date(a.validFrom).getTime()
+            );
+            const latest = sorted[0];
+            if (latest.days && latest.days.length > 0) {
+                currentDays = latest.days;
+            }
+        }
+
+        const formDays = Array.from({ length: 7 }, (_, i) => {
+            const existingDay = currentDays.find(d => d.dayOfWeek === i);
+            return existingDay ? { ...existingDay } : {
+                dayOfWeek: i,
+                active: i > 0 && i < 6, // Default Mon-Fri
+                startTime: '08:00',
+                endTime: '17:00',
+                breakStart: '12:00',
+                breakEnd: '13:00',
+                toleranceMinutes: 10
+            };
+        });
+
+        setScheduleForm(formDays);
+        setShowScheduleModal(true);
+    } catch (error: any) {
+        console.error('Error loading schedule:', error);
+        alert('Erro ao carregar horários.');
+    }
+  };
+
+  const handleSaveSchedule = async () => {
+      if (!selectedEmployeeForSchedule) return;
+
+      try {
+          const payload = {
+              employeeId: selectedEmployeeForSchedule.id,
+              validFrom: new Date().toISOString().split('T')[0],
+              weeklyHours: 44, // Calculate dynamically if needed
+              days: scheduleForm.map(day => ({
+                  dayOfWeek: day.dayOfWeek,
+                  active: day.active,
+                  startTime: day.startTime,
+                  endTime: day.endTime,
+                  breakStart: day.breakStart,
+                  breakEnd: day.breakEnd,
+                  toleranceMinutes: Number(day.toleranceMinutes)
+              }))
+          };
+
+          await api.post('/work-schedules', payload);
+          alert('Escala de trabalho salva com sucesso!');
+          setShowScheduleModal(false);
+          fetchEmployees(); // Refresh to update any summary info if present
+      } catch (error: any) {
+          console.error('Error saving schedule:', error);
+          alert('Erro ao salvar escala.');
+      }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -476,12 +560,22 @@ const EmployeesView: React.FC = () => {
                       </span>
                     </td>
                     <td className="p-4 text-right">
-                      <button 
-                        onClick={() => openEditEmployee(emp)}
-                        className="text-blue-600 hover:text-blue-800 p-1"
-                      >
-                        <Edit size={18} />
-                      </button>
+                      <div className="flex justify-end gap-2">
+                        <button 
+                          onClick={() => openScheduleModal(emp)}
+                          className="text-purple-600 hover:text-purple-800 p-1"
+                          title="Configurar Escala"
+                        >
+                          <Clock size={18} />
+                        </button>
+                        <button 
+                          onClick={() => openEditEmployee(emp)}
+                          className="text-blue-600 hover:text-blue-800 p-1"
+                          title="Editar"
+                        >
+                          <Edit size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -572,6 +666,145 @@ const EmployeesView: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule Modal */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-slate-200 flex justify-between items-center sticky top-0 bg-white z-10">
+              <h3 className="text-xl font-bold text-slate-800">
+                Escala de Trabalho - {selectedEmployeeForSchedule?.fullName}
+              </h3>
+              <button onClick={() => setShowScheduleModal(false)} className="text-slate-400 hover:text-slate-600">
+                <XCircle size={24} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+                <div className="bg-blue-50 p-4 rounded-lg text-blue-800 text-sm">
+                    Configure os horários de entrada, saída e intervalo para cada dia da semana.
+                    Dias desmarcados serão considerados folgas.
+                </div>
+
+                <div className="space-y-4">
+                    {scheduleForm.map((day, index) => {
+                        const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                        
+                        return (
+                            <div key={day.dayOfWeek} className={`p-4 rounded-lg border ${day.active ? 'border-blue-200 bg-blue-50/30' : 'border-slate-200 bg-slate-50'}`}>
+                                <div className="flex flex-col md:flex-row md:items-center gap-4">
+                                    <div className="w-32 flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={day.active}
+                                            onChange={(e) => {
+                                                const newForm = [...scheduleForm];
+                                                newForm[index].active = e.target.checked;
+                                                setScheduleForm(newForm);
+                                            }}
+                                            className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <span className={`font-medium ${day.active ? 'text-slate-900' : 'text-slate-500'}`}>
+                                            {dayNames[day.dayOfWeek]}
+                                        </span>
+                                    </div>
+
+                                    {day.active && (
+                                        <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-500 mb-1">Entrada</label>
+                                                <input
+                                                    type="time"
+                                                    value={day.startTime}
+                                                    onChange={(e) => {
+                                                        const newForm = [...scheduleForm];
+                                                        newForm[index].startTime = e.target.value;
+                                                        setScheduleForm(newForm);
+                                                    }}
+                                                    className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-500 mb-1">Início Almoço</label>
+                                                <input
+                                                    type="time"
+                                                    value={day.breakStart || ''}
+                                                    onChange={(e) => {
+                                                        const newForm = [...scheduleForm];
+                                                        newForm[index].breakStart = e.target.value;
+                                                        setScheduleForm(newForm);
+                                                    }}
+                                                    className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-500 mb-1">Fim Almoço</label>
+                                                <input
+                                                    type="time"
+                                                    value={day.breakEnd || ''}
+                                                    onChange={(e) => {
+                                                        const newForm = [...scheduleForm];
+                                                        newForm[index].breakEnd = e.target.value;
+                                                        setScheduleForm(newForm);
+                                                    }}
+                                                    className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-500 mb-1">Saída</label>
+                                                <input
+                                                    type="time"
+                                                    value={day.endTime}
+                                                    onChange={(e) => {
+                                                        const newForm = [...scheduleForm];
+                                                        newForm[index].endTime = e.target.value;
+                                                        setScheduleForm(newForm);
+                                                    }}
+                                                    className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-500 mb-1">Tol. (min)</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={day.toleranceMinutes}
+                                                    onChange={(e) => {
+                                                        const newForm = [...scheduleForm];
+                                                        newForm[index].toleranceMinutes = parseInt(e.target.value) || 0;
+                                                        setScheduleForm(newForm);
+                                                    }}
+                                                    className="w-full px-2 py-1.5 border border-slate-300 rounded text-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-200 flex justify-end gap-3 sticky bottom-0 bg-white">
+              <button
+                type="button"
+                onClick={() => setShowScheduleModal(false)}
+                className="px-4 py-2 text-slate-700 hover:bg-slate-100 rounded-lg font-medium transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveSchedule}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-sm"
+              >
+                Salvar Escala
+              </button>
+            </div>
           </div>
         </div>
       )}
