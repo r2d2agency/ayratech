@@ -23,17 +23,10 @@ async function bootstrap() {
   // Configure CORS
   app.enableCors({
     origin: [
-      'https://ayratech.app.br',
-      'https://www.ayratech.app.br',
-      'https://api.ayratech.app.br',
-      'http://localhost:5173',
-      'http://localhost:4173',
-      'http://localhost:3000',
-      'http://192.168.0.7:5173',
-      'http://192.168.0.7:5174',
-      'https://ayratech-promoter-pwa.isyhhh.easypanel.host',
-      'https://promotor.ayratech.app.br',
-      'https://www.promotor.ayratech.app.br',
+      /ayratech\.app\.br$/,
+      /easypanel\.host$/,
+      /localhost/,
+      /^http:\/\/192\.168\./,
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
