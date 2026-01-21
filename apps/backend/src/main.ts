@@ -22,7 +22,30 @@ async function bootstrap() {
   
   // Configure CORS
   app.enableCors({
-    origin: true, // Allow all origins reflecting the request origin
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      const allowedOrigins = [
+        'https://ayratech.app.br',
+        'https://www.ayratech.app.br',
+        'https://api.ayratech.app.br',
+        'https://promotor.ayratech.app.br',
+        'https://www.promotor.ayratech.app.br',
+        'https://ayratech-promoter-pwa.isyhhh.easypanel.host'
+      ];
+      
+      const isAllowed = allowedOrigins.includes(origin) || 
+                        origin.startsWith('http://localhost') || 
+                        origin.startsWith('http://192.168.');
+                        
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        console.warn(`Blocked CORS for origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
