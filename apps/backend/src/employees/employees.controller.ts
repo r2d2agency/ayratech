@@ -80,6 +80,15 @@ export class EmployeesController {
     });
   }
 
+  @Post('location')
+  updateLocation(@Body() data: { lat: number; lng: number }, @Request() req: any) {
+    // Assuming req.user contains the user info including employeeId
+    // If user is just a "User" entity linked to "Employee", we need to find the employee.
+    // The JWT strategy usually attaches user object.
+    const userId = req.user.userId;
+    return this.employeesService.updateLocation(userId, data.lat, data.lng);
+  }
+
   @Get()
   findAll() {
     return this.employeesService.findAll();

@@ -20,6 +20,31 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
+// Custom Icons for Promoter (P) and Supervisor (S)
+const createCustomIcon = (label: string, color: string) => L.divIcon({
+  className: 'custom-map-icon',
+  html: `<div style="
+    background-color: ${color}; 
+    color: white; 
+    border-radius: 50%; 
+    width: 32px; 
+    height: 32px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-weight: 900; 
+    font-size: 14px;
+    border: 3px solid white; 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  ">${label}</div>`,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+  popupAnchor: [0, -16]
+});
+
+const PromoterIcon = createCustomIcon('P', '#10b981'); // Emerald-500
+const SupervisorIcon = createCustomIcon('S', '#f59e0b'); // Amber-500
+
 interface LiveMapViewProps {
   onNavigate: (view: ViewType) => void;
 }
@@ -42,18 +67,20 @@ const LiveMapView: React.FC<LiveMapViewProps> = ({ onNavigate }) => {
 
   useEffect(() => {
     fetchData();
+    const interval = setInterval(fetchData, 60000); // Update every minute
+    return () => clearInterval(interval);
   }, []);
 
   const fetchData = async () => {
     try {
-      setLoading(true);
+      setLoading(prev => prev ? true : false); // Only show full loading on first load
       const today = new Date().toISOString().split('T')[0];
       
       const [employeesRes, supermarketsRes, clientsRes, routesRes] = await Promise.all([
         api.get('/employees'),
         api.get('/supermarkets'),
         api.get('/clients'),
-        api.get('/routes') // We might want to filter by date in backend if possible, or filter here
+        api.get('/routes')
       ]);
 
       const allEmployees = employeesRes.data;
@@ -77,18 +104,14 @@ const LiveMapView: React.FC<LiveMapViewProps> = ({ onNavigate }) => {
       setSupermarkets(supermarketsRes.data);
       setClients(clientsRes.data);
       
-      // Filter routes for today (or fetch only today's routes if API supports it)
-      // Assuming /routes returns all routes, we filter client-side for now
       const todayRoutes = routesRes.data.filter((r: any) => {
-          // Check if route date is today
-          // Assuming route.date is YYYY-MM-DD
           return r.date === today; 
       });
       setRoutes(todayRoutes);
 
+      setLoading(false);
     } catch (error) {
       console.error("Error fetching live map data:", error);
-    } finally {
       setLoading(false);
     }
   };
@@ -128,17 +151,15 @@ const LiveMapView: React.FC<LiveMapViewProps> = ({ onNavigate }) => {
     return matchesSearch && matchesSupervisor && matchesPromoter;
   });
 
+  const filteredSupervisors = supervisors.filter(s => {
+    const matchesSearch = (s.fullName && s.fullName.toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchesSearch;
+  });
+
   // Filter Supermarkets (for Map)
   const filteredSupermarkets = supermarkets.filter(s => {
       // Filter by Client
       const matchesClient = !filterClientId || (s.clients && s.clients.some((c: any) => c.id === filterClientId));
-      
-      // If filtering by promoter/supervisor, show only supermarkets that have relevant routes?
-      // Or just show all supermarkets that match the client filter?
-      // Let's show all supermarkets that match client filter, 
-      // AND if a promoter filter is active, maybe highlight the one they are at?
-      // For now, let's just filter by Client.
-      
       return matchesClient;
   });
 
@@ -197,85 +218,142 @@ const LiveMapView: React.FC<LiveMapViewProps> = ({ onNavigate }) => {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               />
+              
+              {/* Supermarket Markers (Gray/Default) */}
               {filteredSupermarkets.filter(s => s.latitude && s.longitude).map(s => {
                   const promotersAtLocation = getSupermarketPromoters(s.id);
                   const hasPromoters = promotersAtLocation.length > 0;
                   
                   return (
                       <Marker 
-                        key={s.id} 
+                        key={`store-${s.id}`}
                         position={[parseFloat(s.latitude), parseFloat(s.longitude)]}
-                        opacity={hasPromoters ? 1 : 0.6}
+                        opacity={0.5}
                       >
                           <Popup>
                               <div className="min-w-[200px]">
                                   <strong className="block text-base mb-1">{s.fantasyName}</strong>
                                   <p className="text-xs text-gray-500 mb-2">{s.city} - {s.state}</p>
-                                  
-                                  {hasPromoters ? (
-                                      <div className="mt-2 border-t pt-2">
-                                          <p className="text-xs font-bold text-emerald-600 mb-1">Promotores no local:</p>
-                                          <ul className="space-y-1">
-                                              {promotersAtLocation.map((p: any) => (
-                                                  <li key={p.id} className="text-xs flex items-center gap-1">
-                                                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                      {p.fullName || p.name}
-                                                  </li>
-                                              ))}
-                                          </ul>
-                                      </div>
-                                  ) : (
-                                      <p className="text-xs text-slate-400 italic mt-2">Nenhum promotor agendado hoje</p>
-                                  )}
                               </div>
                           </Popup>
                       </Marker>
                   );
               })}
+
+              {/* Promoter Live Location Markers */}
+              {filteredPromoters.filter(p => p.lastLatitude && p.lastLongitude).map(p => (
+                <Marker
+                  key={`promoter-${p.id}`}
+                  position={[p.lastLatitude, p.lastLongitude]}
+                  icon={PromoterIcon}
+                >
+                  <Popup>
+                    <div className="min-w-[150px]">
+                      <strong className="block text-sm mb-1">{p.fullName}</strong>
+                      <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">PROMOTOR</span>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Última atualização: {p.lastLocationAt ? new Date(p.lastLocationAt).toLocaleTimeString() : 'N/A'}
+                      </p>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+
+              {/* Supervisor Live Location Markers */}
+              {filteredSupervisors.filter(s => s.lastLatitude && s.lastLongitude).map(s => (
+                <Marker
+                  key={`supervisor-${s.id}`}
+                  position={[s.lastLatitude, s.lastLongitude]}
+                  icon={SupervisorIcon}
+                >
+                  <Popup>
+                    <div className="min-w-[150px]">
+                      <strong className="block text-sm mb-1">{s.fullName}</strong>
+                      <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">SUPERVISOR</span>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Última atualização: {s.lastLocationAt ? new Date(s.lastLocationAt).toLocaleTimeString() : 'N/A'}
+                      </p>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+
            </MapContainer>
         </div>
         
         {/* Sidebar List */}
         <div className="w-full lg:w-[350px] flex flex-col gap-4 overflow-hidden">
           <div className="bg-white rounded-[2rem] border border-slate-200 p-6 flex-1 overflow-y-auto shadow-sm">
-            <SectionHeader icon={<Activity style={{ color: settings.primaryColor }} size={20} />} title="Promotores Ativos" />
+            <SectionHeader icon={<Activity style={{ color: settings.primaryColor }} size={20} />} title="Rastreamento em Tempo Real" />
             
             <div className="mt-6 space-y-4">
-              {filteredPromoters.length === 0 ? (
-                  <p className="text-sm text-slate-400 text-center py-4">Nenhum promotor encontrado.</p>
+              {filteredPromoters.length === 0 && filteredSupervisors.length === 0 ? (
+                  <p className="text-sm text-slate-400 text-center py-4">Nenhum funcionário encontrado.</p>
               ) : (
-                  filteredPromoters.map(p => {
-                    const location = getPromoterLocation(p.id);
-                    return (
-                        <div key={p.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:shadow-md transition-all">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="h-10 w-10 rounded-xl bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs overflow-hidden">
-                                    {p.avatarUrl ? (
-                                        <img src={p.avatarUrl} alt="" className="w-full h-full object-cover" />
-                                    ) : (
-                                        (p.fullName || p.name || 'P').charAt(0)
-                                    )}
-                                </div>
-                                <div>
-                                    <p className="text-sm font-black text-slate-900">{p.fullName || p.name}</p>
-                                    <p className="text-[10px] text-slate-500 font-medium">{p.email}</p>
-                                </div>
-                            </div>
-                            
-                            <div className="bg-white p-3 rounded-xl border border-slate-100">
-                                <div className="flex items-start gap-2">
-                                    <Store size={14} className="text-slate-400 mt-0.5" />
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase">Localização Hoje</p>
-                                        <p className={`text-xs font-bold ${location ? 'text-slate-800' : 'text-slate-400 italic'}`}>
-                                            {location ? location.fantasyName : 'Sem rota definida'}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
+                  <>
+                  {/* Supervisors List */}
+                  {filteredSupervisors.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="text-xs font-bold text-slate-400 uppercase mb-2">Supervisores</h3>
+                      {filteredSupervisors.map(s => (
+                        <div key={s.id} className="p-3 mb-2 rounded-xl bg-amber-50 border border-amber-100 flex items-center gap-3">
+                           <div className="w-8 h-8 rounded-full bg-amber-200 flex items-center justify-center text-amber-700 font-bold text-xs">
+                             S
+                           </div>
+                           <div className="flex-1">
+                             <p className="text-sm font-bold text-slate-800">{s.fullName}</p>
+                             <p className="text-[10px] text-slate-500">
+                               {s.lastLocationAt 
+                                 ? `Visto às ${new Date(s.lastLocationAt).toLocaleTimeString()}`
+                                 : 'Sem localização recente'}
+                             </p>
+                           </div>
                         </div>
-                    );
-                  })
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Promoters List */}
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase mb-2">Promotores</h3>
+                    {filteredPromoters.map(p => {
+                      const location = getPromoterLocation(p.id);
+                      const hasLiveLoc = p.lastLatitude && p.lastLongitude;
+                      
+                      return (
+                          <div key={p.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:shadow-md transition-all mb-3">
+                              <div className="flex items-center gap-3 mb-3">
+                                  <div className="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xs overflow-hidden">
+                                      {p.avatarUrl ? (
+                                          <img src={p.avatarUrl} alt="" className="w-full h-full object-cover" />
+                                      ) : (
+                                          (p.fullName || p.name || 'P').charAt(0)
+                                      )}
+                                  </div>
+                                  <div>
+                                      <p className="text-sm font-black text-slate-900">{p.fullName || p.name}</p>
+                                      <p className="text-[10px] text-slate-500 font-medium">{p.email}</p>
+                                  </div>
+                              </div>
+                              
+                              <div className="bg-white p-3 rounded-xl border border-slate-100">
+                                  <div className="flex items-start gap-2">
+                                      <Store size={14} className="text-slate-400 mt-0.5" />
+                                      <div>
+                                          <p className="text-[10px] font-black text-slate-400 uppercase">Localização (GPS)</p>
+                                          <p className={`text-xs font-bold ${hasLiveLoc ? 'text-emerald-600' : 'text-slate-400 italic'}`}>
+                                              {hasLiveLoc 
+                                                ? `Atualizado às ${new Date(p.lastLocationAt).toLocaleTimeString()}` 
+                                                : 'Aguardando sinal GPS...'}
+                                          </p>
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+                      );
+                    })}
+                  </div>
+                  </>
               )}
             </div>
           </div>

@@ -92,6 +92,16 @@ export class Employee {
   @Column({ type: 'timestamp', nullable: true })
   lastLoginAt: Date; // ultimo_login_em
 
+  // Live Location
+  @Column({ type: 'float', nullable: true })
+  lastLatitude: number;
+
+  @Column({ type: 'float', nullable: true })
+  lastLongitude: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lastLocationAt: Date;
+
   @CreateDateColumn()
   createdAt: Date;
 

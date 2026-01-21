@@ -9,6 +9,7 @@ import CalendarView from './views/CalendarView';
 import DocumentsView from './views/DocumentsView';
 import TimeClockView from './views/TimeClockView';
 import BottomNav from './components/BottomNav';
+import LocationTracker from './components/LocationTracker';
 
 const ProtectedLayout = () => {
   const { isAuthenticated } = useAuth();
@@ -19,6 +20,7 @@ const ProtectedLayout = () => {
 
   return (
     <div className="pb-20"> {/* Add padding bottom for bottom nav */}
+      <LocationTracker />
       <Outlet />
       <BottomNav />
     </div>

@@ -27,6 +27,22 @@ export class EmployeesService {
     private notificationsService: NotificationsService,
   ) {}
 
+  async updateLocation(userId: string, lat: number, lng: number) {
+    // Find employee linked to this user
+    const user = await this.usersService.findById(userId);
+    if (!user || !user.employee) {
+        return;
+    }
+    
+    await this.employeesRepository.update(user.employee.id, {
+        lastLatitude: lat,
+        lastLongitude: lng,
+        lastLocationAt: new Date()
+    });
+    
+    return { success: true };
+  }
+
   async create(createEmployeeDto: CreateEmployeeDto) {
     const { baseSalary, transportVoucher, mealVoucher, createAccess, appPassword, weeklyHours, roleId, supervisorId, ...employeeData } = createEmployeeDto;
     
