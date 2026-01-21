@@ -188,11 +188,11 @@ const RouteDetailsView = () => {
                        {isCompleted ? <CheckCircle size={16} /> : <span className="text-xs font-bold">{index + 1}</span>}
                      </div>
                      <div>
-                       <h3 className="font-bold text-gray-800">{item.supermarket.name}</h3>
-                       <p className="text-xs text-gray-500 flex items-center gap-1">
-                         <MapPin size={10} /> {item.supermarket.address}
-                       </p>
-                     </div>
+                      <h3 className="font-bold text-gray-800">{item.supermarket?.fantasyName || item.supermarket?.name || 'Supermercado sem nome'}</h3>
+                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                        <MapPin size={10} /> {item.supermarket?.address || `${item.supermarket?.street || ''}, ${item.supermarket?.number || ''}`}
+                      </p>
+                    </div>
                    </div>
                    <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
                      isCompleted ? 'bg-green-50 text-green-700' :
