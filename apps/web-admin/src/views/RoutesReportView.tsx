@@ -1014,12 +1014,12 @@ const RoutesReportView: React.FC = () => {
                         {item.products.flatMap(p => p.photos || []).map((photo, i) => (
                           <a 
                             key={i} 
-                            href={photo} 
+                            href={getImageUrl(photo)} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="block w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden border border-slate-200 shadow-sm hover:ring-2 ring-blue-500 transition-all"
                           >
-                            <img src={photo} alt="Visita" className="w-full h-full object-cover" />
+                            <img src={getImageUrl(photo)} alt="Visita" className="w-full h-full object-cover" />
                           </a>
                         ))}
                       </div>
