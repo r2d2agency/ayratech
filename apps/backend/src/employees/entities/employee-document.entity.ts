@@ -7,7 +7,7 @@ export class EmployeeDocument {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ insert: false, update: false })
+  @Column()
   employeeId: string;
 
   @ManyToOne(() => Employee)

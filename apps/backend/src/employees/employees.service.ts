@@ -434,6 +434,7 @@ export class EmployeesService {
 
     const document = this.documentsRepository.create({
       ...data,
+      employeeId: employee.id,
       sentAt: new Date()
     } as unknown as EmployeeDocument);
     document.employee = employee;
