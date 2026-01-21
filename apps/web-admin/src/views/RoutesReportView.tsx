@@ -197,24 +197,31 @@ const RoutesReportView: React.FC = () => {
 
   /* Removed local getImageUrl in favor of imported util */
 
-  const handlePhotoUpload = async (file: File, productIndex: number) => {
-    try {
-      const resized = await resizeImage(file);
-      const formData = new FormData();
-      formData.append('file', resized);
+  const handlePhotoUpload = async (files: FileList | null, productIndex: number) => {
+    if (!files || files.length === 0) return;
 
-      const res = await api.post('/upload', formData);
-      // Prefer using the relative path if available to avoid domain issues
-      const url = res.data.path || res.data.url;
+    try {
+      const newPhotos: string[] = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const resized = await resizeImage(file);
+        const formData = new FormData();
+        formData.append('file', resized);
+
+        const res = await api.post('/upload', formData);
+        const url = res.data.path || res.data.url;
+        newPhotos.push(url);
+      }
 
       if (manualForm) {
         const newProducts = [...manualForm.products];
-        newProducts[productIndex].photos = [...(newProducts[productIndex].photos || []), url];
+        newProducts[productIndex].photos = [...(newProducts[productIndex].photos || []), ...newPhotos];
         setManualForm({ ...manualForm, products: newProducts });
       }
     } catch (err) {
       console.error('Upload failed', err);
-      alert('Erro ao enviar foto.');
+      alert('Erro ao enviar foto(s).');
     }
   };
 
@@ -443,8 +450,8 @@ const RoutesReportView: React.FC = () => {
                 <Users size={20} className="text-slate-400" />
                 Execução por Supervisor
               </h3>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-80 w-full">
+                <ResponsiveContainer width="99%" height="100%">
                   <BarChart data={supervisorData} layout="vertical" margin={{ left: 40 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={false} />
                     <XAxis type="number" />
@@ -463,8 +470,8 @@ const RoutesReportView: React.FC = () => {
                 <Users size={20} className="text-slate-400" />
                 Execução por Promotor
               </h3>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-80 w-full">
+                <ResponsiveContainer width="99%" height="100%">
                   <BarChart data={promoterData.slice(0, 10)} layout="vertical" margin={{ left: 40 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={false} />
                     <XAxis type="number" />
