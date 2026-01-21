@@ -6,7 +6,7 @@ import * as path from 'path';
 import { UPLOAD_ROOT } from './config/upload.config';
 
 async function bootstrap() {
-  console.log('Starting application with CORS ALLOW ALL (DEBUG MODE v3)...');
+  console.log('Starting application with MANUAL CORS MIDDLEWARE (v4)...');
   try {
     // Ensure uploads directory exists
     const uploadsPath = UPLOAD_ROOT;
@@ -19,18 +19,28 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.create(AppModule);
+
+  // MANUAL CORS MIDDLEWARE (Nuclear Option)
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin) {
+      res.header('Access-Control-Allow-Origin', origin);
+    }
+    res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-Requested-With');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(204);
+      return;
+    }
+    next();
+  });
+
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
   
-  // Configure CORS
-  app.enableCors({
-    // TEMPORARY DEBUG: Allow all origins to reflect (origin: true) to debug the blocking issue
-    origin: true, 
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true,
-    allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
-  });
+  // Disable standard CORS to avoid conflicts
+  // app.enableCors({...});
 
   const port = process.env.PORT || 3000;
   try {
