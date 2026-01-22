@@ -72,21 +72,22 @@ export class WorkSchedulesService {
       
       const savedSchedule = await this.schedulesRepository.save(schedule);
 
+      if (!savedSchedule || !savedSchedule.id) {
+          throw new Error('Failed to save schedule parent entity');
+      }
+
       // Now create and save days associated with the schedule
       // This avoids cascade issues and ensures proper relation setting
       if (days.length > 0) {
-        // daysRepository.create with an object returns a single entity, but inside map we get an array of entities
-        // However, daysRepository.save can take an array of entities.
-        // The error suggests type mismatch. Let's make sure we are creating valid entities.
-        
         const daysEntities: WorkScheduleDay[] = days.map(dayData => {
             const day = new WorkScheduleDay();
             day.dayOfWeek = dayData.dayOfWeek;
             day.active = dayData.active;
             day.startTime = dayData.startTime;
             day.endTime = dayData.endTime;
-            day.breakStart = dayData.breakStart;
-            day.breakEnd = dayData.breakEnd;
+            // Ensure strict null for optional fields
+            day.breakStart = dayData.breakStart || null;
+            day.breakEnd = dayData.breakEnd || null;
             day.toleranceMinutes = dayData.toleranceMinutes;
             day.workSchedule = savedSchedule;
             return day;
@@ -100,10 +101,10 @@ export class WorkSchedulesService {
           where: { id: savedSchedule.id },
           relations: ['days', 'employee']
       });
-
     } catch (error) {
-      console.error('Error saving work schedule:', error);
-      throw error;
+        console.error('Detailed Error in WorkSchedulesService.create:', error);
+        // Throwing error will be caught by controller
+        throw error;
     }
   }
 
