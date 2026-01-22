@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { WorkSchedule } from './entities/work-schedule.entity';
@@ -22,6 +22,12 @@ export class WorkSchedulesService {
   ) {}
 
   async create(createWorkScheduleDto: CreateWorkScheduleDto) {
+    console.log('Creating work schedule with payload:', JSON.stringify(createWorkScheduleDto));
+    const newStart = new Date(createWorkScheduleDto.validFrom);
+    if (isNaN(newStart.getTime())) {
+        throw new BadRequestException('Invalid validFrom date');
+    }
+
     // Close previous active schedule
     const previousSchedule = await this.schedulesRepository.findOne({
       where: { 
@@ -32,7 +38,7 @@ export class WorkSchedulesService {
     });
 
     if (previousSchedule) {
-      const newStart = new Date(createWorkScheduleDto.validFrom);
+      // newStart is already validated
       const prevEnd = new Date(newStart);
       prevEnd.setDate(prevEnd.getDate() - 1);
       
@@ -49,10 +55,10 @@ export class WorkSchedulesService {
         days = scheduleData.days.map(day => ({
             ...day,
             active: !!day.active,
-            startTime: day.startTime || '08:00',
-            endTime: day.endTime || '17:00',
-            breakStart: day.breakStart ? day.breakStart : null,
-            breakEnd: day.breakEnd ? day.breakEnd : null,
+            startTime: (day.startTime && day.startTime !== 'null') ? day.startTime : '08:00',
+            endTime: (day.endTime && day.endTime !== 'null') ? day.endTime : '17:00',
+            breakStart: (day.breakStart && day.breakStart !== 'null') ? day.breakStart : null,
+            breakEnd: (day.breakEnd && day.breakEnd !== 'null') ? day.breakEnd : null,
             toleranceMinutes: Number(day.toleranceMinutes) || 0,
         }));
     }
@@ -86,8 +92,8 @@ export class WorkSchedulesService {
             day.startTime = dayData.startTime;
             day.endTime = dayData.endTime;
             // Ensure strict null for optional fields
-            day.breakStart = dayData.breakStart || null;
-            day.breakEnd = dayData.breakEnd || null;
+            day.breakStart = (dayData.breakStart && dayData.breakStart !== 'null') ? dayData.breakStart : null;
+            day.breakEnd = (dayData.breakEnd && dayData.breakEnd !== 'null') ? dayData.breakEnd : null;
             day.toleranceMinutes = dayData.toleranceMinutes;
             day.workSchedule = savedSchedule;
             return day;
