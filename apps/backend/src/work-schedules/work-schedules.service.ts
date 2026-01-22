@@ -83,7 +83,7 @@ export class WorkSchedulesService {
             return this.daysRepository.create({
                 ...dayData,
                 workSchedule: savedSchedule
-            }) as WorkScheduleDay;
+            } as any) as WorkScheduleDay;
         });
         
         await this.daysRepository.save(daysEntities);
