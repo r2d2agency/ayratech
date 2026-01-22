@@ -12,6 +12,8 @@ export class WorkSchedulesService {
   constructor(
     @InjectRepository(WorkSchedule)
     private schedulesRepository: Repository<WorkSchedule>,
+    @InjectRepository(WorkScheduleDay)
+    private daysRepository: Repository<WorkScheduleDay>,
     @InjectRepository(WorkScheduleException)
     private exceptionsRepository: Repository<WorkScheduleException>,
     @InjectRepository(Employee)
@@ -41,8 +43,9 @@ export class WorkSchedulesService {
     const { employeeId, ...scheduleData } = createWorkScheduleDto;
 
     // Sanitize days to ensure empty strings for time fields become null
+    let days = [];
     if (scheduleData.days) {
-        scheduleData.days = scheduleData.days.map(day => ({
+        days = scheduleData.days.map(day => ({
             ...day,
             active: !!day.active,
             startTime: day.startTime || '08:00',
@@ -50,7 +53,7 @@ export class WorkSchedulesService {
             breakStart: day.breakStart ? day.breakStart : null,
             breakEnd: day.breakEnd ? day.breakEnd : null,
             toleranceMinutes: Number(day.toleranceMinutes) || 0,
-        })) as any;
+        }));
     }
     
     const employee = await this.employeesRepository.findOneBy({ id: employeeId });
@@ -59,12 +62,35 @@ export class WorkSchedulesService {
     }
 
     try {
+      // Create and save schedule first without days
       const schedule = this.schedulesRepository.create({
         ...scheduleData,
+        days: [], // Explicitly empty days
       });
       schedule.employee = employee;
       
-      return await this.schedulesRepository.save(schedule);
+      const savedSchedule = await this.schedulesRepository.save(schedule);
+
+      // Now create and save days associated with the schedule
+      // This avoids cascade issues and ensures proper relation setting
+      if (days.length > 0) {
+        const daysEntities = days.map(dayData => {
+            const day = this.daysRepository.create({
+                ...dayData,
+                workSchedule: savedSchedule
+            });
+            return day;
+        });
+        
+        await this.daysRepository.save(daysEntities);
+      }
+      
+      // Re-fetch the schedule with days to return complete object
+      return this.schedulesRepository.findOne({ 
+          where: { id: savedSchedule.id },
+          relations: ['days', 'employee']
+      });
+
     } catch (error) {
       console.error('Error saving work schedule:', error);
       throw error;
