@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus } from '@nestjs/common';
 import { WorkSchedulesService } from './work-schedules.service';
 import { CreateWorkScheduleDto, CreateWorkScheduleExceptionDto } from './dto/create-work-schedule.dto';
 import { UpdateWorkScheduleDto } from './dto/update-work-schedule.dto';
@@ -8,8 +8,16 @@ export class WorkSchedulesController {
   constructor(private readonly workSchedulesService: WorkSchedulesService) {}
 
   @Post()
-  create(@Body() createWorkScheduleDto: CreateWorkScheduleDto) {
-    return this.workSchedulesService.create(createWorkScheduleDto);
+  async create(@Body() createWorkScheduleDto: CreateWorkScheduleDto) {
+    try {
+      return await this.workSchedulesService.create(createWorkScheduleDto);
+    } catch (error) {
+      console.error('Error creating work schedule:', error);
+      throw new HttpException(
+        error.message || 'Error creating work schedule',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 
   @Get()

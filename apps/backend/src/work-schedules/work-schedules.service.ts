@@ -44,10 +44,12 @@ export class WorkSchedulesService {
     if (scheduleData.days) {
         scheduleData.days = scheduleData.days.map(day => ({
             ...day,
+            active: !!day.active,
             startTime: day.startTime || '08:00',
             endTime: day.endTime || '17:00',
-            breakStart: day.breakStart === '' ? undefined : day.breakStart,
-            breakEnd: day.breakEnd === '' ? undefined : day.breakEnd,
+            breakStart: day.breakStart ? day.breakStart : null,
+            breakEnd: day.breakEnd ? day.breakEnd : null,
+            toleranceMinutes: Number(day.toleranceMinutes) || 0,
         })) as any;
     }
     

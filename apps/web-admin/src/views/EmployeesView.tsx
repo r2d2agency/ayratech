@@ -430,12 +430,12 @@ const EmployeesView: React.FC = () => {
               weeklyHours: 44, // Calculate dynamically if needed
               days: scheduleForm.map(day => ({
                   dayOfWeek: day.dayOfWeek,
-                  active: day.active,
+                  active: !!day.active,
                   startTime: day.startTime || '08:00',
                   endTime: day.endTime || '17:00',
-                  breakStart: day.breakStart || undefined,
-                  breakEnd: day.breakEnd || undefined,
-                  toleranceMinutes: Number(day.toleranceMinutes)
+                  breakStart: day.breakStart || null,
+                  breakEnd: day.breakEnd || null,
+                  toleranceMinutes: Number(day.toleranceMinutes) || 0
               }))
           };
 
