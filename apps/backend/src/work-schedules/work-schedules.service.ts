@@ -75,7 +75,11 @@ export class WorkSchedulesService {
       // Now create and save days associated with the schedule
       // This avoids cascade issues and ensures proper relation setting
       if (days.length > 0) {
-        const daysEntities = days.map(dayData => {
+        // daysRepository.create with an object returns a single entity, but inside map we get an array of entities
+        // However, daysRepository.save can take an array of entities.
+        // The error suggests type mismatch. Let's make sure we are creating valid entities.
+        
+        const daysEntities: WorkScheduleDay[] = days.map(dayData => {
             const day = this.daysRepository.create({
                 ...dayData,
                 workSchedule: savedSchedule
