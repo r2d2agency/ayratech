@@ -80,10 +80,16 @@ export class WorkSchedulesService {
         // The error suggests type mismatch. Let's make sure we are creating valid entities.
         
         const daysEntities: WorkScheduleDay[] = days.map(dayData => {
-            return this.daysRepository.create({
-                ...dayData,
-                workSchedule: savedSchedule
-            } as any) as WorkScheduleDay;
+            const day = new WorkScheduleDay();
+            day.dayOfWeek = dayData.dayOfWeek;
+            day.active = dayData.active;
+            day.startTime = dayData.startTime;
+            day.endTime = dayData.endTime;
+            day.breakStart = dayData.breakStart;
+            day.breakEnd = dayData.breakEnd;
+            day.toleranceMinutes = dayData.toleranceMinutes;
+            day.workSchedule = savedSchedule;
+            return day;
         });
         
         await this.daysRepository.save(daysEntities);
