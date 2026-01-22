@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { WorkSchedule } from './entities/work-schedule.entity';
+import { WorkScheduleDay } from './entities/work-schedule-day.entity';
 import { WorkScheduleException } from './entities/work-schedule-exception.entity';
 import { Employee } from '../employees/entities/employee.entity';
 import { CreateWorkScheduleDto, CreateWorkScheduleExceptionDto } from './dto/create-work-schedule.dto';
