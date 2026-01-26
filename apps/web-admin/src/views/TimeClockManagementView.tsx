@@ -164,7 +164,15 @@ const TimeClockManagementView = () => {
       fetchEvents();
     } catch (error: any) {
       console.error('Erro ao registrar ponto manual:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Erro ao adicionar registro manual';
+      let errorMessage = 'Erro ao adicionar registro manual';
+      
+      if (error.response?.data?.message) {
+        const msg = error.response.data.message;
+        errorMessage = Array.isArray(msg) ? msg.join(', ') : msg;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast.error(`Erro: ${errorMessage}`);
     }
   };
@@ -360,6 +368,7 @@ const TimeClockManagementView = () => {
                                     value={searchTerm}
                                     onChange={(e) => {
                                         setSearchTerm(e.target.value);
+                                        setNewEvent({ ...newEvent, employeeId: '' });
                                         setIsDropdownOpen(true);
                                     }}
                                     onFocus={() => setIsDropdownOpen(true)}
