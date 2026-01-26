@@ -197,15 +197,15 @@ export class TimeClockService {
     }
 
     try {
-        const event = this.eventsRepository.create({
-            employee: { id: employeeId },
-            eventType,
-            timestamp: eventDate,
-            isManual: true,
-            editedBy: editorName,
-            validationReason: observation || 'Ajuste manual',
-            validationStatus: 'approved' // Manual edits are auto-approved usually
-        });
+        // Use explicit assignment to handle TypeORM relations correctly (insert: false columns)
+        const event = new TimeClockEvent();
+        event.employee = { id: employeeId } as any; // Cast to avoid full Employee requirement
+        event.eventType = eventType;
+        event.timestamp = eventDate;
+        event.isManual = true;
+        event.editedBy = editorName;
+        event.validationReason = observation || 'Ajuste manual';
+        event.validationStatus = 'approved';
 
         return await this.eventsRepository.save(event);
     } catch (error) {

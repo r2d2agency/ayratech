@@ -148,13 +148,17 @@ const TimeClockManagementView = () => {
         }
 
         const timestamp = new Date(`${newEvent.date}T${newEvent.time}:00`);
+        
+        const payload = {
+          employeeId: newEvent.employeeId,
+          eventType: newEvent.eventType,
+          timestamp: timestamp.toISOString(),
+          observation: newEvent.observation
+        };
+        
+        console.log('Sending manual entry payload:', payload);
 
-        await api.post('/time-clock/entry/manual', {
-        employeeId: newEvent.employeeId,
-        eventType: newEvent.eventType,
-        timestamp: timestamp.toISOString(),
-        observation: newEvent.observation
-      });
+        await api.post('/time-clock/entry/manual', payload);
 
       toast.success('Registro manual adicionado com sucesso!');
       setShowModal(false);
