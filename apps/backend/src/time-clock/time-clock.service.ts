@@ -222,6 +222,8 @@ export class TimeClockService {
         
         const end = new Date(endDate);
         end.setHours(23,59,59,999);
+        // Adjust for timezone differences (extend end date to cover late entries in Western timezones)
+        end.setHours(end.getHours() + 4);
         
         where.timestamp = Between(start, end);
     } else if (startDate) {
@@ -230,6 +232,8 @@ export class TimeClockService {
         start.setHours(0,0,0,0);
         const end = new Date(startDate);
         end.setHours(23,59,59,999);
+        // Adjust for timezone differences
+        end.setHours(end.getHours() + 4);
         where.timestamp = Between(start, end);
     }
 
