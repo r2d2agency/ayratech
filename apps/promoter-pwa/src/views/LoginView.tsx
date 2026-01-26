@@ -5,18 +5,42 @@ import { useAuth } from '../context/AuthContext';
 import { toast, Toaster } from 'react-hot-toast';
 
 const LoginView = () => {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  const formatCpf = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+      .replace(/(-\d{2})\d+?$/, '$1');
+  };
+
+  const handleIdentifierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Simple heuristic: if user is typing numbers, try to format as CPF
+    // If user types letters or @, treat as email (no formatting)
+    const onlyNumbers = value.replace(/\D/g, '');
+    const isNumericStart = /^\d/.test(value);
+    
+    if (isNumericStart && !value.includes('@')) {
+       setIdentifier(formatCpf(value));
+    } else {
+       setIdentifier(value);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const response = await client.post('/auth/login', { email, password });
+      // Send identifier as 'email' field because backend expects it in DTO (even if it is CPF)
+      const response = await client.post('/auth/login', { email: identifier, password });
       login(response.data.access_token, response.data.user);
       toast.success('Login realizado com sucesso!');
       navigate('/');
@@ -39,13 +63,13 @@ const LoginView = () => {
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">CPF ou Email</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={identifier}
+              onChange={handleIdentifierChange}
               className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-              placeholder="seu@email.com"
+              placeholder="000.000.000-00 ou email@exemplo.com"
               required
             />
           </div>

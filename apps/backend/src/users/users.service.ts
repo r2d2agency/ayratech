@@ -51,6 +51,20 @@ export class UsersService implements OnModuleInit {
     });
   }
 
+  async findByEmployeeId(employeeId: string): Promise<User | undefined> {
+    return this.usersRepository.findOne({ 
+      where: { employeeId },
+      relations: ['role', 'employee']
+    });
+  }
+
+  async updateSession(userId: string, sessionId: string): Promise<void> {
+    await this.usersRepository.update(userId, { 
+      currentSessionId: sessionId,
+      lastLoginAt: new Date()
+    });
+  }
+
   async findById(id: string): Promise<User | undefined> {
     return this.usersRepository.findOne({ 
       where: { id },

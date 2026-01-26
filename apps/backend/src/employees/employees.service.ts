@@ -27,6 +27,10 @@ export class EmployeesService {
     private notificationsService: NotificationsService,
   ) {}
 
+  async findByCpf(cpf: string): Promise<Employee | undefined> {
+    return this.employeesRepository.findOne({ where: { cpf } });
+  }
+
   async updateLocation(userId: string, lat: number, lng: number) {
     // Find employee linked to this user
     const user = await this.usersService.findById(userId);

@@ -33,6 +33,9 @@ export class User {
   @Column({ type: 'timestamp', nullable: true })
   lastLoginAt: Date;
 
+  @Column({ nullable: true })
+  currentSessionId: string;
+
   @CreateDateColumn()
   createdAt: Date;
 
