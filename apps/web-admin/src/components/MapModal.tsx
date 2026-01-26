@@ -75,9 +75,12 @@ const MapModal: React.FC<LocationPickerModalProps> = ({ isOpen, onClose, onConfi
         const newPos = { lat, lng: lon };
         setPosition(newPos);
         setMapCenter([lat, lon]);
+      } else {
+        alert("Endereço não encontrado. Tente simplificar a busca.");
       }
     } catch (error) {
       console.error("Geocoding error:", error);
+      alert("Erro ao buscar endereço. Verifique sua conexão.");
     } finally {
       setLoading(false);
     }

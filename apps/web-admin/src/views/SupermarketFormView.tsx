@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Search } from 'lucide-react';
+import { ChevronRight, Search, MapPin } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import { ViewType, SupermarketGroup } from '../types';
 import api from '../api/client';
+import MapModal from '../components/MapModal';
 
 interface SupermarketFormViewProps {
   onNavigate: (view: ViewType) => void;
@@ -23,10 +24,13 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
     complement: '',
     city: '',
     state: '',
+    latitude: 0,
+    longitude: 0,
     status: true
   });
   const [loading, setLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
+  const [showMap, setShowMap] = useState(false);
 
   useEffect(() => {
     fetchGroups();
@@ -70,6 +74,10 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
     }
   };
 
+  const handleLocationSelect = (lat: number, lng: number) => {
+    setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
+  };
+
   const handleSubmit = async () => {
     if (!formData.fantasyName || !formData.city || !formData.street) {
         alert('Por favor, preencha o Nome Fantasia e o Endereço completo.');
@@ -82,6 +90,10 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
       if (!payload.groupId) {
         delete (payload as any).groupId;
       }
+      // Ensure lat/lng are numbers or null if 0
+      if (payload.latitude === 0) delete (payload as any).latitude;
+      if (payload.longitude === 0) delete (payload as any).longitude;
+
       await api.post('/supermarkets', payload);
       alert('Cadastro realizado com sucesso!');
       onNavigate('supermarkets_list');
@@ -95,6 +107,14 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
 
   return (
     <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
+       <MapModal 
+          isOpen={showMap}
+          onClose={() => setShowMap(false)}
+          onConfirm={handleLocationSelect}
+          initialLat={formData.latitude || undefined}
+          initialLng={formData.longitude || undefined}
+          address={`${formData.street}, ${formData.number} - ${formData.city}, ${formData.state}`}
+       />
        <div className="flex items-center gap-6 mb-10">
           <button onClick={() => onNavigate('supermarkets_list')} className="p-3 bg-white border border-slate-200 rounded-2xl shadow-sm hover:bg-slate-50 transition-all">
              <ChevronRight className="rotate-180" size={24} />
@@ -148,8 +168,15 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
              </div>
 
              {/* Address Section */}
-             <div className="md:col-span-2 border-t border-slate-100 pt-8 mt-4">
-                <h3 className="text-lg font-black text-slate-800 mb-6">Endereço</h3>
+             <div className="md:col-span-2 border-t border-slate-100 pt-8 mt-4 flex items-center justify-between">
+                <h3 className="text-lg font-black text-slate-800">Endereço</h3>
+                <button 
+                  onClick={() => setShowMap(true)}
+                  className="flex items-center gap-2 text-blue-600 font-bold hover:bg-blue-50 px-4 py-2 rounded-xl transition-colors"
+                >
+                  <MapPin size={20} />
+                  {formData.latitude ? 'Ajustar Localização' : 'Buscar no Mapa'}
+                </button>
              </div>
 
              <div>
@@ -237,6 +264,26 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
                     onChange={handleChange}
                     className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
                     placeholder="Bloco A, Sala 1" 
+                />
+             </div>
+
+             <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-3 block tracking-widest">Latitude</label>
+                <input 
+                    type="text" 
+                    value={formData.latitude || ''}
+                    readOnly
+                    className="w-full h-14 px-6 rounded-2xl bg-slate-100 border border-slate-200 text-slate-500 font-mono" 
+                />
+             </div>
+
+             <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-3 block tracking-widest">Longitude</label>
+                <input 
+                    type="text" 
+                    value={formData.longitude || ''}
+                    readOnly
+                    className="w-full h-14 px-6 rounded-2xl bg-slate-100 border border-slate-200 text-slate-500 font-mono" 
                 />
              </div>
           </div>
