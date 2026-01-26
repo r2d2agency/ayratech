@@ -99,8 +99,19 @@ export default function TimeClockView() {
             });
             toast.success('Ponto registrado com sucesso!');
             fetchStatus();
-        } catch (error) {
-            console.error('API failed, saving offline action', error);
+        } catch (error: any) {
+            console.error('API failed', error);
+
+            // Don't queue offline if it's a client error (4xx)
+            // This prevents false "offline" registration when the server rejects the request (e.g. validation error)
+            if (error.response && error.response.status >= 400 && error.response.status < 500) {
+                const message = error.response.data?.message || 'Erro ao registrar ponto';
+                toast.error(message);
+                // We rely on finally block to setProcessing(false)
+                return; 
+            }
+
+            console.log('Saving offline action due to network/server error', error);
             await offlineService.addPendingAction(
                 'TIME_CLOCK',
                 '/time-clock',

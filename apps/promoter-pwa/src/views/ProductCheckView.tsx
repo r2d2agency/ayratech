@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, CheckCircle, AlertTriangle, X, Save, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Search, CheckCircle, AlertTriangle, X, Save, RefreshCw, Camera, Trash2, Plus } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../api/client';
 import { offlineService } from '../services/offline.service';
+import { processImage, WatermarkData } from '../utils/image-processor';
+import { useAuth } from '../context/AuthContext';
 
 interface Product {
   id: string;
@@ -26,12 +28,15 @@ interface RouteItemProduct {
 const ProductCheckView: React.FC = () => {
   const { routeId, itemId } = useParams<{ routeId: string; itemId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<RouteItemProduct[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<RouteItemProduct[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Selected product for detailed editing (stockout type, observation)
   const [selectedProduct, setSelectedProduct] = useState<RouteItemProduct | null>(null);
@@ -124,7 +129,8 @@ const ProductCheckView: React.FC = () => {
           checked: productData.checked,
           isStockout: productData.isStockout,
           stockoutType: productData.stockoutType,
-          observation: productData.observation
+          observation: productData.observation,
+          photos: productData.photos
         });
       } else {
         // Offline: Add to pending actions
@@ -136,7 +142,8 @@ const ProductCheckView: React.FC = () => {
              checked: productData.checked,
              isStockout: productData.isStockout,
              stockoutType: productData.stockoutType,
-             observation: productData.observation
+             observation: productData.observation,
+             photos: productData.photos
           }
         );
       }
@@ -156,11 +163,16 @@ const ProductCheckView: React.FC = () => {
         await offlineService.saveRoute({ ...cachedRoute, items: updatedItems });
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving check:', error);
-      // Even if API fails, we should queue it? 
-      // The offline service handling above covers explicit offline. 
-      // If API fails, we should probably fallback to offline queue.
+      
+      // Don't queue offline if it's a client error (4xx)
+      if (error.response && error.response.status >= 400 && error.response.status < 500) {
+          toast.error('Erro ao salvar: ' + (error.response.data?.message || 'Dados inválidos'));
+          return;
+      }
+
+      // If API fails (network or server error), fallback to offline queue
       await offlineService.addPendingAction(
         'PRODUCT_CHECK',
         `/routes/items/${itemId}/products/${productData.productId}/check`,
@@ -169,7 +181,8 @@ const ProductCheckView: React.FC = () => {
            checked: productData.checked,
            isStockout: productData.isStockout,
            stockoutType: productData.stockoutType,
-           observation: productData.observation
+           observation: productData.observation,
+           photos: productData.photos
         }
       );
     }
@@ -185,6 +198,95 @@ const ProductCheckView: React.FC = () => {
       toast.success('Salvo!');
     }
   };
+
+  const handlePhotoAdd = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedProduct) return;
+
+    setUploadingPhoto(true);
+    try {
+      // 1. Process Image (Compress & Watermark)
+      const watermarkData: WatermarkData = {
+        supermarketName: 'PDV', // Ideally get this from context/route
+        promoterName: user?.username || 'Promotor',
+        timestamp: new Date()
+      };
+      
+      const { blob, previewUrl } = await processImage(file, watermarkData);
+      
+      // 2. Upload if online, otherwise use Base64
+      let photoUrl = previewUrl; // Default to blob URL (will be revoked) or base64
+      
+      if (navigator.onLine) {
+        const formData = new FormData();
+        formData.append('file', blob, 'photo.jpg');
+        
+        try {
+            const response = await api.post('/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            photoUrl = response.data.path || response.data.url;
+        } catch (uploadError) {
+            console.error('Upload failed, falling back to Base64', uploadError);
+            // Fallback to Base64
+            photoUrl = await blobToBase64(blob);
+        }
+      } else {
+        // Offline: Convert to Base64
+        photoUrl = await blobToBase64(blob);
+      }
+
+      const currentPhotos = selectedProduct.photos || [];
+      const updatedProduct = {
+        ...selectedProduct,
+        photos: [...currentPhotos, photoUrl]
+      };
+      
+      setSelectedProduct(updatedProduct);
+      
+      // Clean up input
+      if (fileInputRef.current) fileInputRef.current.value = '';
+
+    } catch (error) {
+      console.error('Error adding photo:', error);
+      toast.error('Erro ao processar foto: ' + (error as Error).message);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const handlePhotoRemove = (index: number) => {
+    if (!selectedProduct) return;
+    const currentPhotos = selectedProduct.photos || [];
+    const updatedPhotos = currentPhotos.filter((_, i) => i !== index);
+    setSelectedProduct({ ...selectedProduct, photos: updatedPhotos });
+  };
+
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('Falha ao ler o arquivo de imagem.'));
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  // Helper to render image source (handle relative paths)
+  const getRenderUrl = (url: string) => {
+    if (url.startsWith('data:') || url.startsWith('blob:')) return url;
+    if (url.startsWith('http')) return url;
+    // Assume relative path
+    const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000'; // Adjust as needed
+    // Actually, let's try to just return it and let the img tag handle it if it's relative to domain
+    // But usually we need API URL prepended if served from backend
+    // Since we don't have the env var readily available in this scope without importing config
+    // Let's use a simple heuristic or rely on the fact that if it's /uploads, it needs the backend host
+    // For now, if it starts with /, assume it needs backend host if we are not on same origin
+    // But PWA might be on different port.
+    // Let's rely on api client base url logic if possible, or just standard path
+    return url; 
+  };
+
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -282,9 +384,22 @@ const ProductCheckView: React.FC = () => {
               </button>
             </div>
             
-            <div>
-              <p className="font-medium text-gray-900">{selectedProduct.product.name}</p>
-              <p className="text-sm text-gray-500 mb-4">{selectedProduct.isStockout ? 'Reportando Ruptura' : 'Produto em Estoque'}</p>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="font-medium text-gray-900">{selectedProduct.product.name}</p>
+                <p className="text-sm text-gray-500">{selectedProduct.isStockout ? 'Reportando Ruptura' : 'Produto em Estoque'}</p>
+              </div>
+              <button
+                onClick={() => setSelectedProduct({
+                  ...selectedProduct, 
+                  isStockout: !selectedProduct.isStockout, 
+                  checked: true,
+                  stockoutType: !selectedProduct.isStockout ? 'PHYSICAL' : undefined
+                })}
+                className={`px-3 py-1 rounded-full text-sm font-medium ${selectedProduct.isStockout ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+              >
+                {selectedProduct.isStockout ? 'Mudar para Estoque' : 'Marcar Ruptura'}
+              </button>
             </div>
 
             {selectedProduct.isStockout && (
@@ -306,6 +421,46 @@ const ProductCheckView: React.FC = () => {
                 </div>
               </div>
             )}
+
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-gray-700">Fotos</label>
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {selectedProduct.photos && selectedProduct.photos.map((photo, index) => (
+                  <div key={index} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border border-gray-200">
+                    <img 
+                      src={getRenderUrl(photo)} 
+                      alt={`Foto ${index + 1}`} 
+                      className="w-full h-full object-cover"
+                    />
+                    <button 
+                      onClick={() => handlePhotoRemove(index)}
+                      className="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-bl-lg"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
+                
+                <label className="flex-shrink-0 w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-gray-50 text-gray-400">
+                  {uploadingPhoto ? (
+                    <RefreshCw className="animate-spin" size={20} />
+                  ) : (
+                    <>
+                      <Camera size={20} />
+                      <span className="text-xs">Add</span>
+                    </>
+                  )}
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={handlePhotoAdd}
+                    ref={fileInputRef}
+                    disabled={uploadingPhoto}
+                  />
+                </label>
+              </div>
+            </div>
 
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-gray-700">Observação</label>

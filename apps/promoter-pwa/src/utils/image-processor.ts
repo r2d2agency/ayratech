@@ -17,7 +17,7 @@ const loadImage = (src: string): Promise<HTMLImageElement> => {
     const img = new Image();
     img.crossOrigin = 'Anonymous';
     img.onload = () => resolve(img);
-    img.onerror = reject;
+    img.onerror = () => reject(new Error('Falha ao carregar a imagem. O arquivo pode estar corrompido ou formato inválido.'));
     img.src = src;
   });
 };
