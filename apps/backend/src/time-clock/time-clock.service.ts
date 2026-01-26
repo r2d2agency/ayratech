@@ -203,7 +203,10 @@ export class TimeClockService {
         if (error.code === '23503') { // Foreign key violation
             throw new BadRequestException('Employee not found');
         }
-        throw error;
+        if (error.code === '22P02') { // Invalid text representation (e.g. invalid UUID)
+             throw new BadRequestException('Invalid Employee ID format (must be UUID)');
+        }
+        throw new BadRequestException(`Error saving time clock: ${error.message}`);
     }
   }
 
