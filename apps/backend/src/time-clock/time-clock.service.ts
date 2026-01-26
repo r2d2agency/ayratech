@@ -171,21 +171,37 @@ export class TimeClockService {
   }
 
   async createManual(data: any, editorName: string) {
+    console.log('Creating manual time clock entry:', JSON.stringify(data));
     const { employeeId, timestamp, eventType, observation } = data;
     
     if (!employeeId) throw new BadRequestException('Employee ID is required');
+    if (!timestamp) throw new BadRequestException('Timestamp is required');
+    if (!eventType) throw new BadRequestException('Event Type is required');
 
-    const event = this.eventsRepository.create({
-        employee: { id: employeeId },
-        eventType,
-        timestamp: new Date(timestamp),
-        isManual: true,
-        editedBy: editorName,
-        validationReason: observation || 'Ajuste manual',
-        validationStatus: 'approved' // Manual edits are auto-approved usually
-    });
+    const eventDate = new Date(timestamp);
+    if (isNaN(eventDate.getTime())) {
+        throw new BadRequestException('Invalid timestamp format');
+    }
 
-    return this.eventsRepository.save(event);
+    try {
+        const event = this.eventsRepository.create({
+            employee: { id: employeeId },
+            eventType,
+            timestamp: eventDate,
+            isManual: true,
+            editedBy: editorName,
+            validationReason: observation || 'Ajuste manual',
+            validationStatus: 'approved' // Manual edits are auto-approved usually
+        });
+
+        return await this.eventsRepository.save(event);
+    } catch (error) {
+        console.error('Error creating manual time clock entry:', error);
+        if (error.code === '23503') { // Foreign key violation
+            throw new BadRequestException('Employee not found');
+        }
+        throw error;
+    }
   }
 
   async findAll(startDate?: string, endDate?: string, employeeId?: string) {
