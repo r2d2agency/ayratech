@@ -72,13 +72,6 @@ export class UsersService implements OnModuleInit {
     });
   }
 
-  async findByEmployeeId(employeeId: string): Promise<User | undefined> {
-    return this.usersRepository.findOne({ 
-      where: { employee: { id: employeeId } },
-      relations: ['role', 'employee']
-    });
-  }
-
   async findAll(): Promise<User[]> {
     try {
       return await this.usersRepository.find({ relations: ['role', 'employee'] });
