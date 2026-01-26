@@ -156,7 +156,7 @@ const TimeClockManagementView = () => {
           observation: newEvent.observation
         };
         
-        console.log('Sending manual entry payload:', payload);
+        console.log('Sending manual entry payload:', JSON.stringify(payload, null, 2));
 
         await api.post('/time-clock/entry/manual', payload);
 
@@ -168,6 +168,12 @@ const TimeClockManagementView = () => {
       fetchEvents();
     } catch (error: any) {
       console.error('Erro ao registrar ponto manual:', error);
+      
+      if (error.response) {
+          console.error('Error Response Data:', JSON.stringify(error.response.data, null, 2));
+          console.error('Error Status:', error.response.status);
+      }
+
       let errorMessage = 'Erro ao adicionar registro manual';
       
       if (error.response?.data?.message) {

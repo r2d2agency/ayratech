@@ -210,6 +210,8 @@ export class TimeClockService {
         return await this.eventsRepository.save(event);
     } catch (error) {
         console.error('Error creating manual time clock entry:', error);
+        console.error('Error details (code/message):', error.code, error.message);
+        
         if (error.code === '23503') { // Foreign key violation
             throw new BadRequestException('Employee not found');
         }
