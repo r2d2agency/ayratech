@@ -101,8 +101,9 @@ export const processImage = async (
 
 const validateImageQuality = (img: HTMLImageElement): ImageValidationResult => {
   const canvas = document.createElement('canvas');
-  // Resize for faster analysis
-  const width = 100;
+  // Resize for faster analysis, but keep enough detail for blur detection
+  // Increased from 100 to 300 to better detect blur
+  const width = 300;
   const height = (img.height / img.width) * width;
   canvas.width = width;
   canvas.height = height;
@@ -117,6 +118,9 @@ const validateImageQuality = (img: HTMLImageElement): ImageValidationResult => {
   let totalLuminance = 0;
   let minLuminance = 255;
   let maxLuminance = 0;
+  let darkPixelCount = 0;
+  let brightPixelCount = 0;
+  const totalPixels = data.length / 4;
 
   for (let i = 0; i < data.length; i += 4) {
     // RGB to Luminance (perceived brightness)
@@ -128,16 +132,27 @@ const validateImageQuality = (img: HTMLImageElement): ImageValidationResult => {
     totalLuminance += luminance;
     if (luminance < minLuminance) minLuminance = luminance;
     if (luminance > maxLuminance) maxLuminance = luminance;
+    
+    // Count very dark pixels (< 30)
+    if (luminance < 30) darkPixelCount++;
+    // Count very bright pixels (> 230)
+    if (luminance > 230) brightPixelCount++;
   }
 
-  const avgLuminance = totalLuminance / (data.length / 4);
+  const avgLuminance = totalLuminance / totalPixels;
+  const darkRatio = darkPixelCount / totalPixels;
+  const brightRatio = brightPixelCount / totalPixels;
+
+  console.log(`[ImageValidation] Brightness Stats: Avg=${avgLuminance.toFixed(2)}, DarkRatio=${(darkRatio*100).toFixed(1)}%, BrightRatio=${(brightRatio*100).toFixed(1)}%`);
 
   // 1. Check Brightness (Dark/Light)
-  if (avgLuminance < 40) {
-    return { isValid: false, reason: 'A foto está muito escura. Procure um local mais iluminado.' };
+  // Stricter check: Average < 50 OR more than 50% of pixels are very dark
+  if (avgLuminance < 50 || darkRatio > 0.5) {
+    return { isValid: false, reason: 'A foto está muito escura. Procure um local mais iluminado ou use o flash.' };
   }
-  if (avgLuminance > 220) {
-    return { isValid: false, reason: 'A foto está muito clara (estourada). Evite luz direta forte.' };
+  
+  if (avgLuminance > 230 || brightRatio > 0.6) {
+    return { isValid: false, reason: 'A foto está muito clara (estourada). Evite luz direta forte ou reflexos.' };
   }
 
   // 2. Check Blur (Edge Detection Variance)
@@ -166,9 +181,14 @@ const validateImageQuality = (img: HTMLImageElement): ImageValidationResult => {
   }
   const avgEdge = edgeScore / ((width - 2) * (height - 2));
   
-  // Threshold for blur is tricky and depends on image content.
-  // 15 is a conservative threshold for "very blurry". Sharp images usually > 50.
-  if (avgEdge < 10) {
+  console.log(`[ImageValidation] Blur Score (Avg Edge): ${avgEdge.toFixed(2)}`);
+  
+  // Threshold for blur
+  // With higher resolution (300px), we expect higher edge scores for sharp images.
+  // Blurry images will have low edge scores.
+  // Adjusted threshold to 12 based on 300px width. 
+  // Very sharp images often > 20-30. Blurry often < 10.
+  if (avgEdge < 12) {
       return { isValid: false, reason: 'A foto parece borrada. Segure o celular com firmeza e foque no produto.' };
   }
 
