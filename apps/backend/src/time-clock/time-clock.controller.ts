@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, BadRequestException, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { TimeClockService } from './time-clock.service';
-import { CreateTimeClockEventDto, CreateTimeBalanceDto } from './dto/create-time-clock.dto';
+import { CreateTimeClockEventDto, CreateTimeBalanceDto, CreateManualTimeClockDto } from './dto/create-time-clock.dto';
 import { UpdateTimeClockEventDto } from './dto/update-time-clock.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -41,8 +41,8 @@ export class TimeClockController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('manual')
-  createManual(@Body() data: any, @Req() req: any) {
+  @Post('entry/manual')
+  createManual(@Body() data: CreateManualTimeClockDto, @Req() req: any) {
      const editorName = req.user?.name || req.user?.email || 'Admin';
      return this.timeClockService.createManual(data, editorName);
   }

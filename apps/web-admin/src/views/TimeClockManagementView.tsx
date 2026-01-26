@@ -149,7 +149,7 @@ const TimeClockManagementView = () => {
 
         const timestamp = new Date(`${newEvent.date}T${newEvent.time}:00`);
 
-        await api.post('/time-clock/manual', {
+        await api.post('/time-clock/entry/manual', {
         employeeId: newEvent.employeeId,
         eventType: newEvent.eventType,
         timestamp: timestamp.toISOString(),

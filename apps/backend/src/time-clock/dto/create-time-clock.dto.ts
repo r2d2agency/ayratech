@@ -1,15 +1,62 @@
+import { IsString, IsUUID, IsOptional, IsDateString, IsNumber, IsEnum } from 'class-validator';
+
 export class CreateTimeClockEventDto {
+  @IsUUID()
+  @IsOptional() // Optional because it might be set from token
   employeeId: string;
+
+  @IsString()
   eventType: string;
-  timestamp: Date;
+
+  @IsDateString()
+  timestamp: string;
+
+  @IsNumber()
+  @IsOptional()
   latitude?: number;
+
+  @IsNumber()
+  @IsOptional()
   longitude?: number;
+
+  @IsString()
+  @IsOptional()
   storeId?: string;
+
+  @IsString()
+  @IsOptional()
   routeId?: string;
+
+  @IsString()
+  @IsOptional()
   deviceId?: string;
+
+  @IsString()
+  @IsOptional()
   facialPhotoUrl?: string;
+
+  @IsString()
+  @IsOptional()
   validationStatus?: string;
+
+  @IsString()
+  @IsOptional()
   validationReason?: string;
+}
+
+export class CreateManualTimeClockDto {
+  @IsUUID()
+  employeeId: string;
+
+  @IsString()
+  eventType: string;
+
+  @IsDateString()
+  timestamp: string;
+
+  @IsString()
+  @IsOptional()
+  observation?: string;
 }
 
 export class CreateTimeBalanceDto {
