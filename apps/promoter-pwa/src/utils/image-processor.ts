@@ -83,7 +83,7 @@ export const processImage = async (
   // Center: Promoter (Optional, if space permits, or put below)
   // Let's put Promoter below PDV in smaller font if needed, or next to it.
   // For simplicity and space, let's keep it simple: "PDV | Promotor"
-  
+  //Novo Enerlight, promotor system 
   // Refined Layout:
   // Top Line in Footer: PDV Name
   // Bottom Line in Footer: Promotor | Data Hora
