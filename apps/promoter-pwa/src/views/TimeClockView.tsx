@@ -35,6 +35,7 @@ export default function TimeClockView() {
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
+    console.log('TimeClockView v1.1 loaded at', new Date().toISOString());
     // Try to load local cache immediately for better UX
     const cached = localStorage.getItem('timeClockStatus');
     if (cached) {
@@ -228,7 +229,9 @@ export default function TimeClockView() {
             <button onClick={() => navigate('/')} className="p-1">
             <ArrowLeft size={24} className="text-gray-600" />
             </button>
-            <h1 className="font-bold text-gray-800 text-lg">Ponto Eletrônico</h1>
+            <h1 className="font-bold text-gray-800 text-lg">
+              Ponto Eletrônico <span className="text-xs text-gray-400 font-normal ml-2">v1.1</span>
+            </h1>
         </div>
 
         <div className="flex items-center gap-2">

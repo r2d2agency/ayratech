@@ -41,6 +41,19 @@ const ProductCheckView: React.FC = () => {
   // Selected product for detailed editing (stockout type, observation)
   const [selectedProduct, setSelectedProduct] = useState<RouteItemProduct | null>(null);
 
+  // Auto-open product details if productId is in URL
+  const [searchParams] = useSearchParams();
+  const productIdFromUrl = searchParams.get('productId');
+
+  useEffect(() => {
+    if (productIdFromUrl && products.length > 0 && !selectedProduct) {
+       const found = products.find(p => p.productId === productIdFromUrl || p.product?.id === productIdFromUrl);
+       if (found) {
+           setSelectedProduct(found);
+       }
+    }
+  }, [productIdFromUrl, products]);
+
   useEffect(() => {
     fetchProducts();
   }, [routeId, itemId]);
@@ -94,6 +107,12 @@ const ProductCheckView: React.FC = () => {
   };
 
   const handleStatusChange = async (prod: RouteItemProduct, isStockout: boolean) => {
+    // Confirmation for completion (only if not stockout and not already checked)
+    if (!isStockout && !prod.checked) {
+       const confirm = window.confirm('Deseja realmente concluir esta tarefa?');
+       if (!confirm) return;
+    }
+
     // Optimistic update
     const updatedProduct = { 
       ...prod, 

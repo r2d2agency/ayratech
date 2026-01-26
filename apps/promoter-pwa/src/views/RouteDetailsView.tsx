@@ -497,16 +497,18 @@ const RouteDetailsView = () => {
                           <p className="text-xs text-blue-800 font-medium mb-2">Tarefas:</p>
                           <div className="space-y-2">
                             {item.products?.map((prod: any) => (
-                              <div key={prod.id} className="flex items-center gap-2 bg-white p-2 rounded border border-blue-100">
-                                <button 
-                                  onClick={() => handleProductCheck(item.id, prod.productId, !prod.checked)}
-                                  className={`p-1 rounded-full ${prod.checked ? 'text-green-500' : 'text-gray-300'}`}
-                                >
+                              <div 
+                                key={prod.id} 
+                                className="flex items-center gap-2 bg-white p-3 rounded border border-blue-100 cursor-pointer hover:bg-blue-50 transition-colors"
+                                onClick={() => navigate(`/routes/${id}/items/${activeItem.id}/check?productId=${prod.product?.id || prod.productId}`)}
+                              >
+                                <div className={`p-1 rounded-full ${prod.checked ? 'text-green-500' : 'text-gray-300'}`}>
                                   {prod.checked ? <CheckCircle size={20} /> : <Circle size={20} />}
-                                </button>
-                                <span className={`text-sm ${prod.checked ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                                </div>
+                                <span className={`text-sm flex-1 ${prod.checked ? 'line-through text-gray-400' : 'text-gray-700'}`}>
                                   {prod.product?.name}
                                 </span>
+                                <ChevronRight size={16} className="text-gray-400" />
                               </div>
                             ))}
                             {(!item.products || item.products.length === 0) && (
@@ -516,16 +518,11 @@ const RouteDetailsView = () => {
                         </div>
 
                         <div className="flex gap-2">
-                          <button 
-                            onClick={() => fileInputRef.current?.click()}
-                            className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-200"
-                          >
-                            <Camera size={16} /> Fotos
-                          </button>
+                          {/* Photo button removed as per request - use task details instead */}
                           <button 
                             onClick={() => handleCheckOut(item.id)}
                             disabled={processing}
-                            className="flex-1 bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+                            className="w-full bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50"
                           >
                             Finalizar Visita
                           </button>

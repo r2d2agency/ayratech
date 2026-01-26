@@ -109,6 +109,7 @@ export class TimeClockService {
       
       // Validate if employee exists/is provided
       if (!employeeId) {
+          console.error('Create TimeClock: Employee ID is missing!');
           throw new BadRequestException('Employee ID is required');
       }
 
@@ -116,12 +117,15 @@ export class TimeClockService {
       if (eventData.latitude) eventData.latitude = Number(eventData.latitude);
       if (eventData.longitude) eventData.longitude = Number(eventData.longitude);
 
-      const event = this.eventsRepository.create({
+      console.log(`Saving event for employee: ${employeeId}`);
+
+      // Use save directly to ensure relation is handled correctly
+      const savedEvent = await this.eventsRepository.save({
           ...eventData,
           timestamp: new Date(timestamp),
           employee: { id: employeeId }
       });
-      const savedEvent = await this.eventsRepository.save(event);
+      
       console.log('Time clock event saved:', savedEvent.id);
       return savedEvent;
     } catch (error) {

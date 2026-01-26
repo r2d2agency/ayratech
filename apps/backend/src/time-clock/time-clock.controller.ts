@@ -13,7 +13,9 @@ export class TimeClockController {
   @UseGuards(JwtAuthGuard)
   @Post()
   create(@Body() createTimeClockEventDto: CreateTimeClockEventDto, @Req() req: any) {
+    console.log('JWT User Object:', req.user);
     if (!req.user?.employee?.id) {
+        console.error('Create TimeClock: User not linked to employee', req.user);
         throw new BadRequestException('Usuário não vinculado a um funcionário. Contate o RH.');
     }
     return this.timeClockService.create({
