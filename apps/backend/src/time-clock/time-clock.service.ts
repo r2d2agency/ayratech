@@ -103,21 +103,35 @@ export class TimeClockService {
   }
 
   async create(createTimeClockEventDto: CreateTimeClockEventDto) {
-    console.log('Creating time clock event via App:', JSON.stringify(createTimeClockEventDto));
-    const { employeeId, ...eventData } = createTimeClockEventDto;
-    
-    // Validate if employee exists/is provided
-    if (!employeeId) {
-        throw new BadRequestException('Employee ID is required');
-    }
+    try {
+      console.log('Creating time clock event via App:', JSON.stringify(createTimeClockEventDto));
+      const { employeeId, ...eventData } = createTimeClockEventDto;
+      
+      // Validate if employee exists/is provided
+      if (!employeeId) {
+          throw new BadRequestException('Employee ID is required');
+      }
 
-    const event = this.eventsRepository.create({
-        ...eventData,
-        employee: { id: employeeId }
-    });
-    const savedEvent = await this.eventsRepository.save(event);
-    console.log('Time clock event saved:', savedEvent.id);
-    return savedEvent;
+      // Ensure timestamp is a Date object and handle potential string input
+      if (eventData.timestamp) {
+          eventData.timestamp = new Date(eventData.timestamp);
+      }
+
+      // Ensure coords are numbers if provided
+      if (eventData.latitude) eventData.latitude = Number(eventData.latitude);
+      if (eventData.longitude) eventData.longitude = Number(eventData.longitude);
+
+      const event = this.eventsRepository.create({
+          ...eventData,
+          employee: { id: employeeId }
+      });
+      const savedEvent = await this.eventsRepository.save(event);
+      console.log('Time clock event saved:', savedEvent.id);
+      return savedEvent;
+    } catch (error) {
+      console.error('Error saving time clock event:', error);
+      throw error;
+    }
   }
 
   async getTodayStatus(employeeId: string) {
