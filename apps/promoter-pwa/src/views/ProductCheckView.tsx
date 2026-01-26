@@ -375,9 +375,9 @@ const ProductCheckView: React.FC = () => {
 
       {/* Stockout/Details Modal */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-end sm:items-center justify-center">
-          <div className="bg-white w-full sm:w-96 rounded-t-xl sm:rounded-xl p-6 flex flex-col gap-4 animate-in slide-in-from-bottom duration-200">
-            <div className="flex justify-between items-center">
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-end sm:items-center justify-center p-4">
+          <div className="bg-white w-full sm:w-96 rounded-xl p-6 flex flex-col gap-4 animate-in slide-in-from-bottom duration-200 max-h-[85vh] overflow-y-auto mb-16 sm:mb-0">
+            <div className="flex justify-between items-center sticky top-0 bg-white z-10 pb-2 border-b">
               <h2 className="text-lg font-bold">Detalhes do Produto</h2>
               <button onClick={() => setSelectedProduct(null)} className="text-gray-400">
                 <X size={24} />

@@ -88,7 +88,7 @@ export default function TimeClockView() {
 
     setProcessing(true);
     
-    const proceedWithRegister = async (lat: number, lng: number) => {
+    const proceedWithRegister = async (lat: number | null, lng: number | null) => {
         const timestamp = new Date().toISOString();
         try {
             await client.post('/time-clock', {
@@ -107,7 +107,6 @@ export default function TimeClockView() {
             if (error.response && error.response.status >= 400 && error.response.status < 500) {
                 const message = error.response.data?.message || 'Erro ao registrar ponto';
                 toast.error(message);
-                // We rely on finally block to setProcessing(false)
                 return; 
             }
 
@@ -157,6 +156,7 @@ export default function TimeClockView() {
             setData(newData);
             localStorage.setItem('timeClockStatus', JSON.stringify(newData));
             updatePendingCount();
+            toast.success('Ponto salvo offline! Será enviado quando online.');
         } finally {
             setProcessing(false);
         }
@@ -166,16 +166,16 @@ export default function TimeClockView() {
         navigator.geolocation.getCurrentPosition(
             (position) => proceedWithRegister(position.coords.latitude, position.coords.longitude),
             (error) => {
-                toast.error('Erro de localização: ' + error.message);
-                // Allow proceed without location if offline? Maybe strict mode requires it.
-                // For now, let's block if no location, as it is time clock.
-                setProcessing(false);
+                console.error('Geolocation error:', error);
+                toast.error('Não foi possível obter localização. Registrando sem local...');
+                // Fallback to null location
+                proceedWithRegister(null, null);
             }, 
-            { enableHighAccuracy: true }
+            { enableHighAccuracy: true, timeout: 10000 }
         );
     } else {
-        toast.error('Geolocalização não suportada');
-        setProcessing(false);
+        toast.error('Geolocalização não suportada. Registrando sem local...');
+        proceedWithRegister(null, null);
     }
   };
 

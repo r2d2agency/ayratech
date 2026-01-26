@@ -65,31 +65,8 @@ export const processImage = async (
   ctx.fillRect(0, img.height, canvas.width, footerHeight);
 
   // Draw Text
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 24px Arial';
-  ctx.textBaseline = 'middle';
-
   const dateStr = data.timestamp.toLocaleDateString('pt-BR');
   const timeStr = data.timestamp.toLocaleTimeString('pt-BR');
-  
-  // Left side: PDV
-  ctx.textAlign = 'left';
-  ctx.fillText(data.supermarketName.substring(0, 30), 20, img.height + footerHeight / 2);
-
-  // Right side: Date/Time
-  ctx.textAlign = 'right';
-  ctx.fillText(`${dateStr} ${timeStr}`, canvas.width - 20, img.height + footerHeight / 2);
-  
-  // Center: Promoter (Optional, if space permits, or put below)
-  // Let's put Promoter below PDV in smaller font if needed, or next to it.
-  // For simplicity and space, let's keep it simple: "PDV | Promotor"
-  // Refined Layout:
-  // Top Line in Footer: PDV Name
-  // Bottom Line in Footer: Promotor | Data Hora
-  
-  // Clear footer to redraw better layout
-  ctx.fillStyle = '#000000';
-  ctx.fillRect(0, img.height, canvas.width, footerHeight);
   
   const padding = 20;
   const lineHeight = 30;

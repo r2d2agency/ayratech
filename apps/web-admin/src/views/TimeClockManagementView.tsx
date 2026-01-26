@@ -150,20 +150,22 @@ const TimeClockManagementView = () => {
         const timestamp = new Date(`${newEvent.date}T${newEvent.time}:00`);
 
         await api.post('/time-clock/manual', {
-            employeeId: newEvent.employeeId,
-            eventType: newEvent.eventType,
-            timestamp: timestamp.toISOString(),
-            observation: newEvent.observation
-        });
+        employeeId: newEvent.employeeId,
+        eventType: newEvent.eventType,
+        timestamp: timestamp.toISOString(),
+        observation: newEvent.observation
+      });
 
-        toast.success('Registro manual adicionado com sucesso!');
+      toast.success('Registro manual adicionado com sucesso!');
       setShowModal(false);
       setNewEvent(initialEventState);
       setSearchTerm('');
       setFilteredEmployees([]);
       fetchEvents();
-    } catch (error) {
-        toast.error('Erro ao adicionar registro manual');
+    } catch (error: any) {
+      console.error('Erro ao registrar ponto manual:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Erro ao adicionar registro manual';
+      toast.error(`Erro: ${errorMessage}`);
     }
   };
 
