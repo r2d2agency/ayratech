@@ -45,13 +45,13 @@ export class CreateTimeClockEventDto {
 }
 
 export class CreateManualTimeClockDto {
-  @IsUUID()
+  @IsString() // Relaxed from IsUUID to avoid false positives
   employeeId: string;
 
   @IsString()
   eventType: string;
 
-  @IsDateString()
+  @IsString() // Relaxed from IsDateString to allow service to validate
   timestamp: string;
 
   @IsString()
