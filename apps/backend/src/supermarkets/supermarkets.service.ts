@@ -45,7 +45,7 @@ export class SupermarketsService {
             ...rest,
             group: { id: groupId }
         });
-    } else {
+    } else if (Object.keys(rest).length > 0) {
         // First update basic fields
         await this.supermarketsRepository.update(id, rest);
     }
