@@ -105,16 +105,11 @@ export class TimeClockService {
   async create(createTimeClockEventDto: CreateTimeClockEventDto) {
     try {
       console.log('Creating time clock event via App:', JSON.stringify(createTimeClockEventDto));
-      const { employeeId, ...eventData } = createTimeClockEventDto;
+      const { employeeId, timestamp, ...eventData } = createTimeClockEventDto;
       
       // Validate if employee exists/is provided
       if (!employeeId) {
           throw new BadRequestException('Employee ID is required');
-      }
-
-      // Ensure timestamp is a Date object and handle potential string input
-      if (eventData.timestamp) {
-          eventData.timestamp = new Date(eventData.timestamp);
       }
 
       // Ensure coords are numbers if provided
@@ -123,6 +118,7 @@ export class TimeClockService {
 
       const event = this.eventsRepository.create({
           ...eventData,
+          timestamp: new Date(timestamp),
           employee: { id: employeeId }
       });
       const savedEvent = await this.eventsRepository.save(event);
