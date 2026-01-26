@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import client from '../api/client';
 import { offlineService } from '../services/offline.service';
 import { processImage } from '../utils/image-processor';
-import { MapPin, ArrowLeft, CheckCircle, Circle, Camera, Navigation, Wifi, WifiOff, RefreshCw, X } from 'lucide-react';
+import { MapPin, ArrowLeft, CheckCircle, Circle, Camera, Navigation, Wifi, WifiOff, RefreshCw, X, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast, Toaster } from 'react-hot-toast';
 
@@ -396,7 +396,7 @@ const RouteDetailsView = () => {
   if (!route) return <div className="p-8 text-center">Rota não encontrada</div>;
 
   return (
-    <div className="bg-gray-50 min-h-screen pb-20">
+    <div className="bg-gray-50 min-h-screen pb-32">
       <Toaster position="top-center" />
       
       {/* Header */}
@@ -595,7 +595,7 @@ const RouteDetailsView = () => {
       {/* Bottom Actions Bar (Only if checked in) */}
       {activeItem && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-around items-center z-10">
-          <button 
+          {/* <button 
             onClick={() => fileInputRef.current?.click()}
             className="flex flex-col items-center gap-1 text-blue-600"
             disabled={processing}
@@ -604,7 +604,7 @@ const RouteDetailsView = () => {
               <Camera size={24} />
             </div>
             <span className="text-xs font-medium">Fotos</span>
-          </button>
+          </button> */}
 
           <button 
             className="flex flex-col items-center gap-1 text-gray-400"

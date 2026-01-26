@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Search, CheckCircle, AlertTriangle, X, Save, RefreshCw, Camera, Trash2, Plus } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../api/client';
@@ -452,7 +452,8 @@ const ProductCheckView: React.FC = () => {
                   )}
                   <input 
                     type="file" 
-                    accept="image/*" 
+                    accept="image/*"
+                    capture="environment" 
                     className="hidden" 
                     onChange={handlePhotoAdd}
                     ref={fileInputRef}

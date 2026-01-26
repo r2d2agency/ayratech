@@ -35,8 +35,24 @@ export default function TimeClockView() {
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
-    fetchStatus();
-    updatePendingCount();
+    // Try to load local cache immediately for better UX
+    const cached = localStorage.getItem('timeClockStatus');
+    if (cached) {
+      setData(JSON.parse(cached));
+      setLoading(false);
+    }
+
+    // Initial Sync and Fetch
+    if (navigator.onLine) {
+      offlineService.syncPendingActions().finally(() => {
+        fetchStatus();
+        updatePendingCount();
+      });
+    } else {
+      fetchStatus();
+      updatePendingCount();
+    }
+
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     
     const handleStatusChange = () => {
