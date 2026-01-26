@@ -223,6 +223,7 @@ const ProductCheckView: React.FC = () => {
     if (!file || !selectedProduct) return;
 
     setUploadingPhoto(true);
+    console.log('Starting photo processing...');
     try {
       // 1. Process Image (Compress & Watermark)
       const watermarkData: WatermarkData = {
@@ -231,12 +232,15 @@ const ProductCheckView: React.FC = () => {
         timestamp: new Date()
       };
       
+      console.log('Processing image with watermark:', watermarkData);
       const { blob, previewUrl } = await processImage(file, watermarkData);
+      console.log('Image processed. Blob size:', blob.size, 'Preview URL length:', previewUrl?.length);
       
       // 2. Upload if online, otherwise use Base64
       let photoUrl = previewUrl; // Default to blob URL (will be revoked) or base64
       
       if (navigator.onLine) {
+        console.log('Online, attempting upload...');
         const formData = new FormData();
         formData.append('file', blob, 'photo.jpg');
         
@@ -245,15 +249,21 @@ const ProductCheckView: React.FC = () => {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             photoUrl = response.data.path || response.data.url;
+            console.log('Upload success:', photoUrl);
         } catch (uploadError) {
             console.error('Upload failed, falling back to Base64', uploadError);
             // Fallback to Base64
             photoUrl = await blobToBase64(blob);
+            console.log('Fallback Base64 length:', photoUrl.length);
         }
       } else {
+        console.log('Offline, converting to Base64...');
         // Offline: Convert to Base64
         photoUrl = await blobToBase64(blob);
+        console.log('Offline Base64 length:', photoUrl.length);
       }
+
+      if (!photoUrl) throw new Error('Falha ao gerar URL da foto');
 
       const currentPhotos = selectedProduct.photos || [];
       const updatedProduct = {
@@ -291,19 +301,16 @@ const ProductCheckView: React.FC = () => {
   };
 
   // Helper to render image source (handle relative paths)
-  const getRenderUrl = (url: string) => {
-    if (url.startsWith('data:') || url.startsWith('blob:')) return url;
-    if (url.startsWith('http')) return url;
-    // Assume relative path
-    const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000'; // Adjust as needed
-    // Actually, let's try to just return it and let the img tag handle it if it's relative to domain
-    // But usually we need API URL prepended if served from backend
-    // Since we don't have the env var readily available in this scope without importing config
-    // Let's use a simple heuristic or rely on the fact that if it's /uploads, it needs the backend host
-    // For now, if it starts with /, assume it needs backend host if we are not on same origin
-    // But PWA might be on different port.
-    // Let's rely on api client base url logic if possible, or just standard path
-    return url; 
+  const getRenderUrl = (url: string | undefined | null) => {
+    if (!url) return '';
+    try {
+        if (url.startsWith('data:') || url.startsWith('blob:')) return url;
+        if (url.startsWith('http')) return url;
+        return url;
+    } catch (e) {
+        console.error('Error in getRenderUrl', e);
+        return '';
+    }
   };
 
 
