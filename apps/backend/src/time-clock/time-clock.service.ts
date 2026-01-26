@@ -103,6 +103,7 @@ export class TimeClockService {
   }
 
   async create(createTimeClockEventDto: CreateTimeClockEventDto) {
+    console.log('Creating time clock event via App:', JSON.stringify(createTimeClockEventDto));
     const { employeeId, ...eventData } = createTimeClockEventDto;
     
     // Validate if employee exists/is provided
@@ -114,7 +115,9 @@ export class TimeClockService {
         ...eventData,
         employee: { id: employeeId }
     });
-    return this.eventsRepository.save(event);
+    const savedEvent = await this.eventsRepository.save(event);
+    console.log('Time clock event saved:', savedEvent.id);
+    return savedEvent;
   }
 
   async getTodayStatus(employeeId: string) {
@@ -205,6 +208,7 @@ export class TimeClockService {
   }
 
   async findAll(startDate?: string, endDate?: string, employeeId?: string) {
+    console.log(`Finding time clock events. Start: ${startDate}, End: ${endDate}, Employee: ${employeeId}`);
     const where: any = {};
     
     if (employeeId) {
@@ -229,11 +233,13 @@ export class TimeClockService {
         where.timestamp = Between(start, end);
     }
 
-    return this.eventsRepository.find({ 
+    const results = await this.eventsRepository.find({ 
         where, 
         relations: ['employee'], 
         order: { timestamp: 'DESC' } 
     });
+    console.log(`Found ${results.length} events.`);
+    return results;
   }
 
   findOne(id: string) {
