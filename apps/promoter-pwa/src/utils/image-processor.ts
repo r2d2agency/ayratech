@@ -104,7 +104,7 @@ const validateImageQuality = (img: HTMLImageElement): ImageValidationResult => {
   // Resize for faster analysis, but keep enough detail for blur detection
   // Increased from 100 to 300 to better detect blur
   const width = 300;
-  const height = (img.height / img.width) * width;
+  const height = Math.floor((img.height / img.width) * width);
   canvas.width = width;
   canvas.height = height;
   
@@ -179,7 +179,7 @@ const validateImageQuality = (img: HTMLImageElement): ImageValidationResult => {
         edgeScore += laplacian;
     }
   }
-  const avgEdge = edgeScore / ((width - 2) * (height - 2));
+  const avgEdge = edgeScore / Math.max(1, (width - 2) * (height - 2));
   
   console.log(`[ImageValidation] Blur Score (Avg Edge): ${avgEdge.toFixed(2)}`);
   
@@ -188,7 +188,8 @@ const validateImageQuality = (img: HTMLImageElement): ImageValidationResult => {
   // Blurry images will have low edge scores.
   // Adjusted threshold to 15 based on 300px width. 
   // Very sharp images often > 20-30. Blurry often < 10.
-  if (avgEdge < 15) {
+  // Also check if avgEdge is NaN (can happen with very small images), treat as valid to avoid blocking
+  if (!isNaN(avgEdge) && avgEdge < 15) {
       return { isValid: false, reason: 'A foto parece borrada ou fora de foco. Por favor, tente novamente segurando o celular com firmeza.' };
   }
 

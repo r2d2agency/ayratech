@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import api from '../api/client';
 import { offlineService } from '../services/offline.service';
 import { processImage, WatermarkData } from '../utils/image-processor';
+import { getImageUrl } from '../utils/image';
 import { useAuth } from '../context/AuthContext';
 
 interface Product {
@@ -441,7 +442,7 @@ const ProductCheckView: React.FC = () => {
                 {selectedProduct.photos && selectedProduct.photos.map((photo, index) => (
                   <div key={index} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border border-gray-200">
                     <img 
-                      src={getRenderUrl(photo)} 
+                      src={getImageUrl(photo)} 
                       alt={`Foto ${index + 1}`} 
                       className="w-full h-full object-cover"
                     />
