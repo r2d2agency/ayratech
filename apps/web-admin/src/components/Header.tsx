@@ -1,7 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Search, Bell, FileText, Info, CheckCircle } from 'lucide-react';
+import { Search, Bell, FileText, Info, CheckCircle, Menu } from 'lucide-react';
 import api from '../api/client';
 import { useNavigate } from 'react-router-dom';
+
+interface HeaderProps {
+  onToggleSidebar?: () => void;
+}
 
 interface User {
   id: string;
@@ -26,7 +30,7 @@ interface Notification {
   createdAt: string;
 }
 
-const Header: React.FC = () => {
+const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const [user, setUser] = useState<User | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -96,6 +100,12 @@ const Header: React.FC = () => {
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3 shadow-sm h-16">
       <div className="flex items-center gap-4">
+        <button 
+          onClick={onToggleSidebar}
+          className="md:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg"
+        >
+          <Menu size={24} />
+        </button>
         <div className="relative hidden md:block group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-[#196ee6]" size={18} />
           <input 

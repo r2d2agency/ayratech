@@ -30,6 +30,12 @@ export class RouteItemProduct {
   @Column({ nullable: true })
   stockoutType: string; // 'VIRTUAL', 'PHYSICAL'
 
+  @Column({ nullable: true, type: 'timestamp' })
+  checkInTime: Date;
+
+  @Column({ nullable: true, type: 'timestamp' })
+  checkOutTime: Date;
+
   @Column('simple-array', { nullable: true })
   photos: string[];
 

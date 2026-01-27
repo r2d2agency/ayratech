@@ -28,7 +28,19 @@ import { jwtDecode } from 'jwt-decode';
 
 const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onLogout, userRole }) => {
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
-  const [sidebarExpanded, setSidebarExpanded] = useState(true);
+  const [sidebarExpanded, setSidebarExpanded] = useState(window.innerWidth > 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setSidebarExpanded(false);
+      } else {
+        setSidebarExpanded(true);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleNavigate = (view: ViewType) => {
     setActiveView(view);

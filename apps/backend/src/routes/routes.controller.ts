@@ -57,7 +57,7 @@ export class RoutesController {
   checkProduct(
     @Param('itemId') itemId: string,
     @Param('productId') productId: string,
-    @Body() body: { checked?: boolean; observation?: string; isStockout?: boolean; stockoutType?: string; photos?: string[] },
+    @Body() body: { checked?: boolean; observation?: string; isStockout?: boolean; stockoutType?: string; photos?: string[]; checkInTime?: string; checkOutTime?: string },
   ) {
     return this.routesService.checkProduct(itemId, productId, body);
   }

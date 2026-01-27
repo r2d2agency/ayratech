@@ -305,7 +305,7 @@ export class RoutesService {
     return this.routeRulesRepository.find();
   }
 
-  async checkProduct(routeItemId: string, productId: string, data: { checked?: boolean, observation?: string, isStockout?: boolean, stockoutType?: string, photos?: string[] }) {
+  async checkProduct(routeItemId: string, productId: string, data: { checked?: boolean, observation?: string, isStockout?: boolean, stockoutType?: string, photos?: string[], checkInTime?: string, checkOutTime?: string }) {
     const itemProduct = await this.routeItemProductsRepository.findOne({
       where: { routeItemId, productId }
     });
@@ -316,6 +316,8 @@ export class RoutesService {
       if (data.isStockout !== undefined) itemProduct.isStockout = data.isStockout;
       if (data.stockoutType !== undefined) itemProduct.stockoutType = data.stockoutType;
       if (data.photos !== undefined) itemProduct.photos = data.photos;
+      if (data.checkInTime !== undefined) itemProduct.checkInTime = new Date(data.checkInTime);
+      if (data.checkOutTime !== undefined) itemProduct.checkOutTime = new Date(data.checkOutTime);
 
       return this.routeItemProductsRepository.save(itemProduct);
     }

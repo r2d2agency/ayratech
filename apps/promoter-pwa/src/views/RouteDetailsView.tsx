@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import client from '../api/client';
 import { offlineService } from '../services/offline.service';
 import { processImage } from '../utils/image-processor';
-import { MapPin, ArrowLeft, CheckCircle, Circle, Camera, Navigation, Wifi, WifiOff, RefreshCw, X, ChevronRight } from 'lucide-react';
+import { MapPin, ArrowLeft, CheckCircle, Circle, Camera, Navigation, Wifi, WifiOff, RefreshCw, X, ChevronRight, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast, Toaster } from 'react-hot-toast';
 
@@ -23,6 +23,20 @@ function getDistanceFromLatLonInM(lat1: number, lon1: number, lat2: number, lon2
 
 function deg2rad(deg: number) {
   return deg * (Math.PI / 180);
+}
+
+function formatDuration(start?: string | Date, end?: string | Date) {
+  if (!start || !end) return null;
+  const startTime = new Date(start).getTime();
+  const endTime = new Date(end).getTime();
+  const diff = endTime - startTime;
+  if (diff < 0) return null;
+  
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
 }
 
 const RouteDetailsView = () => {
@@ -395,6 +409,17 @@ const RouteDetailsView = () => {
   if (loading) return <div className="p-8 text-center">Carregando...</div>;
   if (!route) return <div className="p-8 text-center">Rota não encontrada</div>;
 
+  const totalDurationMs = route.items.reduce((acc: number, item: any) => {
+      if (item.checkInTime && item.checkOutTime) {
+          return acc + (new Date(item.checkOutTime).getTime() - new Date(item.checkInTime).getTime());
+      }
+      return acc;
+  }, 0);
+
+  const hours = Math.floor(totalDurationMs / (1000 * 60 * 60));
+  const minutes = Math.floor((totalDurationMs % (1000 * 60 * 60)) / (1000 * 60));
+  const totalDurationStr = `${hours}h ${minutes}m`;
+
   return (
     <div className="bg-gray-50 min-h-screen pb-32">
       <Toaster position="top-center" />
@@ -407,7 +432,11 @@ const RouteDetailsView = () => {
             </button>
             <div>
             <h1 className="font-bold text-gray-800">Detalhes da Rota</h1>
-            <p className="text-xs text-gray-500">{format(new Date(route.date), 'dd/MM/yyyy')}</p>
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+                <span>{format(new Date(route.date), 'dd/MM/yyyy')}</span>
+                <span>•</span>
+                <span className="flex items-center gap-1"><Clock size={10} /> {totalDurationStr}</span>
+            </div>
             </div>
         </div>
         
@@ -434,6 +463,8 @@ const RouteDetailsView = () => {
            const isActive = activeItem?.id === item.id;
            const isCompleted = item.status === 'CHECKOUT' || item.status === 'COMPLETED';
            // const isPending = item.status === 'PENDING' || !item.status;
+           
+           const itemDuration = formatDuration(item.checkInTime, item.checkOutTime);
            
            let distanceText = '';
            if (userLocation && item.supermarket?.latitude && item.supermarket?.longitude) {
@@ -465,6 +496,11 @@ const RouteDetailsView = () => {
                       {distanceText && (
                         <p className="text-xs text-blue-600 font-medium mt-1 flex items-center gap-1">
                           <Navigation size={10} /> {distanceText}
+                        </p>
+                      )}
+                      {itemDuration && (
+                        <p className="text-xs text-green-600 font-medium mt-1 flex items-center gap-1">
+                          <Clock size={10} /> {itemDuration}
                         </p>
                       )}
                     </div>

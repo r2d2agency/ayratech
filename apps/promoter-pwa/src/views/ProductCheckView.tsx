@@ -24,6 +24,8 @@ interface RouteItemProduct {
   stockoutType?: string;
   observation?: string;
   photos?: string[];
+  checkInTime?: string;
+  checkOutTime?: string;
 }
 
 const ProductCheckView: React.FC = () => {
@@ -39,8 +41,20 @@ const ProductCheckView: React.FC = () => {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // Track when a product check started (for duration calculation)
+  const productStartTimeRef = useRef<Date | null>(null);
+
   // Selected product for detailed editing (stockout type, observation)
   const [selectedProduct, setSelectedProduct] = useState<RouteItemProduct | null>(null);
+
+  const openProductModal = (prod: RouteItemProduct) => {
+    // Only set start time if we are opening a new product, not updating existing selection
+    if (!selectedProduct || selectedProduct.id !== prod.id) {
+        productStartTimeRef.current = new Date();
+    }
+    setSelectedProduct(prod);
+  };
+
 
   // Auto-open product details if productId is in URL
   const [searchParams] = useSearchParams();
@@ -120,7 +134,9 @@ const ProductCheckView: React.FC = () => {
       checked: true, 
       isStockout: isStockout,
       // Reset stockout details if not stockout
-      stockoutType: isStockout ? (prod.stockoutType || 'PHYSICAL') : undefined 
+      stockoutType: isStockout ? (prod.stockoutType || 'PHYSICAL') : undefined,
+      checkInTime: new Date().toISOString(),
+      checkOutTime: new Date().toISOString()
     };
 
     updateLocalState(updatedProduct);
@@ -128,7 +144,7 @@ const ProductCheckView: React.FC = () => {
     // If it's a stockout, maybe open modal for more details? 
     // For now, let's just toggle. If user wants to add observation, they click the row.
     if (isStockout) {
-        setSelectedProduct(updatedProduct);
+        openProductModal(updatedProduct);
     } else {
         // Auto-save if just marking as present
         await saveProductCheck(updatedProduct);
@@ -150,7 +166,9 @@ const ProductCheckView: React.FC = () => {
           isStockout: productData.isStockout,
           stockoutType: productData.stockoutType,
           observation: productData.observation,
-          photos: productData.photos
+          photos: productData.photos,
+          checkInTime: productData.checkInTime,
+          checkOutTime: productData.checkOutTime
         });
       } else {
         // Offline: Add to pending actions
@@ -163,7 +181,9 @@ const ProductCheckView: React.FC = () => {
              isStockout: productData.isStockout,
              stockoutType: productData.stockoutType,
              observation: productData.observation,
-             photos: productData.photos
+             photos: productData.photos,
+             checkInTime: productData.checkInTime,
+             checkOutTime: productData.checkOutTime
           }
         );
       }
@@ -211,8 +231,16 @@ const ProductCheckView: React.FC = () => {
   const handleModalSave = async () => {
     if (selectedProduct) {
       setSaving(true);
-      await saveProductCheck(selectedProduct);
-      updateLocalState(selectedProduct); // Ensure state is consistent
+      
+      const startTime = productStartTimeRef.current || new Date();
+      const updatedProduct = {
+          ...selectedProduct,
+          checkInTime: startTime.toISOString(),
+          checkOutTime: new Date().toISOString()
+      };
+
+      await saveProductCheck(updatedProduct);
+      updateLocalState(updatedProduct); // Ensure state is consistent
       setSaving(false);
       setSelectedProduct(null);
       toast.success('Salvo!');
@@ -348,7 +376,7 @@ const ProductCheckView: React.FC = () => {
               }`}
             >
               <div className="flex justify-between items-start gap-3">
-                <div className="flex-1" onClick={() => setSelectedProduct(prod)}>
+                <div className="flex-1" onClick={() => openProductModal(prod)}>
                   <h3 className="font-medium text-gray-900">{prod.product.name}</h3>
                   {prod.product.brand && (
                     <p className="text-sm text-gray-500">{prod.product.brand.name}</p>

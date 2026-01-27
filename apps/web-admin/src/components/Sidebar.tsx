@@ -46,6 +46,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
     setOpenSubmenu(openSubmenu === id ? null : id);
   };
 
+  useEffect(() => {
+    if (window.innerWidth < 768) {
+      setExpanded(false);
+    }
+  }, [activeView]);
+
   const navItem = (id: ViewType, icon: React.ReactNode, label: string) => (
     <button
       onClick={() => onNavigate(id)}
@@ -245,6 +251,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
         </button>
       </div>
     </aside>
+    </>
   );
 };
 

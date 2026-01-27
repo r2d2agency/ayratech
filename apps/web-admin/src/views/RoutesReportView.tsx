@@ -73,6 +73,8 @@ interface RouteReportItem {
       checked: boolean;
       observation?: string;
       photos?: string[];
+      checkInTime?: string;
+      checkOutTime?: string;
       product: {
         id: string;
         name: string;
@@ -534,6 +536,22 @@ const RoutesReportView: React.FC = () => {
     return new Date(dateStr).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const formatDuration = (start?: string, end?: string) => {
+    if (!start || !end) return null;
+    const startTime = new Date(start).getTime();
+    const endTime = new Date(end).getTime();
+    const diff = endTime - startTime;
+    if (diff < 0) return null;
+    
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    if (minutes > 0) return `${minutes}m ${seconds}s`;
+    return `${seconds}s`;
+  };
+
   return (
     <div className="p-8 max-w-[1600px] mx-auto space-y-8 pb-32">
       <SectionHeader 
@@ -898,11 +916,17 @@ const RoutesReportView: React.FC = () => {
                   {selectedRoute.promoter.supervisor && (
                     <span className="flex items-center gap-1.5">
                       <Users size={14} />
-                      Supervisor: <strong className="text-slate-700">{selectedRoute.promoter.supervisor.fullName}</strong>
-                    </span>
-                  )}
-                </div>
+                    Supervisor: <strong className="text-slate-700">{selectedRoute.promoter.supervisor.fullName}</strong>
+                  </span>
+                )}
+                {calculateTotalRouteDuration(selectedRoute.items) && (
+                  <span className="flex items-center gap-1.5 ml-4 px-3 py-1 bg-blue-50 text-blue-700 rounded-lg font-bold border border-blue-100">
+                    <Clock size={14} />
+                    Tempo Total: {calculateTotalRouteDuration(selectedRoute.items)}
+                  </span>
+                )}
               </div>
+            </div>
               <button 
                 onClick={() => setSelectedRoute(null)}
                 className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-red-500 transition-all"
@@ -993,6 +1017,15 @@ const RoutesReportView: React.FC = () => {
                             <td className="p-3 text-slate-400 text-xs">{pIndex + 1}</td>
                             <td className="p-3 font-medium text-slate-700">{p.product.name}</td>
                             <td className="p-3 text-slate-500">{p.product.brand?.name || '-'}</td>
+                            <td className="p-3 text-xs font-bold text-slate-500">
+                              {p.checkInTime && p.checkOutTime ? (
+                                <span className="text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
+                                  {formatDuration(p.checkInTime, p.checkOutTime)}
+                                </span>
+                              ) : (
+                                <span className="text-slate-300">-</span>
+                              )}
+                            </td>
                             <td className="p-3">
                               {p.isStockout ? (
                                 <span className="inline-flex items-center gap-1 text-red-600 text-xs font-bold">
