@@ -524,10 +524,25 @@ const ProductCheckView: React.FC = () => {
             <button 
               onClick={handleModalSave}
               disabled={saving}
-              className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold flex items-center justify-center gap-2 mt-2"
+              className={`w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 mt-2 ${
+                selectedProduct.photos && selectedProduct.photos.length > 0
+                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              }`}
             >
-              {saving ? <RefreshCw className="animate-spin" size={20} /> : <Save size={20} />}
-              Salvar
+              {saving ? (
+                <RefreshCw className="animate-spin" size={20} />
+              ) : selectedProduct.photos && selectedProduct.photos.length > 0 ? (
+                <>
+                  <CheckCircle size={20} />
+                  Confirmar Tarefa
+                </>
+              ) : (
+                <>
+                  <Save size={20} />
+                  Salvar
+                </>
+              )}
             </button>
           </div>
         </div>
