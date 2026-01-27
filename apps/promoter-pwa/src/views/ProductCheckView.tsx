@@ -241,9 +241,13 @@ const ProductCheckView: React.FC = () => {
 
       await saveProductCheck(updatedProduct);
       updateLocalState(updatedProduct); // Ensure state is consistent
-      setSaving(false);
       setSelectedProduct(null);
       toast.success('Salvo!');
+    } catch (error) {
+      console.error('Error saving in modal:', error);
+      toast.error('Erro ao salvar produto.');
+    } finally {
+      setSaving(false);
     }
   };
 

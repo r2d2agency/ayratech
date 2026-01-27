@@ -91,6 +91,8 @@ class OfflineService {
         
       } catch (error: any) {
         console.error(`Error syncing action ${action.id}:`, error);
+        const errorMessage = error.response?.data?.message || error.message || 'Erro desconhecido';
+        console.error(`Sync failure details:`, errorMessage);
         
         // If it's a 4xx error (client error), maybe we should not retry endlessly?
         // But for now, let's keep it as ERROR so user knows.
@@ -102,7 +104,7 @@ class OfflineService {
         } else {
              await db.pendingActions.update(action.id!, { 
                status: 'ERROR', 
-               error: error.message || String(error),
+               error: errorMessage,
                retryCount: (action.retryCount || 0) + 1 
              });
              failCount++;
@@ -115,7 +117,7 @@ class OfflineService {
     if (failCount === 0) {
       toast.success('Sincronização concluída com sucesso!');
     } else {
-      toast.error(`${failCount} ações falharam ao sincronizar. Tente novamente.`);
+      toast.error(`${failCount} ações falharam. Verifique o console para detalhes.`);
     }
     
     // Refresh pending count UI
