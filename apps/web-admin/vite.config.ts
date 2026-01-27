@@ -33,8 +33,13 @@ export default defineConfig(({ mode }) => {
                 type: 'image/png'
               }
             ]
+          },
+          workbox: {
+            cleanupOutdatedCaches: true,
+            clientsClaim: true,
+            skipWaiting: true
           }
-        })
+        }),
       ],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
