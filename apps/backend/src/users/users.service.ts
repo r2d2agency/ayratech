@@ -82,6 +82,15 @@ export class UsersService implements OnModuleInit {
     }
   }
 
+  async findAdminsAndHR(): Promise<User[]> {
+    // Find all users with admin or rh roles
+    // We need to use QueryBuilder or simple find if relations work
+    const users = await this.usersRepository.find({
+      relations: ['role']
+    });
+    return users.filter(u => ['admin', 'rh', 'manager', 'administrador do sistema', 'supervisor de operações'].includes(u.role?.name?.toLowerCase()));
+  }
+
   async create(createUserDto: CreateUserDto): Promise<User> {
     // Safety check for repository injection
     if (!this.rolesRepository) {

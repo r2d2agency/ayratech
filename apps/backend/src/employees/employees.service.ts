@@ -477,20 +477,41 @@ export class EmployeesService {
         throw new BadRequestException(`Erro ao salvar documento: ${error.message}`);
     }
 
-    // Notify User if they have app access
+    // Notify logic
     try {
-      const user = await this.usersService.findByEmployeeId(data.employeeId);
-      if (user) {
-        await this.notificationsService.create({
-          userId: user.id,
-          title: 'Novo Documento Recebido',
-          message: `Você recebeu um novo documento: ${data.type} - ${data.description || ''}`,
-          type: 'document',
-          relatedId: (savedDoc as any).id
-        });
+      // If sender is the employee (or undefined, assuming app upload), notify Admins/HR
+      // If sender is someone else (Admin/HR), notify the Employee
+      const senderIsEmployee = data.senderId ? 
+           (await this.usersService.findById(data.senderId))?.employee?.id === data.employeeId 
+           : true; // Default to true if no senderId (app upload)
+
+      if (senderIsEmployee) {
+          // Notify Admins/HR
+          const admins = await this.usersService.findAdminsAndHR();
+          for (const admin of admins) {
+              await this.notificationsService.create({
+                  userId: admin.id,
+                  title: 'Novo Documento de Funcionário',
+                  message: `O funcionário ${employee.fullName} enviou um documento: ${data.type} - ${data.description || ''}`,
+                  type: 'document_received',
+                  relatedId: (savedDoc as any).id
+              });
+          }
+      } else {
+          // Notify Employee (User)
+          const user = await this.usersService.findByEmployeeId(data.employeeId);
+          if (user && user.id !== data.senderId) {
+            await this.notificationsService.create({
+              userId: user.id,
+              title: 'Novo Documento Recebido',
+              message: `Você recebeu um novo documento: ${data.type} - ${data.description || ''}`,
+              type: 'document',
+              relatedId: (savedDoc as any).id
+            });
+          }
       }
     } catch (e) {
-      console.error('Error notifying user about document:', e);
+      console.error('Error notifying about document:', e);
     }
 
     return savedDoc;

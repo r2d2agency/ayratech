@@ -13,11 +13,11 @@ export class CreateTimeClockEventDto {
 
   @IsNumber()
   @IsOptional()
-  latitude?: number;
+  latitude?: number | null;
 
   @IsNumber()
   @IsOptional()
-  longitude?: number;
+  longitude?: number | null;
 
   @IsString()
   @IsOptional()

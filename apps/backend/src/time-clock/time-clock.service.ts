@@ -130,6 +130,10 @@ export class TimeClockService {
       return savedEvent;
     } catch (error) {
       console.error('Error saving time clock event:', error);
+      // Return a more meaningful error if possible
+      if (error.code === '23503') { // Foreign key violation
+         throw new BadRequestException('Funcionário não encontrado ou inválido.');
+      }
       throw error;
     }
   }
