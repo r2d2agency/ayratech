@@ -1,5 +1,5 @@
 # Stage 1: Build the React application
-FROM node:20-alpine as build
+FROM node:20-alpine AS build
 
 WORKDIR /app
 
@@ -7,15 +7,14 @@ WORKDIR /app
 COPY package.json ./
 COPY apps/promoter-pwa/package.json ./apps/promoter-pwa/
 
-# Install dependencies (ignoring scripts to avoid errors with potential missing dev dependencies)
-RUN npm install --ignore-scripts
+# Install dependencies
+RUN npm install
 
 # Copy source code
 COPY . .
 
 # Build the project
 WORKDIR /app/apps/promoter-pwa
-RUN npm install
 RUN npm run build
 
 # Stage 2: Serve with Nginx

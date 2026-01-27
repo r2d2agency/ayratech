@@ -231,23 +231,24 @@ const ProductCheckView: React.FC = () => {
   const handleModalSave = async () => {
     if (selectedProduct) {
       setSaving(true);
-      
-      const startTime = productStartTimeRef.current || new Date();
-      const updatedProduct = {
-          ...selectedProduct,
-          checkInTime: startTime.toISOString(),
-          checkOutTime: new Date().toISOString()
-      };
+      try {
+        const startTime = productStartTimeRef.current || new Date();
+        const updatedProduct = {
+            ...selectedProduct,
+            checkInTime: startTime.toISOString(),
+            checkOutTime: new Date().toISOString()
+        };
 
-      await saveProductCheck(updatedProduct);
-      updateLocalState(updatedProduct); // Ensure state is consistent
-      setSelectedProduct(null);
-      toast.success('Salvo!');
-    } catch (error) {
-      console.error('Error saving in modal:', error);
-      toast.error('Erro ao salvar produto.');
-    } finally {
-      setSaving(false);
+        await saveProductCheck(updatedProduct);
+        updateLocalState(updatedProduct); // Ensure state is consistent
+        setSelectedProduct(null);
+        toast.success('Salvo!');
+      } catch (error) {
+        console.error('Error saving in modal:', error);
+        toast.error('Erro ao salvar produto.');
+      } finally {
+        setSaving(false);
+      }
     }
   };
 
@@ -261,7 +262,7 @@ const ProductCheckView: React.FC = () => {
       // 1. Process Image (Compress & Watermark)
       const watermarkData: WatermarkData = {
         supermarketName: 'PDV', // Ideally get this from context/route
-        promoterName: user?.username || 'Promotor',
+        promoterName: user?.name || user?.email || 'Promotor',
         timestamp: new Date()
       };
       

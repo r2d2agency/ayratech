@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import * as fs from 'fs';
 import * as path from 'path';
 import { UPLOAD_ROOT } from './config/upload.config';
+import { json, urlencoded } from 'express';
 
 async function bootstrap() {
   console.log('Starting application with Standard NestJS CORS...');
@@ -18,7 +19,11 @@ async function bootstrap() {
     console.error('Warning: Could not create uploads directory:', err);
   }
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
+
+  // Increase body limit for Base64 images
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ extended: true, limit: '50mb' }));
 
   // Enable standard CORS with credentials support
   app.enableCors({
