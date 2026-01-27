@@ -251,7 +251,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
         </button>
       </div>
     </aside>
-    </>
   );
 };
 
