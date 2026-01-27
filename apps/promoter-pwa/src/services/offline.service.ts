@@ -54,18 +54,27 @@ class OfflineService {
   async syncPendingActions() {
     if (!navigator.onLine) return;
 
+    // Fetch both PENDING and ERROR status to retry failed attempts
     const pendingActions = await db.pendingActions
       .where('status')
-      .equals('PENDING')
+      .anyOf('PENDING', 'ERROR')
       .toArray();
 
     if (pendingActions.length === 0) return;
 
+    // Sort by createdAt to ensure correct order (Entry -> Lunch -> Exit)
+    pendingActions.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
     const toastId = toast.loading(`Sincronizando ${pendingActions.length} ações pendentes...`);
+
+    let successCount = 0;
+    let failCount = 0;
 
     for (const action of pendingActions) {
       try {
         await db.pendingActions.update(action.id!, { status: 'SYNCING' });
+
+        console.log(`Syncing action ${action.type}: ${action.url}`, action.payload);
 
         // Execute API call
         if (action.method === 'POST') {
@@ -78,25 +87,39 @@ class OfflineService {
 
         // Remove from DB on success
         await db.pendingActions.delete(action.id!);
+        successCount++;
         
-      } catch (error) {
+      } catch (error: any) {
         console.error(`Error syncing action ${action.id}:`, error);
-        await db.pendingActions.update(action.id!, { 
-          status: 'ERROR', 
-          error: String(error),
-          retryCount: action.retryCount + 1 
-        });
+        
+        // If it's a 4xx error (client error), maybe we should not retry endlessly?
+        // But for now, let's keep it as ERROR so user knows.
+        // Exception: 409 Conflict (already exists) -> treat as success?
+        if (error.response && error.response.status === 409) {
+             console.warn('Action conflict (already exists), removing from queue:', action.id);
+             await db.pendingActions.delete(action.id!);
+             successCount++;
+        } else {
+             await db.pendingActions.update(action.id!, { 
+               status: 'ERROR', 
+               error: error.message || String(error),
+               retryCount: (action.retryCount || 0) + 1 
+             });
+             failCount++;
+        }
       }
     }
 
     toast.dismiss(toastId);
     
-    const remaining = await db.pendingActions.where('status').equals('PENDING').count();
-    if (remaining === 0) {
-      toast.success('Sincronização concluída!');
+    if (failCount === 0) {
+      toast.success('Sincronização concluída com sucesso!');
     } else {
-      toast.error(`${remaining} ações não puderam ser sincronizadas.`);
+      toast.error(`${failCount} ações falharam ao sincronizar. Tente novamente.`);
     }
+    
+    // Refresh pending count UI
+    // We can emit an event or rely on components polling/checking
   }
 
   async getPendingCount() {
