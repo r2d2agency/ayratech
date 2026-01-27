@@ -135,10 +135,22 @@ export class TimeClockService {
   }
 
   async getTodayStatus(employeeId: string) {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    const end = new Date();
-    end.setHours(23, 59, 59, 999);
+    // FIX: Use Brazil Time (UTC-3) to determine "Today"
+    // This prevents the "day reset" that happens at 21:00 Local (00:00 UTC)
+    const now = new Date();
+    // Adjust to UTC-3
+    const brazilOffset = 3 * 60 * 60 * 1000; 
+    const brazilTime = new Date(now.getTime() - brazilOffset);
+    
+    // Set to start of day (00:00:00) in Brazil Time (stored as UTC)
+    brazilTime.setUTCHours(0, 0, 0, 0);
+    
+    // Convert back to real UTC for DB query
+    // Start: 00:00 Local -> 03:00 UTC
+    const start = new Date(brazilTime.getTime() + brazilOffset);
+    
+    // End: 23:59:59 Local -> 02:59:59 UTC Next Day
+    const end = new Date(start.getTime() + (24 * 60 * 60 * 1000) - 1);
 
     const events = await this.eventsRepository.find({
         where: {

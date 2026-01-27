@@ -300,19 +300,6 @@ const ProductCheckView: React.FC = () => {
     });
   };
 
-  // Helper to render image source (handle relative paths)
-  const getRenderUrl = (url: string | undefined | null) => {
-    if (!url) return '';
-    try {
-        if (url.startsWith('data:') || url.startsWith('blob:')) return url;
-        if (url.startsWith('http')) return url;
-        return url;
-    } catch (e) {
-        console.error('Error in getRenderUrl', e);
-        return '';
-    }
-  };
-
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">

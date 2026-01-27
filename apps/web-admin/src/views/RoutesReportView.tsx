@@ -983,6 +983,7 @@ const RoutesReportView: React.FC = () => {
                           <th className="p-3">Produto</th>
                           <th className="p-3">Marca</th>
                           <th className="p-3">Status</th>
+                          <th className="p-3">Fotos</th>
                           <th className="p-3">Observação</th>
                         </tr>
                       </thead>
@@ -1005,6 +1006,25 @@ const RoutesReportView: React.FC = () => {
                                 <span className="text-slate-400 text-xs">-</span>
                               )}
                             </td>
+                            <td className="p-3">
+                              {p.photos && p.photos.length > 0 ? (
+                                <div className="flex gap-1 overflow-x-auto max-w-[200px] py-1">
+                                  {p.photos.map((photo, i) => (
+                                    <a 
+                                      key={i} 
+                                      href={getImageUrl(photo)} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="block w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden border border-slate-200 shadow-sm hover:ring-2 ring-blue-500 transition-all"
+                                    >
+                                      <img src={getImageUrl(photo)} alt="Produto" className="w-full h-full object-cover" />
+                                    </a>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-slate-300 text-xs">-</span>
+                              )}
+                            </td>
                             <td className="p-3 text-slate-500 italic text-xs max-w-xs truncate">
                               {p.observation || '-'}
                             </td>
@@ -1013,29 +1033,6 @@ const RoutesReportView: React.FC = () => {
                       </tbody>
                     </table>
                   </div>
-
-                  {/* Photos */}
-                  {item.products.some(p => p.photos && p.photos.length > 0) && (
-                    <div className="p-4 border-t border-slate-100 bg-slate-50/30">
-                      <h4 className="font-bold text-slate-700 text-xs uppercase mb-3 flex items-center gap-2">
-                        <ImageIcon size={14} />
-                        Fotos da Visita
-                      </h4>
-                      <div className="flex gap-2 overflow-x-auto pb-2">
-                        {item.products.flatMap(p => p.photos || []).map((photo, i) => (
-                          <a 
-                            key={i} 
-                            href={getImageUrl(photo)} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="block w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden border border-slate-200 shadow-sm hover:ring-2 ring-blue-500 transition-all"
-                          >
-                            <img src={getImageUrl(photo)} alt="Visita" className="w-full h-full object-cover" />
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
