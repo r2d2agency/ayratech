@@ -115,8 +115,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
               Cliente
             </p>
             {navItem('client_dashboard', <LayoutGrid size={20} />, 'Dashboard')}
-            {navItem('reports_routes', <FileText size={20} />, 'Relatórios')}
-            {navItem('gallery', <Camera size={20} />, 'Galeria')}
           </>
         ) : (
           <>
