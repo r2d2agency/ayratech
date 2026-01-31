@@ -7,6 +7,7 @@ import StatCard from '../components/StatCard';
 import { ViewType } from '../types';
 import api from '../api/client';
 import { useBranding } from '../context/BrandingContext';
+import { getImageUrl } from '../utils/image';
 
 interface DashboardViewProps {
   onNavigate: (view: ViewType) => void;
