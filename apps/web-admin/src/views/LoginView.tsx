@@ -12,18 +12,41 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const { settings } = useBranding();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isClient, setIsClient] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    setIsLoading(true);
+    
     try {
-      const url = isClient ? '/auth/client/login' : '/auth/login';
-      const response = await api.post(url, { email, password });
+      // 1. Tentar login como usuário comum
+      try {
+        const response = await api.post('/auth/login', { email, password });
+        localStorage.setItem('token', response.data.access_token);
+        onLogin();
+        return;
+      } catch (userErr: any) {
+        // Se for erro de credenciais (401/404), tenta como cliente
+        // Se for erro de servidor (500), lança
+        if (userErr.response && (userErr.response.status === 401 || userErr.response.status === 404)) {
+           // Continua para tentar como cliente
+        } else {
+           throw userErr;
+        }
+      }
+
+      // 2. Tentar login como cliente
+      const response = await api.post('/auth/client/login', { email, password });
       localStorage.setItem('token', response.data.access_token);
       onLogin();
+
     } catch (err) {
+      console.error('Login error:', err);
       setError('Login falhou. Verifique suas credenciais.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -110,22 +133,13 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          <div className="mb-6 flex items-center">
-            <input
-              type="checkbox"
-              id="isClient"
-              className="mr-2 h-4 w-4"
-              checked={isClient}
-              onChange={(e) => setIsClient(e.target.checked)}
-            />
-            <label htmlFor="isClient" className="text-gray-700 text-sm font-bold cursor-pointer">Sou Cliente (Acesso Externo)</label>
-          </div>
           <button
             type="submit"
-            className="w-full text-white font-bold py-2 px-4 rounded hover:opacity-90 transition-colors"
+            disabled={isLoading}
+            className="w-full text-white font-bold py-2 px-4 rounded hover:opacity-90 transition-colors disabled:opacity-70"
             style={{ backgroundColor: settings.primaryColor }}
           >
-            Entrar
+            {isLoading ? 'Entrando...' : 'Entrar'}
           </button>
            <button
             type="button"
