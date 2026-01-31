@@ -103,6 +103,33 @@ export class RoutesService {
     });
   }
 
+  async findByClient(clientId: string) {
+    const routes = await this.routesRepository.find({
+      relations: ['items', 'items.supermarket', 'promoter', 'items.products', 'items.products.product', 'items.products.product.client'],
+      where: {
+        items: {
+          products: {
+            product: {
+              client: {
+                id: clientId
+              }
+            }
+          }
+        }
+      },
+      order: { date: 'DESC' }
+    });
+
+    // Filter content to only show client's products
+    return routes.map(route => ({
+      ...route,
+      items: route.items.map(item => ({
+        ...item,
+        products: item.products.filter(p => p.product.client?.id === clientId)
+      })).filter(item => item.products.length > 0)
+    })).filter(route => route.items.length > 0);
+  }
+
   findTemplates() {
     return this.routesRepository.find({
       where: { isTemplate: true },
@@ -305,7 +332,7 @@ export class RoutesService {
     return this.routeRulesRepository.find();
   }
 
-  async checkProduct(routeItemId: string, productId: string, data: { checked?: boolean, observation?: string, isStockout?: boolean, stockoutType?: string, photos?: string[], checkInTime?: string, checkOutTime?: string }) {
+  async checkProduct(routeItemId: string, productId: string, data: { checked?: boolean, observation?: string, isStockout?: boolean, stockoutType?: string, photos?: string[], checkInTime?: string, checkOutTime?: string, validityDate?: string }) {
     const itemProduct = await this.routeItemProductsRepository.findOne({
       where: { routeItemId, productId }
     });
@@ -318,6 +345,7 @@ export class RoutesService {
       if (data.photos !== undefined) itemProduct.photos = data.photos;
       if (data.checkInTime !== undefined) itemProduct.checkInTime = new Date(data.checkInTime);
       if (data.checkOutTime !== undefined) itemProduct.checkOutTime = new Date(data.checkOutTime);
+      if (data.validityDate !== undefined) itemProduct.validityDate = data.validityDate;
 
       return this.routeItemProductsRepository.save(itemProduct);
     }

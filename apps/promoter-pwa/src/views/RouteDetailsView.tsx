@@ -363,7 +363,8 @@ const RouteDetailsView = () => {
         (error) => {
             console.error('Geolocation error on checkout, proceeding anyway', error);
             proceedWithCheckOut(0, 0); // Allow checkout even if geo fails? Or force it?
-        }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 

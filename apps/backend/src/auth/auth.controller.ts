@@ -18,6 +18,15 @@ export class AuthController {
     return this.authService.login(req.user);
   }
 
+  @Post('client/login')
+  async clientLogin(@Body() body) {
+    const client = await this.authService.validateClient(body.email, body.password);
+    if (!client) {
+      throw new UnauthorizedException();
+    }
+    return this.authService.loginClient(client);
+  }
+
   @Post('register')
   async register(@Body() body) {
     try {

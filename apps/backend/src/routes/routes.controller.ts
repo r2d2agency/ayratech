@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, UnauthorizedException } from '@nestjs/common';
 import { RoutesService } from './routes.service';
 import { CreateRouteDto } from './dto/create-route.dto';
 import { UpdateRouteDto } from './dto/update-route.dto';
@@ -15,6 +15,12 @@ export class RoutesController {
   @Get()
   findAll() {
     return this.routesService.findAll();
+  }
+
+  @Get('client/all')
+  findAllByClient(@Req() req: any) {
+    if (req.user.role !== 'client') throw new UnauthorizedException();
+    return this.routesService.findByClient(req.user.clientId);
   }
 
   @Get('templates/all')
@@ -57,7 +63,7 @@ export class RoutesController {
   checkProduct(
     @Param('itemId') itemId: string,
     @Param('productId') productId: string,
-    @Body() body: { checked?: boolean; observation?: string; isStockout?: boolean; stockoutType?: string; photos?: string[]; checkInTime?: string; checkOutTime?: string },
+    @Body() body: { checked?: boolean; observation?: string; isStockout?: boolean; stockoutType?: string; photos?: string[]; checkInTime?: string; checkOutTime?: string; validityDate?: string },
   ) {
     return this.routesService.checkProduct(itemId, productId, body);
   }

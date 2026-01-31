@@ -12,12 +12,14 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const { settings } = useBranding();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isClient, setIsClient] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await api.post('/auth/login', { email, password });
+      const url = isClient ? '/auth/client/login' : '/auth/login';
+      const response = await api.post(url, { email, password });
       localStorage.setItem('token', response.data.access_token);
       onLogin();
     } catch (err) {
@@ -99,7 +101,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
-          <div className="mb-6">
+          <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2">Senha</label>
             <input
               type="password"
@@ -107,6 +109,16 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+          </div>
+          <div className="mb-6 flex items-center">
+            <input
+              type="checkbox"
+              id="isClient"
+              className="mr-2 h-4 w-4"
+              checked={isClient}
+              onChange={(e) => setIsClient(e.target.checked)}
+            />
+            <label htmlFor="isClient" className="text-gray-700 text-sm font-bold cursor-pointer">Sou Cliente (Acesso Externo)</label>
           </div>
           <button
             type="submit"

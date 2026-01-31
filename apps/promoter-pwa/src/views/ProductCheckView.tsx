@@ -26,6 +26,7 @@ interface RouteItemProduct {
   photos?: string[];
   checkInTime?: string;
   checkOutTime?: string;
+  validityDate?: string;
 }
 
 const ProductCheckView: React.FC = () => {
@@ -40,6 +41,7 @@ const ProductCheckView: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [supermarketName, setSupermarketName] = useState('');
+  const [validationError, setValidationError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Track when a product check started (for duration calculation)
@@ -225,7 +227,8 @@ const ProductCheckView: React.FC = () => {
            isStockout: productData.isStockout,
            stockoutType: productData.stockoutType,
            observation: productData.observation,
-           photos: productData.photos
+           photos: productData.photos,
+           validityDate: productData.validityDate
         }
       );
     }
@@ -315,7 +318,13 @@ const ProductCheckView: React.FC = () => {
 
     } catch (error) {
       console.error('Error adding photo:', error);
-      toast.error('Erro ao processar foto: ' + (error as Error).message);
+      const msg = (error as Error).message;
+      // Check if it's a validation error (starts with specific phrases from image-processor)
+      if (msg.includes('borrada') || msg.includes('escura') || msg.includes('clara')) {
+          setValidationError(msg);
+      } else {
+          toast.error('Erro ao processar foto: ' + msg);
+      }
     } finally {
       setUploadingPhoto(false);
     }
@@ -514,6 +523,43 @@ const ProductCheckView: React.FC = () => {
             </div>
 
             <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-gray-700">Data de Validade</label>
+              <input 
+                type="date"
+                className="w-full border rounded-lg p-2 text-sm focus:border-blue-500 outline-none"
+                value={selectedProduct.validityDate || ''}
+                onChange={(e) => setSelectedProduct({...selectedProduct, validityDate: e.target.value})}
+              />
+              {selectedProduct.validityDate && (
+                (() => {
+                  const today = new Date();
+                  today.setHours(0,0,0,0);
+                  const valDate = new Date(selectedProduct.validityDate);
+                  // Calculate diff in days
+                  const diffTime = valDate.getTime() - today.getTime();
+                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  
+                  if (diffDays < 0) {
+                    return (
+                      <div className="flex items-center gap-2 text-red-600 bg-red-50 p-2 rounded-lg text-xs font-medium">
+                        <AlertTriangle size={16} />
+                        Produto VENCIDO!
+                      </div>
+                    );
+                  } else if (diffDays <= 30) {
+                    return (
+                      <div className="flex items-center gap-2 text-orange-600 bg-orange-50 p-2 rounded-lg text-xs font-medium">
+                        <AlertTriangle size={16} />
+                        Vence em {diffDays} dias (Próximo ao vencimento)
+                      </div>
+                    );
+                  }
+                  return null;
+                })()
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-gray-700">Observação</label>
               <textarea 
                 className="w-full border rounded-lg p-2 text-sm focus:border-blue-500 outline-none"
@@ -546,6 +592,39 @@ const ProductCheckView: React.FC = () => {
                   Salvar
                 </>
               )}
+            </button>
+          </div>
+        </div>
+      )}
+      {/* Validation Error Modal */}
+      {validationError && (
+        <div className="fixed inset-0 z-[60] bg-black bg-opacity-70 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-sm rounded-2xl p-6 flex flex-col items-center gap-4 animate-in zoom-in duration-200">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-red-600 mb-2">
+              <Camera size={32} />
+            </div>
+            
+            <h3 className="text-xl font-bold text-gray-900 text-center">Foto Recusada</h3>
+            
+            <p className="text-center text-gray-600">
+              {validationError}
+            </p>
+
+            <div className="bg-orange-50 p-3 rounded-lg border border-orange-100 w-full text-xs text-orange-800 mt-2">
+              <p className="font-bold mb-1">Dicas para uma boa foto:</p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Segure o celular com firmeza</li>
+                <li>Limpe a lente da câmera</li>
+                <li>Garanta boa iluminação</li>
+                <li>Evite tirar foto de telas</li>
+              </ul>
+            </div>
+
+            <button 
+              onClick={() => setValidationError(null)}
+              className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors mt-2"
+            >
+              Entendi, vou tentar novamente
             </button>
           </div>
         </div>

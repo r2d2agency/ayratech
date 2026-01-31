@@ -23,6 +23,7 @@ import RoutesReportView from './views/RoutesReportView';
 import PhotoGalleryView from './views/PhotoGalleryView';
 import TimeClockManagementView from './views/TimeClockManagementView';
 import LoginView from './views/LoginView';
+import ClientDashboardView from './views/ClientDashboardView';
 import { BrandingProvider } from './context/BrandingContext';
 import { jwtDecode } from 'jwt-decode';
 
@@ -48,6 +49,13 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
   
   const canViewEmployees = ['admin', 'rh', 'manager', 'superadmin', 'administrador do sistema', 'supervisor de operações'].includes(userRole);
 
+  // If user is client, default to client_dashboard
+  useEffect(() => {
+    if (userRole === 'client' && activeView === 'dashboard') {
+      setActiveView('client_dashboard');
+    }
+  }, [userRole]);
+
   return (
     <div className="min-h-screen bg-[#f8fafc]">
       <Sidebar 
@@ -64,6 +72,7 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
         
         <main className="max-w-[1600px] mx-auto w-full px-6 py-10 md:px-12">
           {activeView === 'dashboard' && <DashboardView />}
+          {activeView === 'client_dashboard' && <ClientDashboardView />}
           {activeView === 'clients' && <ClientsView />}
           {activeView === 'products' && <ProductsView />}
           {activeView === 'categories' && <CategoriesView />}

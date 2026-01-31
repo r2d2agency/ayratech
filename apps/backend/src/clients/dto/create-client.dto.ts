@@ -52,4 +52,8 @@ export class CreateClientDto {
   @IsOptional()
   @IsString()
   logo?: string;
+
+  @IsOptional()
+  @IsString()
+  password?: string;
 }

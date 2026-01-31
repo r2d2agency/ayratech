@@ -207,11 +207,10 @@ const validateImageQuality = (img: HTMLImageElement): ImageValidationResult => {
   // Threshold for blur
   // With higher resolution (300px), we expect higher edge scores for sharp images.
   // Blurry images will have low edge scores.
-  // Adjusted threshold to 5 based on user feedback (11 was triggering false positives).
+  // Adjusted threshold to 8 based on request to be stricter with image quality.
   // Very sharp images often > 20-30. Blurry often < 5-8.
-  // Also check if avgEdge is NaN (can happen with very small images), treat as valid to avoid blocking
-  if (!isNaN(avgEdge) && avgEdge < 5) {
-      return { isValid: false, reason: 'A foto parece borrada ou fora de foco. Por favor, tente novamente segurando o celular com firmeza.' };
+  if (!isNaN(avgEdge) && avgEdge < 8) {
+      return { isValid: false, reason: 'A foto parece borrada ou fora de foco. Por favor, segure o celular com firmeza e foque no produto.' };
   }
 
   return { isValid: true };

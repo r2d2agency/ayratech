@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { EmployeesService } from '../employees/employees.service';
+import { ClientsService } from '../clients/clients.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
@@ -10,6 +11,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private employeesService: EmployeesService,
+    private clientsService: ClientsService,
     private jwtService: JwtService,
   ) {}
 
@@ -76,6 +78,31 @@ export class AuthService {
     };
     const token = this.jwtService.sign(payload);
     console.log(`Generated token for ${user.email}: ${token.substring(0, 20)}...`);
+    return {
+      access_token: token,
+      user: payload,
+    };
+  }
+
+  async validateClient(email: string, pass: string): Promise<any> {
+    const client = await this.clientsService.findByEmail(email);
+    if (client && client.password && await bcrypt.compare(pass, client.password)) {
+      const { password, ...result } = client;
+      return result;
+    }
+    return null;
+  }
+
+  async loginClient(client: any) {
+    const payload = { 
+      username: client.emailPrincipal, 
+      email: client.emailPrincipal,
+      sub: client.id, 
+      role: 'client',
+      clientId: client.id,
+      razaoSocial: client.razaoSocial
+    };
+    const token = this.jwtService.sign(payload);
     return {
       access_token: token,
       user: payload,

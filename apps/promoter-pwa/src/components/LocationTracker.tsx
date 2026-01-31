@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { offlineService } from '../services/offline.service';
 
 const LocationTracker: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -18,7 +19,14 @@ const LocationTracker: React.FC = () => {
             await api.post('/employees/location', { lat: latitude, lng: longitude });
             console.log('Location updated:', latitude, longitude);
           } catch (error) {
-            console.error('Failed to update location:', error);
+            console.error('Failed to update location, saving offline:', error);
+            // Save location update for later sync
+            await offlineService.addPendingAction(
+                'LOCATION',
+                '/employees/location',
+                'POST',
+                { lat: latitude, lng: longitude }
+            );
           }
         },
         (error) => {

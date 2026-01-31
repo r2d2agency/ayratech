@@ -36,6 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
   const { settings } = useBranding();
   
   const canViewEmployees = userRole && ['admin', 'rh', 'manager', 'superadmin', 'administrador do sistema', 'supervisor de operações'].includes(userRole.toLowerCase());
+  const isClient = userRole === 'client';
 
   const toggleSubmenu = (id: string) => {
     if (!expanded) {
@@ -108,6 +109,17 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
 
       {/* Navigation */}
       <div className="flex-1 px-3 space-y-1 overflow-y-auto">
+        {isClient ? (
+          <>
+            <p className={`text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 mb-2 h-4 overflow-hidden transition-all ${expanded ? 'opacity-100' : 'opacity-0'}`}>
+              Cliente
+            </p>
+            {navItem('client_dashboard', <LayoutGrid size={20} />, 'Dashboard')}
+            {navItem('reports_routes', <FileText size={20} />, 'Relatórios')}
+            {navItem('gallery', <Camera size={20} />, 'Galeria')}
+          </>
+        ) : (
+          <>
         <p className={`text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 mb-2 h-4 overflow-hidden transition-all ${expanded ? 'opacity-100' : 'opacity-0'}`}>
           Principal
         </p>
@@ -225,6 +237,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
           <>
             <div className="h-px bg-slate-200 my-2 mx-4" />
             {navItem('logs', <Shield size={20} />, 'Logs do Sistema')}
+          </>
+        )}
           </>
         )}
       </div>

@@ -111,9 +111,11 @@ const RoutesReportView: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState('');
   const [selectedPDV, setSelectedPDV] = useState('');
   const [onlyRuptures, setOnlyRuptures] = useState(false);
+  const [validityStart, setValidityStart] = useState('');
+  const [validityEnd, setValidityEnd] = useState('');
   
   // View Mode
-  const [groupBy, setGroupBy] = useState<'route' | 'pdv'>('route');
+  const [groupBy, setGroupBy] = useState<'route' | 'pdv' | 'validity'>('route');
   
   // Computed stats
   const [stats, setStats] = useState({
@@ -305,6 +307,68 @@ const RoutesReportView: React.FC = () => {
 
     return Array.from(pdvMap.values()).sort((a, b) => b.visits - a.visits);
   }, [filteredRoutes, groupBy, selectedPDV, selectedProduct, selectedClient, onlyRuptures]);
+
+  // Group By Validity (Product focused, grouped by PDV)
+  const validityReport = useMemo(() => {
+    if (groupBy !== 'validity') return [];
+
+    const pdvMap = new Map<string, {
+      id: string;
+      name: string;
+      items: {
+        productName: string;
+        brandName: string;
+        validityDate?: string;
+        checked: boolean;
+        checkInTime?: string;
+        promoterName: string;
+        date: string;
+      }[]
+    }>();
+
+    filteredRoutes.forEach(r => {
+      r.items.forEach(i => {
+        // Apply filters
+        if (selectedPDV && i.supermarket.fantasyName !== selectedPDV) return;
+
+        i.products.forEach(p => {
+            // Apply product/brand filters
+            if (selectedProduct && p.product.name !== selectedProduct) return;
+            if (selectedClient && p.product.brand?.name !== selectedClient) return;
+
+            // Apply validity filter if set
+            if (validityStart || validityEnd) {
+                 if (!p.validityDate) return;
+                 const vDate = p.validityDate;
+                 if (validityStart && vDate < validityStart) return;
+                 if (validityEnd && vDate > validityEnd) return;
+            }
+
+            // Group by PDV
+            const key = i.supermarket.id;
+            if (!pdvMap.has(key)) {
+                pdvMap.set(key, {
+                    id: i.supermarket.id,
+                    name: i.supermarket.fantasyName,
+                    items: []
+                });
+            }
+            
+            pdvMap.get(key)!.items.push({
+                productName: p.product.name,
+                brandName: p.product.brand?.name || '-',
+                validityDate: p.validityDate,
+                checked: p.checked,
+                checkInTime: p.checkInTime,
+                promoterName: r.promoter.fullName || 'N/A',
+                date: r.date
+            });
+        });
+      });
+    });
+
+    return Array.from(pdvMap.values());
+  }, [filteredRoutes, groupBy, selectedPDV, selectedProduct, selectedClient, validityStart, validityEnd]);
 
 
   const checkAdmin = () => {
@@ -1351,7 +1415,71 @@ const RoutesReportView: React.FC = () => {
                  <Upload size={18} />
                </button>
              </div>
-           </div>
+          )}
+
+          {groupBy === 'validity' && (
+            <div className="divide-y divide-slate-100">
+                {validityReport.map(pdv => (
+                    <div key={pdv.id} className="p-6">
+                        <h4 className="font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">
+                            <Store size={18} className="text-blue-500" />
+                            {pdv.name}
+                            <span className="text-sm font-normal text-slate-500 ml-2">({pdv.items.length} produtos)</span>
+                        </h4>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-slate-50 text-slate-500 font-bold">
+                                    <tr>
+                                        <th className="px-4 py-3 rounded-l-lg">Produto</th>
+                                        <th className="px-4 py-3">Marca</th>
+                                        <th className="px-4 py-3">Validade</th>
+                                        <th className="px-4 py-3">Status</th>
+                                        <th className="px-4 py-3">Verificado em</th>
+                                        <th className="px-4 py-3 rounded-r-lg">Promotor</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {pdv.items.map((item, idx) => (
+                                        <tr key={idx} className="hover:bg-slate-50">
+                                            <td className="px-4 py-3 font-medium text-slate-700">{item.productName}</td>
+                                            <td className="px-4 py-3 text-slate-600">{item.brandName}</td>
+                                            <td className="px-4 py-3">
+                                                {item.validityDate ? (
+                                                    <span className={`font-bold ${
+                                                        new Date(item.validityDate) < new Date() ? 'text-red-600' : 
+                                                        new Date(item.validityDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) ? 'text-orange-600' : 'text-green-600'
+                                                    }`}>
+                                                        {new Date(item.validityDate).toLocaleDateString('pt-BR')}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-slate-400">-</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                {item.checked ? (
+                                                    <span className="text-emerald-600 font-bold text-xs bg-emerald-50 px-2 py-1 rounded">Verificado</span>
+                                                ) : (
+                                                    <span className="text-slate-400 text-xs">Pendente</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3 text-slate-600">
+                                                {new Date(item.date).toLocaleDateString('pt-BR')}
+                                            </td>
+                                            <td className="px-4 py-3 text-slate-600">{item.promoterName}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                ))}
+                {validityReport.length === 0 && (
+                    <div className="p-12 text-center text-slate-500">
+                        Nenhum registro de validade encontrado para os filtros selecionados.
+                    </div>
+                )}
+            </div>
+          )}
         </div>
       )}
     </div>

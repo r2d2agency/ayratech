@@ -47,6 +47,9 @@ export class Client {
   @Column({ nullable: true })
   logo: string;
 
+  @Column({ nullable: true, select: false })
+  password: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

@@ -39,6 +39,9 @@ export class RouteItemProduct {
   @Column('simple-array', { nullable: true })
   photos: string[];
 
+  @Column({ nullable: true, type: 'date' })
+  validityDate: string;
+
   @Column({ nullable: true })
   observation: string;
 }
