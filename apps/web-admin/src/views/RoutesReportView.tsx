@@ -1415,9 +1415,11 @@ const RoutesReportView: React.FC = () => {
                  <Upload size={18} />
                </button>
              </div>
-          )}
+           </div>
+        </div>
+      )}
 
-          {groupBy === 'validity' && (
+      {groupBy === 'validity' && (
             <div className="divide-y divide-slate-100">
                 {validityReport.map(pdv => (
                     <div key={pdv.id} className="p-6">
@@ -1480,8 +1482,6 @@ const RoutesReportView: React.FC = () => {
                 )}
             </div>
           )}
-        </div>
-      )}
     </div>
   );
 };
