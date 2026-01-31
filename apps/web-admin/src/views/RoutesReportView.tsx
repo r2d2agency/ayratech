@@ -552,6 +552,28 @@ const RoutesReportView: React.FC = () => {
     return `${seconds}s`;
   };
 
+  const calculateTotalRouteDuration = (items: RouteReportItem['items']) => {
+    let totalMs = 0;
+    
+    items.forEach(item => {
+      if (item.checkInTime && item.checkOutTime) {
+        const start = new Date(item.checkInTime).getTime();
+        const end = new Date(item.checkOutTime).getTime();
+        if (end > start) {
+          totalMs += (end - start);
+        }
+      }
+    });
+
+    if (totalMs === 0) return null;
+
+    const hours = Math.floor(totalMs / (1000 * 60 * 60));
+    const minutes = Math.floor((totalMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  };
+
   return (
     <div className="p-8 max-w-[1600px] mx-auto space-y-8 pb-32">
       <SectionHeader 
