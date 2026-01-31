@@ -23,6 +23,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         throw new UnauthorizedException('Token inválido ou expirado');
     }
 
+    // Client Auth Bypass
+    if (payload.role === 'client') {
+      return {
+        userId: payload.sub,
+        username: payload.username,
+        role: payload.role,
+        clientId: payload.clientId,
+        razaoSocial: payload.razaoSocial
+      };
+    }
+
     // Single Session Check
     if (payload.sub) {
         const user = await this.usersService.findById(payload.sub);

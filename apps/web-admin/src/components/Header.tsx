@@ -39,7 +39,6 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
 
   useEffect(() => {
     fetchUser();
-    fetchNotifications();
 
     // Close notifications on click outside
     const handleClickOutside = (event: MouseEvent) => {
@@ -53,10 +52,44 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
 
   const fetchUser = async () => {
     try {
-      const response = await api.get('/users/me');
-      setUser(response.data);
+      // Use /auth/profile instead of /users/me to support both Users and Clients
+      const response = await api.get('/auth/profile');
+      const data = response.data;
+      
+      if (data.role === 'client') {
+         setUser({
+            id: data.clientId,
+            email: data.username,
+            role: { name: 'Cliente' },
+            employee: {
+                name: data.razaoSocial,
+                fullName: data.razaoSocial,
+                position: 'Acesso Externo'
+            }
+         });
+         // Clients don't have notifications system yet
+         return; 
+      }
+
+      // If regular user, we might want more details, but profile has basic info
+      // Or we can call /users/me if we really need DB fresh data
+      // For now, let's stick to profile or try /users/me only if not client
+      try {
+          const userDetail = await api.get('/users/me');
+          setUser(userDetail.data);
+          fetchNotifications();
+      } catch (e) {
+          // Fallback to token data
+           setUser({
+            id: data.userId,
+            email: data.username,
+            role: { name: data.role },
+            employee: data.employee
+         });
+      }
+
     } catch (error) {
-      console.error('Error fetching user:', error);
+      console.error('Error fetching user profile:', error);
     }
   };
 
@@ -65,7 +98,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
       const response = await api.get('/notifications');
       setNotifications(response.data);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      // console.error('Error fetching notifications:', error);
     }
   };
 
