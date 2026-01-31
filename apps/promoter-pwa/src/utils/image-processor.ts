@@ -52,37 +52,58 @@ export const processImage = async (
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Could not get canvas context');
 
-  // Add extra space at the bottom for the footer (e.g., 60px)
-  const footerHeight = 80;
   canvas.width = img.width;
-  canvas.height = img.height + footerHeight;
+  canvas.height = img.height;
 
   // Draw original image
   ctx.drawImage(img, 0, 0);
 
-  // Draw Footer Background (Black)
-  ctx.fillStyle = '#000000';
-  ctx.fillRect(0, img.height, canvas.width, footerHeight);
+  // Watermark Configuration - Top-Left Corner, 1/4 of Image Area (50% W x 50% H)
+  const wmWidth = canvas.width * 0.5;
+  const wmHeight = canvas.height * 0.5;
+  const wmX = 0;
+  const wmY = 0;
 
-  // Draw Text
+  // Draw Watermark Background (Semi-transparent black)
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+  ctx.fillRect(wmX, wmY, wmWidth, wmHeight);
+
+  // Text Configuration
+  ctx.fillStyle = '#FFFFFF';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+
+  // Dynamic font size based on image width
+  const fontSize = Math.floor(canvas.width * 0.035); // ~3.5% of width
+  const lineHeight = fontSize * 1.4;
+  const padding = Math.floor(canvas.width * 0.03); // 3% padding
+
+  let currentY = wmY + padding;
+
+  // Helper to draw label and value
+  const drawField = (label: string, value: string) => {
+    // Label
+    ctx.font = `bold ${fontSize}px Arial`;
+    ctx.fillText(label, wmX + padding, currentY);
+    currentY += lineHeight;
+
+    // Value
+    ctx.font = `${fontSize}px Arial`;
+    // Use maxWidth to scale text if it exceeds the box width (minus padding)
+    ctx.fillText(value, wmX + padding, currentY, wmWidth - (padding * 2));
+    currentY += lineHeight * 1.5; // Extra spacing between fields
+  };
+
+  // 1. Date/Time
   const dateStr = data.timestamp.toLocaleDateString('pt-BR');
   const timeStr = data.timestamp.toLocaleTimeString('pt-BR');
-  
-  const padding = 20;
-  const lineHeight = 30;
-  const startY = img.height + padding;
-  
-  ctx.fillStyle = '#FFFFFF';
-  
-  // Line 1: PDV Name (Bold, Larger)
-  ctx.font = 'bold 28px Arial';
-  ctx.textAlign = 'left';
-  ctx.fillText(data.supermarketName, padding, startY);
+  drawField("DATA / HORA:", `${dateStr} ${timeStr}`);
 
-  // Line 2: Promotor - Data Hora (Regular, Smaller)
-  ctx.font = '20px Arial';
-  ctx.textAlign = 'left';
-  ctx.fillText(`${data.promoterName} • ${dateStr} ${timeStr}`, padding, startY + lineHeight);
+  // 2. PDV (Supermarket)
+  drawField("PDV:", data.supermarketName);
+
+  // 3. Promoter
+  drawField("PROMOTOR:", data.promoterName);
 
   // Convert to Blob
   return new Promise((resolve, reject) => {

@@ -39,6 +39,7 @@ const ProductCheckView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [supermarketName, setSupermarketName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Track when a product check started (for duration calculation)
@@ -95,6 +96,7 @@ const ProductCheckView: React.FC = () => {
       if (cachedRoute) {
         const item = cachedRoute.items.find((i: any) => i.id === itemId);
         if (item && item.products) {
+          setSupermarketName(item.supermarket?.fantasyName || item.supermarket?.name || 'PDV');
           setProducts(item.products);
           setFilteredProducts(item.products);
           setLoading(false);
@@ -107,6 +109,7 @@ const ProductCheckView: React.FC = () => {
         const response = await api.get(`/routes/${routeId}`);
         const item = response.data.items.find((i: any) => i.id === itemId);
         if (item && item.products) {
+          setSupermarketName(item.supermarket?.fantasyName || item.supermarket?.name || 'PDV');
           setProducts(item.products);
           setFilteredProducts(item.products);
           // Update cache
@@ -261,7 +264,7 @@ const ProductCheckView: React.FC = () => {
     try {
       // 1. Process Image (Compress & Watermark)
       const watermarkData: WatermarkData = {
-        supermarketName: 'PDV', // Ideally get this from context/route
+        supermarketName: supermarketName || 'PDV',
         promoterName: user?.name || user?.email || 'Promotor',
         timestamp: new Date()
       };
