@@ -662,8 +662,7 @@ const RoutesReportView: React.FC = () => {
 
       {/* Filters & Actions */}
       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-        <div className="flex flex-col md:flex-row gap-6 items-end">
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4 items-end">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-400 uppercase">Supervisor</label>
               <select 
@@ -723,16 +722,14 @@ const RoutesReportView: React.FC = () => {
                 {uniqueOptions.products.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
-          </div>
 
-          <div className="flex gap-2 items-end">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-400 uppercase">De</label>
               <input 
                 type="date" 
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
               />
             </div>
             <div className="space-y-1.5">
@@ -741,13 +738,13 @@ const RoutesReportView: React.FC = () => {
                 type="date" 
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
               />
             </div>
             
             <button
               onClick={() => setOnlyRuptures(!onlyRuptures)}
-              className={`px-3 py-2 rounded-xl text-sm font-bold border transition-all flex items-center gap-2 ${
+              className={`w-full px-3 py-2 rounded-xl text-sm font-bold border transition-all flex items-center justify-center gap-2 h-[38px] ${
                 onlyRuptures 
                   ? 'bg-red-50 border-red-200 text-red-600' 
                   : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
@@ -756,7 +753,6 @@ const RoutesReportView: React.FC = () => {
               <AlertTriangle size={16} />
               {onlyRuptures ? 'Com Rupturas' : 'Rupturas'}
             </button>
-          </div>
         </div>
       </div>
 

@@ -455,7 +455,7 @@ const ClientsView: React.FC = () => {
                 </div>
 
                 <div className="col-span-2 md:col-span-1">
-                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Senha de Acesso</label>
+                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Senha de Acesso (Opcional na edição)</label>
                   <input 
                     type="password" 
                     value={newClient.password || ''}
