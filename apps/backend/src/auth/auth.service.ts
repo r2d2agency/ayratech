@@ -85,11 +85,27 @@ export class AuthService {
   }
 
   async validateClient(email: string, pass: string): Promise<any> {
+    console.log(`[AuthService] Validating client login for email: ${email}`);
     const client = await this.clientsService.findByEmail(email);
-    if (client && client.password && await bcrypt.compare(pass, client.password)) {
+    
+    if (!client) {
+      console.warn(`[AuthService] Client not found for email: ${email}`);
+      return null;
+    }
+
+    if (!client.password) {
+      console.warn(`[AuthService] Client has no password set: ${email}`);
+      return null;
+    }
+
+    const isMatch = await bcrypt.compare(pass, client.password);
+    if (isMatch) {
+      console.log(`[AuthService] Client password match for: ${email}`);
       const { password, ...result } = client;
       return result;
     }
+
+    console.warn(`[AuthService] Invalid password for client: ${email}`);
     return null;
   }
 

@@ -227,6 +227,7 @@ const ClientsView: React.FC = () => {
       if (newClient.cidade) formData.append('cidade', newClient.cidade);
       if (newClient.estado) formData.append('estado', newClient.estado);
       if (newClient.cep) formData.append('cep', newClient.cep);
+      if (newClient.password) formData.append('password', newClient.password);
       
       if (logoFile) {
         formData.append('logo', logoFile);
@@ -270,7 +271,8 @@ const ClientsView: React.FC = () => {
       cidade: client.cidade || '',
       estado: client.estado || '',
       cep: client.cep || '',
-      logo: client.logo || ''
+      logo: client.logo || '',
+      password: ''
     });
     setShowClientModal(true);
   };

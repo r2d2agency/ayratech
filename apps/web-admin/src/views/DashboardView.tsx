@@ -132,8 +132,8 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <div key={c.id} className="group">
                     <div className="flex items-center gap-5 mb-3">
                     <div className="w-12 h-12 rounded-xl border border-slate-100 flex items-center justify-center p-2 bg-white transition-all group-hover:scale-110">
-                        {c.logo && c.logo.startsWith('http') ? (
-                            <img src={c.logo} alt={c.name} className="object-contain w-full h-full" />
+                        {c.logo ? (
+                            <img src={getImageUrl(c.logo)} alt={c.name} className="object-contain w-full h-full" />
                         ) : (
                             <div className="text-xs font-bold text-slate-300">{c.name.substring(0, 2).toUpperCase()}</div>
                         )}
