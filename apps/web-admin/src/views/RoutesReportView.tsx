@@ -1202,7 +1202,10 @@ const RoutesReportView: React.FC = () => {
                             accept="image/*"
                             multiple
                             className="hidden"
-                            onChange={(e) => handleFileSelect(e.target.files, idx)}
+                            onChange={(e) => {
+                              handleFileSelect(e.target.files, idx);
+                              e.target.value = ''; // Reset input value to allow re-selection
+                            }}
                           />
                          </label>
                        </div>
