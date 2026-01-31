@@ -30,6 +30,7 @@ import {
 import { jwtDecode } from "jwt-decode";
 import api from '../api/client';
 import { getImageUrl } from '../utils/image';
+import { processImage } from '../utils/image-processor';
 import { 
   BarChart, 
   Bar, 
@@ -144,6 +145,16 @@ const RoutesReportView: React.FC = () => {
     }[];
   } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Photo Processing State
+  const [pendingFiles, setPendingFiles] = useState<{ files: FileList, productIndex: number } | null>(null);
+  const [photoMeta, setPhotoMeta] = useState({
+    date: new Date().toISOString().split('T')[0],
+    time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    promoterName: '',
+    pdvName: ''
+  });
+  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     checkAdmin();
@@ -320,78 +331,66 @@ const RoutesReportView: React.FC = () => {
     }
   };
 
-  const resizeImage = (file: File): Promise<File> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target?.result as string;
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          const maxSize = 600;
-          let width = img.width;
-          let height = img.height;
+  const handleFileSelect = (files: FileList | null, productIndex: number) => {
+    if (!files || files.length === 0) return;
+    
+    const currentPromoterId = manualForm?.promoterId;
+    const currentPromoter = promotersList.find(p => p.id === currentPromoterId);
+    
+    let pdvName = 'PDV';
+    if (selectedRoute) {
+        const item = selectedRoute.items.find(i => i.id === manualForm?.itemId);
+        if (item) pdvName = item.supermarket.fantasyName;
+    }
 
-          if (width > height) {
-            if (width > maxSize) {
-              height *= maxSize / width;
-              width = maxSize;
-            }
-          } else {
-            if (height > maxSize) {
-              width *= maxSize / height;
-              height = maxSize;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          ctx?.drawImage(img, 0, 0, width, height);
-          
-          canvas.toBlob((blob) => {
-            if (blob) {
-              const resizedFile = new File([blob], file.name, {
-                type: file.type,
-                lastModified: Date.now(),
-              });
-              resolve(resizedFile);
-            } else {
-              reject(new Error('Canvas to Blob failed'));
-            }
-          }, file.type, 0.9);
-        };
-      };
-      reader.onerror = (error) => reject(error);
+    setPhotoMeta({
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        promoterName: currentPromoter?.fullName || currentPromoter?.name || '',
+        pdvName: pdvName
     });
+
+    setPendingFiles({ files, productIndex });
   };
 
-  const handlePhotoUpload = async (files: FileList | null, productIndex: number) => {
-    if (!files || files.length === 0) return;
-
+  const processAndUploadPhotos = async () => {
+    if (!pendingFiles) return;
+    setProcessing(true);
     try {
-      const newPhotos: string[] = [];
-      
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const resized = await resizeImage(file);
-        const formData = new FormData();
-        formData.append('file', resized);
+        const { files, productIndex } = pendingFiles;
+        const newPhotos: string[] = [];
+        
+        // Combine Date and Time
+        const timestamp = new Date(`${photoMeta.date}T${photoMeta.time}`);
 
-        const res = await api.post('/upload', formData);
-        const url = res.data.path || res.data.url;
-        newPhotos.push(url);
-      }
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const processed = await processImage(file, {
+                supermarketName: photoMeta.pdvName,
+                promoterName: photoMeta.promoterName,
+                timestamp: timestamp
+            });
 
-      if (manualForm) {
-        const newProducts = [...manualForm.products];
-        newProducts[productIndex].photos = [...(newProducts[productIndex].photos || []), ...newPhotos];
-        setManualForm({ ...manualForm, products: newProducts });
-      }
+            const formData = new FormData();
+            formData.append('file', processed);
+
+            const res = await api.post('/upload', formData);
+            const url = res.data.path || res.data.url;
+            newPhotos.push(url);
+        }
+
+        if (manualForm) {
+            const newProducts = [...manualForm.products];
+            newProducts[productIndex].photos = [...(newProducts[productIndex].photos || []), ...newPhotos];
+            setManualForm({ ...manualForm, products: newProducts });
+        }
+        
+        setPendingFiles(null);
     } catch (err) {
-      console.error('Upload failed', err);
-      alert('Erro ao enviar foto(s).');
+        console.error('Processing/Upload failed', err);
+        alert('Erro ao processar/enviar foto(s).');
+    } finally {
+        setProcessing(false);
     }
   };
 
@@ -1199,12 +1198,12 @@ const RoutesReportView: React.FC = () => {
                            <Camera size={16} />
                            <span className="truncate">Adicionar Fotos</span>
                            <input 
-                             type="file" 
-                             accept="image/*"
-                             multiple
-                             className="hidden"
-                             onChange={(e) => handlePhotoUpload(e.target.files, idx)}
-                           />
+                            type="file" 
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => handleFileSelect(e.target.files, idx)}
+                          />
                          </label>
                        </div>
                      </div>
