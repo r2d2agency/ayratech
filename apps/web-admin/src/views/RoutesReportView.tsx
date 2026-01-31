@@ -343,9 +343,24 @@ const RoutesReportView: React.FC = () => {
         if (item) pdvName = item.supermarket.fantasyName;
     }
 
+    // Default to current time, but prefer manualForm.checkInTime if available
+    let initialDate = new Date().toISOString().split('T')[0];
+    let initialTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    if (manualForm?.checkInTime) {
+        const checkIn = new Date(manualForm.checkInTime);
+        if (!isNaN(checkIn.getTime())) {
+            initialDate = checkIn.toISOString().split('T')[0];
+            // Format time as HH:mm manually to avoid timezone issues with toLocaleTimeString depending on env
+            const hours = checkIn.getHours().toString().padStart(2, '0');
+            const minutes = checkIn.getMinutes().toString().padStart(2, '0');
+            initialTime = `${hours}:${minutes}`;
+        }
+    }
+
     setPhotoMeta({
-        date: new Date().toISOString().split('T')[0],
-        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        date: initialDate,
+        time: initialTime,
         promoterName: currentPromoter?.fullName || currentPromoter?.name || '',
         pdvName: pdvName
     });
@@ -1212,29 +1227,29 @@ const RoutesReportView: React.FC = () => {
                      </div>
 
                      {/* Thumbnails */}
-                     {prod.photos && prod.photos.length > 0 && (
-                       <div className="flex gap-2 overflow-x-auto py-1">
-                         {prod.photos.map((pUrl, pIdx) => (
-                           <div key={pIdx} className="w-16 h-16 rounded-lg overflow-hidden border border-slate-200 relative group">
-                              <img 
-                                src={getImageUrl(pUrl)} 
-                                alt="" 
-                                className="w-full h-full object-cover" 
-                              />
-                              <button 
-                               onClick={() => {
-                                 const newProds = [...manualForm.products];
-                                 newProds[idx].photos = newProds[idx].photos.filter((_, i) => i !== pIdx);
-                                 setManualForm({...manualForm, products: newProds});
-                               }}
-                               className="absolute top-0.5 right-0.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                             >
-                               <X size={12} />
-                             </button>
-                           </div>
-                         ))}
-                       </div>
-                     )}
+                    {prod.photos && prod.photos.length > 0 && (
+                      <div className="grid grid-cols-4 gap-2 py-1">
+                        {prod.photos.map((pUrl, pIdx) => (
+                          <div key={pIdx} className="aspect-square w-full rounded-lg overflow-hidden border border-slate-200 relative group">
+                             <img 
+                               src={getImageUrl(pUrl)} 
+                               alt="" 
+                               className="w-full h-full object-cover" 
+                             />
+                             <button 
+                              onClick={() => {
+                                const newProds = [...manualForm.products];
+                                newProds[idx].photos = newProds[idx].photos.filter((_, i) => i !== pIdx);
+                                setManualForm({...manualForm, products: newProds});
+                              }}
+                              className="absolute top-0.5 right-0.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                    </div>
                  ))}
                </div>
