@@ -49,12 +49,35 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
   
   const canViewEmployees = ['admin', 'rh', 'manager', 'superadmin', 'administrador do sistema', 'supervisor de operações'].includes(userRole);
 
-  // If user is client, default to client_dashboard
+  // If user is client, force client_dashboard
   useEffect(() => {
-    if (userRole === 'client' && activeView === 'dashboard') {
+    if (userRole === 'client' && activeView !== 'client_dashboard') {
       setActiveView('client_dashboard');
     }
-  }, [userRole]);
+  }, [userRole, activeView]);
+
+  if (userRole === 'client') {
+    return (
+      <div className="min-h-screen bg-[#f8fafc]">
+        <Sidebar 
+          activeView={activeView} 
+          onNavigate={handleNavigate} 
+          expanded={sidebarExpanded} 
+          setExpanded={setSidebarExpanded}
+          userRole={userRole}
+          onLogout={onLogout}
+        />
+        
+        <div className={`transition-all duration-300 ${sidebarExpanded ? 'pl-64' : 'pl-20'}`}>
+          <Header />
+          
+          <main className="max-w-[1600px] mx-auto w-full px-6 py-10 md:px-12">
+            <ClientDashboardView />
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
