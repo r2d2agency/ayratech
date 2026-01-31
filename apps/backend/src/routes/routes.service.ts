@@ -115,33 +115,6 @@ export class RoutesService {
       .getMany();
   }
 
-  async findOne(id: string) {
-    const routes = await this.routesRepository.find({
-      relations: ['items', 'items.supermarket', 'promoter', 'items.products', 'items.products.product', 'items.products.product.client'],
-      where: {
-        items: {
-          products: {
-            product: {
-              client: {
-                id: clientId
-              }
-            }
-          }
-        }
-      },
-      order: { date: 'DESC' }
-    });
-
-    // Filter content to only show client's products
-    return routes.map(route => ({
-      ...route,
-      items: route.items.map(item => ({
-        ...item,
-        products: item.products.filter(p => p.product.client?.id === clientId)
-      })).filter(item => item.products.length > 0)
-    })).filter(route => route.items.length > 0);
-  }
-
   findTemplates() {
     return this.routesRepository.find({
       where: { isTemplate: true },
