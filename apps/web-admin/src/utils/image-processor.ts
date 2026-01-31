@@ -55,14 +55,14 @@ export const processImage = async (
         // Draw original image (resized)
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Watermark Configuration - Top-Left Corner, 1/4 of Image Area (50% W x 50% H)
+        // Watermark Configuration - Bottom-Left Corner, Reduced Height (50% W x 25% H)
         const wmWidth = canvas.width * 0.5;
-        const wmHeight = canvas.height * 0.5;
+        const wmHeight = canvas.height * 0.25; // Half of previous height (was 0.5)
         const wmX = 0;
-        const wmY = 0;
+        const wmY = canvas.height - wmHeight; // Positioned at bottom
 
-        // Draw Watermark Background (Semi-transparent black)
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        // Draw Watermark Background (More opaque black)
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)'; // Increased opacity
         ctx.fillRect(wmX, wmY, wmWidth, wmHeight);
 
         // Text Configuration
