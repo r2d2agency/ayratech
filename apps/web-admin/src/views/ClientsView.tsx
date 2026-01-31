@@ -42,7 +42,8 @@ const ClientsView: React.FC = () => {
     cidade: '',
     estado: '',
     cep: '',
-    logo: ''
+    logo: '',
+    password: ''
   });
 
   // Contract Form State
@@ -203,7 +204,8 @@ const ClientsView: React.FC = () => {
       cidade: '',
       estado: '',
       cep: '',
-      logo: ''
+      logo: '',
+      password: ''
     });
     setLogoFile(null);
     setEditingClient(null);
@@ -449,6 +451,18 @@ const ClientsView: React.FC = () => {
                     value={newClient.telefonePrincipal}
                     onChange={e => setNewClient({...newClient, telefonePrincipal: e.target.value})}
                     className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  />
+                </div>
+
+                <div className="col-span-2 md:col-span-1">
+                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Senha de Acesso</label>
+                  <input 
+                    type="password" 
+                    value={newClient.password || ''}
+                    onChange={e => setNewClient({...newClient, password: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                    placeholder={editingClient ? "Deixe em branco para manter" : "Senha do cliente"}
+                    required={!editingClient}
                   />
                 </div>
 
