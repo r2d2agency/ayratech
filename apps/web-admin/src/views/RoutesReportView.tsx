@@ -1256,6 +1256,86 @@ const RoutesReportView: React.FC = () => {
            </div>
         </div>
       )}
+      {/* Photo Processing Modal */}
+      {pendingFiles && (
+        <div className="fixed inset-0 bg-slate-900/50 z-[120] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+           <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+               <h2 className="text-xl font-black text-slate-900">Dados da Foto</h2>
+               <button 
+                  onClick={() => setPendingFiles(null)}
+                  className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-all"
+                >
+                  <X size={20} />
+                </button>
+             </div>
+             
+             <div className="p-6 space-y-4">
+                <p className="text-sm text-slate-500">
+                  Confirme os dados que serão estampados na marca d'água das {pendingFiles.files.length} fotos selecionadas.
+                </p>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Data</label>
+                    <input 
+                      type="date"
+                      value={photoMeta.date}
+                      onChange={e => setPhotoMeta({...photoMeta, date: e.target.value})}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Hora</label>
+                    <input 
+                      type="time"
+                      value={photoMeta.time}
+                      onChange={e => setPhotoMeta({...photoMeta, time: e.target.value})}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Promotor</label>
+                  <input 
+                    type="text"
+                    value={photoMeta.promoterName}
+                    onChange={e => setPhotoMeta({...photoMeta, promoterName: e.target.value})}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">PDV</label>
+                  <input 
+                    type="text"
+                    value={photoMeta.pdvName}
+                    onChange={e => setPhotoMeta({...photoMeta, pdvName: e.target.value})}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
+                  />
+                </div>
+             </div>
+
+             <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+               <button 
+                 onClick={() => setPendingFiles(null)}
+                 className="px-4 py-2 text-slate-600 font-bold hover:bg-slate-200 rounded-xl transition-colors"
+               >
+                 Cancelar
+               </button>
+               <button 
+                 onClick={processAndUploadPhotos}
+                 disabled={processing}
+                 className="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+               >
+                 {processing ? 'Processando...' : 'Confirmar e Enviar'}
+                 <Upload size={18} />
+               </button>
+             </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 };
