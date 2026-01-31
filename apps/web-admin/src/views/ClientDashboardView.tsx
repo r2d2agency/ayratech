@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import api from '../api/client';
 import { getImageUrl } from '../utils/image';
+import SectionHeader from '../components/SectionHeader';
 import { 
   BarChart, 
   Bar, 

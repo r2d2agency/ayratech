@@ -98,12 +98,24 @@ export class RoutesService {
   findByPromoter(promoterId: string) {
     return this.routesRepository.find({
       where: { promoter: { id: promoterId } },
-      relations: ['items', 'items.supermarket', 'promoter', 'items.products', 'items.products.product'],
+      relations: ['items', 'items.supermarket', 'items.products', 'items.products.product'],
       order: { date: 'DESC' }
     });
   }
 
   async findByClient(clientId: string) {
+    return this.routesRepository.createQueryBuilder('route')
+      .innerJoinAndSelect('route.items', 'items')
+      .innerJoinAndSelect('items.supermarket', 'supermarket')
+      .leftJoinAndSelect('route.promoter', 'promoter')
+      .innerJoinAndSelect('items.products', 'itemProducts')
+      .innerJoinAndSelect('itemProducts.product', 'product', 'product.client_id = :clientId', { clientId })
+      .leftJoinAndSelect('product.brand', 'brand')
+      .orderBy('route.date', 'DESC')
+      .getMany();
+  }
+
+  async findOne(id: string) {
     const routes = await this.routesRepository.find({
       relations: ['items', 'items.supermarket', 'promoter', 'items.products', 'items.products.product', 'items.products.product.client'],
       where: {
