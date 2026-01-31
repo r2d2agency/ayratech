@@ -116,7 +116,8 @@ export class AuthService {
       sub: client.id, 
       role: 'client',
       clientId: client.id,
-      razaoSocial: client.razaoSocial
+      razaoSocial: client.razaoSocial,
+      logo: client.logo
     };
     const token = this.jwtService.sign(payload);
     return {
