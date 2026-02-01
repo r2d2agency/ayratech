@@ -406,6 +406,11 @@ const ClientDashboardView: React.FC = () => {
     );
   }
 
+  // Handle errors or empty states gracefully
+  if (!clientInfo && !loading) {
+     // Optional: Render a fallback or retry button
+  }
+
   const renderTabs = () => (
     <div className="flex flex-wrap gap-2 border-b border-slate-200 mb-6">
       {[
@@ -571,7 +576,7 @@ const ClientDashboardView: React.FC = () => {
                   <XCircle size={20} className="text-red-500" />
                   Rupturas por PDV (Top 10)
                 </h3>
-                <div className="h-[300px]">
+                <div className="h-[300px] w-full min-h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={stockoutByPdvData} layout="vertical" margin={{ left: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} />
@@ -590,7 +595,7 @@ const ClientDashboardView: React.FC = () => {
                   <Calendar size={20} className="text-orange-500" />
                   Status de Validade
                 </h3>
-                <div className="h-[300px]">
+                <div className="h-[300px] w-full min-h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie

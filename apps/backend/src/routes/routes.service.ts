@@ -106,24 +106,29 @@ export class RoutesService {
 
   async findByClient(clientId: string) {
     console.log('RoutesService.findByClient called with:', clientId);
-    const routes = await this.routesRepository.createQueryBuilder('route')
-      .innerJoinAndSelect('route.items', 'items')
-      .innerJoinAndSelect('items.supermarket', 'supermarket')
-      .leftJoinAndSelect('route.promoter', 'promoter')
-      .leftJoinAndSelect('items.products', 'itemProducts')
-      .leftJoinAndSelect('itemProducts.product', 'product')
-      .leftJoinAndSelect('product.client', 'productClient')
-      .leftJoinAndSelect('product.brand', 'brand')
-      .leftJoinAndSelect('brand.client', 'brandClient')
-      .leftJoin('supermarket.clients', 'smClient')
-      .where('productClient.id = :clientId', { clientId })
-      .orWhere('brandClient.id = :clientId', { clientId })
-      .orWhere('smClient.id = :clientId', { clientId })
-      .orderBy('route.date', 'DESC')
-      .getMany();
-      
-    console.log(`RoutesService.findByClient found ${routes.length} routes`);
-    return routes;
+    try {
+      const routes = await this.routesRepository.createQueryBuilder('route')
+        .innerJoinAndSelect('route.items', 'items')
+        .innerJoinAndSelect('items.supermarket', 'supermarket')
+        .leftJoinAndSelect('route.promoter', 'promoter')
+        .leftJoinAndSelect('items.products', 'itemProducts')
+        .leftJoinAndSelect('itemProducts.product', 'product')
+        .leftJoinAndSelect('product.client', 'productClient')
+        .leftJoinAndSelect('product.brand', 'brand')
+        .leftJoinAndSelect('brand.client', 'brandClient')
+        .leftJoin('supermarket.clients', 'smClient')
+        .where('productClient.id = :clientId', { clientId })
+        .orWhere('brandClient.id = :clientId', { clientId })
+        .orWhere('smClient.id = :clientId', { clientId })
+        .orderBy('route.date', 'DESC')
+        .getMany();
+        
+      console.log(`RoutesService.findByClient found ${routes.length} routes`);
+      return routes;
+    } catch (error) {
+      console.error('Error in findByClient:', error);
+      throw new InternalServerErrorException('Error fetching client routes');
+    }
   }
 
   async findClientSupermarkets(clientId: string) {
