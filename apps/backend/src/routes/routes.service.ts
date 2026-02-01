@@ -110,10 +110,15 @@ export class RoutesService {
       .innerJoinAndSelect('route.items', 'items')
       .innerJoinAndSelect('items.supermarket', 'supermarket')
       .leftJoinAndSelect('route.promoter', 'promoter')
-      .innerJoinAndSelect('items.products', 'itemProducts')
-      .innerJoinAndSelect('itemProducts.product', 'product')
-      .innerJoinAndSelect('product.client', 'client', 'client.id = :clientId', { clientId })
+      .leftJoinAndSelect('items.products', 'itemProducts')
+      .leftJoinAndSelect('itemProducts.product', 'product')
+      .leftJoinAndSelect('product.client', 'productClient')
       .leftJoinAndSelect('product.brand', 'brand')
+      .leftJoinAndSelect('brand.client', 'brandClient')
+      .leftJoin('supermarket.clients', 'smClient')
+      .where('productClient.id = :clientId', { clientId })
+      .orWhere('brandClient.id = :clientId', { clientId })
+      .orWhere('smClient.id = :clientId', { clientId })
       .orderBy('route.date', 'DESC')
       .getMany();
       

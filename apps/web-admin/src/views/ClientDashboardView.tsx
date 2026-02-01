@@ -76,9 +76,15 @@ interface RouteItem {
         name: string;
         sku?: string;
         image?: string;
+        client?: {
+          id: string;
+        };
         brand?: {
           id: string;
           name: string;
+          client?: {
+            id: string;
+          };
         };
       };
     }>;
@@ -86,6 +92,7 @@ interface RouteItem {
 }
 
 interface ClientInfo {
+  id: string;
   name: string;
   logo?: string;
 }
@@ -120,13 +127,14 @@ const ClientDashboardView: React.FC = () => {
 
   useEffect(() => {
     filterData();
-  }, [routes, selectedPdv, selectedBrand, startDate, endDate]);
+  }, [routes, selectedPdv, selectedBrand, startDate, endDate, clientInfo]);
 
   const fetchClientInfo = async () => {
     try {
       const response = await api.get('/auth/profile');
       if (response.data) {
         setClientInfo({
+          id: response.data.id || response.data.clientId || response.data.sub,
           name: response.data.razaoSocial || response.data.username,
           logo: response.data.logo
         });
@@ -175,11 +183,52 @@ const ClientDashboardView: React.FC = () => {
         const matchesPdv = !selectedPdv || i.supermarket.id === selectedPdv;
         if (!matchesPdv) return false;
 
-        const hasMatchingProducts = !selectedBrand || i.products.some(p => p.product.brand?.id === selectedBrand);
-        return hasMatchingProducts;
+        // Check if any product matches the client ownership
+        // AND matches the selected brand if applicable
+        const hasMatchingProducts = i.products.some(p => {
+          // Ownership check
+          const belongsToClient = clientInfo ? (
+             p.product.client?.id === clientInfo.id || 
+             p.product.brand?.client?.id === clientInfo.id
+          ) : true; // If clientInfo not loaded yet, show all? Or wait? 
+          // Better to show all if not loaded to avoid flickering empty state, 
+          // but strict mode is safer. Let's assume true for now or it hides everything.
+          
+          if (!belongsToClient) return false;
+
+          // Brand filter
+          if (selectedBrand && p.product.brand?.id !== selectedBrand) return false;
+
+          return true;
+        });
+
+        // If no products match, BUT the supermarket is linked to the client (and no specific brand filter is set),
+        // we might still want to show the visit (e.g. check-in only).
+        // However, if the user selected a brand, we strictly want that brand.
+        if (!hasMatchingProducts) {
+           if (selectedBrand) return false;
+           // If no brand selected, and we are here, it means no products matched ownership.
+           // But if the PDV is ours, we keep the visit (with 0 products visible).
+           // We need to check if PDV is in our supermarkets list.
+           const isMyPdv = supermarkets.some(sm => sm.id === i.supermarket.id);
+           return isMyPdv;
+        }
+
+        return true;
       }).map(i => ({
         ...i,
-        products: selectedBrand ? i.products.filter(p => p.product.brand?.id === selectedBrand) : i.products
+        products: i.products.filter(p => {
+           // Apply same ownership and brand logic to filter individual products
+           const belongsToClient = clientInfo ? (
+             p.product.client?.id === clientInfo.id || 
+             p.product.brand?.client?.id === clientInfo.id
+          ) : true;
+          
+          if (!belongsToClient) return false;
+          if (selectedBrand && p.product.brand?.id !== selectedBrand) return false;
+          
+          return true;
+        })
       }));
 
       return {
