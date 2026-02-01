@@ -4,7 +4,7 @@ import { offlineService } from '../services/offline.service';
 import { toast, Toaster } from 'react-hot-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Clock, MapPin, Coffee, LogIn, LogOut, ArrowLeft, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { Clock, MapPin, Coffee, LogIn, LogOut, ArrowLeft, Wifi, WifiOff, RefreshCw, List, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface TimeClockEvent {
@@ -217,6 +217,16 @@ export default function TimeClockView() {
   const btnConfig = getButtonConfig();
   const Icon = btnConfig.icon;
 
+  const getEventLabel = (type: string) => {
+    switch (type) {
+      case 'ENTRY': return 'Entrada';
+      case 'LUNCH_START': return 'Início Almoço';
+      case 'LUNCH_END': return 'Volta Almoço';
+      case 'EXIT': return 'Saída';
+      default: return type;
+    }
+  };
+
   if (loading) return <div className="h-screen flex items-center justify-center">Carregando...</div>;
 
   return (
@@ -230,7 +240,7 @@ export default function TimeClockView() {
             <ArrowLeft size={24} className="text-gray-600" />
             </button>
             <h1 className="font-bold text-gray-800 text-lg">
-              Ponto Eletrônico <span className="text-xs text-gray-400 font-normal ml-2">v1.1</span>
+              Ponto Eletrônico <span className="text-xs text-gray-400 font-normal ml-2">v1.2</span>
             </h1>
         </div>
 
@@ -323,6 +333,44 @@ export default function TimeClockView() {
             </div>
           </div>
         </div>
+
+        {/* History List */}
+        <div className="w-full bg-white rounded-xl shadow-sm p-4 space-y-3">
+          <h3 className="font-bold text-gray-700 border-b pb-2 flex items-center gap-2">
+            <List size={18} /> Histórico Completo
+          </h3>
+          
+          <div className="space-y-3">
+            {data?.events && data.events.length > 0 ? (
+              data.events.map((event) => (
+                <div key={event.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${
+                      event.eventType === 'ENTRY' ? 'bg-green-100 text-green-600' :
+                      event.eventType === 'EXIT' ? 'bg-red-100 text-red-600' :
+                      'bg-orange-100 text-orange-600'
+                    }`}>
+                      <Clock size={16} />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-800">{getEventLabel(event.eventType)}</p>
+                      <p className="text-xs text-gray-500">{format(new Date(event.timestamp), "d 'de' MMMM", { locale: ptBR })}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold font-mono text-gray-800">{format(new Date(event.timestamp), 'HH:mm')}</p>
+                    {/* <span className="text-xs bg-blue-100 text-blue-700 px-1 rounded">Online</span> */}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-4 text-gray-400">
+                <p>Nenhum registro hoje.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
     </div>
   );
