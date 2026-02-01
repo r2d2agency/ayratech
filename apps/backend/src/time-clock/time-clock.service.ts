@@ -218,16 +218,16 @@ export class TimeClockService {
 
     try {
         // Use explicit assignment to handle TypeORM relations correctly (insert: false columns)
-        const event = new TimeClockEvent();
-        event.employee = { id: employeeId } as any; // Cast to avoid full Employee requirement
-        event.eventType = eventType;
-        event.timestamp = eventDate;
-        event.isManual = true;
-        event.editedBy = editorName;
-        event.validationReason = observation || 'Ajuste manual';
-        event.validationStatus = 'approved';
-
-        return await this.eventsRepository.save(event);
+        // Use save directly with object to match create() method pattern which works
+        return await this.eventsRepository.save({
+            employee: { id: employeeId },
+            eventType,
+            timestamp: eventDate,
+            isManual: true,
+            editedBy: editorName,
+            validationReason: observation || 'Ajuste manual',
+            validationStatus: 'approved'
+        });
     } catch (error) {
         console.error('Error creating manual time clock entry:', error);
         console.error('Error details (code/message):', error.code, error.message);

@@ -587,7 +587,7 @@ const ClientDashboardView: React.FC = () => {
                   Rupturas por PDV (Top 10)
                 </h3>
                 <div style={{ width: '100%', height: 300, minHeight: 300 }}>
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={200}>
                     <BarChart data={stockoutByPdvData} layout="vertical" margin={{ left: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                       <XAxis type="number" />
@@ -606,7 +606,7 @@ const ClientDashboardView: React.FC = () => {
                   Status de Validade
                 </h3>
                 <div style={{ width: '100%', height: 300, minHeight: 300 }}>
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={200}>
                     <PieChart>
                       <Pie
                         data={expiryStatusData}
