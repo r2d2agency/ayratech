@@ -132,11 +132,32 @@ export class RoutesService {
   }
 
   async findClientSupermarkets(clientId: string) {
-    const client = await this.dataSource.getRepository(Client).findOne({
-      where: { id: clientId },
-      relations: ['supermarkets']
-    });
-    return client?.supermarkets || [];
+    console.log('RoutesService.findClientSupermarkets called with:', clientId);
+    if (!clientId) {
+      console.error('RoutesService.findClientSupermarkets: No clientId provided');
+      return [];
+    }
+
+    try {
+      const client = await this.dataSource.getRepository(Client).findOne({
+        where: { id: clientId },
+        relations: ['supermarkets']
+      });
+      
+      if (!client) {
+        console.warn(`RoutesService.findClientSupermarkets: Client not found for id ${clientId}`);
+        return [];
+      }
+
+      console.log(`RoutesService.findClientSupermarkets found ${client.supermarkets?.length || 0} supermarkets`);
+      return client.supermarkets || [];
+    } catch (error) {
+      console.error('Error in findClientSupermarkets:', error);
+      // Do not throw 500, return empty array to prevent frontend crash
+      // or rethrow as InternalServerErrorException if you want to signal failure
+      // For now, let's return empty array but log the error
+      return [];
+    }
   }
 
   findTemplates() {

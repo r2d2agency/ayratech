@@ -147,17 +147,27 @@ const ClientDashboardView: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Parallel requests for better performance
-      const [routesRes, pdvsRes] = await Promise.all([
+      // Parallel requests with independent error handling
+      const [routesRes, pdvsRes] = await Promise.allSettled([
         api.get('/routes/client/all'),
         api.get('/routes/client/supermarkets')
       ]);
 
-      console.log('ClientDashboardView: Routes received:', routesRes.data);
-      console.log('ClientDashboardView: Supermarkets received:', pdvsRes.data);
+      if (routesRes.status === 'fulfilled') {
+        console.log('ClientDashboardView: Routes received:', routesRes.value.data);
+        setRoutes(routesRes.value.data);
+      } else {
+        console.error('ClientDashboardView: Error fetching routes:', routesRes.reason);
+      }
 
-      setRoutes(routesRes.data);
-      setSupermarkets(pdvsRes.data || []);
+      if (pdvsRes.status === 'fulfilled') {
+        console.log('ClientDashboardView: Supermarkets received:', pdvsRes.value.data);
+        setSupermarkets(pdvsRes.value.data || []);
+      } else {
+        console.error('ClientDashboardView: Error fetching supermarkets:', pdvsRes.reason);
+        // We can continue without supermarkets (will fallback to route extraction)
+      }
+
     } catch (error) {
       console.error('Error fetching client data:', error);
     } finally {

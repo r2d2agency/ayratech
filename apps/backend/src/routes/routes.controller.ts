@@ -29,6 +29,8 @@ export class RoutesController {
   findClientSupermarkets(@Req() req: any) {
     if (req.user.role !== 'client') throw new UnauthorizedException();
     const id = req.user.clientId || req.user.userId || req.user.sub;
+    console.log('RoutesController.findClientSupermarkets user:', JSON.stringify(req.user), 'extracted id:', id);
+    if (!id) throw new BadRequestException('Client ID not found in token');
     return this.routesService.findClientSupermarkets(id);
   }
 
