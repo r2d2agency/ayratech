@@ -139,6 +139,7 @@ const ClientDashboardView: React.FC = () => {
     setLoading(true);
     try {
       const response = await api.get('/routes/client/all');
+      console.log('ClientDashboardView: Routes received:', response.data);
       setRoutes(response.data);
     } catch (error) {
       console.error('Error fetching client data:', error);

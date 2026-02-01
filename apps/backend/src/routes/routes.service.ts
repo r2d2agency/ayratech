@@ -104,15 +104,20 @@ export class RoutesService {
   }
 
   async findByClient(clientId: string) {
-    return this.routesRepository.createQueryBuilder('route')
+    console.log('RoutesService.findByClient called with:', clientId);
+    const routes = await this.routesRepository.createQueryBuilder('route')
       .innerJoinAndSelect('route.items', 'items')
       .innerJoinAndSelect('items.supermarket', 'supermarket')
       .leftJoinAndSelect('route.promoter', 'promoter')
       .innerJoinAndSelect('items.products', 'itemProducts')
-      .innerJoinAndSelect('itemProducts.product', 'product', 'product.client_id = :clientId', { clientId })
+      .innerJoinAndSelect('itemProducts.product', 'product')
+      .innerJoinAndSelect('product.client', 'client', 'client.id = :clientId', { clientId })
       .leftJoinAndSelect('product.brand', 'brand')
       .orderBy('route.date', 'DESC')
       .getMany();
+      
+    console.log(`RoutesService.findByClient found ${routes.length} routes`);
+    return routes;
   }
 
   findTemplates() {
