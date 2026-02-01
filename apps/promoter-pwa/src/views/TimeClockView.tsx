@@ -83,18 +83,84 @@ export default function TimeClockView() {
 
   const fetchStatus = async () => {
     try {
-      const response = await client.get('/time-clock/status/today');
-      setData(response.data);
-      localStorage.setItem('timeClockStatus', JSON.stringify(response.data));
-    } catch (error) {
-      console.error('Error fetching status, trying local cache', error);
-      const cached = localStorage.getItem('timeClockStatus');
-      if (cached) {
-          setData(JSON.parse(cached));
-          toast('Modo Offline: Usando dados em cache', { icon: '📡' });
-      } else {
-          toast.error('Erro ao carregar dados do ponto');
+      let finalData: TodayStatus;
+
+      try {
+        const response = await client.get('/time-clock/status/today');
+        finalData = response.data;
+      } catch (error) {
+        console.error('Error fetching status, trying local cache', error);
+        const cached = localStorage.getItem('timeClockStatus');
+        if (cached) {
+            finalData = JSON.parse(cached);
+            toast('Modo Offline: Usando dados em cache', { icon: '📡' });
+        } else {
+            throw error;
+        }
       }
+
+      // Merge Pending Actions logic
+      const pendingActions = await offlineService.getPendingActionsByType('TIME_CLOCK');
+      if (pendingActions && pendingActions.length > 0) {
+        console.log(`Aplicando ${pendingActions.length} ações pendentes ao estado.`);
+        
+        // Sort by creation time
+        pendingActions.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        
+        const newSummary = { ...finalData.summary };
+        let newStatus = finalData.status;
+        let newNextAction = finalData.nextAction;
+        const newEvents = [...(finalData.events || [])];
+
+        for (const action of pendingActions) {
+            const payload = action.payload;
+            const type = payload.eventType;
+            const ts = payload.timestamp;
+
+            // Update Summary & Status
+            if (type === 'ENTRY') {
+                newSummary.entry = ts;
+                newStatus = 'WORKING';
+                newNextAction = 'LUNCH_START';
+            } else if (type === 'LUNCH_START') {
+                newSummary.lunchStart = ts;
+                newStatus = 'LUNCH';
+                newNextAction = 'LUNCH_END';
+            } else if (type === 'LUNCH_END') {
+                newSummary.lunchEnd = ts;
+                newStatus = 'WORKING';
+                newNextAction = 'EXIT';
+            } else if (type === 'EXIT') {
+                newSummary.exit = ts;
+                newStatus = 'DONE';
+                newNextAction = 'DONE';
+            }
+
+            // Add to events list if not already present (avoid duplicates)
+            if (!newEvents.find(e => e.timestamp === ts)) {
+                newEvents.push({
+                    id: 'pending-' + action.id,
+                    eventType: type as any,
+                    timestamp: ts
+                });
+            }
+        }
+
+        finalData = {
+            ...finalData,
+            summary: newSummary,
+            status: newStatus,
+            nextAction: newNextAction,
+            events: newEvents
+        };
+      }
+
+      setData(finalData);
+      localStorage.setItem('timeClockStatus', JSON.stringify(finalData));
+
+    } catch (error) {
+        console.error('Critical error fetching status', error);
+        toast.error('Erro ao carregar dados do ponto');
     } finally {
       setLoading(false);
     }
@@ -240,7 +306,7 @@ export default function TimeClockView() {
             <ArrowLeft size={24} className="text-gray-600" />
             </button>
             <h1 className="font-bold text-gray-800 text-lg">
-              Ponto Eletrônico <span className="text-xs text-gray-400 font-normal ml-2">v1.2</span>
+              Ponto Eletrônico <span className="text-xs text-gray-400 font-normal ml-2">v1.3</span>
             </h1>
         </div>
 

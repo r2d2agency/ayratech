@@ -127,6 +127,14 @@ class OfflineService {
   async getPendingCount() {
     return await db.pendingActions.where('status').anyOf('PENDING', 'ERROR').count();
   }
+
+  async getPendingActionsByType(type: PendingAction['type']) {
+    return await db.pendingActions
+      .where('type')
+      .equals(type)
+      .filter(item => item.status === 'PENDING' || item.status === 'ERROR')
+      .toArray();
+  }
 }
 
 export const offlineService = new OfflineService();
