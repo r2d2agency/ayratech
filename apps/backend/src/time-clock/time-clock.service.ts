@@ -4,6 +4,7 @@ import { Repository, Between } from 'typeorm';
 import * as ExcelJS from 'exceljs';
 import { TimeClockEvent } from './entities/time-clock-event.entity';
 import { TimeBalance } from './entities/time-balance.entity';
+import { WorkSchedule } from '../work-schedules/entities/work-schedule.entity';
 import { CreateTimeClockEventDto, CreateTimeBalanceDto } from './dto/create-time-clock.dto';
 import { UpdateTimeClockEventDto } from './dto/update-time-clock.dto';
 
@@ -14,6 +15,8 @@ export class TimeClockService {
     private eventsRepository: Repository<TimeClockEvent>,
     @InjectRepository(TimeBalance)
     private balancesRepository: Repository<TimeBalance>,
+    @InjectRepository(WorkSchedule)
+    private schedulesRepository: Repository<WorkSchedule>,
   ) {}
 
   async generateReport(startDate?: string, endDate?: string, employeeId?: string) {
@@ -190,10 +193,40 @@ export class TimeClockService {
         }
     }
 
+    // Fetch Schedule for Today
+    let scheduleRule = null;
+    const allSchedules = await this.schedulesRepository.find({
+        where: { employee: { id: employeeId } },
+        relations: ['days'],
+        order: { validFrom: 'DESC' }
+    });
+
+    const activeSchedule = allSchedules.find(s => {
+        const start = new Date(s.validFrom);
+        const end = s.validTo ? new Date(s.validTo) : new Date(9999, 11, 31);
+        return now >= start && now <= end;
+    });
+
+    if (activeSchedule) {
+        const dayOfWeek = now.getDay(); // 0-6
+        const todayRule = activeSchedule.days.find(d => d.dayOfWeek === dayOfWeek && d.active);
+        
+        if (todayRule) {
+            scheduleRule = {
+                startTime: todayRule.startTime,
+                endTime: todayRule.endTime,
+                breakStart: todayRule.breakStart,
+                breakEnd: todayRule.breakEnd,
+                toleranceMinutes: todayRule.toleranceMinutes
+            };
+        }
+    }
+
     return {
         events,
         nextAction,
         status,
+        schedule: scheduleRule,
         summary: {
              entry: events.find(e => e.eventType === 'ENTRY')?.timestamp,
              lunchStart: events.find(e => e.eventType === 'LUNCH_START')?.timestamp,

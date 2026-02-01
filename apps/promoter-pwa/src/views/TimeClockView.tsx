@@ -4,7 +4,7 @@ import { offlineService } from '../services/offline.service';
 import { toast, Toaster } from 'react-hot-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Clock, MapPin, Coffee, LogIn, LogOut, ArrowLeft, Wifi, WifiOff, RefreshCw, List, Calendar } from 'lucide-react';
+import { Clock, MapPin, Coffee, LogIn, LogOut, ArrowLeft, Wifi, WifiOff, RefreshCw, List, Calendar, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface TimeClockEvent {
@@ -13,10 +13,19 @@ interface TimeClockEvent {
   timestamp: string;
 }
 
+interface ScheduleRule {
+  startTime: string;
+  endTime: string;
+  breakStart?: string | null;
+  breakEnd?: string | null;
+  toleranceMinutes: number;
+}
+
 interface TodayStatus {
   events: TimeClockEvent[];
   nextAction: 'ENTRY' | 'LUNCH_START' | 'LUNCH_END' | 'EXIT' | 'DONE';
   status: 'PENDING' | 'WORKING' | 'LUNCH' | 'DONE';
+  schedule?: ScheduleRule | null;
   summary: {
     entry?: string;
     lunchStart?: string;
@@ -293,6 +302,45 @@ export default function TimeClockView() {
     }
   };
 
+  const getScheduledTime = (type: string) => {
+    if (!data?.schedule) return null;
+    switch (type) {
+        case 'ENTRY': return data.schedule.startTime;
+        case 'LUNCH_START': return data.schedule.breakStart;
+        case 'LUNCH_END': return data.schedule.breakEnd;
+        case 'EXIT': return data.schedule.endTime;
+        default: return null;
+    }
+  };
+
+  const isLate = (type: string) => {
+      const scheduled = getScheduledTime(type);
+      if (!scheduled || !data?.schedule) return false;
+      
+      // If already done, not late (or at least, we don't show the warning anymore)
+      // Check if done:
+      if (type === 'ENTRY' && data.summary.entry) return false;
+      if (type === 'LUNCH_START' && data.summary.lunchStart) return false;
+      if (type === 'LUNCH_END' && data.summary.lunchEnd) return false;
+      if (type === 'EXIT' && data.summary.exit) return false;
+
+      // Current Time vs Scheduled + Tolerance
+      const [h, m] = scheduled.split(':').map(Number);
+      const limit = new Date();
+      limit.setHours(h, m + data.schedule.toleranceMinutes, 0, 0);
+      
+      return new Date() > limit;
+  };
+
+  const activeDelay = (() => {
+      if (!data) return null;
+      if (data.nextAction === 'ENTRY' && isLate('ENTRY')) return 'Entrada';
+      if (data.nextAction === 'LUNCH_START' && isLate('LUNCH_START')) return 'Início Almoço';
+      if (data.nextAction === 'LUNCH_END' && isLate('LUNCH_END')) return 'Volta Almoço';
+      if (data.nextAction === 'EXIT' && isLate('EXIT')) return 'Saída';
+      return null;
+  })();
+
   if (loading) return <div className="h-screen flex items-center justify-center">Carregando...</div>;
 
   return (
@@ -306,18 +354,20 @@ export default function TimeClockView() {
             <ArrowLeft size={24} className="text-gray-600" />
             </button>
             <h1 className="font-bold text-gray-800 text-lg">
-              Ponto Eletrônico <span className="text-xs text-gray-400 font-normal ml-2">v1.3</span>
+              Ponto Eletrônico <span className="text-xs text-gray-400 font-normal ml-2">v1.4</span>
             </h1>
         </div>
 
         <div className="flex items-center gap-2">
             {pendingCount > 0 && (
                 <button 
-                    onClick={() => offlineService.syncPendingActions()}
-                    className="p-2 bg-orange-100 text-orange-600 rounded-full animate-pulse"
-                    title={`${pendingCount} ações pendentes. Clique para sincronizar.`}
+                  onClick={() => offlineService.syncPendingActions().then(() => { fetchStatus(); updatePendingCount(); })}
+                  className="bg-orange-100 text-orange-600 p-2 rounded-full relative"
                 >
-                    <RefreshCw size={20} />
+                  <RefreshCw size={20} className={processing ? 'animate-spin' : ''} />
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
+                    {pendingCount}
+                  </span>
                 </button>
             )}
             {isOnline ? (
@@ -328,7 +378,18 @@ export default function TimeClockView() {
         </div>
       </div>
 
-      <div className="p-6 flex flex-col items-center gap-8">
+      <div className="p-4 space-y-4">
+        
+        {/* Delay Warning */}
+        {activeDelay && (
+          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r shadow-sm flex items-center gap-3 animate-pulse">
+             <AlertTriangle size={24} />
+             <div>
+                <p className="font-bold text-sm">Atenção: Atraso Detectado</p>
+                <p className="text-xs">Você está atrasado para: <span className="font-bold">{activeDelay}</span>. Registre agora!</p>
+             </div>
+          </div>
+        )}
         
         {/* Clock Display */}
         <div className="flex flex-col items-center gap-2 mt-4">
@@ -374,26 +435,38 @@ export default function TimeClockView() {
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <span className="text-xs text-gray-500">Entrada</span>
-              <p className="font-mono font-medium text-gray-800">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500">Entrada</span>
+                {data?.schedule?.startTime && <span className="text-[10px] text-gray-400">Meta: {data.schedule.startTime}</span>}
+              </div>
+              <p className={`font-mono font-medium ${isLate('ENTRY') ? 'text-red-600' : 'text-gray-800'}`}>
                 {data?.summary.entry ? format(new Date(data.summary.entry), 'HH:mm') : '--:--'}
               </p>
             </div>
             <div className="space-y-1">
-              <span className="text-xs text-gray-500">Saída Almoço</span>
-              <p className="font-mono font-medium text-gray-800">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500">Saída Almoço</span>
+                {data?.schedule?.breakStart && <span className="text-[10px] text-gray-400">Meta: {data.schedule.breakStart}</span>}
+              </div>
+              <p className={`font-mono font-medium ${isLate('LUNCH_START') ? 'text-red-600' : 'text-gray-800'}`}>
                 {data?.summary.lunchStart ? format(new Date(data.summary.lunchStart), 'HH:mm') : '--:--'}
               </p>
             </div>
             <div className="space-y-1">
-              <span className="text-xs text-gray-500">Volta Almoço</span>
-              <p className="font-mono font-medium text-gray-800">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500">Volta Almoço</span>
+                {data?.schedule?.breakEnd && <span className="text-[10px] text-gray-400">Meta: {data.schedule.breakEnd}</span>}
+              </div>
+              <p className={`font-mono font-medium ${isLate('LUNCH_END') ? 'text-red-600' : 'text-gray-800'}`}>
                 {data?.summary.lunchEnd ? format(new Date(data.summary.lunchEnd), 'HH:mm') : '--:--'}
               </p>
             </div>
             <div className="space-y-1">
-              <span className="text-xs text-gray-500">Saída</span>
-              <p className="font-mono font-medium text-gray-800">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500">Saída</span>
+                {data?.schedule?.endTime && <span className="text-[10px] text-gray-400">Meta: {data.schedule.endTime}</span>}
+              </div>
+              <p className={`font-mono font-medium ${isLate('EXIT') ? 'text-red-600' : 'text-gray-800'}`}>
                 {data?.summary.exit ? format(new Date(data.summary.exit), 'HH:mm') : '--:--'}
               </p>
             </div>
