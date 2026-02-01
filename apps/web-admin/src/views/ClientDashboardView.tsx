@@ -586,7 +586,7 @@ const ClientDashboardView: React.FC = () => {
                   <XCircle size={20} className="text-red-500" />
                   Rupturas por PDV (Top 10)
                 </h3>
-                <div className="h-[300px] w-full min-h-[300px]">
+                <div style={{ width: '100%', height: 300, minHeight: 300 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={stockoutByPdvData} layout="vertical" margin={{ left: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} />
@@ -605,7 +605,7 @@ const ClientDashboardView: React.FC = () => {
                   <Calendar size={20} className="text-orange-500" />
                   Status de Validade
                 </h3>
-                <div className="h-[300px] w-full min-h-[300px]">
+                <div style={{ width: '100%', height: 300, minHeight: 300 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
