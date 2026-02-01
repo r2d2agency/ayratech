@@ -20,7 +20,16 @@ export class RoutesController {
   @Get('client/all')
   findAllByClient(@Req() req: any) {
     if (req.user.role !== 'client') throw new UnauthorizedException();
-    return this.routesService.findByClient(req.user.clientId);
+    const id = req.user.clientId || req.user.userId || req.user.sub;
+    if (!id) throw new UnauthorizedException('Client ID not found in token');
+    return this.routesService.findByClient(id);
+  }
+
+  @Get('client/supermarkets')
+  findClientSupermarkets(@Req() req: any) {
+    if (req.user.role !== 'client') throw new UnauthorizedException();
+    const id = req.user.clientId || req.user.userId || req.user.sub;
+    return this.routesService.findClientSupermarkets(id);
   }
 
   @Get('templates/all')

@@ -5,6 +5,7 @@ import { Route } from './entities/route.entity';
 import { RouteItem } from './entities/route-item.entity';
 import { RouteItemProduct } from './entities/route-item-product.entity';
 import { RouteRule } from './entities/route-rule.entity';
+import { Client } from '../entities/client.entity';
 import { CreateRouteDto } from './dto/create-route.dto';
 import { UpdateRouteDto } from './dto/update-route.dto';
 
@@ -118,6 +119,14 @@ export class RoutesService {
       
     console.log(`RoutesService.findByClient found ${routes.length} routes`);
     return routes;
+  }
+
+  async findClientSupermarkets(clientId: string) {
+    const client = await this.dataSource.getRepository(Client).findOne({
+      where: { id: clientId },
+      relations: ['supermarkets']
+    });
+    return client?.supermarkets || [];
   }
 
   findTemplates() {

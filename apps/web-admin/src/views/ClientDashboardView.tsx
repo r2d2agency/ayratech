@@ -94,6 +94,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#FF4444'];
 
 const ClientDashboardView: React.FC = () => {
   const { settings } = useBranding();
+  const [supermarkets, setSupermarkets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [routes, setRoutes] = useState<RouteItem[]>([]);
   const [filteredRoutes, setFilteredRoutes] = useState<RouteItem[]>([]);
@@ -138,9 +139,17 @@ const ClientDashboardView: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/routes/client/all');
-      console.log('ClientDashboardView: Routes received:', response.data);
-      setRoutes(response.data);
+      // Parallel requests for better performance
+      const [routesRes, pdvsRes] = await Promise.all([
+        api.get('/routes/client/all'),
+        api.get('/routes/client/supermarkets')
+      ]);
+
+      console.log('ClientDashboardView: Routes received:', routesRes.data);
+      console.log('ClientDashboardView: Supermarkets received:', pdvsRes.data);
+
+      setRoutes(routesRes.data);
+      setSupermarkets(pdvsRes.data || []);
     } catch (error) {
       console.error('Error fetching client data:', error);
     } finally {
@@ -227,16 +236,79 @@ const ClientDashboardView: React.FC = () => {
   }, [filteredRoutes]);
 
   const pdvs = useMemo(() => {
-    const uniquePdvs = new Map();
-    routes.forEach(r => {
-      r.items.forEach(i => {
-        if (!uniquePdvs.has(i.supermarket.id)) {
-          uniquePdvs.set(i.supermarket.id, i.supermarket.fantasyName);
+    // If we have direct supermarkets list, use it as base
+    if (supermarkets.length > 0) {
+      return supermarkets.map(sm => {
+        // Calculate stats from routes for this supermarket
+        const smRoutes = filteredRoutes.filter(r => 
+          r.items.some(i => i.supermarket.id === sm.id)
+        );
+        
+        let visits = 0;
+        let rupturas = 0;
+        let vencidos = 0;
+
+        smRoutes.forEach(route => {
+           const item = route.items.find(i => i.supermarket.id === sm.id);
+           if (item) {
+             visits++;
+             item.products.forEach(p => {
+               if (p.isStockout) rupturas++;
+               // Check validity
+               if (p.validityDate) {
+                 const today = new Date();
+                 const valDate = new Date(p.validityDate);
+                 const diffTime = valDate.getTime() - today.getTime();
+                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                 if (diffDays <= 30) vencidos++;
+               }
+             });
+           }
+        });
+
+        return {
+          id: sm.id,
+          name: sm.fantasyName || sm.razaoSocial || 'Sem Nome',
+          city: sm.city || sm.cidade || 'N/A',
+          visits,
+          rupturas,
+          vencidos
+        };
+      });
+    }
+
+    // Fallback to extracting from routes if supermarkets list is empty
+    const pdvsMap = new Map();
+    filteredRoutes.forEach(route => {
+      route.items.forEach(item => {
+        if (!pdvsMap.has(item.supermarket.id)) {
+          pdvsMap.set(item.supermarket.id, {
+            id: item.supermarket.id,
+            name: item.supermarket.fantasyName,
+            city: item.supermarket.city || 'N/A',
+            visits: 0,
+            rupturas: 0,
+            vencidos: 0
+          });
         }
+        
+        const pdv = pdvsMap.get(item.supermarket.id);
+        pdv.visits++;
+        
+        item.products.forEach(p => {
+          if (p.isStockout) pdv.rupturas++;
+           if (p.validityDate) {
+              const today = new Date();
+              const valDate = new Date(p.validityDate);
+              const diffTime = valDate.getTime() - today.getTime();
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              if (diffDays <= 30) pdv.vencidos++;
+            }
+        });
       });
     });
-    return Array.from(uniquePdvs.entries()).map(([id, name]) => ({ id, name }));
-  }, [routes]);
+    return Array.from(pdvsMap.values());
+  }, [filteredRoutes, supermarkets]);
 
   const brands = useMemo(() => {
     const uniqueBrands = new Map();
