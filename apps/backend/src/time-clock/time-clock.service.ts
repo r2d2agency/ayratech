@@ -106,9 +106,10 @@ export class TimeClockService {
   }
 
   async create(createTimeClockEventDto: CreateTimeClockEventDto) {
+    const { employeeId } = createTimeClockEventDto;
     try {
       console.log('Creating time clock event via App:', JSON.stringify(createTimeClockEventDto));
-      const { employeeId, timestamp, ...eventData } = createTimeClockEventDto;
+      const { timestamp, ...eventData } = createTimeClockEventDto;
       
       // Validate if employee exists/is provided
       if (!employeeId) {
