@@ -238,11 +238,18 @@ export default function TimeClockView() {
                 newNextAction = 'DONE';
             }
 
+            const newEvent: TimeClockEvent = {
+                id: 'temp-' + Date.now(),
+                eventType: data.nextAction,
+                timestamp: timestamp
+            };
+
             const newData = {
                 ...data,
                 status: newStatus,
                 nextAction: newNextAction,
-                summary: newSummary
+                summary: newSummary,
+                events: [...(data.events || []), newEvent]
             };
             
             setData(newData);
@@ -498,7 +505,11 @@ export default function TimeClockView() {
                   </div>
                   <div className="text-right">
                     <p className="font-bold font-mono text-gray-800">{format(new Date(event.timestamp), 'HH:mm')}</p>
-                    {/* <span className="text-xs bg-blue-100 text-blue-700 px-1 rounded">Online</span> */}
+                    {(event.id.startsWith('pending-') || event.id.startsWith('temp-')) && (
+                        <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1 rounded flex items-center justify-end gap-1 mt-1">
+                           <Clock size={10} /> Pendente
+                        </span>
+                    )}
                   </div>
                 </div>
               ))

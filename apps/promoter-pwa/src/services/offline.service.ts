@@ -117,7 +117,10 @@ class OfflineService {
     if (failCount === 0) {
       toast.success('Sincronização concluída com sucesso!');
     } else {
-      toast.error(`${failCount} ações falharam. Verifique o console para detalhes.`);
+      // Get the last error message to show to the user
+      const lastErrorAction = pendingActions.find(a => a.status === 'ERROR' || (a as any)._lastError);
+      const errorMsg = (lastErrorAction as any)?.error || 'Verifique sua conexão e tente novamente.';
+      toast.error(`${failCount} ações falharam: ${errorMsg}`);
     }
     
     // Refresh pending count UI
@@ -125,14 +128,14 @@ class OfflineService {
   }
 
   async getPendingCount() {
-    return await db.pendingActions.where('status').anyOf('PENDING', 'ERROR').count();
+    return await db.pendingActions.where('status').anyOf('PENDING', 'ERROR', 'SYNCING').count();
   }
 
   async getPendingActionsByType(type: PendingAction['type']) {
     return await db.pendingActions
       .where('type')
       .equals(type)
-      .filter(item => item.status === 'PENDING' || item.status === 'ERROR')
+      .filter(item => item.status === 'PENDING' || item.status === 'ERROR' || item.status === 'SYNCING')
       .toArray();
   }
 }
