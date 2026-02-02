@@ -112,7 +112,8 @@ export class TimeClockService {
     const { employeeId } = createTimeClockEventDto;
     try {
       console.log('Creating time clock event via App:', JSON.stringify(createTimeClockEventDto));
-      const { timestamp, ...eventData } = createTimeClockEventDto;
+      // Remove employeeId from eventData to prevent conflicts with insert: false column
+      const { timestamp, employeeId: _, ...eventData } = createTimeClockEventDto;
       
       // Validate if employee exists/is provided
       if (!employeeId) {
@@ -132,23 +133,17 @@ export class TimeClockService {
 
       console.log(`Saving event for employee: ${employeeId}`);
 
-      // Explicitly construct the entity to avoid any ambiguity or pollution
-      // and ensure relation is handled correctly by TypeORM
-      const event = new TimeClockEvent();
-      event.employee = employee; // Use the fetched entity
-      event.timestamp = new Date(timestamp);
-      event.eventType = eventData.eventType;
+      // Use repository.create() to properly handle entity metadata and relations
+      const event = this.eventsRepository.create({
+        ...eventData,
+        timestamp: new Date(timestamp),
+        employee: employee,
+        validationStatus: eventData.validationStatus || 'pending'
+      });
       
-      // Optional fields
-      if (eventData.latitude !== undefined) event.latitude = eventData.latitude;
-      if (eventData.longitude !== undefined) event.longitude = eventData.longitude;
-      if (eventData.storeId) event.storeId = eventData.storeId;
-      if (eventData.routeId) event.routeId = eventData.routeId;
-      if (eventData.deviceId) event.deviceId = eventData.deviceId;
-      if (eventData.facialPhotoUrl) event.facialPhotoUrl = eventData.facialPhotoUrl;
-      
-      event.validationStatus = eventData.validationStatus || 'pending';
-      if (eventData.validationReason) event.validationReason = eventData.validationReason;
+      // Explicitly force the relation ID on the object just in case (though create() should handle it)
+      // This is a safety measure for some TypeORM edge cases
+      (event as any).employeeId = employee.id;
 
       const savedEvent = await this.eventsRepository.save(event);
       
