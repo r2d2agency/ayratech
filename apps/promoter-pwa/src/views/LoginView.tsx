@@ -96,7 +96,7 @@ const LoginView = () => {
         </form>
         
         <div className="text-center text-xs text-gray-400">
-          v1.0.0
+          v1.4
         </div>
       </div>
     </div>
