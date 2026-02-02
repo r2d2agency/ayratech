@@ -4,6 +4,7 @@ import { Repository, Between } from 'typeorm';
 import * as ExcelJS from 'exceljs';
 import { TimeClockEvent } from './entities/time-clock-event.entity';
 import { TimeBalance } from './entities/time-balance.entity';
+import { Employee } from '../employees/entities/employee.entity';
 import { WorkSchedule } from '../work-schedules/entities/work-schedule.entity';
 import { CreateTimeClockEventDto, CreateTimeBalanceDto } from './dto/create-time-clock.dto';
 import { UpdateTimeClockEventDto } from './dto/update-time-clock.dto';
@@ -17,6 +18,8 @@ export class TimeClockService {
     private balancesRepository: Repository<TimeBalance>,
     @InjectRepository(WorkSchedule)
     private schedulesRepository: Repository<WorkSchedule>,
+    @InjectRepository(Employee)
+    private employeesRepository: Repository<Employee>,
   ) {}
 
   async generateReport(startDate?: string, endDate?: string, employeeId?: string) {
@@ -117,6 +120,12 @@ export class TimeClockService {
           throw new BadRequestException('Employee ID is required');
       }
 
+      // Verify if employee actually exists to avoid Not Null violations on relation
+      const employee = await this.employeesRepository.findOne({ where: { id: employeeId } });
+      if (!employee) {
+          throw new BadRequestException(`Funcionário não encontrado (ID: ${employeeId}).`);
+      }
+
       // Ensure coords are numbers if provided
       if (eventData.latitude) eventData.latitude = Number(eventData.latitude);
       if (eventData.longitude) eventData.longitude = Number(eventData.longitude);
@@ -126,7 +135,7 @@ export class TimeClockService {
       // Explicitly construct the entity to avoid any ambiguity or pollution
       // and ensure relation is handled correctly by TypeORM
       const event = new TimeClockEvent();
-      event.employee = { id: employeeId } as any; // Force relation assignment
+      event.employee = employee; // Use the fetched entity
       event.timestamp = new Date(timestamp);
       event.eventType = eventData.eventType;
       

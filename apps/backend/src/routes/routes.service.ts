@@ -495,9 +495,30 @@ export class RoutesService {
   async checkOut(itemId: string, data: { lat: number; lng: number; timestamp: string }) {
     const item = await this.routeItemsRepository.findOne({ 
       where: { id: itemId },
-      relations: ['products']
+      relations: ['products', 'route']
     });
     if (!item) throw new NotFoundException('Item not found');
+
+    // Late Sync Validation
+    if (item.route && item.route.date) {
+        const now = new Date();
+        const dateStr = item.route.date instanceof Date ? item.route.date.toISOString().split('T')[0] : item.route.date;
+        const cutoff20h = new Date(`${dateStr}T20:00:00`);
+        const deadline24h = new Date(cutoff20h);
+        deadline24h.setHours(deadline24h.getHours() + 24);
+
+        if (now > deadline24h) {
+             // Revert to PENDING logic requested by user
+             // "apartir de agora tem que ser feito lançamento manual"
+             // Throwing error to force manual entry
+             throw new BadRequestException('Prazo de sincronismo expirado (> 24h após 20:00). Realize o lançamento manual no painel web.');
+        }
+
+        if (now > cutoff20h) {
+            // "sincronismo fora de horario" -> Add warning
+            item.observation = (item.observation || '') + ' [Alerta: Sincronismo fora de horário]';
+        }
+    }
 
     // Validate if all products have photos
     // User requirement: "todos os produtos do checklist precisa ter fotos se finalizar sem fotos ele fica pendente"
