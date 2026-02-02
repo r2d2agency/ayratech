@@ -502,7 +502,8 @@ export class RoutesService {
     // Late Sync Validation
     if (item.route && item.route.date) {
         const now = new Date();
-        const dateStr = item.route.date instanceof Date ? item.route.date.toISOString().split('T')[0] : item.route.date;
+        const dateVal: any = item.route.date;
+        const dateStr = dateVal instanceof Date ? dateVal.toISOString().split('T')[0] : dateVal;
         const cutoff20h = new Date(`${dateStr}T20:00:00`);
         const deadline24h = new Date(cutoff20h);
         deadline24h.setHours(deadline24h.getHours() + 24);
