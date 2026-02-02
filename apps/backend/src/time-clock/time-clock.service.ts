@@ -133,21 +133,23 @@ export class TimeClockService {
 
       console.log(`Saving event for employee: ${employeeId}`);
 
-      // Use repository.create() to properly handle entity metadata and relations
-      const event = this.eventsRepository.create({
-        ...eventData,
-        timestamp: new Date(timestamp),
-        employee: employee,
-        validationStatus: eventData.validationStatus || 'pending'
-      });
-      
-      // Explicitly force the relation ID on the object just in case (though create() should handle it)
-      // This is a safety measure for some TypeORM edge cases
-      (event as any).employeeId = employee.id;
+      // Use QueryBuilder to force insertion, bypassing repository/entity metadata constraints
+      // This ensures 'employeeId' column is populated even if marked as insert: false in entity
+      const insertResult = await this.eventsRepository.createQueryBuilder()
+        .insert()
+        .into(TimeClockEvent)
+        .values({
+          ...eventData,
+          employeeId: employeeId, // Explicitly set column
+          timestamp: new Date(timestamp),
+          validationStatus: eventData.validationStatus || 'pending'
+        })
+        .returning('*')
+        .execute();
 
-      const savedEvent = await this.eventsRepository.save(event);
+      const savedEvent = insertResult.generatedMaps[0] as TimeClockEvent;
       
-      console.log('Time clock event saved:', savedEvent.id);
+      console.log('Time clock event saved (via QueryBuilder):', savedEvent.id);
       return savedEvent;
     } catch (error) {
       console.error('Error saving time clock event:', error);
