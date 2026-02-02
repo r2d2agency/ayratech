@@ -325,6 +325,16 @@ const RouteDetailsView = () => {
   };
 
   const handleCheckOut = async (itemId: string) => {
+    // Validate Photos before Checkout
+    const itemToCheck = route.items.find((i: any) => i.id === itemId);
+    if (itemToCheck) {
+        const missingPhotos = itemToCheck.products.some((p: any) => !p.photos || p.photos.length === 0);
+        if (missingPhotos) {
+            toast.error('Todos os produtos precisam ter fotos para finalizar a visita.');
+            return;
+        }
+    }
+
     setProcessing(true);
     
     const proceedWithCheckOut = async (lat: number, lng: number) => {

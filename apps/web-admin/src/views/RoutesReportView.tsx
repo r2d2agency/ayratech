@@ -149,7 +149,7 @@ const RoutesReportView: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // Photo Processing State
-  const [pendingFiles, setPendingFiles] = useState<{ files: FileList, productIndex: number } | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<{ files: File[], productIndex: number } | null>(null);
   const [photoMeta, setPhotoMeta] = useState({
     date: new Date().toISOString().split('T')[0],
     time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
@@ -395,8 +395,10 @@ const RoutesReportView: React.FC = () => {
     }
   };
 
-  const handleFileSelect = (files: FileList | null, productIndex: number) => {
-    if (!files || files.length === 0) return;
+  const handleFileSelect = (fileList: FileList | null, productIndex: number) => {
+    if (!fileList || fileList.length === 0) return;
+    
+    const files = Array.from(fileList);
     
     const currentPromoterId = manualForm?.promoterId;
     const currentPromoter = promotersList.find(p => p.id === currentPromoterId);

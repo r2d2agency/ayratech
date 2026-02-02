@@ -447,6 +447,27 @@ export class RoutesService {
       }
     }
 
+    // Validate Photos for Manual Entry Completion
+    const updatedItem = await this.routeItemsRepository.findOne({
+      where: { id: itemId },
+      relations: ['products']
+    });
+
+    if (updatedItem) {
+        const missingPhotos = updatedItem.products.some(p => !p.photos || p.photos.length === 0);
+        if (missingPhotos) {
+            // Revert status to PENDING if photos are missing, or throw error?
+            // User said: "se finalizar sem fotos ele fica pendente"
+            // Since we already saved status=COMPLETED above (line 413), we should probably revert it or throw error.
+            // But Manual Entry is an admin action, maybe we should just warn?
+            // The user instruction seems general. Let's enforce it.
+            // Reverting status to PENDING if validation fails
+            updatedItem.status = 'PENDING';
+            await this.routeItemsRepository.save(updatedItem);
+            throw new BadRequestException('A visita ficou como PENDENTE pois todos os produtos precisam ter fotos.');
+        }
+    }
+
     return this.findOne(item.routeId);
   }
 
@@ -472,8 +493,18 @@ export class RoutesService {
   }
 
   async checkOut(itemId: string, data: { lat: number; lng: number; timestamp: string }) {
-    const item = await this.routeItemsRepository.findOne({ where: { id: itemId } });
+    const item = await this.routeItemsRepository.findOne({ 
+      where: { id: itemId },
+      relations: ['products']
+    });
     if (!item) throw new NotFoundException('Item not found');
+
+    // Validate if all products have photos
+    // User requirement: "todos os produtos do checklist precisa ter fotos se finalizar sem fotos ele fica pendente"
+    const pendingProducts = item.products.filter(p => !p.photos || p.photos.length === 0);
+    if (pendingProducts.length > 0) {
+      throw new BadRequestException('Todos os produtos do checklist precisam ter fotos para finalizar.');
+    }
     
     item.status = 'CHECKOUT';
     item.checkOutTime = new Date(data.timestamp);
