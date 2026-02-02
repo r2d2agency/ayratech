@@ -122,12 +122,14 @@ export class TimeClockService {
 
       console.log(`Saving event for employee: ${employeeId}`);
 
-      // Use save directly to ensure relation is handled correctly
-      const savedEvent = await this.eventsRepository.save({
+      // Use create() first to ensure TypeORM handles the relation correctly with insert: false columns
+      const event = this.eventsRepository.create({
           ...eventData,
           timestamp: new Date(timestamp),
           employee: { id: employeeId }
       });
+
+      const savedEvent = await this.eventsRepository.save(event);
       
       console.log('Time clock event saved:', savedEvent.id);
       return savedEvent;
@@ -136,6 +138,12 @@ export class TimeClockService {
       // Return a more meaningful error if possible
       if (error.code === '23503') { // Foreign key violation
          throw new BadRequestException('Funcionário não encontrado ou inválido.');
+      }
+      if (error.code === '23502') { // Not null violation
+         console.error('Not Null Violation Details:', error.detail, error.column);
+         if (error.column === 'employeeId') {
+             throw new BadRequestException(`Erro interno: ID do funcionário não processado corretamente (${employeeId}).`);
+         }
       }
       throw error;
     }
