@@ -44,7 +44,7 @@ export default function TimeClockView() {
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
-    console.log('TimeClockView v1.1 loaded at', new Date().toISOString());
+    console.log('TimeClockView v1.4 loaded at', new Date().toISOString());
     // Try to load local cache immediately for better UX
     const cached = localStorage.getItem('timeClockStatus');
     if (cached) {

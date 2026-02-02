@@ -122,12 +122,23 @@ export class TimeClockService {
 
       console.log(`Saving event for employee: ${employeeId}`);
 
-      // Use create() first to ensure TypeORM handles the relation correctly with insert: false columns
-      const event = this.eventsRepository.create({
-          ...eventData,
-          timestamp: new Date(timestamp),
-          employee: { id: employeeId }
-      });
+      // Explicitly construct the entity to avoid any ambiguity or pollution
+      // and ensure relation is handled correctly by TypeORM
+      const event = new TimeClockEvent();
+      event.employee = { id: employeeId } as any; // Force relation assignment
+      event.timestamp = new Date(timestamp);
+      event.eventType = eventData.eventType;
+      
+      // Optional fields
+      if (eventData.latitude !== undefined) event.latitude = eventData.latitude;
+      if (eventData.longitude !== undefined) event.longitude = eventData.longitude;
+      if (eventData.storeId) event.storeId = eventData.storeId;
+      if (eventData.routeId) event.routeId = eventData.routeId;
+      if (eventData.deviceId) event.deviceId = eventData.deviceId;
+      if (eventData.facialPhotoUrl) event.facialPhotoUrl = eventData.facialPhotoUrl;
+      
+      event.validationStatus = eventData.validationStatus || 'pending';
+      if (eventData.validationReason) event.validationReason = eventData.validationReason;
 
       const savedEvent = await this.eventsRepository.save(event);
       
