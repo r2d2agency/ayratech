@@ -17,10 +17,14 @@ client.interceptors.request.use((config) => {
 client.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Apenas desloga se for explicitamente 401 E não for a rota de login
+    // Adicionar verificação de expiração para não deslogar prematuramente por outros erros 401
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token');
+      // Evita loop de redirecionamento se já estiver na tela de login
       if (window.location.pathname !== '/login') {
-         window.location.href = '/login';
+          console.warn('Sessão expirada ou inválida (401). Redirecionando para login.');
+          localStorage.removeItem('token');
+          window.location.href = '/login';
       }
     }
     return Promise.reject(error);
