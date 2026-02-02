@@ -92,16 +92,23 @@ class OfflineService {
       } catch (error: any) {
         console.error(`Error syncing action ${action.id}:`, error);
         const errorMessage = error.response?.data?.message || error.message || 'Erro desconhecido';
-        console.error(`Sync failure details:`, errorMessage);
+        const statusCode = error.response?.status;
+
+        console.error(`Sync failure details for ${action.type}:`, errorMessage, statusCode);
         
-        // If it's a 4xx error (client error), maybe we should not retry endlessly?
-        // But for now, let's keep it as ERROR so user knows.
+        // Se for 400 (Bad Request), o erro pode ser fatal (dados inválidos)
+        // Se for "Usuário não vinculado", precisamos avisar o usuário para relogar
+        if (statusCode === 400 && errorMessage.includes('não vinculado')) {
+             toast.error('Sessão inválida: Faça logout e login novamente.', { duration: 5000 });
+        }
+
         // Exception: 409 Conflict (already exists) -> treat as success?
-        if (error.response && error.response.status === 409) {
+        if (statusCode === 409) {
              console.warn('Action conflict (already exists), removing from queue:', action.id);
              await db.pendingActions.delete(action.id!);
              successCount++;
         } else {
+             // Atualiza com erro detalhado
              await db.pendingActions.update(action.id!, { 
                status: 'ERROR', 
                error: errorMessage,
@@ -118,9 +125,17 @@ class OfflineService {
       toast.success('Sincronização concluída com sucesso!');
     } else {
       // Get the last error message to show to the user
-      const lastErrorAction = pendingActions.find(a => a.status === 'ERROR' || (a as any)._lastError);
-      const errorMsg = (lastErrorAction as any)?.error || 'Verifique sua conexão e tente novamente.';
-      toast.error(`${failCount} ações falharam: ${errorMsg}`);
+      // Recarrega as ações para pegar o erro atualizado do DB
+      const failedActions = await db.pendingActions.where('status').equals('ERROR').toArray();
+      const lastErrorAction = failedActions[failedActions.length - 1];
+      
+      const errorMsg = lastErrorAction?.error || 'Verifique sua conexão e tente novamente.';
+      
+      // Toast persistente se for erro de validação
+      toast.error(`${failCount} falhas: ${errorMsg}`, {
+        duration: 6000,
+        style: { maxWidth: '500px' }
+      });
     }
     
     // Refresh pending count UI
