@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, X, Edit, Trash, Check, CheckSquare, Image as ImageIcon, Calendar, DollarSign } from 'lucide-react';
+import { Search, Plus, X, Edit, Trash, Check, CheckSquare, Image as ImageIcon, Calendar, DollarSign, Package } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import api from '../api/client';
 
 interface ChecklistItem {
   id?: string;
   description: string;
-  type: 'SIMPLE' | 'PHOTO' | 'VALIDITY_CHECK' | 'PRICE_CHECK';
+  type: 'SIMPLE' | 'PHOTO' | 'VALIDITY_CHECK' | 'PRICE_CHECK' | 'STOCK_COUNT';
   isMandatory: boolean;
   order: number;
   competitorId?: string;
@@ -248,6 +248,8 @@ const ChecklistTemplatesView: React.FC = () => {
                     {item.type === 'SIMPLE' && <CheckSquare size={14} className="text-slate-400" />}
                     {item.type === 'PHOTO' && <ImageIcon size={14} className="text-blue-400" />}
                     {item.type === 'VALIDITY_CHECK' && <Calendar size={14} className="text-orange-400" />}
+                    {item.type === 'PRICE_CHECK' && <DollarSign size={14} className="text-green-400" />}
+                    {item.type === 'STOCK_COUNT' && <Package size={14} className="text-purple-400" />}
                     <span className="truncate">{item.description}</span>
                  </div>
                ))}
@@ -368,6 +370,7 @@ const ChecklistTemplatesView: React.FC = () => {
                             <option value="PHOTO">Exigir Foto</option>
                             <option value="VALIDITY_CHECK">Verificar Validade</option>
                             <option value="PRICE_CHECK">Pesquisa de Preço</option>
+                            <option value="STOCK_COUNT">Contagem de Estoque</option>
                           </select>
 
                           {item.type === 'PRICE_CHECK' && (

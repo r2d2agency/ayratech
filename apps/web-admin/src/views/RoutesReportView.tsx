@@ -698,9 +698,9 @@ const RoutesReportView: React.FC = () => {
 
   const formatRouteDate = (dateString: string) => {
     if (!dateString) return '-';
-    // Handle YYYY-MM-DD string directly to avoid timezone issues
+    // Handle ISO string by taking only the date part to avoid timezone issues
     if (dateString.includes('T')) {
-      return new Date(dateString).toLocaleDateString('pt-BR');
+      dateString = dateString.split('T')[0];
     }
     const [year, month, day] = dateString.split('-');
     return `${day}/${month}/${year}`;

@@ -18,7 +18,8 @@ import {
   Map,
   Clock,
   Wand2,
-  CheckSquare
+  CheckSquare,
+  Image as ImageIcon
 } from 'lucide-react';
 import { ViewType } from '../types';
 import { useBranding } from '../context/BrandingContext';
@@ -232,6 +233,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
           Relatórios
         </p>
         {navItem('reports_routes', <FileText size={20} />, 'Relatório de Rotas')}
+        {navItem('reports_evidence', <ImageIcon size={20} />, 'Relatório de Evidências')}
         {navItem('gallery', <Camera size={20} />, 'Galeria de Fotos')}
 
         <div className="pt-4" />

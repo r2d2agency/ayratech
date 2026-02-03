@@ -26,6 +26,7 @@ import AppAccessView from './views/AppAccessView';
 import DocumentsView from './views/DocumentsView';
 import SystemLogsView from './views/SystemLogsView';
 import RoutesReportView from './views/RoutesReportView';
+import EvidenceReportView from './views/EvidenceReportView';
 import PhotoGalleryView from './views/PhotoGalleryView';
 import TimeClockManagementView from './views/TimeClockManagementView';
 import LoginView from './views/LoginView';
@@ -128,6 +129,7 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
           {activeView === 'documents' && <DocumentsView />}
           {activeView === 'logs' && <SystemLogsView />}
           {activeView === 'reports_routes' && <RoutesReportView />}
+          {activeView === 'reports_evidence' && <EvidenceReportView />}
           {activeView === 'gallery' && <PhotoGalleryView />}
           {activeView === 'photo_processing' && <PhotoProcessingView />}
           {activeView === 'ai_config' && <AiConfigView />}

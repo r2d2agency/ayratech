@@ -1,8 +1,123 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPinned, Plus, Trash2, CheckCircle, Save, Settings, List, Clock, MoveUp, MoveDown, Copy, FileText, Check, Search } from 'lucide-react';
+import { Calendar, MapPinned, Plus, Trash2, CheckCircle, Save, Settings, List, Clock, MoveUp, MoveDown, Copy, FileText, Check, Search, GripVertical } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import api from '../api/client';
 import { jwtDecode } from "jwt-decode";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts, products }: any) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+  
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 group transition-all hover:border-blue-200 mb-4 z-10 relative">
+      <div className="flex items-start gap-4">
+        <div className="flex flex-col items-center gap-1 cursor-grab active:cursor-grabbing touch-none" {...attributes} {...listeners}>
+          <div className="h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-black text-sm">
+            {index + 1}
+          </div>
+          <div className="mt-2 text-slate-300 hover:text-slate-500">
+            <GripVertical size={20} />
+          </div>
+        </div>
+
+        <div className="flex-1 space-y-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <h4 className="font-bold text-lg text-slate-900">{item.supermarket.fantasyName}</h4>
+              <p className="text-sm text-slate-400">{item.supermarket.address}, {item.supermarket.city}</p>
+            </div>
+            <button onClick={() => onRemove(index)} className="text-red-300 hover:text-red-500">
+              <Trash2 size={18} />
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-4 p-3 bg-slate-50 rounded-xl">
+            <div className="flex items-center gap-2">
+              <Clock size={16} className="text-slate-400" />
+              <div className="flex flex-col">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Início</label>
+                <input 
+                  type="time" 
+                  value={item.startTime || ''}
+                  onChange={e => onUpdate(index, 'startTime', e.target.value)}
+                  className="bg-transparent font-bold text-sm text-slate-700 outline-none w-24"
+                />
+              </div>
+            </div>
+            <div className="w-px bg-slate-200 h-8" />
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Fim</label>
+                <input 
+                  type="time" 
+                  value={item.endTime || ''}
+                  onChange={e => onUpdate(index, 'endTime', e.target.value)}
+                  className="bg-transparent font-bold text-sm text-slate-700 outline-none w-24"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <div className="flex justify-between items-center mb-2">
+              <h5 className="text-xs font-black text-slate-500 uppercase">Produtos ({item.productIds?.length || 0})</h5>
+              <button 
+                onClick={() => onOpenProducts(index)}
+                className="text-blue-600 hover:text-blue-700 text-xs font-bold flex items-center gap-1"
+              >
+                <Plus size={14} /> Adicionar/Gerenciar
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {(() => {
+                const groupedProducts: Record<string, any[]> = {};
+                item.productIds?.forEach((pid: string) => {
+                  const product = products.find((p: any) => p.id === pid);
+                  if (product) {
+                    const clientName = product.client?.fantasyName || product.client?.name || 'Outros';
+                    if (!groupedProducts[clientName]) groupedProducts[clientName] = [];
+                    groupedProducts[clientName].push(product);
+                  }
+                });
+
+                if (Object.keys(groupedProducts).length === 0) {
+                  return (
+                    <p className="text-xs text-slate-400 italic">Nenhum produto selecionado para este ponto.</p>
+                  );
+                }
+
+                return Object.entries(groupedProducts).map(([clientName, clientProducts], gIndex) => (
+                  <div key={clientName} className="border-l-2 border-slate-200 pl-3">
+                    <h6 className="text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">{clientName}</h6>
+                    <div className="space-y-2">
+                      {clientProducts.map((product, pIndex) => (
+                        <div key={product.id} className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg border border-slate-100">
+                          <span className="text-xs font-bold text-slate-400 w-6">{(gIndex + 1)}.{pIndex + 1}</span>
+                          <div className="flex-1">
+                            <p className="text-sm font-bold text-slate-700">{product.name}</p>
+                            <p className="text-xs text-slate-400">{product.ean || ''}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const RoutesView: React.FC = () => {
   const { settings } = useBranding();
@@ -488,6 +603,24 @@ const RoutesView: React.FC = () => {
     }
   };
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      setRouteItems((items) => {
+        const oldIndex = items.findIndex((item) => item.supermarketId === active.id);
+        const newIndex = items.findIndex((item) => item.supermarketId === over?.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
@@ -809,110 +942,29 @@ const RoutesView: React.FC = () => {
                     <p className="text-slate-400 font-medium">Adicione supermercados para montar a rota.</p>
                   </div>
                 ) : (
-                  routeItems.map((item, index) => (
-                    <div key={index} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 group transition-all hover:border-blue-200">
-                      <div className="flex items-start gap-4">
-                        <div className="flex flex-col items-center gap-1">
-                          <div className="h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-black text-sm">
-                            {index + 1}
-                          </div>
-                          <div className="flex flex-col gap-1 mt-2">
-                            <button onClick={() => handleMoveItem(index, 'up')} className="p-1 text-slate-300 hover:text-slate-600"><MoveUp size={14} /></button>
-                            <button onClick={() => handleMoveItem(index, 'down')} className="p-1 text-slate-300 hover:text-slate-600"><MoveDown size={14} /></button>
-                          </div>
-                        </div>
-
-                        <div className="flex-1 space-y-4">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className="font-bold text-lg text-slate-900">{item.supermarket.fantasyName}</h4>
-                              <p className="text-sm text-slate-400">{item.supermarket.address}, {item.supermarket.city}</p>
-                            </div>
-                            <button onClick={() => handleRemoveItem(index)} className="text-red-300 hover:text-red-500">
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-
-                            <div className="flex flex-wrap gap-4 p-3 bg-slate-50 rounded-xl">
-                              <div className="flex items-center gap-2">
-                                <Clock size={16} className="text-slate-400" />
-                                <div className="flex flex-col">
-                                  <label className="text-[10px] font-bold text-slate-400 uppercase">Início</label>
-                                  <input 
-                                    type="time" 
-                                    value={item.startTime || ''}
-                                    onChange={e => handleUpdateItem(index, 'startTime', e.target.value)}
-                                    className="bg-transparent font-bold text-sm text-slate-700 outline-none w-24"
-                                  />
-                                </div>
-                              </div>
-                              <div className="w-px bg-slate-200 h-8" />
-                              <div className="flex items-center gap-2">
-                                <div className="flex flex-col">
-                                  <label className="text-[10px] font-bold text-slate-400 uppercase">Fim</label>
-                                  <input 
-                                    type="time" 
-                                    value={item.endTime || ''}
-                                    onChange={e => handleUpdateItem(index, 'endTime', e.target.value)}
-                                    className="bg-transparent font-bold text-sm text-slate-700 outline-none w-24"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="mt-4">
-                              <div className="flex justify-between items-center mb-2">
-                                <h5 className="text-xs font-black text-slate-500 uppercase">Produtos ({item.productIds?.length || 0})</h5>
-                                <button 
-                                  onClick={() => handleOpenProductModal(index)}
-                                  className="text-blue-600 hover:text-blue-700 text-xs font-bold flex items-center gap-1"
-                                >
-                                  <Plus size={14} /> Adicionar/Gerenciar
-                                </button>
-                              </div>
-                              
-                              <div className="space-y-4">
-                                {(() => {
-                                  // Group products by Client
-                                  const groupedProducts: Record<string, any[]> = {};
-                                  item.productIds?.forEach((pid: string) => {
-                                    const product = products.find(p => p.id === pid);
-                                    if (product) {
-                                      const clientName = product.client?.fantasyName || product.client?.name || 'Outros';
-                                      if (!groupedProducts[clientName]) groupedProducts[clientName] = [];
-                                      groupedProducts[clientName].push(product);
-                                    }
-                                  });
-
-                                  if (Object.keys(groupedProducts).length === 0) {
-                                    return (
-                                      <p className="text-xs text-slate-400 italic">Nenhum produto selecionado para este ponto.</p>
-                                    );
-                                  }
-
-                                  return Object.entries(groupedProducts).map(([clientName, clientProducts], gIndex) => (
-                                    <div key={clientName} className="border-l-2 border-slate-200 pl-3">
-                                      <h6 className="text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">{clientName}</h6>
-                                      <div className="space-y-2">
-                                        {clientProducts.map((product, pIndex) => (
-                                          <div key={product.id} className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg border border-slate-100">
-                                            <span className="text-xs font-bold text-slate-400 w-6">{(gIndex + 1)}.{pIndex + 1}</span>
-                                            <div className="flex-1">
-                                              <p className="text-sm font-bold text-slate-700">{product.name}</p>
-                                              <p className="text-xs text-slate-400">{product.ean || ''}</p>
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  ));
-                                })()}
-                              </div>
-                            </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))
+                  <DndContext 
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext 
+                      items={routeItems.map(i => i.supermarketId)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {routeItems.map((item, index) => (
+                        <SortableRouteItem
+                          key={item.supermarketId}
+                          id={item.supermarketId}
+                          item={item}
+                          index={index}
+                          onRemove={handleRemoveItem}
+                          onUpdate={handleUpdateItem}
+                          onOpenProducts={handleOpenProductModal}
+                          products={products}
+                        />
+                      ))}
+                    </SortableContext>
+                  </DndContext>
                 )}
               </div>
 
