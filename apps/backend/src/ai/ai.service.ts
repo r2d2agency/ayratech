@@ -130,6 +130,13 @@ export class AiService {
     return this.aiPromptRepository.save(this.aiPromptRepository.create(data));
   }
 
+  async updatePrompt(id: string, data: any) {
+    const prompt = await this.aiPromptRepository.findOne({ where: { id } });
+    if (!prompt) throw new Error('Prompt não encontrado');
+    Object.assign(prompt, data);
+    return this.aiPromptRepository.save(prompt);
+  }
+
   async getAllPrompts() {
     return this.aiPromptRepository.find({ order: { createdAt: 'DESC' } });
   }

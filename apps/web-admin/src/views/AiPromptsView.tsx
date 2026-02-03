@@ -42,6 +42,26 @@ const AiPromptsView: React.FC = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!editingPrompt?.id) return;
+    
+    if (!confirm('Tem certeza que deseja excluir este prompt?')) return;
+
+    setLoading(true);
+    try {
+      await api.delete(`/ai/prompts/${editingPrompt.id}`);
+      setMessage({ type: 'success', text: 'Prompt excluído com sucesso!' });
+      setEditingPrompt(null);
+      fetchPrompts();
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error) {
+      console.error('Error deleting prompt', error);
+      setMessage({ type: 'error', text: 'Erro ao excluir prompt.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!editingPrompt || !editingPrompt.name || !editingPrompt.content) {
       setMessage({ type: 'error', text: 'Preencha todos os campos obrigatórios.' });
@@ -50,12 +70,18 @@ const AiPromptsView: React.FC = () => {
 
     setLoading(true);
     try {
-      await api.post('/ai/prompts', editingPrompt);
-      setMessage({ type: 'success', text: 'Prompt salvo com sucesso!' });
+      if (editingPrompt.id) {
+        await api.put(`/ai/prompts/${editingPrompt.id}`, editingPrompt);
+        setMessage({ type: 'success', text: 'Prompt atualizado com sucesso!' });
+      } else {
+        await api.post('/ai/prompts', editingPrompt);
+        setMessage({ type: 'success', text: 'Prompt salvo com sucesso!' });
+      }
       setEditingPrompt(null);
       fetchPrompts();
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
+      console.error('Error saving prompt', error);
       setMessage({ type: 'error', text: 'Erro ao salvar prompt.' });
     } finally {
       setLoading(false);

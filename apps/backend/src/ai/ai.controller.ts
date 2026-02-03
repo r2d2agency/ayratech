@@ -22,6 +22,11 @@ export class AiController {
     return this.aiService.createPrompt(createAiPromptDto);
   }
 
+  @Put('prompts/:id')
+  updatePrompt(@Param('id') id: string, @Body() updateAiPromptDto: CreateAiPromptDto) {
+    return this.aiService.updatePrompt(id, updateAiPromptDto);
+  }
+
   @Get('prompts')
   getAllPrompts() {
     return this.aiService.getAllPrompts();
