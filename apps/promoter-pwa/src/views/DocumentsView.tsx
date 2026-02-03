@@ -15,20 +15,14 @@ const DocumentsView = () => {
   const [description, setDescription] = useState('');
 
   useEffect(() => {
-    if (user?.id) {
-      // Assuming user.id is the user ID, but we need employee ID.
-      // The auth context should ideally provide employee ID or we fetch it.
-      // For now, let's assume we can get it or use a 'me' endpoint.
-      // If user.role is 'promoter', user.id might be the user ID, linked to employee.
-      // We might need to fetch /auth/profile to get employee ID.
+    if (user) {
       fetchDocuments();
     }
   }, [user]);
 
   const fetchDocuments = async () => {
     try {
-      const profile = await client.get('/auth/profile');
-      const employeeId = profile.data.employee?.id;
+      const employeeId = user?.employee?.id;
       
       if (employeeId) {
         const response = await client.get(`/employees/${employeeId}/documents`); 
@@ -72,8 +66,7 @@ const DocumentsView = () => {
 
     setUploading(true);
     try {
-      const profile = await client.get('/auth/profile');
-      const employeeId = profile.data.employee?.id;
+      const employeeId = user?.employee?.id;
       
       if (employeeId) {
         await client.post(`/employees/${employeeId}/documents`, formData, {
@@ -84,6 +77,8 @@ const DocumentsView = () => {
         setIsModalOpen(false);
         setSelectedFile(null);
         setDescription('');
+      } else {
+        toast.error('Erro: Funcionário não identificado');
       }
     } catch (error) {
       console.error('Upload error:', error);
