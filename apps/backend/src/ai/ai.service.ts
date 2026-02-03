@@ -82,7 +82,7 @@ export class AiService {
     if (promptId) {
         const aiPrompt = await this.aiPromptRepository.findOne({ where: { id: promptId } });
         if (aiPrompt) {
-            instruction = aiPrompt.instruction;
+            instruction = aiPrompt.content;
         }
     }
 
