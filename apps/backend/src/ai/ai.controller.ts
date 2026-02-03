@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
 import { AiService } from './ai.service';
 import { CreateAiConfigDto } from './dto/create-ai-config.dto';
 import { CreateAiPromptDto } from './dto/create-ai-prompt.dto';
