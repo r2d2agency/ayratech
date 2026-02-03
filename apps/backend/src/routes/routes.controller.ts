@@ -76,7 +76,7 @@ export class RoutesController {
   checkProduct(
     @Param('itemId') itemId: string,
     @Param('productId') productId: string,
-    @Body() body: { checked?: boolean; observation?: string; isStockout?: boolean; stockoutType?: string; photos?: string[]; checkInTime?: string; checkOutTime?: string; validityDate?: string; checklists?: any[] },
+    @Body() body: { checked?: boolean; observation?: string; isStockout?: boolean; stockoutType?: string; photos?: string[]; checkInTime?: string; checkOutTime?: string; validityDate?: string; stockCount?: number; checklists?: any[] },
   ) {
     return this.routesService.checkProduct(itemId, productId, body);
   }
@@ -88,12 +88,15 @@ export class RoutesController {
       checkInTime: string; 
       checkOutTime: string; 
       promoterId?: string;
+      observation?: string;
       products: { 
         productId: string; 
         checked: boolean; 
         isStockout: boolean; 
         observation?: string; 
-        photos?: string[] 
+        photos?: string[];
+        validityDate?: string;
+        stockCount?: number;
       }[] 
     },
     @Req() req: any

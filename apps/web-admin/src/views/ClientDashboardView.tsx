@@ -44,6 +44,7 @@ interface ClientDashboardStats {
   nearExpiry: number;
   expired: number;
   photosCount: number;
+  totalStock: number;
 }
 
 interface RouteItem {
@@ -71,6 +72,7 @@ interface RouteItem {
       observation?: string;
       photos?: string[];
       validityDate?: string;
+      stockCount?: number;
       product: {
         id: string;
         name: string;
@@ -106,7 +108,7 @@ const ClientDashboardView: React.FC = () => {
   const [routes, setRoutes] = useState<RouteItem[]>([]);
   const [filteredRoutes, setFilteredRoutes] = useState<RouteItem[]>([]);
   const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'visits' | 'stockouts' | 'expiry' | 'brands' | 'pdvs'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'visits' | 'stockouts' | 'expiry' | 'stock' | 'brands' | 'pdvs'>('overview');
   
   // Filters
   const [selectedPdv, setSelectedPdv] = useState<string>('');
@@ -258,6 +260,7 @@ const ClientDashboardView: React.FC = () => {
     let nearExpiry = 0;
     let expired = 0;
     let photosCount = 0;
+    let totalStock = 0;
 
     filteredRoutes.forEach(route => {
       route.items.forEach(item => {
@@ -268,6 +271,7 @@ const ClientDashboardView: React.FC = () => {
           if (p.checked) totalProductsChecked++;
           if (p.isStockout) stockouts++;
           if (p.photos) photosCount += p.photos.length;
+          if (p.stockCount !== undefined && p.stockCount !== null) totalStock += p.stockCount;
 
           if (p.validityDate) {
             const today = new Date();
@@ -290,7 +294,8 @@ const ClientDashboardView: React.FC = () => {
       stockouts,
       nearExpiry,
       expired,
-      photosCount
+      photosCount,
+      totalStock
     };
   }, [filteredRoutes]);
 
@@ -428,6 +433,7 @@ const ClientDashboardView: React.FC = () => {
         { id: 'visits', label: 'Histórico de Visitas', icon: <Calendar size={18} /> },
         { id: 'stockouts', label: 'Rupturas', icon: <XCircle size={18} /> },
         { id: 'expiry', label: 'Validade', icon: <AlertTriangle size={18} /> },
+        { id: 'stock', label: 'Estoque', icon: <Package size={18} /> },
         { id: 'brands', label: 'Marcas', icon: <Tags size={18} /> },
         { id: 'pdvs', label: 'PDVs', icon: <Store size={18} /> },
       ].map(tab => (
@@ -576,6 +582,12 @@ const ClientDashboardView: React.FC = () => {
                 label="Produtos Vencidos" 
                 value={stats.expired.toString()} 
                 color="bg-red-100" 
+              />
+              <StatCard 
+                icon={<Package className="text-blue-800" />} 
+                label="Total em Estoque" 
+                value={stats.totalStock.toString()} 
+                color="bg-blue-100" 
               />
             </div>
 
@@ -812,6 +824,48 @@ const ClientDashboardView: React.FC = () => {
                    {stats.nearExpiry === 0 && stats.expired === 0 && (
                      <tr>
                        <td colSpan={6} className="px-4 py-10 text-center text-slate-400">Nenhum produto próximo do vencimento ou vencido.</td>
+                     </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'stock' && (
+           <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+             <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-slate-50 text-slate-500 font-medium">
+                  <tr>
+                    <th className="px-4 py-3">Produto</th>
+                    <th className="px-4 py-3">Marca</th>
+                    <th className="px-4 py-3">Supermercado</th>
+                    <th className="px-4 py-3">Data</th>
+                    <th className="px-4 py-3">Promotor</th>
+                    <th className="px-4 py-3">Quantidade em Estoque</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredRoutes.flatMap(r => r.items.flatMap(item => 
+                    item.products.filter(p => p.stockCount !== undefined && p.stockCount !== null).map(p => ({ route: r, item, product: p }))
+                  ))
+                  .sort((a, b) => new Date(b.route.date).getTime() - new Date(a.route.date).getTime())
+                  .map(({ route, item, product }, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 font-medium text-slate-700">{product.product.name}</td>
+                      <td className="px-4 py-3 text-slate-500">{product.product.brand?.name || '-'}</td>
+                      <td className="px-4 py-3">{item.supermarket.fantasyName}</td>
+                      <td className="px-4 py-3">{new Date(route.date).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 text-slate-500">{route.promoter?.fullName}</td>
+                      <td className="px-4 py-3 font-bold text-blue-600">
+                        {product.stockCount}
+                      </td>
+                    </tr>
+                  ))}
+                   {filteredRoutes.every(r => r.items.every(i => i.products.every(p => p.stockCount === undefined || p.stockCount === null))) && (
+                     <tr>
+                       <td colSpan={6} className="px-4 py-10 text-center text-slate-400">Nenhuma contagem de estoque registrada.</td>
                      </tr>
                   )}
                 </tbody>

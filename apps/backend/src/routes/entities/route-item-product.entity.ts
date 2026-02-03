@@ -49,6 +49,12 @@ export class RouteItemProduct {
   @Column({ nullable: true, type: 'date' })
   validityDate: string;
 
+  @Column({ nullable: true, type: 'int' })
+  stockCount: number;
+
+  @Column({ default: 'NONE' })
+  stockCountStatus: string; // NONE, PENDING_REVIEW, APPROVED, REJECTED
+
   @Column({ nullable: true })
   observation: string;
 

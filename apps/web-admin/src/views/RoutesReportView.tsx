@@ -85,6 +85,7 @@ interface RouteReportItem {
         };
       };
       validityDate?: string;
+      stockCount?: number;
     }>;
   }>;
 }
@@ -511,7 +512,9 @@ const RoutesReportView: React.FC = () => {
         isStockout: p.isStockout || false,
         observation: p.observation || '',
         photos: p.photos || [],
-        productName: p.product.name
+        productName: p.product.name,
+        validityDate: p.validityDate || '',
+        stockCount: p.stockCount || ''
       }))
     });
   };
@@ -612,7 +615,17 @@ const RoutesReportView: React.FC = () => {
 
   const getStatusBadge = (route: RouteReportItem) => {
     const isExecuted = route.items.some(i => ['CHECKOUT', 'COMPLETED'].includes(i.status));
+    const isInProgress = route.items.some(i => i.checkInTime && !i.checkOutTime);
     const hasIssues = route.items.some(i => i.products.some(p => p.isStockout));
+
+    if (isInProgress) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-yellow-50 text-yellow-600 border border-yellow-200">
+          <Clock size={14} />
+          Em Visita
+        </span>
+      );
+    }
 
     if (!isExecuted) {
       return (
@@ -1472,10 +1485,24 @@ const RoutesReportView: React.FC = () => {
                      <div className="flex items-center justify-between">
                         <span className="font-bold text-slate-700">{prod.productName}</span>
                         <div className="flex items-center gap-4">
-                          <label className="flex items-center gap-2 text-sm font-medium text-slate-600 cursor-pointer">
-                            <input 
-                              type="checkbox" 
-                              checked={prod.checked}
+                         <div className="flex items-center gap-2">
+                           <label className="text-xs font-bold text-slate-500">Estoque:</label>
+                           <input 
+                             type="number" 
+                             placeholder="Qtd"
+                             value={prod.stockCount}
+                             onChange={e => {
+                               const newProds = [...manualForm.products];
+                               newProds[idx].stockCount = e.target.value ? parseInt(e.target.value) : '';
+                               setManualForm({...manualForm, products: newProds});
+                             }}
+                             className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 w-20"
+                           />
+                         </div>
+                         <label className="flex items-center gap-2 text-sm font-medium text-slate-600 cursor-pointer">
+                           <input 
+                             type="checkbox" 
+                             checked={prod.checked}
                               onChange={e => {
                                 const newProds = [...manualForm.products];
                                 newProds[idx].checked = e.target.checked;
@@ -1614,12 +1641,16 @@ const RoutesReportView: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Promotor</label>
-                  <input 
-                    type="text"
+                  <select 
                     value={photoMeta.promoterName}
                     onChange={e => setPhotoMeta({...photoMeta, promoterName: e.target.value})}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
-                  />
+                  >
+                    <option value="">Selecione um promotor...</option>
+                    {promotersList.map(p => (
+                        <option key={p.id} value={p.fullName || p.name}>{p.fullName || p.name}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -1627,8 +1658,8 @@ const RoutesReportView: React.FC = () => {
                   <input 
                     type="text"
                     value={photoMeta.pdvName}
-                    onChange={e => setPhotoMeta({...photoMeta, pdvName: e.target.value})}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
+                    readOnly
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-sm outline-none text-slate-500 cursor-not-allowed"
                   />
                 </div>
              </div>

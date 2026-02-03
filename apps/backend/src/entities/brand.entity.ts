@@ -17,6 +17,12 @@ export class Brand {
   @Column({ nullable: true, insert: false, update: false })
   clientId: string;
 
+  @Column({ default: false })
+  waitForStockCount: boolean;
+
+  @Column({ nullable: true })
+  stockNotificationContact: string;
+
   @OneToMany(() => Product, product => product.brand)
   products: Product[];
 

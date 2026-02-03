@@ -14,7 +14,9 @@ const BrandsView: React.FC = () => {
 
   const [formData, setFormData] = useState({
     name: '',
-    clientId: ''
+    clientId: '',
+    waitForStockCount: false,
+    stockNotificationContact: ''
   });
 
   useEffect(() => {
@@ -78,7 +80,12 @@ const BrandsView: React.FC = () => {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', clientId: '' });
+    setFormData({ 
+      name: '', 
+      clientId: '',
+      waitForStockCount: false,
+      stockNotificationContact: ''
+    });
     setEditingBrand(null);
   };
 
@@ -86,7 +93,9 @@ const BrandsView: React.FC = () => {
     setEditingBrand(brand);
     setFormData({
       name: brand.name,
-      clientId: brand.clientId || brand.client?.id || ''
+      clientId: brand.clientId || brand.client?.id || '',
+      waitForStockCount: brand.waitForStockCount || false,
+      stockNotificationContact: brand.stockNotificationContact || ''
     });
     setShowModal(true);
   };
@@ -225,6 +234,37 @@ const BrandsView: React.FC = () => {
                   ))}
                 </select>
                 <p className="text-[10px] text-slate-400 mt-1 ml-1">A marca deve estar vinculada a um cliente (indústria).</p>
+              </div>
+
+              <div className="bg-slate-50 p-4 rounded-xl space-y-4">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="waitForStockCount"
+                    className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    checked={formData.waitForStockCount}
+                    onChange={e => setFormData({...formData, waitForStockCount: e.target.checked})}
+                  />
+                  <label htmlFor="waitForStockCount" className="text-sm font-bold text-slate-700 cursor-pointer">
+                    Aguardar contagem de estoque
+                  </label>
+                </div>
+                
+                {formData.waitForStockCount && (
+                  <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Contato para Notificação</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium"
+                      value={formData.stockNotificationContact}
+                      onChange={e => setFormData({...formData, stockNotificationContact: e.target.value})}
+                      placeholder="Email ou telefone do responsável"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1 ml-1">
+                      O promotor será instruído a aguardar até que este contato autorize a continuação.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end pt-4 gap-3">

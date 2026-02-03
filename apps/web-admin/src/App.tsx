@@ -15,6 +15,7 @@ import SupermarketGroupFormView from './views/SupermarketGroupFormView';
 import AdminView from './views/AdminView';
 import CategoriesView from './views/CategoriesView';
 import BrandsView from './views/BrandsView';
+import CompetitorsView from './views/CompetitorsView';
 import EmployeesView from './views/EmployeesView';
 import SupervisorsView from './views/SupervisorsView';
 import AiConfigView from './views/AiConfigView';
@@ -104,6 +105,7 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
           {activeView === 'products' && <ProductsView />}
           {activeView === 'categories' && <CategoriesView />}
           {activeView === 'brands' && <BrandsView />}
+          {activeView === 'competitors' && <CompetitorsView />}
           {activeView === 'live_map' && <LiveMapView onNavigate={handleNavigate} />}
           {activeView === 'routes' && <RoutesView />}
           {activeView === 'checklist_templates' && <ChecklistTemplatesView />}

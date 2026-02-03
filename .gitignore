@@ -30,3 +30,6 @@ postgres_data/
 # Logs
 logs/
 *.log
+
+# Temp/Error files
+utput*

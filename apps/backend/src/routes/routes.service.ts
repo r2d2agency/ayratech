@@ -204,7 +204,13 @@ export class RoutesService {
   findByPromoter(promoterId: string) {
     return this.routesRepository.find({
       where: { promoter: { id: promoterId } },
-      relations: ['items', 'items.supermarket', 'items.products', 'items.products.product'],
+      relations: [
+        'items', 
+        'items.supermarket', 
+        'items.products', 
+        'items.products.product', 
+        'items.products.product.brand'
+      ],
       order: { date: 'DESC' }
     });
   }
@@ -531,9 +537,10 @@ export class RoutesService {
     return this.routeRulesRepository.find();
   }
 
-  async checkProduct(routeItemId: string, productId: string, data: { checked?: boolean, observation?: string, isStockout?: boolean, stockoutType?: string, photos?: string[], checkInTime?: string, checkOutTime?: string, validityDate?: string, checklists?: { id: string, isChecked: boolean, value?: string }[] }) {
+  async checkProduct(routeItemId: string, productId: string, data: { checked?: boolean, observation?: string, isStockout?: boolean, stockoutType?: string, photos?: string[], checkInTime?: string, checkOutTime?: string, validityDate?: string, stockCount?: number, checklists?: { id: string, isChecked: boolean, value?: string }[] }) {
     const itemProduct = await this.routeItemProductsRepository.findOne({
-      where: { routeItemId, productId }
+      where: { routeItemId, productId },
+      relations: ['product', 'product.brand', 'routeItem', 'routeItem.supermarket']
     });
 
     if (itemProduct) {
@@ -545,6 +552,28 @@ export class RoutesService {
       if (data.checkInTime !== undefined) itemProduct.checkInTime = new Date(data.checkInTime);
       if (data.checkOutTime !== undefined) itemProduct.checkOutTime = new Date(data.checkOutTime);
       if (data.validityDate !== undefined) itemProduct.validityDate = data.validityDate;
+      
+      if (data.stockCount !== undefined) {
+        itemProduct.stockCount = data.stockCount;
+
+        // Check for brand notification logic
+        if (itemProduct.product?.brand?.waitForStockCount) {
+          // If status is not already approved, set to pending review
+          if (itemProduct.stockCountStatus !== 'APPROVED') {
+             itemProduct.stockCountStatus = 'PENDING_REVIEW';
+             
+             const contact = itemProduct.product.brand.stockNotificationContact;
+             const supermarketName = itemProduct.routeItem?.supermarket?.fantasyName || 'PDV Desconhecido';
+             
+             console.log(`[NOTIFICATION SYSTEM]`);
+             console.log(`To: ${contact || 'No contact configured'}`);
+             console.log(`Subject: Validação de Estoque Necessária - ${itemProduct.product.name}`);
+             console.log(`Message: O promotor informou um estoque de ${data.stockCount} unidades para o produto ${itemProduct.product.name} no PDV ${supermarketName}. Aguardando validação para continuar.`);
+             
+             // In a real implementation, call this.mailService.send(...) here
+          }
+        }
+      }
 
       if (data.checklists && data.checklists.length > 0) {
         const checklistRepo = this.dataSource.getRepository(RouteItemProductChecklist);
@@ -631,6 +660,8 @@ export class RoutesService {
         productRel.isStockout = p.isStockout;
         productRel.observation = p.observation;
         productRel.photos = p.photos;
+        if ((p as any).validityDate) productRel.validityDate = (p as any).validityDate;
+        if ((p as any).stockCount) productRel.stockCount = (p as any).stockCount;
         
         await this.routeItemProductsRepository.save(productRel);
       }

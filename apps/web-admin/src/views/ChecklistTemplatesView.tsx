@@ -35,6 +35,10 @@ const ChecklistTemplatesView: React.FC = () => {
   const [formDescription, setFormDescription] = useState('');
   const [formItems, setFormItems] = useState<ChecklistItem[]>([]);
 
+  // Competitor Quick Add State
+  const [showCompetitorModal, setShowCompetitorModal] = useState(false);
+  const [newCompetitorName, setNewCompetitorName] = useState('');
+
   useEffect(() => {
     fetchTemplates();
     fetchCompetitors();
@@ -107,6 +111,19 @@ const ChecklistTemplatesView: React.FC = () => {
     // Reorder
     newItems.forEach((item, i) => item.order = i);
     setFormItems(newItems);
+  };
+
+  const handleCreateCompetitor = async () => {
+    if (!newCompetitorName.trim()) return;
+    try {
+      await api.post('/competitors', { name: newCompetitorName, active: true });
+      await fetchCompetitors();
+      setNewCompetitorName('');
+      setShowCompetitorModal(false);
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao criar concorrente');
+    }
   };
 
   const handleSave = async () => {
@@ -243,6 +260,41 @@ const ChecklistTemplatesView: React.FC = () => {
       </div>
 
       {/* Modal */}
+      {showCompetitorModal && (
+        <div className="fixed inset-0 bg-slate-900/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 animate-in zoom-in-95">
+            <h3 className="font-bold text-lg text-slate-800 mb-4">Novo Concorrente</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Nome da Marca</label>
+                <input 
+                  type="text"
+                  autoFocus
+                  value={newCompetitorName}
+                  onChange={(e) => setNewCompetitorName(e.target.value)}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
+                  placeholder="Ex: Coca-Cola"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button 
+                  onClick={() => setShowCompetitorModal(false)}
+                  className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleCreateCompetitor}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors"
+                >
+                  Salvar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95">
@@ -319,16 +371,25 @@ const ChecklistTemplatesView: React.FC = () => {
                           </select>
 
                           {item.type === 'PRICE_CHECK' && (
-                            <select
-                              value={item.competitorId || ''}
-                              onChange={(e) => updateItem(index, 'competitorId', e.target.value)}
-                              className="px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 text-slate-600 flex-1"
-                            >
-                              <option value="">Selecione o Concorrente</option>
-                              {competitors.map(c => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                              ))}
-                            </select>
+                            <div className="flex gap-2 flex-1">
+                              <select
+                                value={item.competitorId || ''}
+                                onChange={(e) => updateItem(index, 'competitorId', e.target.value)}
+                                className="px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 text-slate-600 flex-1"
+                              >
+                                <option value="">Selecione o Concorrente</option>
+                                {competitors.map(c => (
+                                  <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                              </select>
+                              <button
+                                onClick={() => setShowCompetitorModal(true)}
+                                className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                                title="Novo Concorrente"
+                              >
+                                <Plus size={16} />
+                              </button>
+                            </div>
                           )}
 
                           <label className="flex items-center gap-2 px-2 py-1.5 bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50">
