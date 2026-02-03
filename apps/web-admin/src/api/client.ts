@@ -1,10 +1,34 @@
 import axios from 'axios';
 
 export const API_URL = (() => {
-  const url = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3000' : 'https://api.ayratech.app.br');
-  if (url && !url.startsWith('http')) {
-    return `https://${url.startsWith('.') ? url.substring(1) : url}`;
+  let url = import.meta.env.VITE_API_URL;
+  
+  // Fallback if not defined
+  if (!url) {
+    url = import.meta.env.DEV ? 'http://localhost:3000' : 'https://api.ayratech.app.br';
   }
+  
+  // Ensure it's a string
+  url = String(url).trim();
+
+  // If it doesn't start with http, assume it's a domain or partial URL
+  if (!url.startsWith('http')) {
+    // Remove leading dot if present (fix for some env config issues)
+    if (url.startsWith('.')) {
+      url = url.substring(1);
+    }
+    // Remove leading slashes
+    while (url.startsWith('/')) {
+        url = url.substring(1);
+    }
+    url = `https://${url}`;
+  }
+  
+  // Remove trailing slash to be consistent
+  if (url.endsWith('/')) {
+    url = url.slice(0, -1);
+  }
+  
   return url;
 })();
 
