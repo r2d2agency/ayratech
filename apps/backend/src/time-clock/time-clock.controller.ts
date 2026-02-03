@@ -77,7 +77,15 @@ export class TimeClockController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTimeClockEventDto: UpdateTimeClockEventDto) {
+  update(@Param('id') id: string, @Body() updateTimeClockEventDto: UpdateTimeClockEventDto, @Req() req: any) {
+    const editorName = req.user?.name || req.user?.email || 'Admin';
+    
+    // Force manual flag and editor name
+    updateTimeClockEventDto.isManual = true;
+    updateTimeClockEventDto.editedBy = editorName;
+    // Ensure validation status is approved if edited by admin
+    updateTimeClockEventDto.validationStatus = 'approved';
+
     return this.timeClockService.update(id, updateTimeClockEventDto);
   }
 

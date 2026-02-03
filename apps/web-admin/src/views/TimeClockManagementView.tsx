@@ -36,6 +36,7 @@ const TimeClockManagementView = () => {
   };
 
   const [newEvent, setNewEvent] = useState(initialEventState);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredEmployees, setFilteredEmployees] = useState([]);
@@ -158,11 +159,17 @@ const TimeClockManagementView = () => {
         
         console.log('Sending manual entry payload:', JSON.stringify(payload, null, 2));
 
-        await api.post('/time-clock/entry/manual', payload);
+        if (editingEventId) {
+            await api.patch(`/time-clock/${editingEventId}`, payload);
+            toast.success('Registro atualizado com sucesso!');
+        } else {
+            await api.post('/time-clock/entry/manual', payload);
+            toast.success('Registro manual adicionado com sucesso!');
+        }
 
-      toast.success('Registro manual adicionado com sucesso!');
       setShowModal(false);
       setNewEvent(initialEventState);
+      setEditingEventId(null);
       setSearchTerm('');
       setFilteredEmployees([]);
       fetchEvents();
@@ -227,6 +234,56 @@ const TimeClockManagementView = () => {
     });
   }, [events]);
 
+  const calculateTotalHours = (entries: any) => {
+    let totalMs = 0;
+    const getMs = (e: any) => e ? new Date(e.timestamp).getTime() : 0;
+    
+    const entry = entries.ENTRY;
+    const lunchStart = entries.LUNCH_START;
+    const lunchEnd = entries.LUNCH_END;
+    const exit = entries.EXIT;
+
+    if (entry && lunchStart) {
+        totalMs += getMs(lunchStart) - getMs(entry);
+    }
+    if (lunchEnd && exit) {
+        totalMs += getMs(exit) - getMs(lunchEnd);
+    }
+    // Continuous shift fallback (if no lunch recorded but has exit)
+    if (entry && exit && !lunchStart && !lunchEnd) {
+        totalMs += getMs(exit) - getMs(entry);
+    }
+    
+    if (totalMs <= 0) return '-';
+    
+    const hours = Math.floor(totalMs / (1000 * 60 * 60));
+    const minutes = Math.floor((totalMs % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  };
+
+  const handleEditEvent = (event: any) => {
+      if (!event) return;
+      
+      setEditingEventId(event.id);
+      const date = format(parseISO(event.timestamp), 'yyyy-MM-dd');
+      const time = format(parseISO(event.timestamp), 'HH:mm');
+      
+      setNewEvent({
+          employeeId: event.employee?.id || event.employeeId,
+          date,
+          time,
+          eventType: event.eventType,
+          observation: event.validationReason || '' // Assuming reason holds observation
+      });
+      
+      // Pre-fill search term for UI
+      if (event.employee) {
+          setSearchTerm(event.employee.fullName);
+      }
+      
+      setShowModal(true);
+  };
+
   const renderTimeCell = (event: any) => {
     if (!event) return <span className="text-slate-300 text-sm">-</span>;
     
@@ -234,10 +291,19 @@ const TimeClockManagementView = () => {
     const isManual = event.isManual;
     
     return (
-        <div className="flex flex-col items-start">
-            <span className={`font-semibold ${isManual ? 'text-purple-700' : 'text-slate-700'}`}>
-                {time}
-            </span>
+        <div 
+            className="flex flex-col items-start cursor-pointer group relative"
+            onClick={() => handleEditEvent(event)}
+            title="Clique para editar"
+        >
+            <div className="flex items-center gap-2">
+                <span className={`font-semibold ${isManual ? 'text-purple-700' : 'text-slate-700'}`}>
+                    {time}
+                </span>
+                <span className="opacity-0 group-hover:opacity-100 text-blue-600 transition-opacity">
+                    <FileText size={12} />
+                </span>
+            </div>
             <div className="flex items-center gap-1 mt-0.5">
                 {isManual ? (
                     <span className="flex items-center gap-1 text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded" title={`Editado por: ${event.editedBy}`}>
@@ -271,6 +337,7 @@ const TimeClockManagementView = () => {
           <button 
             onClick={() => {
                 setNewEvent(initialEventState);
+                setEditingEventId(null);
                 setSearchTerm('');
                 setFilteredEmployees([]);
                 setShowModal(true);

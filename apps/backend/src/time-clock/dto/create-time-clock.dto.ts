@@ -42,6 +42,14 @@ export class CreateTimeClockEventDto {
   @IsString()
   @IsOptional()
   validationReason?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isManual?: boolean;
+
+  @IsString()
+  @IsOptional()
+  editedBy?: string;
 }
 
 export class CreateManualTimeClockDto {
