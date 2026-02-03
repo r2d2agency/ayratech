@@ -24,6 +24,7 @@ const ChecklistTemplatesView: React.FC = () => {
   const { settings } = useBranding();
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
+  const [competitors, setCompetitors] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Modal State
@@ -370,7 +371,7 @@ const ChecklistTemplatesView: React.FC = () => {
               <button 
                 onClick={handleSave}
                 className="px-6 py-2.5 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 hover:scale-105 active:scale-95 transition-all text-sm flex items-center gap-2"
-                style={{ backgroundColor: settings.colors.primary }}
+                style={{ backgroundColor: settings.primaryColor }}
               >
                 <Check size={18} />
                 Salvar Modelo
