@@ -2,6 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Settings, Key, Bot, Save, AlertCircle, CheckCircle } from 'lucide-react';
 import api from '../api/client';
 
+const modelsByProvider: Record<string, string[]> = {
+  gemini: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro-vision'],
+  openai: ['gpt-4o', 'gpt-4-turbo', 'gpt-4-vision-preview']
+};
+
 const AiConfigView: React.FC = () => {
   const [provider, setProvider] = useState('gemini');
   const [apiKey, setApiKey] = useState('');
