@@ -84,6 +84,7 @@ interface RouteReportItem {
           name: string;
         };
       };
+      validityDate?: string;
     }>;
   }>;
 }
@@ -122,7 +123,8 @@ const RoutesReportView: React.FC = () => {
     total: 0,
     executed: 0,
     notExecuted: 0,
-    withIssues: 0
+    withIssues: 0,
+    nearExpiry: 0
   });
 
   const [supervisorData, setSupervisorData] = useState<any[]>([]);
@@ -558,6 +560,7 @@ const RoutesReportView: React.FC = () => {
   const processData = (data: RouteReportItem[]) => {
     let executedCount = 0;
     let issuesCount = 0;
+    let nearExpiryCount = 0;
     
     const supervisors: Record<string, { name: string, executed: number, total: number }> = {};
     const promoters: Record<string, { name: string, executed: number, total: number }> = {};
@@ -568,6 +571,21 @@ const RoutesReportView: React.FC = () => {
 
       const hasIssues = route.items.some(i => i.products.some(p => p.isStockout));
       if (hasIssues) issuesCount++;
+
+      const hasNearExpiry = route.items.some(i => i.products.some(p => {
+        if (!p.validityDate) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const valDate = new Date(p.validityDate);
+        // Fix timezone offset issue for calculation
+        const userTimezoneOffset = valDate.getTimezoneOffset() * 60000;
+        const adjustedDate = new Date(valDate.getTime() + userTimezoneOffset);
+        
+        const diffTime = adjustedDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays <= 30;
+      }));
+      if (hasNearExpiry) nearExpiryCount++;
 
       const supName = route.promoter.supervisor?.fullName || 'Sem Supervisor';
       if (!supervisors[supName]) supervisors[supName] = { name: supName, executed: 0, total: 0 };
@@ -584,7 +602,8 @@ const RoutesReportView: React.FC = () => {
       total: data.length,
       executed: executedCount,
       notExecuted: data.length - executedCount,
-      withIssues: issuesCount
+      withIssues: issuesCount,
+      nearExpiry: nearExpiryCount
     });
 
     setSupervisorData(Object.values(supervisors));
@@ -851,7 +870,7 @@ const RoutesReportView: React.FC = () => {
       </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
             <StatCard 
               icon={<Calendar />}
               label="Total de Rotas"
@@ -876,6 +895,12 @@ const RoutesReportView: React.FC = () => {
               label="Com Ruptura"
               value={stats.withIssues.toString()}
               color="bg-amber-50 text-amber-600"
+            />
+            <StatCard 
+              icon={<Clock />}
+              label="Vencendo (<30d)"
+              value={stats.nearExpiry.toString()}
+              color="bg-orange-50 text-orange-600"
             />
           </div>
 
@@ -948,6 +973,15 @@ const RoutesReportView: React.FC = () => {
                     <Store size={14} />
                     Por PDV
                   </button>
+                  <button 
+                    onClick={() => setGroupBy('validity')}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      groupBy === 'validity' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    <Clock size={14} />
+                    Validade
+                  </button>
                 </div>
               </div>
               <button 
@@ -1014,7 +1048,7 @@ const RoutesReportView: React.FC = () => {
                     )}
                   </tbody>
                 </table>
-              ) : (
+              ) : groupBy === 'pdv' ? (
                 <table className="w-full text-left">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/50">
@@ -1079,6 +1113,87 @@ const RoutesReportView: React.FC = () => {
                       <tr>
                         <td colSpan={6} className="p-8 text-center text-slate-400 font-medium">
                           Nenhum dado de PDV encontrado para os filtros selecionados.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              ) : (
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/50">
+                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">PDV</th>
+                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Produto</th>
+                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Marca</th>
+                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Validade</th>
+                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Promotor</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {validityReport.map((pdv) => (
+                      <React.Fragment key={pdv.id}>
+                        <tr className="bg-slate-50/50">
+                          <td colSpan={5} className="p-3 font-bold text-slate-700 border-y border-slate-100">
+                             <div className="flex items-center gap-2">
+                               <Store size={14} className="text-blue-500" />
+                               {pdv.name}
+                             </div>
+                          </td>
+                        </tr>
+                        {pdv.items.map((item, idx) => (
+                           <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                             <td className="p-3 pl-8 text-slate-400 text-xs">
+                               -
+                             </td>
+                             <td className="p-3 font-medium text-slate-700 text-sm">
+                               {item.productName}
+                             </td>
+                             <td className="p-3 text-slate-500 text-sm">
+                               {item.brandName}
+                             </td>
+                             <td className="p-3 text-sm">
+                                {item.validityDate ? (() => {
+                                     const today = new Date();
+                                     today.setHours(0, 0, 0, 0);
+                                     const valDate = new Date(item.validityDate);
+                                     const userTimezoneOffset = valDate.getTimezoneOffset() * 60000;
+                                     const adjustedDate = new Date(valDate.getTime() + userTimezoneOffset);
+                                     const diffTime = adjustedDate.getTime() - today.getTime();
+                                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                     
+                                     if (diffDays < 0) {
+                                       return (
+                                         <span className="flex items-center gap-2 text-red-600 font-bold">
+                                           <AlertTriangle size={14}/> 
+                                           VENCIDO ({adjustedDate.toLocaleDateString('pt-BR')})
+                                         </span>
+                                       );
+                                     }
+                                     if (diffDays <= 30) {
+                                       return (
+                                         <span className="flex items-center gap-2 text-amber-600 font-bold">
+                                           <AlertTriangle size={14}/> 
+                                           Vence em {diffDays}d ({adjustedDate.toLocaleDateString('pt-BR')})
+                                         </span>
+                                       );
+                                     }
+                                     return <span className="text-slate-600">{adjustedDate.toLocaleDateString('pt-BR')}</span>;
+                                   })() : <span className="text-slate-300">-</span>}
+                             </td>
+                             <td className="p-3 text-sm text-slate-500">
+                               {item.promoterName}
+                               <div className="text-[10px] text-slate-400">
+                                 {new Date(item.date).toLocaleDateString('pt-BR')}
+                               </div>
+                             </td>
+                           </tr>
+                        ))}
+                      </React.Fragment>
+                    ))}
+                    {validityReport.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="p-8 text-center text-slate-400 font-medium">
+                          Nenhum registro de validade encontrado para os filtros selecionados.
                         </td>
                       </tr>
                     )}
@@ -1198,6 +1313,7 @@ const RoutesReportView: React.FC = () => {
                           <th className="p-3 w-10">#</th>
                           <th className="p-3">Produto</th>
                           <th className="p-3">Marca</th>
+                          <th className="p-3">Validade</th>
                           <th className="p-3">Status</th>
                           <th className="p-3">Fotos</th>
                           <th className="p-3">Observação</th>
@@ -1209,6 +1325,39 @@ const RoutesReportView: React.FC = () => {
                             <td className="p-3 text-slate-400 text-xs">{pIndex + 1}</td>
                             <td className="p-3 font-medium text-slate-700">{p.product.name}</td>
                             <td className="p-3 text-slate-500">{p.product.brand?.name || '-'}</td>
+                            <td className="p-3 text-xs">
+                              {p.validityDate ? (() => {
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                const valDate = new Date(p.validityDate);
+                                // Fix timezone offset issue for display
+                                const userTimezoneOffset = valDate.getTimezoneOffset() * 60000;
+                                const adjustedDate = new Date(valDate.getTime() + userTimezoneOffset);
+                                
+                                const diffTime = adjustedDate.getTime() - today.getTime();
+                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                
+                                if (diffDays < 0) {
+                                  return (
+                                    <span className="flex flex-col text-red-600 font-bold">
+                                      <span className="flex items-center gap-1"><AlertTriangle size={12}/> VENCIDO</span>
+                                      <span>{adjustedDate.toLocaleDateString('pt-BR')}</span>
+                                    </span>
+                                  );
+                                }
+                                if (diffDays <= 30) {
+                                  return (
+                                    <span className="flex flex-col text-amber-600 font-bold">
+                                      <span className="flex items-center gap-1"><AlertTriangle size={12}/> Vence em {diffDays}d</span>
+                                      <span>{adjustedDate.toLocaleDateString('pt-BR')}</span>
+                                    </span>
+                                  );
+                                }
+                                return <span className="text-slate-600 font-medium">{adjustedDate.toLocaleDateString('pt-BR')}</span>;
+                              })() : (
+                                <span className="text-slate-300">-</span>
+                              )}
+                            </td>
                             <td className="p-3 text-xs font-bold text-slate-500">
                               {p.checkInTime && p.checkOutTime ? (
                                 <span className="text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
