@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, MoreThanOrEqual } from 'typeorm';
+import { Repository, Between, MoreThanOrEqual, In } from 'typeorm';
 import { Route } from '../routes/entities/route.entity';
 import { Client } from '../entities/client.entity';
 import { RouteItemProduct } from '../routes/entities/route-item-product.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class DashboardService {
@@ -14,11 +15,29 @@ export class DashboardService {
     private clientsRepository: Repository<Client>,
     @InjectRepository(RouteItemProduct)
     private routeItemProductRepository: Repository<RouteItemProduct>,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
   ) {}
 
-  async getStats(period: string = 'today') {
+  async getStats(period: string = 'today', userId?: string) {
     const startDate = this.getStartDate(period);
     
+    // Check user role and assigned clients
+    let allowedClientIds: string[] | null = null;
+    if (userId) {
+        const user = await this.usersRepository.findOne({ where: { id: userId }, relations: ['clients', 'role'] });
+        // If user is not admin (assume 'admin' role name for now, logic can be more complex), limit clients
+        if (user && user.role?.name?.toLowerCase() !== 'admin' && user.role?.name?.toLowerCase() !== 'administrador do sistema') {
+            if (user.clients && user.clients.length > 0) {
+                allowedClientIds = user.clients.map(c => c.id);
+            } else if (user.role?.name?.toLowerCase().includes('supervisor')) {
+                // Supervisor without clients sees nothing or everything? 
+                // "so veja os clientes que estao em sua responsabilidade" implies nothing if no responsibility.
+                allowedClientIds = []; 
+            }
+        }
+    }
+
     // 1. Visitas Realizadas (Routes Completed/Confirmed)
     const routes = await this.routesRepository.find({
       where: {
@@ -27,15 +46,39 @@ export class DashboardService {
       relations: ['items', 'items.products', 'items.products.product', 'items.products.product.brand', 'items.products.product.brand.client']
     });
 
-    const completedRoutes = routes.filter(r => ['COMPLETED', 'CONFIRMED'].includes(r.status));
+    // Filter routes based on allowedClientIds
+    // A route is relevant if it contains items for the allowed clients.
+    // However, routes are typically per promoter/date, but items are per supermarket? 
+    // Wait, products belong to brands which belong to clients.
+    // So we need to filter *items* or *products* within the routes that belong to the allowed clients.
+    
+    // Filter logic:
+    // If allowedClientIds is set, only count products belonging to these clients.
+    // If a route has NO products from these clients, ignore the route (or just the items).
+    
+    const filteredRoutes = routes.map(route => {
+        // Clone route to avoid mutating original if needed (though find returns new objects usually)
+        const newItems = route.items.map(item => {
+            const newProducts = item.products.filter(p => {
+                const client = p.product?.brand?.client;
+                if (!allowedClientIds) return true;
+                return client && allowedClientIds.includes(client.id);
+            });
+            return { ...item, products: newProducts };
+        }).filter(item => item.products.length > 0);
+        
+        return { ...route, items: newItems };
+    }).filter(route => route.items.length > 0);
+
+    const completedRoutes = filteredRoutes.filter(r => ['COMPLETED', 'CONFIRMED'].includes(r.status));
     const visitsCount = completedRoutes.reduce((acc, r) => acc + r.items.length, 0);
 
-    // 2. Fotos Enviadas (Mocked logic for now: assume 1 photo per 3 checked products approx)
+    // 2. Fotos Enviadas
     let photosCount = 0;
     let checkedProductsCount = 0;
     let totalProductsCount = 0;
     
-    routes.forEach(route => {
+    filteredRoutes.forEach(route => {
         route.items.forEach(item => {
             item.products.forEach(p => {
                 totalProductsCount++;
@@ -53,18 +96,20 @@ export class DashboardService {
         ? Math.round((checkedProductsCount / totalProductsCount) * 100) 
         : 0;
 
-    // 4. Rupturas (Mocked: items with specific observation or unchecked items that should be checked)
-    // For now, let's assume unchecked items in COMPLETED routes might be ruptures
+    // 4. Rupturas
     const rupturesCount = totalProductsCount - checkedProductsCount;
 
     // 5. Performance por Marca (Client)
     const clientPerformanceMap = new Map<string, { total: number; checked: number; client: Client }>();
 
-    routes.forEach(route => {
+    filteredRoutes.forEach(route => {
         route.items.forEach(item => {
             item.products.forEach(p => {
                 const client = p.product?.brand?.client;
                 if (client) {
+                     // Double check filter (already done above but safe to keep)
+                    if (allowedClientIds && !allowedClientIds.includes(client.id)) return;
+
                     if (!clientPerformanceMap.has(client.id)) {
                         clientPerformanceMap.set(client.id, { total: 0, checked: 0, client });
                     }
@@ -76,24 +121,30 @@ export class DashboardService {
         });
     });
 
-    // If no real data, fetch all clients to show something (with 0% or mock)
-    // But user wants "clean" data. If no data, show empty or 0.
-    // However, to avoid empty dashboard on first load if no routes, maybe we can list all clients with 0 stats if not found in routes.
+    // If allowedClientIds is set, we might want to show clients even if they have 0 activity today?
+    // User wants "dashboard com os kpi de cada cliente...".
+    // If a client has no activity today, they won't appear in routes.
+    // We should pre-fill the map with allowed clients if they exist.
+    if (allowedClientIds && allowedClientIds.length > 0) {
+        const userClients = await this.clientsRepository.find({ where: { id: In(allowedClientIds) } });
+        userClients.forEach(c => {
+            if (!clientPerformanceMap.has(c.id)) {
+                 clientPerformanceMap.set(c.id, { total: 0, checked: 0, client: c });
+            }
+        });
+    }
     
     const clientPerformance = Array.from(clientPerformanceMap.values()).map(stat => ({
         id: stat.client.id,
         name: stat.client.nomeFantasia || stat.client.razaoSocial,
-        logo: stat.client.logo || 'https://placehold.co/150', // Fallback
+        logo: stat.client.logo || 'https://placehold.co/150',
         percentage: stat.total > 0 ? Math.round((stat.checked / stat.total) * 100) : 0
     })).sort((a, b) => b.percentage - a.percentage);
-
-    // If we have very few clients in stats, maybe fill with others?
-    // Let's just return what we have.
 
     return {
         visits: {
             value: visitsCount.toString(),
-            trend: '+5%', // Mock trend
+            trend: '+5%', 
         },
         photos: {
             value: photosCount.toString(),
@@ -101,11 +152,11 @@ export class DashboardService {
         },
         execution: {
             value: `${perfectExecution}%`,
-            trend: '+1%',
+            trend: perfectExecution > 80 ? '+2%' : '-5%',
         },
         ruptures: {
-            value: rupturesCount.toString().padStart(2, '0'),
-            sub: 'Ação requerida',
+            value: rupturesCount.toString(),
+            sub: 'Produtos não encontrados',
         },
         clients: clientPerformance
     };

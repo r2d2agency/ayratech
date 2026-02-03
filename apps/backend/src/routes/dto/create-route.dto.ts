@@ -1,6 +1,15 @@
 import { IsString, IsDateString, IsOptional, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
+class RouteItemProductDto {
+  @IsString()
+  productId: string;
+
+  @IsOptional()
+  @IsString()
+  checklistTemplateId?: string;
+}
+
 class RouteItemDto {
   @IsString()
   supermarketId: string;
@@ -23,6 +32,12 @@ class RouteItemDto {
   @IsArray()
   @IsString({ each: true })
   productIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => RouteItemProductDto)
+  products?: RouteItemProductDto[];
 }
 
 export class CreateRouteDto {

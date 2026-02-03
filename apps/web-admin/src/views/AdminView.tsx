@@ -16,7 +16,8 @@ const AdminView: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [editingUser, setEditingUser] = useState<any | null>(null);
-  const [userForm, setUserForm] = useState({ name: '', username: '', password: '', role: 'user' });
+  const [userForm, setUserForm] = useState({ name: '', username: '', password: '', role: 'user', clientIds: [] as string[] });
+  const [allClients, setAllClients] = useState<any[]>([]);
 
   // Permissions state
   const [editingPermissions, setEditingPermissions] = useState<string | null>(null);
@@ -24,7 +25,17 @@ const AdminView: React.FC = () => {
 
   useEffect(() => {
     fetchRoles();
+    fetchClients();
   }, []);
+
+  const fetchClients = async () => {
+    try {
+      const res = await api.get('/clients');
+      setAllClients(res.data);
+    } catch (err) {
+      console.error('Erro ao buscar clientes:', err);
+    }
+  };
 
   const fetchRoles = async () => {
     try {
@@ -70,8 +81,7 @@ const AdminView: React.FC = () => {
       const payload: any = {
         email: userForm.username,
         roleId: userForm.role,
-        // name is not directly on user, but we might want to handle it later or ignore it for now if backend doesn't support it
-        // The backend CreateUserDto doesn't have 'name'. 
+        clientIds: userForm.clientIds, // Add clientIds to payload
       };
 
       if (editingUser) {
@@ -229,6 +239,33 @@ const AdminView: React.FC = () => {
                   ))}
                 </select>
               </div>
+
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Clientes Vinculados (Supervisores)</label>
+                <div className="border border-slate-200 rounded-xl bg-slate-50 p-4 max-h-48 overflow-y-auto grid grid-cols-1 gap-2">
+                    {allClients.map(client => (
+                        <label key={client.id} className="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer hover:bg-slate-100 p-1 rounded transition-colors">
+                            <input 
+                                type="checkbox"
+                                checked={userForm.clientIds?.includes(client.id)}
+                                onChange={(e) => {
+                                    const current = userForm.clientIds || [];
+                                    if (e.target.checked) {
+                                        setUserForm({...userForm, clientIds: [...current, client.id]});
+                                    } else {
+                                        setUserForm({...userForm, clientIds: current.filter(id => id !== client.id)});
+                                    }
+                                }}
+                                className="rounded text-[var(--primary-color)] focus:ring-[var(--primary-color)] w-4 h-4"
+                            />
+                            <span className="truncate">{client.tradeName || client.companyName}</span>
+                        </label>
+                    ))}
+                    {allClients.length === 0 && <span className="text-slate-400 text-xs">Nenhum cliente disponível.</span>}
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1 font-medium">Selecione os clientes que este usuário pode acessar (apenas para Supervisores).</p>
+              </div>
+
               <div className="flex gap-2">
                 <button type="submit" className="flex-1 py-3 bg-[var(--primary-color)] text-white rounded-xl font-black shadow-lg hover:opacity-90 transition-all mt-4">
                   {editingUser ? 'Atualizar Usuário' : 'Criar Usuário'}

@@ -2,6 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
 import { Client } from './client.entity';
 import { Brand } from './brand.entity';
 import { Category } from '../categories/entities/category.entity';
+import { ChecklistTemplate } from '../checklists/entities/checklist-template.entity';
 
 @Entity()
 export class Product {
@@ -24,7 +25,13 @@ export class Product {
   image: string;
 
   @Column({ nullable: true })
-  barcode: string;
+  brandId: string;
+
+  @Column({ nullable: true })
+  referenceImageUrl: string;
+
+  @Column('text', { nullable: true })
+  analysisPrompt: string;
 
   @Column({ default: 'active' })
   status: string;
@@ -37,4 +44,10 @@ export class Product {
 
   @ManyToOne(() => Category, { nullable: true })
   categoryRef: Category;
+
+  @ManyToOne(() => ChecklistTemplate, { nullable: true, eager: true })
+  checklistTemplate: ChecklistTemplate;
+
+  @Column({ nullable: true })
+  checklistTemplateId: string;
 }

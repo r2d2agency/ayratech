@@ -1,6 +1,7 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { RouteItem } from './route-item.entity';
 import { Product } from '../../entities/product.entity';
+import { RouteItemProductChecklist } from './route-item-product-checklist.entity';
 
 @Entity()
 export class RouteItemProduct {
@@ -39,9 +40,21 @@ export class RouteItemProduct {
   @Column('simple-array', { nullable: true })
   photos: string[];
 
+  @Column({ default: 'UNCHECKED' })
+  aiStatus: string; // UNCHECKED, OK, FLAGGED
+
+  @Column({ nullable: true })
+  aiObservation: string;
+
   @Column({ nullable: true, type: 'date' })
   validityDate: string;
 
   @Column({ nullable: true })
   observation: string;
+
+  @Column({ nullable: true })
+  checklistTemplateId: string;
+
+  @OneToMany(() => RouteItemProductChecklist, (checklist) => checklist.routeItemProduct, { cascade: true, eager: true })
+  checklists: RouteItemProductChecklist[];
 }

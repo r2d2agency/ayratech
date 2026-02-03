@@ -16,7 +16,8 @@ import {
   Shield,
   FileText,
   Map,
-  Clock
+  Clock,
+  Wand2
 } from 'lucide-react';
 import { ViewType } from '../types';
 import { useBranding } from '../context/BrandingContext';
@@ -224,6 +225,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
         </p>
         {navItem('reports_routes', <FileText size={20} />, 'Relatório de Rotas')}
         {navItem('gallery', <Camera size={20} />, 'Galeria de Fotos')}
+
+        <div className="pt-4" />
+        <p className={`text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 mb-2 h-4 overflow-hidden transition-all ${expanded ? 'opacity-100' : 'opacity-0'}`}>
+          Inteligência Artificial
+        </p>
+        {navItem('photo_processing', <Wand2 size={20} />, 'Processamento')}
+        {['admin', 'superadmin', 'administrador do sistema'].includes(userRole?.toLowerCase() || '') && navItem('ai_config', <Settings size={20} />, 'Configuração IA')}
 
         <div className="pt-4" />
         <p className={`text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 mb-2 h-4 overflow-hidden transition-all ${expanded ? 'opacity-100' : 'opacity-0'}`}>

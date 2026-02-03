@@ -18,4 +18,9 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   status?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  clientIds?: string[];
 }

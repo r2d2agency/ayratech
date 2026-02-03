@@ -2,6 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, OneToMany, CreateDateColumn, Up
 import { Product } from './product.entity';
 import { Brand } from './brand.entity';
 import { Supermarket } from './supermarket.entity';
+import { User } from '../users/entities/user.entity';
 
 @Entity('clients')
 export class Client {
@@ -65,4 +66,7 @@ export class Client {
   @ManyToMany(() => Supermarket, (supermarket) => supermarket.clients)
   @JoinTable({ name: 'client_supermarkets' })
   supermarkets: Supermarket[];
+
+  @ManyToMany(() => User, (user) => user.clients)
+  supervisors: User[];
 }

@@ -37,4 +37,12 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   status?: string;
+
+  @IsOptional()
+  @IsString()
+  referenceImageUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  analysisPrompt?: string;
 }

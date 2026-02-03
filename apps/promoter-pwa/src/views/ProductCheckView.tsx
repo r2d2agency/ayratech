@@ -8,6 +8,20 @@ import { processImage, WatermarkData } from '../utils/image-processor';
 import { getImageUrl } from '../utils/image';
 import { useAuth } from '../context/AuthContext';
 
+enum ChecklistItemType {
+  SIMPLE = 'SIMPLE',
+  PHOTO = 'PHOTO',
+  VALIDITY_CHECK = 'VALIDITY_CHECK'
+}
+
+interface Checklist {
+  id: string;
+  description: string;
+  type: ChecklistItemType;
+  isChecked: boolean;
+  value?: string;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -27,6 +41,7 @@ interface RouteItemProduct {
   checkInTime?: string;
   checkOutTime?: string;
   validityDate?: string;
+  checklists?: Checklist[];
 }
 
 const ProductCheckView: React.FC = () => {
@@ -173,7 +188,9 @@ const ProductCheckView: React.FC = () => {
           observation: productData.observation,
           photos: productData.photos,
           checkInTime: productData.checkInTime,
-          checkOutTime: productData.checkOutTime
+          checkOutTime: productData.checkOutTime,
+          validityDate: productData.validityDate,
+          checklists: productData.checklists
         });
       } else {
         // Offline: Add to pending actions
@@ -188,7 +205,9 @@ const ProductCheckView: React.FC = () => {
              observation: productData.observation,
              photos: productData.photos,
              checkInTime: productData.checkInTime,
-             checkOutTime: productData.checkOutTime
+             checkOutTime: productData.checkOutTime,
+             validityDate: productData.validityDate,
+             checklists: productData.checklists
           }
         );
       }
@@ -228,10 +247,24 @@ const ProductCheckView: React.FC = () => {
            stockoutType: productData.stockoutType,
            observation: productData.observation,
            photos: productData.photos,
-           validityDate: productData.validityDate
+           validityDate: productData.validityDate,
+           checklists: productData.checklists
         }
       );
     }
+  };
+
+  const handleChecklistToggle = (checklistId: string, isChecked: boolean) => {
+    if (!selectedProduct || !selectedProduct.checklists) return;
+    
+    const updatedChecklists = selectedProduct.checklists.map(c => {
+      if (c.id === checklistId) {
+        return { ...c, isChecked };
+      }
+      return c;
+    });
+
+    setSelectedProduct({ ...selectedProduct, checklists: updatedChecklists });
   };
 
   const handleModalSave = async () => {
@@ -265,7 +298,7 @@ const ProductCheckView: React.FC = () => {
     setUploadingPhoto(true);
     console.log('Starting photo processing...');
     try {
-      // 1. Process Image (Compress & Watermark)
+      // 1.Processador de Imagem (Compress & Watermark)
       const watermarkData: WatermarkData = {
         supermarketName: supermarketName || 'PDV',
         promoterName: user?.name || user?.email || 'Promotor',
@@ -276,7 +309,7 @@ const ProductCheckView: React.FC = () => {
       const { blob, previewUrl } = await processImage(file, watermarkData);
       console.log('Image processed. Blob size:', blob.size, 'Preview URL length:', previewUrl?.length);
       
-      // 2. Upload if online, otherwise use Base64
+      // 2. Upload se online, otherwise use Base64
       let photoUrl = previewUrl; // Default to blob URL (will be revoked) or base64
       
       if (navigator.onLine) {
@@ -481,6 +514,51 @@ const ProductCheckView: React.FC = () => {
               </div>
             )}
 
+            {selectedProduct.checklists && selectedProduct.checklists.length > 0 && (
+              <div className="flex flex-col gap-2 border-t pt-4 border-b pb-4">
+                <label className="text-sm font-medium text-gray-700">Checklist de Tarefas</label>
+                {selectedProduct.checklists.map(item => (
+                  <label key={item.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                    <input 
+                      type="checkbox"
+                      className="mt-1 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      checked={item.isChecked}
+                      onChange={(e) => handleChecklistToggle(item.id, e.target.checked)}
+                    />
+                    <div className="flex-1">
+                      <span className={`text-sm font-medium ${item.isChecked ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
+                        {item.description}
+                      </span>
+                      {item.type === ChecklistItemType.VALIDITY_CHECK && (
+                        <span className="block text-xs text-orange-600 mt-0.5">Habilita campo de validade</span>
+                      )}
+                      {item.type === ChecklistItemType.PHOTO && (
+                        <span className="block text-xs text-blue-600 mt-0.5">Requer foto</span>
+                      )}
+                      {item.type === ChecklistItemType.PRICE_CHECK && (
+                        <div className="mt-2" onClick={(e) => e.preventDefault()}>
+                          <span className="block text-xs text-blue-600 mb-1">
+                              Preço {item.competitorName ? `(${item.competitorName})` : ''}
+                          </span>
+                          <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">R$</span>
+                              <input 
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="0,00"
+                                  className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:border-blue-500 outline-none bg-white"
+                                  value={item.value || ''}
+                                  onChange={(e) => handleChecklistValueChange(item.id, e.target.value)}
+                              />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
+
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-gray-700">Fotos</label>
               <div className="flex gap-2 overflow-x-auto pb-2">
@@ -522,13 +600,19 @@ const ProductCheckView: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className={`flex flex-col gap-2 ${
+              selectedProduct.checklists?.some(c => c.type === ChecklistItemType.VALIDITY_CHECK) && 
+              !selectedProduct.checklists?.some(c => c.type === ChecklistItemType.VALIDITY_CHECK && c.isChecked)
+                ? 'opacity-50 pointer-events-none' 
+                : ''
+            }`}>
               <label className="text-sm font-medium text-gray-700">Data de Validade</label>
               <input 
                 type="date"
                 className="w-full border rounded-lg p-2 text-sm focus:border-blue-500 outline-none"
                 value={selectedProduct.validityDate || ''}
                 onChange={(e) => setSelectedProduct({...selectedProduct, validityDate: e.target.value})}
+                disabled={selectedProduct.checklists?.some(c => c.type === ChecklistItemType.VALIDITY_CHECK) && !selectedProduct.checklists?.some(c => c.type === ChecklistItemType.VALIDITY_CHECK && c.isChecked)}
               />
               {selectedProduct.validityDate && (
                 (() => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, X, Edit, Trash, ChevronDown, Check } from 'lucide-react';
+import { Search, Plus, X, Edit, Trash, ChevronDown, Check, Wand2 } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import api, { API_URL } from '../api/client';
 import { getImageUrl } from '../utils/image';
@@ -12,6 +12,7 @@ const ProductsView: React.FC = () => {
   const [clients, setClients] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [checklists, setChecklists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modal State
@@ -19,6 +20,10 @@ const ProductsView: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [referenceImageFile, setReferenceImageFile] = useState<File | null>(null);
+  const [referenceImagePreview, setReferenceImagePreview] = useState<string>('');
+  const [generatingPrompt, setGeneratingPrompt] = useState(false);
+
   const [productForm, setProductForm] = useState({
     name: '',
     sku: '',
@@ -29,7 +34,10 @@ const ProductsView: React.FC = () => {
     clientId: '',
     barcode: '',
     subcategory: '',
-    status: 'active'
+    status: 'active',
+    checklistTemplateId: '',
+    referenceImageUrl: '',
+    analysisPrompt: ''
   });
 
   const [selectedParentId, setSelectedParentId] = useState('');
@@ -45,11 +53,12 @@ const ProductsView: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const [productsRes, clientsRes, brandsRes, categoriesRes] = await Promise.all([
+      const [productsRes, clientsRes, brandsRes, categoriesRes, checklistsRes] = await Promise.all([
         api.get('/products'),
         api.get('/clients'),
         api.get('/brands'),
-        api.get('/categories')
+        api.get('/categories'),
+        api.get('/checklists')
       ]);
 
       const mappedClients = clientsRes.data.map((c: any) => ({
@@ -60,6 +69,7 @@ const ProductsView: React.FC = () => {
       setClients(mappedClients);
       setBrands(brandsRes.data);
       setCategories(categoriesRes.data);
+      setChecklists(checklistsRes.data.filter((c: any) => c.active));
 
       const mappedProducts = productsRes.data.map((p: any) => {
         const imgUrl = getImageUrl(p.image);
@@ -76,7 +86,8 @@ const ProductsView: React.FC = () => {
         barcode: p.barcode,
         subcategory: p.subcategory,
         status: p.status,
-        categoryRef: p.categoryRef
+        categoryRef: p.categoryRef,
+        checklistTemplateId: p.checklistTemplate?.id || ''
       }});
       setProducts(mappedProducts);
 
@@ -153,6 +164,10 @@ const ProductsView: React.FC = () => {
             }
          }
          formData.append('image', imageUrl);
+      }
+
+      if (referenceImageFile) {
+        formData.append('referenceImage', referenceImageFile);
       }
       
       if (editingProduct) {
@@ -243,7 +258,10 @@ const ProductsView: React.FC = () => {
       clientId: product.clientId || '',
       barcode: product.barcode || '',
       subcategory: product.subcategory || '',
-      status: product.status || 'active'
+      status: product.status || 'active',
+      checklistTemplateId: product.checklistTemplateId || '',
+      referenceImageUrl: product.referenceImageUrl || '',
+      analysisPrompt: product.analysisPrompt || ''
     });
     
     // Set initial client search value
@@ -252,6 +270,8 @@ const ProductsView: React.FC = () => {
 
     setImagePreview(product.imagem === 'https://via.placeholder.com/150' ? '' : product.imagem);
     setImageFile(null);
+    setReferenceImagePreview(product.referenceImageUrl ? getImageUrl(product.referenceImageUrl) : '');
+    setReferenceImageFile(null);
     setShowModal(true);
   };
 
@@ -266,13 +286,18 @@ const ProductsView: React.FC = () => {
       clientId: '',
       barcode: '',
       subcategory: '',
-      status: 'active'
+      status: 'active',
+      checklistTemplateId: '',
+      referenceImageUrl: '',
+      analysisPrompt: ''
     });
     setSelectedParentId('');
     setSelectedSubId('');
     setClientSearch('');
     setImagePreview('');
     setImageFile(null);
+    setReferenceImagePreview('');
+    setReferenceImageFile(null);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -554,6 +579,20 @@ const ProductsView: React.FC = () => {
                   >
                     <option value="active">Ativo</option>
                     <option value="inactive">Inativo</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Checklist de Tarefas</label>
+                  <select
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium bg-white"
+                    value={productForm.checklistTemplateId}
+                    onChange={e => setProductForm({...productForm, checklistTemplateId: e.target.value})}
+                  >
+                    <option value="">Nenhum</option>
+                    {checklists.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
                   </select>
                 </div>
 

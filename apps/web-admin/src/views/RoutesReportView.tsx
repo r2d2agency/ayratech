@@ -664,6 +664,88 @@ const RoutesReportView: React.FC = () => {
     return `${minutes}m`;
   };
 
+  const handleExport = () => {
+    if (filteredRoutes.length === 0) {
+      alert('Não há dados para exportar.');
+      return;
+    }
+
+    const csvContent = [];
+    const headers = [
+      'Data',
+      'Promotor',
+      'Supervisor',
+      'PDV',
+      'Cidade',
+      'Produto',
+      'Marca',
+      'Status',
+      'Check-in',
+      'Check-out',
+      'Ruptura',
+      'Verificado',
+      'Observação'
+    ];
+    csvContent.push(headers.join(';'));
+
+    filteredRoutes.forEach(route => {
+      const date = new Date(route.date).toLocaleDateString('pt-BR');
+      const promoter = route.promoter.fullName;
+      const supervisor = route.promoter.supervisor?.fullName || '-';
+
+      route.items.forEach(item => {
+        // Apply item level filters if needed
+        if (selectedPDV && item.supermarket.fantasyName !== selectedPDV) return;
+
+        const pdv = item.supermarket.fantasyName;
+        const city = item.supermarket.city || '';
+
+        item.products.forEach(p => {
+          // Apply product level filters
+          if (selectedProduct && p.product.name !== selectedProduct) return;
+          if (selectedClient && p.product.brand?.name !== selectedClient) return;
+
+          const row = [
+            date,
+            promoter,
+            supervisor,
+            pdv,
+            city,
+            p.product.name,
+            p.product.brand?.name || '-',
+            item.status,
+            item.checkInTime ? new Date(item.checkInTime).toLocaleTimeString('pt-BR') : '-',
+            item.checkOutTime ? new Date(item.checkOutTime).toLocaleTimeString('pt-BR') : '-',
+            p.isStockout ? 'Sim' : 'Não',
+            p.checked ? 'Sim' : 'Não',
+            p.observation || ''
+          ];
+          
+          // Escape fields that might contain semicolons or newlines
+          const escapedRow = row.map(field => {
+             const str = String(field);
+             if (str.includes(';') || str.includes('\n')) {
+               return `"${str.replace(/"/g, '""')}"`;
+             }
+             return str;
+          });
+
+          csvContent.push(escapedRow.join(';'));
+        });
+      });
+    });
+
+    const blob = new Blob([csvContent.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `relatorio_rotas_${startDate}_${endDate}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="p-8 max-w-[1600px] mx-auto space-y-8 pb-32">
       <SectionHeader 
@@ -868,7 +950,9 @@ const RoutesReportView: React.FC = () => {
                   </button>
                 </div>
               </div>
-              <button className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors">
+              <button 
+                onClick={handleExport}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors">
                 <Download size={16} />
                 Exportar CSV
               </button>

@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, HttpException, HttpStatus } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFiles, HttpException, HttpStatus } from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -13,10 +13,17 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor('image'))
-  async create(@Body() createProductDto: CreateProductDto, @UploadedFile() file: Express.Multer.File) {
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'image', maxCount: 1 },
+    { name: 'referenceImage', maxCount: 1 },
+  ]))
+  async create(
+    @Body() createProductDto: CreateProductDto, 
+    @UploadedFiles() files: { image?: Express.Multer.File[], referenceImage?: Express.Multer.File[] }
+  ) {
     try {
-      if (file) {
+      if (files?.image?.[0]) {
+        const file = files.image[0];
         const filename = `product-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
         const uploadDir = path.join(UPLOAD_ROOT, 'products');
         if (!fs.existsSync(uploadDir)) {
@@ -35,6 +42,28 @@ export class ProductsController {
           
         createProductDto.image = `/uploads/products/${filename}`;
       }
+
+      if (files?.referenceImage?.[0]) {
+        const file = files.referenceImage[0];
+        const filename = `ref-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
+        const uploadDir = path.join(UPLOAD_ROOT, 'products/references');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        
+        try {
+          await sharp(file.buffer)
+            .resize(1280, 1280, { fit: 'inside', withoutEnlargement: true })
+            .webp({ quality: 85 })
+            .toFile(path.join(uploadDir, filename));
+        } catch (sharpError) {
+          console.error('Sharp processing error:', sharpError);
+          throw new HttpException(`Reference Image processing failed: ${sharpError.message}`, HttpStatus.BAD_REQUEST);
+        }
+          
+        createProductDto.referenceImageUrl = `/uploads/products/references/${filename}`;
+      }
+
       return await this.productsService.create(createProductDto);
     } catch (error) {
       console.error('Error in ProductsController.create:', error);
@@ -76,10 +105,18 @@ export class ProductsController {
   }
 
   @Patch(':id')
-  @UseInterceptors(FileInterceptor('image'))
-  async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto, @UploadedFile() file: Express.Multer.File) {
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'image', maxCount: 1 },
+    { name: 'referenceImage', maxCount: 1 },
+  ]))
+  async update(
+    @Param('id') id: string, 
+    @Body() updateProductDto: UpdateProductDto, 
+    @UploadedFiles() files: { image?: Express.Multer.File[], referenceImage?: Express.Multer.File[] }
+  ) {
     try {
-      if (file) {
+      if (files?.image?.[0]) {
+        const file = files.image[0];
         const filename = `product-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
         const uploadDir = path.join(UPLOAD_ROOT, 'products');
         if (!fs.existsSync(uploadDir)) {
@@ -98,6 +135,28 @@ export class ProductsController {
           
         updateProductDto.image = `/uploads/products/${filename}`;
       }
+
+      if (files?.referenceImage?.[0]) {
+        const file = files.referenceImage[0];
+        const filename = `ref-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
+        const uploadDir = path.join(UPLOAD_ROOT, 'products/references');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        
+        try {
+          await sharp(file.buffer)
+            .resize(1280, 1280, { fit: 'inside', withoutEnlargement: true })
+            .webp({ quality: 85 })
+            .toFile(path.join(uploadDir, filename));
+        } catch (sharpError) {
+          console.error('Sharp processing error:', sharpError);
+          throw new HttpException(`Reference Image processing failed: ${sharpError.message}`, HttpStatus.BAD_REQUEST);
+        }
+          
+        updateProductDto.referenceImageUrl = `/uploads/products/references/${filename}`;
+      }
+
       return await this.productsService.update(id, updateProductDto);
     } catch (error) {
       console.error('Error in ProductsController.update:', error);

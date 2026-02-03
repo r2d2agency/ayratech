@@ -75,7 +75,7 @@ export interface SupermarketGroup {
   status: boolean;
 }
 
-export type ViewType = 'dashboard' | 'client_dashboard' | 'supermarkets_list' | 'supermarket_form' | 'supermarket_groups_list' | 'supermarket_group_form' | 'promoters' | 'clients' | 'products' | 'categories' | 'brands' | 'routes' | 'live_map' | 'admin' | 'employees' | 'supervisors' | 'app_access' | 'documents' | 'logs' | 'reports_routes' | 'gallery' | 'time_clock';
+export type ViewType = 'dashboard' | 'client_dashboard' | 'supermarkets_list' | 'supermarket_form' | 'supermarket_groups_list' | 'supermarket_group_form' | 'promoters' | 'clients' | 'products' | 'categories' | 'brands' | 'routes' | 'live_map' | 'admin' | 'employees' | 'supervisors' | 'app_access' | 'documents' | 'logs' | 'reports_routes' | 'gallery' | 'time_clock' | 'photo_processing' | 'ai_config';
 
 export const INITIAL_DATA: SupermarketData = {
   id: '',

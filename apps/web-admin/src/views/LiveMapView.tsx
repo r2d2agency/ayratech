@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Store, Target, Activity, Search } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, LayersControl } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useBranding } from '../context/BrandingContext';
@@ -214,10 +214,21 @@ const LiveMapView: React.FC<LiveMapViewProps> = ({ onNavigate }) => {
         {/* Map Area */}
         <div className="flex-1 bg-white rounded-[2rem] border border-slate-200 overflow-hidden relative shadow-inner z-0">
            <MapContainer center={[-14.2350, -51.9253]} zoom={4} style={{ height: '100%', width: '100%' }}>
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              />
+              <LayersControl position="topright">
+                <LayersControl.BaseLayer checked name="Mapa (Padrão)">
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  />
+                </LayersControl.BaseLayer>
+
+                <LayersControl.BaseLayer name="Satélite">
+                  <TileLayer
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                    attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                  />
+                </LayersControl.BaseLayer>
+              </LayersControl>
               
               {/* Supermarket Markers (Gray/Default) */}
               {filteredSupermarkets.filter(s => s.latitude && s.longitude).map(s => {

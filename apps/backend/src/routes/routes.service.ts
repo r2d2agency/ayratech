@@ -4,8 +4,11 @@ import { Repository, In, DataSource } from 'typeorm';
 import { Route } from './entities/route.entity';
 import { RouteItem } from './entities/route-item.entity';
 import { RouteItemProduct } from './entities/route-item-product.entity';
+import { RouteItemProductChecklist } from './entities/route-item-product-checklist.entity';
 import { RouteRule } from './entities/route-rule.entity';
+import { ChecklistTemplate } from '../checklists/entities/checklist-template.entity';
 import { Client } from '../entities/client.entity';
+import { Product } from '../entities/product.entity';
 import { CreateRouteDto } from './dto/create-route.dto';
 import { UpdateRouteDto } from './dto/update-route.dto';
 
@@ -50,6 +53,38 @@ export class RoutesService {
         }
       }
 
+      // Pre-fetch products and checklists
+      const allProductIds = new Set<string>();
+      const allChecklistTemplateIds = new Set<string>();
+
+      items.forEach(item => {
+        if (item.productIds) item.productIds.forEach(id => allProductIds.add(id));
+        if (item.products) {
+            item.products.forEach(p => {
+                allProductIds.add(p.productId);
+                if (p.checklistTemplateId) allChecklistTemplateIds.add(p.checklistTemplateId);
+            });
+        }
+      });
+
+      const productsMap = new Map<string, Product>();
+      if (allProductIds.size > 0) {
+        const products = await this.dataSource.getRepository(Product).find({
+            where: { id: In(Array.from(allProductIds)) },
+            relations: ['checklistTemplate', 'checklistTemplate.items', 'checklistTemplate.items.competitor']
+        });
+        products.forEach(p => productsMap.set(p.id, p));
+      }
+
+      const checklistTemplatesMap = new Map<string, ChecklistTemplate>();
+      if (allChecklistTemplateIds.size > 0) {
+          const templates = await this.dataSource.getRepository(ChecklistTemplate).find({
+              where: { id: In(Array.from(allChecklistTemplateIds)) },
+              relations: ['items', 'items.competitor']
+          });
+          templates.forEach(t => checklistTemplatesMap.set(t.id, t));
+      }
+
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         const routeItem = this.routeItemsRepository.create({
@@ -64,16 +99,48 @@ export class RoutesService {
         });
         const savedItem = await this.routeItemsRepository.save(routeItem);
 
-        if (item.productIds && item.productIds.length > 0) {
-          const productEntities = item.productIds.map(productId => 
-            this.routeItemProductsRepository.create({
-              routeItem: { id: savedItem.id },
-              routeItemId: savedItem.id,
-              product: { id: productId },
-              productId: productId
-            })
-          );
-          await this.routeItemProductsRepository.save(productEntities);
+        const itemProductsToProcess: { productId: string, checklistTemplateId?: string }[] = [];
+        if (item.products) itemProductsToProcess.push(...item.products);
+        if (item.productIds) {
+           item.productIds.forEach(pid => {
+               if (!itemProductsToProcess.find(p => p.productId === pid)) {
+                   itemProductsToProcess.push({ productId: pid });
+               }
+           });
+        }
+
+        if (itemProductsToProcess.length > 0) {
+          for (const prodData of itemProductsToProcess) {
+             const rip = this.routeItemProductsRepository.create({
+                 routeItem: { id: savedItem.id },
+                 routeItemId: savedItem.id,
+                 product: { id: prodData.productId },
+                 productId: prodData.productId,
+                 checklistTemplateId: prodData.checklistTemplateId
+             });
+             const savedRip = await this.routeItemProductsRepository.save(rip);
+             
+             let checklistTemplate = null;
+             if (prodData.checklistTemplateId) {
+                 checklistTemplate = checklistTemplatesMap.get(prodData.checklistTemplateId);
+             } else {
+                 const product = productsMap.get(prodData.productId);
+                 checklistTemplate = product?.checklistTemplate;
+             }
+             
+             if (checklistTemplate?.items?.length) {
+                 const checklists = checklistTemplate.items.map(tplItem => 
+                    this.dataSource.getRepository(RouteItemProductChecklist).create({
+                        routeItemProduct: savedRip,
+                        description: tplItem.description,
+                        type: tplItem.type,
+                        isChecked: false,
+                        competitorName: tplItem.competitor?.name || null
+                    })
+                 );
+                 await this.dataSource.getRepository(RouteItemProductChecklist).save(checklists);
+             }
+          }
         }
       }
     }
@@ -81,19 +148,55 @@ export class RoutesService {
     return this.findOne(savedRoute.id);
   }
 
-  findAll() {
-    const routes = this.routesRepository.find({
-      relations: ['items', 'items.supermarket', 'promoter', 'promoter.supervisor', 'items.products', 'items.products.product', 'items.products.product.brand'],
-      order: { date: 'DESC' }
-    });
-    // Log the first route's promoter for debugging (if any)
-    routes.then(rs => {
-      if (rs.length > 0) {
-        console.log('RoutesService.findAll debug: First route promoter:', JSON.stringify(rs[0].promoter));
-        console.log('RoutesService.findAll debug: First route promoterId:', rs[0].promoterId);
-      }
-    });
-    return routes;
+  async findAll(userId?: string) {
+    let allowedClientIds: string[] | null = null;
+    
+    if (userId) {
+        const userRepo = this.dataSource.getRepository(User);
+        const user = await userRepo.findOne({ 
+            where: { id: userId }, 
+            relations: ['clients', 'role'] 
+        });
+
+        if (user) {
+            const roleName = user.role?.name?.toLowerCase() || '';
+            const isAdmin = ['admin', 'administrador do sistema', 'manager', 'rh'].includes(roleName);
+            
+            if (!isAdmin) {
+                if (user.clients && user.clients.length > 0) {
+                    allowedClientIds = user.clients.map(c => c.id);
+                } else if (roleName.includes('supervisor')) {
+                    allowedClientIds = [];
+                }
+            }
+        }
+    }
+
+    const qb = this.routesRepository.createQueryBuilder('route')
+      .leftJoinAndSelect('route.items', 'items')
+      .leftJoinAndSelect('items.supermarket', 'supermarket')
+      .leftJoinAndSelect('route.promoter', 'promoter')
+      .leftJoinAndSelect('promoter.supervisor', 'supervisor')
+      .leftJoinAndSelect('items.products', 'itemProducts')
+      .leftJoinAndSelect('itemProducts.product', 'product')
+      .leftJoinAndSelect('product.brand', 'brand')
+      .orderBy('route.date', 'DESC');
+
+    if (allowedClientIds !== null) {
+        if (allowedClientIds.length === 0) {
+            return [];
+        }
+        
+        qb.leftJoin('product.client', 'productClient')
+          .leftJoin('brand.client', 'brandClient')
+          .leftJoin('supermarket.clients', 'smClient')
+          .andWhere(
+              '(productClient.id IN (:...clientIds) OR brandClient.id IN (:...clientIds) OR smClient.id IN (:...clientIds))',
+              { clientIds: allowedClientIds }
+          );
+    }
+
+    return qb.getMany();
   }
 
   findByPromoter(promoterId: string) {
@@ -199,7 +302,7 @@ export class RoutesService {
   findOne(id: string) {
     return this.routesRepository.findOne({
       where: { id },
-      relations: ['items', 'items.supermarket', 'promoter', 'items.products', 'items.products.product']
+      relations: ['items', 'items.supermarket', 'promoter', 'items.products', 'items.products.product', 'items.products.checklists']
     });
   }
 
@@ -273,6 +376,38 @@ export class RoutesService {
              }
           }
 
+          // Pre-fetch products and checklists
+          const allProductIds = new Set<string>();
+          const allChecklistTemplateIds = new Set<string>();
+
+          items.forEach(item => {
+            if (item.productIds) item.productIds.forEach(id => allProductIds.add(id));
+            if (item.products) {
+                item.products.forEach(p => {
+                    allProductIds.add(p.productId);
+                    if (p.checklistTemplateId) allChecklistTemplateIds.add(p.checklistTemplateId);
+                });
+            }
+          });
+
+          const productsMap = new Map<string, Product>();
+          if (allProductIds.size > 0) {
+            const products = await queryRunner.manager.find(Product, {
+                where: { id: In(Array.from(allProductIds)) },
+                relations: ['checklistTemplate', 'checklistTemplate.items', 'checklistTemplate.items.competitor']
+            });
+            products.forEach(p => productsMap.set(p.id, p));
+          }
+
+          const checklistTemplatesMap = new Map<string, ChecklistTemplate>();
+          if (allChecklistTemplateIds.size > 0) {
+              const templates = await queryRunner.manager.find(ChecklistTemplate, {
+                  where: { id: In(Array.from(allChecklistTemplateIds)) },
+                  relations: ['items', 'items.competitor']
+              });
+              templates.forEach(t => checklistTemplatesMap.set(t.id, t));
+          }
+
           // Robust deletion: Find and remove items to handle cascades/constraints safely
           const existingItems = await queryRunner.manager.find(RouteItem, { 
               where: { route: { id } },
@@ -301,17 +436,49 @@ export class RoutesService {
               
               const savedItem = await queryRunner.manager.save(RouteItem, routeItem);
 
-              if (item.productIds && item.productIds.length > 0) {
-                  const itemProducts = item.productIds.map(productId => 
-                      queryRunner.manager.create(RouteItemProduct, {
-                          routeItem: savedItem,
-                          routeItemId: savedItem.id,
-                          product: { id: productId },
-                          productId: productId,
-                          checked: false
-                      })
-                  );
-                  await queryRunner.manager.save(RouteItemProduct, itemProducts);
+              const itemProductsToProcess: { productId: string, checklistTemplateId?: string }[] = [];
+              if (item.products) itemProductsToProcess.push(...item.products);
+              if (item.productIds) {
+                 item.productIds.forEach(pid => {
+                     if (!itemProductsToProcess.find(p => p.productId === pid)) {
+                         itemProductsToProcess.push({ productId: pid });
+                     }
+                 });
+              }
+
+              if (itemProductsToProcess.length > 0) {
+                  for (const prodData of itemProductsToProcess) {
+                     const rip = queryRunner.manager.create(RouteItemProduct, {
+                         routeItem: savedItem,
+                         routeItemId: savedItem.id,
+                         product: { id: prodData.productId },
+                         productId: prodData.productId,
+                         checked: false,
+                         checklistTemplateId: prodData.checklistTemplateId
+                     });
+                     const savedRip = await queryRunner.manager.save(RouteItemProduct, rip);
+                     
+                     let checklistTemplate = null;
+                     if (prodData.checklistTemplateId) {
+                         checklistTemplate = checklistTemplatesMap.get(prodData.checklistTemplateId);
+                     } else {
+                         const product = productsMap.get(prodData.productId);
+                         checklistTemplate = product?.checklistTemplate;
+                     }
+                     
+                     if (checklistTemplate?.items?.length) {
+                         const checklists = checklistTemplate.items.map(tplItem => 
+                            queryRunner.manager.create(RouteItemProductChecklist, {
+                                routeItemProduct: savedRip,
+                                description: tplItem.description,
+                                type: tplItem.type,
+                                isChecked: false,
+                                competitorName: tplItem.competitor?.name || null
+                            })
+                         );
+                         await queryRunner.manager.save(RouteItemProductChecklist, checklists);
+                     }
+                  }
               }
           }
       }
@@ -362,7 +529,7 @@ export class RoutesService {
     return this.routeRulesRepository.find();
   }
 
-  async checkProduct(routeItemId: string, productId: string, data: { checked?: boolean, observation?: string, isStockout?: boolean, stockoutType?: string, photos?: string[], checkInTime?: string, checkOutTime?: string, validityDate?: string }) {
+  async checkProduct(routeItemId: string, productId: string, data: { checked?: boolean, observation?: string, isStockout?: boolean, stockoutType?: string, photos?: string[], checkInTime?: string, checkOutTime?: string, validityDate?: string, checklists?: { id: string, isChecked: boolean, value?: string }[] }) {
     const itemProduct = await this.routeItemProductsRepository.findOne({
       where: { routeItemId, productId }
     });
@@ -377,7 +544,19 @@ export class RoutesService {
       if (data.checkOutTime !== undefined) itemProduct.checkOutTime = new Date(data.checkOutTime);
       if (data.validityDate !== undefined) itemProduct.validityDate = data.validityDate;
 
-      return this.routeItemProductsRepository.save(itemProduct);
+      const saved = await this.routeItemProductsRepository.save(itemProduct);
+
+      if (data.checklists && data.checklists.length > 0) {
+        const checklistRepo = this.dataSource.getRepository(RouteItemProductChecklist);
+        for (const c of data.checklists) {
+          await checklistRepo.update(c.id, {
+            isChecked: c.isChecked,
+            value: c.value
+          });
+        }
+      }
+
+      return saved;
     }
     
     // If it doesn't exist, maybe we should create it? 

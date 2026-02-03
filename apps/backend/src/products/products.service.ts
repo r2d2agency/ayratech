@@ -46,13 +46,13 @@ export class ProductsService {
   }
 
   findAll() {
-    return this.productsRepository.find({ relations: ['brand', 'brand.client', 'client', 'categoryRef', 'categoryRef.parent'] });
+    return this.productsRepository.find({ relations: ['brand', 'brand.client', 'client', 'categoryRef', 'categoryRef.parent', 'checklistTemplate'] });
   }
 
   findOne(id: string) {
     return this.productsRepository.findOne({ 
       where: { id },
-      relations: ['brand', 'brand.client', 'client', 'categoryRef', 'categoryRef.parent']
+      relations: ['brand', 'brand.client', 'client', 'categoryRef', 'categoryRef.parent', 'checklistTemplate']
     });
   }
 

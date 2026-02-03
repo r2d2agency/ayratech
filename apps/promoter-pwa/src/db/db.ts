@@ -11,7 +11,7 @@ export interface OfflineRoute {
 
 export interface PendingAction {
   id?: number;
-  type: 'CHECKIN' | 'CHECKOUT' | 'FORM' | 'PHOTO' | 'TIME_CLOCK';
+  type: 'CHECKIN' | 'CHECKOUT' | 'FORM' | 'PHOTO' | 'TIME_CLOCK' | 'PRODUCT_CHECK';
   url: string;
   method: 'POST' | 'PUT' | 'PATCH';
   payload: any;

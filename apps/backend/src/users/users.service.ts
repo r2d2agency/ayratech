@@ -47,14 +47,14 @@ export class UsersService implements OnModuleInit {
   async findOne(email: string): Promise<User | undefined> {
     return this.usersRepository.findOne({ 
       where: { email },
-      relations: ['role', 'employee']
+      relations: ['role', 'employee', 'clients']
     });
   }
 
   async findByEmployeeId(employeeId: string): Promise<User | undefined> {
     return this.usersRepository.findOne({ 
       where: { employeeId },
-      relations: ['role', 'employee']
+      relations: ['role', 'employee', 'clients']
     });
   }
 
@@ -68,13 +68,13 @@ export class UsersService implements OnModuleInit {
   async findById(id: string): Promise<User | undefined> {
     return this.usersRepository.findOne({ 
       where: { id },
-      relations: ['role', 'employee']
+      relations: ['role', 'employee', 'clients']
     });
   }
 
   async findAll(): Promise<User[]> {
     try {
-      return await this.usersRepository.find({ relations: ['role', 'employee'] });
+      return await this.usersRepository.find({ relations: ['role', 'employee', 'clients'] });
     } catch (err) {
       console.error('Error in findAll users:', err);
       // Return empty array instead of throwing 500 to allow UI to render
@@ -123,13 +123,14 @@ export class UsersService implements OnModuleInit {
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(createUserDto.password || '123456', salt);
     
-    const { roleId, employeeId, ...userData } = createUserDto;
+    const { roleId, employeeId, clientIds, ...userData } = createUserDto;
     
     const newUser = this.usersRepository.create({
       ...userData,
       password: hashedPassword,
       role: roleId ? { id: roleId } : null,
       employee: employeeId ? { id: employeeId } : null,
+      clients: clientIds ? clientIds.map(cid => ({ id: cid } as any)) : [],
     });
     
     try {
@@ -181,7 +182,7 @@ export class UsersService implements OnModuleInit {
           throw new BadRequestException('Usuário não encontrado.');
       }
 
-      const { roleId, employeeId, ...userData } = updateUserDto;
+      const { roleId, employeeId, clientIds, ...userData } = updateUserDto;
       
       // Merge basic fields
       Object.assign(user, userData);
@@ -199,9 +200,13 @@ export class UsersService implements OnModuleInit {
         user.employee = newEmployeeId ? { id: newEmployeeId } as any : null;
       }
 
+      if (clientIds !== undefined) {
+          user.clients = clientIds.map(cid => ({ id: cid } as any));
+      }
+
       await this.usersRepository.save(user);
 
-      return this.usersRepository.findOne({ where: { id }, relations: ['role', 'employee'] });
+      return this.usersRepository.findOne({ where: { id }, relations: ['role', 'employee', 'clients'] });
     } catch (err: any) {
       console.error('Erro ao atualizar usuário:', err);
       if (err?.code === '23505') {

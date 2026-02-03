@@ -16,6 +16,8 @@ import CategoriesView from './views/CategoriesView';
 import BrandsView from './views/BrandsView';
 import EmployeesView from './views/EmployeesView';
 import SupervisorsView from './views/SupervisorsView';
+import AiConfigView from './views/AiConfigView';
+import PhotoProcessingView from './views/PhotoProcessingView';
 import AppAccessView from './views/AppAccessView';
 import DocumentsView from './views/DocumentsView';
 import SystemLogsView from './views/SystemLogsView';
@@ -120,6 +122,8 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
           {activeView === 'logs' && <SystemLogsView />}
           {activeView === 'reports_routes' && <RoutesReportView />}
           {activeView === 'gallery' && <PhotoGalleryView />}
+          {activeView === 'photo_processing' && <PhotoProcessingView />}
+          {activeView === 'ai_config' && <AiConfigView />}
           {activeView === 'time_clock' && <TimeClockManagementView />}
         </main>
       </div>

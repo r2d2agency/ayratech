@@ -15,8 +15,8 @@ export class RoutesController {
   }
 
   @Get()
-  findAll() {
-    return this.routesService.findAll();
+  findAll(@Req() req) {
+    return this.routesService.findAll(req.user?.userId);
   }
 
   @Get('client/all')
@@ -76,7 +76,7 @@ export class RoutesController {
   checkProduct(
     @Param('itemId') itemId: string,
     @Param('productId') productId: string,
-    @Body() body: { checked?: boolean; observation?: string; isStockout?: boolean; stockoutType?: string; photos?: string[]; checkInTime?: string; checkOutTime?: string; validityDate?: string },
+    @Body() body: { checked?: boolean; observation?: string; isStockout?: boolean; stockoutType?: string; photos?: string[]; checkInTime?: string; checkOutTime?: string; validityDate?: string; checklists?: any[] },
   ) {
     return this.routesService.checkProduct(itemId, productId, body);
   }

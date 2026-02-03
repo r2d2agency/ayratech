@@ -39,6 +39,7 @@ const RoutesView: React.FC = () => {
   const [showProductModal, setShowProductModal] = useState(false);
   const [currentRouteItemIndex, setCurrentRouteItemIndex] = useState<number | null>(null);
   const [tempSelectedProducts, setTempSelectedProducts] = useState<string[]>([]);
+  const [tempProductChecklists, setTempProductChecklists] = useState<Record<string, string>>({});
   const [selectedClientForModal, setSelectedClientForModal] = useState<string | null>(null);
 
   // Planner State
@@ -47,6 +48,7 @@ const RoutesView: React.FC = () => {
 
   // Templates State
   const [templates, setTemplates] = useState<any[]>([]);
+  const [checklistTemplates, setChecklistTemplates] = useState<any[]>([]); // Added for Checklist Templates
   const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
   const [templateName, setTemplateName] = useState('');
 
@@ -84,12 +86,13 @@ const RoutesView: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const [employeesRes, supermarketsRes, productsRes, templatesRes, groupsRes] = await Promise.all([
+      const [employeesRes, supermarketsRes, productsRes, templatesRes, groupsRes, checklistsRes] = await Promise.all([
         api.get('/employees'),
         api.get('/supermarkets'),
         api.get('/products'),
         api.get('/routes/templates/all'),
-        api.get('/supermarket-groups')
+        api.get('/supermarket-groups'),
+        api.get('/checklists')
       ]);
       
       const promotersList = employeesRes.data.filter((e: any) => 
@@ -107,6 +110,7 @@ const RoutesView: React.FC = () => {
       setProducts(productsRes.data);
       setTemplates(templatesRes.data);
       setGroups(groupsRes.data);
+      setChecklistTemplates(checklistsRes.data);
       fetchRules();
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -208,7 +212,25 @@ const RoutesView: React.FC = () => {
 
   const handleOpenProductModal = (index: number) => {
     setCurrentRouteItemIndex(index);
-    setTempSelectedProducts(routeItems[index].productIds || []);
+    const item = routeItems[index];
+    setTempSelectedProducts(item.productIds || []);
+    
+    const checklists: Record<string, string> = {};
+    
+    // Initialize from existing route configuration if available
+    if (item.products) {
+      item.products.forEach((p: any) => {
+        if (p.checklistTemplateId) {
+          checklists[p.productId] = p.checklistTemplateId;
+        }
+      });
+    }
+
+    // For selected products that don't have a specific route checklist, 
+    // we can try to find their default checklist to show in UI (optional)
+    // But for now, let's just show what's explicitly set for the route.
+    
+    setTempProductChecklists(checklists);
     setShowProductModal(true);
   };
 
@@ -224,6 +246,13 @@ const RoutesView: React.FC = () => {
     if (currentRouteItemIndex !== null) {
       const newItems = [...routeItems];
       newItems[currentRouteItemIndex].productIds = tempSelectedProducts;
+      
+      // Save detailed product structure with checklist selection
+      newItems[currentRouteItemIndex].products = tempSelectedProducts.map(productId => ({
+        productId,
+        checklistTemplateId: tempProductChecklists[productId] || undefined
+      }));
+
       setRouteItems(newItems);
       setShowProductModal(false);
       setCurrentRouteItemIndex(null);
@@ -276,7 +305,8 @@ const RoutesView: React.FC = () => {
           startTime: item.startTime,
           endTime: item.endTime,
           estimatedDuration: item.estimatedDuration ? parseInt(item.estimatedDuration) : undefined,
-          productIds: item.productIds || []
+          productIds: item.productIds || [],
+          products: item.products || item.productIds?.map((id: string) => ({ productId: id })) || []
         }))
       };
 
@@ -315,7 +345,8 @@ const RoutesView: React.FC = () => {
           order: index + 1,
           startTime: item.startTime,
           estimatedDuration: parseInt(item.estimatedDuration),
-          productIds: item.productIds || []
+          productIds: item.productIds || [],
+          products: item.products || item.productIds?.map((id: string) => ({ productId: id })) || []
         }))
       });
       alert('Template salvo!');
@@ -337,7 +368,11 @@ const RoutesView: React.FC = () => {
       order: item.order,
       startTime: item.startTime || '',
       estimatedDuration: item.estimatedDuration || 30,
-      productIds: item.products?.map((p: any) => p.productId) || []
+      productIds: item.products?.map((p: any) => p.productId) || [],
+      products: item.products?.map((p: any) => ({
+        productId: p.productId,
+        checklistTemplateId: p.checklistTemplateId
+      })) || []
     }));
     setRouteItems(items);
     setActiveTab('editor');
@@ -427,7 +462,11 @@ const RoutesView: React.FC = () => {
       order: item.order,
       startTime: item.startTime || '',
       estimatedDuration: item.estimatedDuration || 30,
-      productIds: item.products?.map((p: any) => p.productId) || []
+      productIds: item.products?.map((p: any) => p.productId) || [],
+      products: item.products?.map((p: any) => ({
+        productId: p.productId,
+        checklistTemplateId: p.checklistTemplateId
+      })) || []
     }));
     setRouteItems(items);
     setActiveTab('editor');
@@ -1144,6 +1183,28 @@ const RoutesView: React.FC = () => {
                             <p className="text-xs text-slate-500">SKU: {product.sku}</p>
                           </div>
                         </div>
+
+                        {tempSelectedProducts.includes(product.id) && (
+                          <div className="ml-4" onClick={(e) => e.stopPropagation()}>
+                             <select
+                               value={tempProductChecklists[product.id] || ''}
+                               onChange={(e) => setTempProductChecklists({
+                                 ...tempProductChecklists,
+                                 [product.id]: e.target.value
+                               })}
+                               className="text-xs border border-slate-200 rounded p-1 max-w-[150px] outline-none focus:border-blue-400 bg-white"
+                             >
+                               <option value="">
+                                 {product.checklistTemplate 
+                                   ? `Padrão (${product.checklistTemplate.name})` 
+                                   : 'Checklist Padrão'}
+                               </option>
+                               {checklistTemplates.map(t => (
+                                 <option key={t.id} value={t.id}>{t.name}</option>
+                               ))}
+                             </select>
+                          </div>
+                        )}
                       </div>
                     ))}
                 </div>

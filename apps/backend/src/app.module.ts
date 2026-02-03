@@ -29,6 +29,7 @@ import { ImageAnalysisModule } from './integrations/image-analysis/image-analysi
 import { NotificationsModule } from './notifications/notifications.module';
 import { MessagesModule } from './messages/messages.module';
 import { SystemLogsModule } from './system-logs/system-logs.module';
+import { ChecklistsModule } from './checklists/checklists.module';
 import { APP_FILTER } from '@nestjs/core';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
@@ -96,6 +97,9 @@ import { UPLOAD_ROOT } from './config/upload.config';
     NotificationsModule,
     MessagesModule,
     SystemLogsModule,
+    ChecklistsModule,
+    AiModule,
+    CompetitorsModule,
   ],
   controllers: [AppController],
   providers: [
