@@ -25,6 +25,7 @@ export class ChecklistsService {
       const itemEntities = items.map(item => 
         this.checklistItemRepository.create({
           ...item,
+          competitors: item.competitorIds?.map(id => ({ id })),
           template: savedTemplate
         })
       );
@@ -62,6 +63,7 @@ export class ChecklistsService {
       const itemEntities = items.map(item => 
         this.checklistItemRepository.create({
           ...item,
+          competitors: item.competitorIds?.map(id => ({ id })),
           templateId: id
         })
       );

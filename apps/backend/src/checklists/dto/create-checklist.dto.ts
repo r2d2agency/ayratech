@@ -18,6 +18,11 @@ export class CreateChecklistItemDto {
   @IsOptional()
   @IsString()
   competitorId?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  competitorIds?: string[];
 }
 
 export class CreateChecklistTemplateDto {

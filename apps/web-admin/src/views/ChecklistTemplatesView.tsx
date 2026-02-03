@@ -10,6 +10,7 @@ interface ChecklistItem {
   isMandatory: boolean;
   order: number;
   competitorId?: string;
+  competitorIds?: string[];
 }
 
 interface ChecklistTemplate {
@@ -70,7 +71,11 @@ const ChecklistTemplatesView: React.FC = () => {
       setEditingTemplate(template);
       setFormName(template.name);
       setFormDescription(template.description || '');
-      setFormItems([...template.items.sort((a, b) => a.order - b.order)]);
+      const items = template.items.map((item: any) => ({
+        ...item,
+        competitorIds: item.competitors ? item.competitors.map((c: any) => c.id) : (item.competitorId ? [item.competitorId] : [])
+      }));
+      setFormItems([...items.sort((a: any, b: any) => a.order - b.order)]);
     } else {
       setEditingTemplate(null);
       setFormName('');
@@ -375,16 +380,37 @@ const ChecklistTemplatesView: React.FC = () => {
 
                           {item.type === 'PRICE_CHECK' && (
                             <div className="flex gap-2 flex-1">
-                              <select
-                                value={item.competitorId || ''}
-                                onChange={(e) => updateItem(index, 'competitorId', e.target.value)}
-                                className="px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 text-slate-600 flex-1"
-                              >
-                                <option value="">Selecione o Concorrente</option>
-                                {competitors.map(c => (
-                                  <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                              </select>
+                              <div className="flex flex-col gap-2 flex-1 min-w-[200px]">
+                                <div className="flex flex-wrap gap-1">
+                                  {(item.competitorIds || []).map(id => {
+                                     const comp = competitors.find(c => c.id === id);
+                                     if (!comp) return null;
+                                     return (
+                                       <span key={id} className="bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-md text-xs flex items-center gap-1">
+                                         {comp.name}
+                                         <button onClick={() => {
+                                            const newIds = (item.competitorIds || []).filter(i => i !== id);
+                                            updateItem(index, 'competitorIds', newIds);
+                                         }} className="hover:text-blue-900"><X size={12}/></button>
+                                       </span>
+                                     );
+                                  })}
+                                </div>
+                                <select 
+                                  value=""
+                                  onChange={(e) => {
+                                     if (!e.target.value) return;
+                                     const newIds = [...(item.competitorIds || []), e.target.value];
+                                     updateItem(index, 'competitorIds', newIds);
+                                  }}
+                                  className="px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 text-slate-600 w-full"
+                                >
+                                  <option value="">Adicionar Concorrente...</option>
+                                  {competitors.filter(c => !(item.competitorIds || []).includes(c.id)).map(c => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                  ))}
+                                </select>
+                              </div>
                               <button
                                 onClick={() => setShowCompetitorModal(true)}
                                 className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"

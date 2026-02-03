@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, ManyToMany, JoinTable } from 'typeorm';
 import { ChecklistTemplate } from './checklist-template.entity';
 import { Competitor } from '../../competitors/entities/competitor.entity';
 
@@ -44,4 +44,8 @@ export class ChecklistTemplateItem {
 
   @Column({ nullable: true })
   competitorId: string;
+
+  @ManyToMany(() => Competitor, { eager: true })
+  @JoinTable()
+  competitors: Competitor[];
 }

@@ -78,7 +78,7 @@ export class RoutesService {
       if (allProductIds.size > 0) {
         const products = await this.dataSource.getRepository(Product).find({
             where: { id: In(Array.from(allProductIds)) },
-            relations: ['checklistTemplate', 'checklistTemplate.items', 'checklistTemplate.items.competitor']
+            relations: ['checklistTemplate', 'checklistTemplate.items', 'checklistTemplate.items.competitor', 'checklistTemplate.items.competitors']
         });
         products.forEach(p => productsMap.set(p.id, p));
       }
@@ -87,7 +87,7 @@ export class RoutesService {
       if (allChecklistTemplateIds.size > 0) {
           const templates = await this.dataSource.getRepository(ChecklistTemplate).find({
               where: { id: In(Array.from(allChecklistTemplateIds)) },
-              relations: ['items', 'items.competitor']
+              relations: ['items', 'items.competitor', 'items.competitors']
           });
           templates.forEach(t => checklistTemplatesMap.set(t.id, t));
       }
@@ -136,15 +136,28 @@ export class RoutesService {
              }
              
              if (checklistTemplate?.items?.length) {
-                 const checklists = checklistTemplate.items.map(tplItem => 
-                    this.dataSource.getRepository(RouteItemProductChecklist).create({
-                        routeItemProduct: savedRip,
-                        description: tplItem.description,
-                        type: tplItem.type,
-                        isChecked: false,
-                        competitorName: tplItem.competitor?.name || null
-                    })
-                 );
+                 const checklists = [];
+                 for (const tplItem of checklistTemplate.items) {
+                    if (tplItem.type === ChecklistItemType.PRICE_CHECK && tplItem.competitors?.length > 0) {
+                        for (const comp of tplItem.competitors) {
+                            checklists.push(this.dataSource.getRepository(RouteItemProductChecklist).create({
+                                routeItemProduct: savedRip,
+                                description: tplItem.description,
+                                type: tplItem.type,
+                                isChecked: false,
+                                competitorName: comp.name
+                            }));
+                        }
+                    } else {
+                        checklists.push(this.dataSource.getRepository(RouteItemProductChecklist).create({
+                            routeItemProduct: savedRip,
+                            description: tplItem.description,
+                            type: tplItem.type,
+                            isChecked: false,
+                            competitorName: tplItem.competitor?.name || null
+                        }));
+                    }
+                 }
                  await this.dataSource.getRepository(RouteItemProductChecklist).save(checklists);
              }
           }
@@ -407,7 +420,7 @@ export class RoutesService {
           if (allProductIds.size > 0) {
             const products = await queryRunner.manager.find(Product, {
                 where: { id: In(Array.from(allProductIds)) },
-                relations: ['checklistTemplate', 'checklistTemplate.items', 'checklistTemplate.items.competitor']
+                relations: ['checklistTemplate', 'checklistTemplate.items', 'checklistTemplate.items.competitor', 'checklistTemplate.items.competitors']
             });
             products.forEach(p => productsMap.set(p.id, p));
           }
@@ -416,7 +429,7 @@ export class RoutesService {
           if (allChecklistTemplateIds.size > 0) {
               const templates = await queryRunner.manager.find(ChecklistTemplate, {
                   where: { id: In(Array.from(allChecklistTemplateIds)) },
-                  relations: ['items', 'items.competitor']
+                  relations: ['items', 'items.competitor', 'items.competitors']
               });
               templates.forEach(t => checklistTemplatesMap.set(t.id, t));
           }
@@ -480,15 +493,28 @@ export class RoutesService {
                      }
                      
                      if (checklistTemplate?.items?.length) {
-                         const checklists = checklistTemplate.items.map(tplItem => 
-                            queryRunner.manager.create(RouteItemProductChecklist, {
-                                routeItemProduct: savedRip,
-                                description: tplItem.description,
-                                type: tplItem.type,
-                                isChecked: false,
-                                competitorName: tplItem.competitor?.name || null
-                            })
-                         );
+                         const checklists = [];
+                         for (const tplItem of checklistTemplate.items) {
+                            if (tplItem.type === ChecklistItemType.PRICE_CHECK && tplItem.competitors?.length > 0) {
+                                for (const comp of tplItem.competitors) {
+                                    checklists.push(queryRunner.manager.create(RouteItemProductChecklist, {
+                                        routeItemProduct: savedRip,
+                                        description: tplItem.description,
+                                        type: tplItem.type,
+                                        isChecked: false,
+                                        competitorName: comp.name
+                                    }));
+                                }
+                            } else {
+                                checklists.push(queryRunner.manager.create(RouteItemProductChecklist, {
+                                    routeItemProduct: savedRip,
+                                    description: tplItem.description,
+                                    type: tplItem.type,
+                                    isChecked: false,
+                                    competitorName: tplItem.competitor?.name || null
+                                }));
+                            }
+                         }
                          await queryRunner.manager.save(RouteItemProductChecklist, checklists);
                      }
                   }
