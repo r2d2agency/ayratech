@@ -1,24 +1,35 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Brand } from '../entities/brand.entity';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
+import { Client } from '../entities/client.entity';
 
 @Injectable()
 export class BrandsService {
   constructor(
     @InjectRepository(Brand)
     private brandsRepository: Repository<Brand>,
+    @InjectRepository(Client)
+    private clientsRepository: Repository<Client>,
   ) {}
 
   create(createBrandDto: CreateBrandDto) {
     const { clientId, ...brandData } = createBrandDto;
-    const brand = this.brandsRepository.create({
-      ...brandData,
-      client: clientId ? { id: clientId } : null
+    if (!clientId) {
+      throw new BadRequestException('clientId é obrigatório');
+    }
+    return this.clientsRepository.findOne({ where: { id: clientId } }).then(client => {
+      if (!client) throw new NotFoundException('Cliente não encontrado');
+      const brand = this.brandsRepository.create({
+        ...brandData,
+        client,
+      });
+      return this.brandsRepository.save(brand);
+    }).catch(err => {
+      throw new BadRequestException(err.message || 'Erro ao criar marca');
     });
-    return this.brandsRepository.save(brand);
   }
 
   findAll() {
@@ -34,14 +45,20 @@ export class BrandsService {
 
   update(id: string, updateBrandDto: UpdateBrandDto) {
     const { clientId, ...brandData } = updateBrandDto;
-    if (clientId) {
-      return this.brandsRepository.save({
-        id,
-        ...brandData,
-        client: { id: clientId }
-      });
-    }
-    return this.brandsRepository.update(id, brandData);
+    return this.brandsRepository.findOne({ where: { id } }).then(existing => {
+      if (!existing) throw new NotFoundException('Marca não encontrada');
+      if (clientId) {
+        return this.clientsRepository.findOne({ where: { id: clientId } }).then(client => {
+          if (!client) throw new NotFoundException('Cliente não encontrado');
+          const toSave = { ...existing, ...brandData, client };
+          return this.brandsRepository.save(toSave);
+        });
+      }
+      const toSave = { ...existing, ...brandData };
+      return this.brandsRepository.save(toSave);
+    }).catch(err => {
+      throw new BadRequestException(err.message || 'Erro ao atualizar marca');
+    });
   }
 
   remove(id: string) {
