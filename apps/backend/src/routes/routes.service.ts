@@ -9,6 +9,7 @@ import { RouteRule } from './entities/route-rule.entity';
 import { ChecklistTemplate } from '../checklists/entities/checklist-template.entity';
 import { Client } from '../entities/client.entity';
 import { Product } from '../entities/product.entity';
+import { User } from '../users/entities/user.entity';
 import { CreateRouteDto } from './dto/create-route.dto';
 import { UpdateRouteDto } from './dto/update-route.dto';
 

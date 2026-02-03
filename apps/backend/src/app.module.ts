@@ -33,6 +33,8 @@ import { ChecklistsModule } from './checklists/checklists.module';
 import { APP_FILTER } from '@nestjs/core';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
+import { AiModule } from './ai/ai.module';
+import { CompetitorsModule } from './competitors/competitors.module';
 import { UPLOAD_ROOT } from './config/upload.config';
 
 @Module({
