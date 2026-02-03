@@ -27,26 +27,31 @@ const DocumentsView = () => {
 
   const fetchDocuments = async () => {
     try {
-      // This is a guess. We might need to implement this endpoint.
-      // Or use /employees/me/documents if it exists.
-      // Since we don't have it, let's try to get profile first to get employee ID.
       const profile = await client.get('/auth/profile');
       const employeeId = profile.data.employee?.id;
       
       if (employeeId) {
-        // We need to fetch documents. If the endpoint doesn't exist, we might be stuck.
-        // For now, I'll assume we can get them.
-        // If the backend doesn't support it, this will 404.
-        // I'll leave it as a placeholder.
         const response = await client.get(`/employees/${employeeId}/documents`); 
         setDocuments(response.data);
       }
     } catch (error) {
       console.error('Error fetching documents:', error);
-      // toast.error('Erro ao carregar documentos');
+      // Only show error toast if not 404 (handled by empty state)
+      if ((error as any).response?.status !== 404) {
+          toast.error('Erro ao carregar documentos');
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const getDownloadUrl = (url: string) => {
+    if (!url) return '#';
+    if (url.startsWith('http')) return url;
+    // Remove leading slash if present to avoid double slash issues
+    const cleanUrl = url.startsWith('/') ? url.substring(1) : url;
+    // Construct full URL using API base URL
+    return `${import.meta.env.VITE_API_URL || 'https://api.ayratech.app.br'}/${cleanUrl}`;
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -182,10 +187,11 @@ const DocumentsView = () => {
                </div>
                
                <a 
-                 href={doc.fileUrl} 
+                 href={getDownloadUrl(doc.fileUrl)} 
                  target="_blank" 
                  rel="noopener noreferrer"
                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                 download // Hint to browser to download
                >
                  <Download size={20} />
                </a>
