@@ -446,6 +446,14 @@ export class EmployeesService {
     });
   }
 
+  async findAllDocumentsByEmployee(employeeId: string) {
+    return this.documentsRepository.find({
+      where: { employeeId },
+      relations: ['sender', 'sender.employee'],
+      order: { sentAt: 'DESC' }
+    });
+  }
+
   async addDocument(data: any) {
     if (!data.employeeId) {
         throw new BadRequestException('ID do funcionário é obrigatório.');

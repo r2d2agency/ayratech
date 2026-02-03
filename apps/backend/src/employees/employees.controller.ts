@@ -94,6 +94,11 @@ export class EmployeesController {
     return this.employeesService.findAll(search);
   }
 
+  @Get(':id/documents')
+  findAllDocumentsByEmployee(@Param('id') id: string) {
+    return this.employeesService.findAllDocumentsByEmployee(id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.employeesService.findOne(id);
