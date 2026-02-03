@@ -13,6 +13,8 @@ const ProductsView: React.FC = () => {
   const [brands, setBrands] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [checklists, setChecklists] = useState<any[]>([]);
+  const [aiPrompts, setAiPrompts] = useState<any[]>([]);
+  const [selectedPromptId, setSelectedPromptId] = useState('');
   const [loading, setLoading] = useState(true);
 
   // Modal State
@@ -53,12 +55,13 @@ const ProductsView: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const [productsRes, clientsRes, brandsRes, categoriesRes, checklistsRes] = await Promise.all([
+      const [productsRes, clientsRes, brandsRes, categoriesRes, checklistsRes, promptsRes] = await Promise.all([
         api.get('/products'),
         api.get('/clients'),
         api.get('/brands'),
         api.get('/categories'),
-        api.get('/checklists')
+        api.get('/checklists'),
+        api.get('/ai/prompts')
       ]);
 
       const mappedClients = clientsRes.data.map((c: any) => ({
@@ -95,6 +98,32 @@ const ProductsView: React.FC = () => {
       console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGeneratePrompt = async () => {
+    if (!editingProduct?.id) {
+        alert('Salve o produto antes de gerar o prompt.');
+        return;
+    }
+    if (!productForm.referenceImageUrl) {
+        alert('O produto precisa ter uma imagem de referência salva.');
+        return;
+    }
+
+    setGeneratingPrompt(true);
+    try {
+        const res = await api.post('/ai/generate-product-prompt', {
+            productId: editingProduct.id,
+            promptId: selectedPromptId
+        });
+        setProductForm(prev => ({ ...prev, analysisPrompt: res.data.description }));
+        alert('Prompt gerado com sucesso!');
+    } catch (error) {
+        console.error('Error generating prompt', error);
+        alert('Erro ao gerar prompt.');
+    } finally {
+        setGeneratingPrompt(false);
     }
   };
 

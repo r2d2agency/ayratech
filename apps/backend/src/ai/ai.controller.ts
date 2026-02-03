@@ -22,6 +22,11 @@ export class AiController {
     return this.aiService.createPrompt(createAiPromptDto);
   }
 
+  @Get('prompts')
+  getAllPrompts() {
+    return this.aiService.getAllPrompts();
+  }
+
   @Get('prompts/:name')
   getPrompt(@Param('name') name: string) {
     return this.aiService.getPromptByName(name);
@@ -38,7 +43,7 @@ export class AiController {
   }
 
   @Post('generate-product-prompt')
-  generateProductPrompt(@Body() body: { productId: string }) {
-    return this.aiService.generateProductPrompt(body.productId);
+  generateProductPrompt(@Body() body: { productId: string; promptId?: string }) {
+    return this.aiService.generateProductPrompt(body.productId, body.promptId);
   }
 }

@@ -124,6 +124,7 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
           {activeView === 'gallery' && <PhotoGalleryView />}
           {activeView === 'photo_processing' && <PhotoProcessingView />}
           {activeView === 'ai_config' && <AiConfigView />}
+          {activeView === 'ai_prompts' && <AiPromptsView />}
           {activeView === 'time_clock' && <TimeClockManagementView />}
         </main>
       </div>

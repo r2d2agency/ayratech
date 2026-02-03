@@ -72,12 +72,21 @@ export class AiService {
     return results;
   }
 
-  async generateProductPrompt(productId: string) {
+  async generateProductPrompt(productId: string, promptId?: string) {
     const product = await this.productRepository.findOne({ where: { id: productId } });
     if (!product) throw new Error('Produto não encontrado');
     if (!product.referenceImageUrl) throw new Error('Produto sem imagem de referência');
 
-    const description = await this.generateDescription(product.referenceImageUrl);
+    let instruction = 'Descreva detalhadamente este produto, incluindo marca, tipo de embalagem, cores principais, textos visíveis e características chave para identificação visual. Responda em português.';
+
+    if (promptId) {
+        const aiPrompt = await this.aiPromptRepository.findOne({ where: { id: promptId } });
+        if (aiPrompt) {
+            instruction = aiPrompt.instruction;
+        }
+    }
+
+    const description = await this.processImage(await this.getActiveConfig(), product.referenceImageUrl, instruction);
     product.analysisPrompt = description;
     await this.productRepository.save(product);
     return { description };
@@ -97,6 +106,10 @@ export class AiService {
 
   async createPrompt(data: any) {
     return this.aiPromptRepository.save(this.aiPromptRepository.create(data));
+  }
+
+  async getAllPrompts() {
+    return this.aiPromptRepository.find({ order: { createdAt: 'DESC' } });
   }
 
   async getPromptByName(name: string) {

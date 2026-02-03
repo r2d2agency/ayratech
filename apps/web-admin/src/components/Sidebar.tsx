@@ -231,6 +231,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
           Inteligência Artificial
         </p>
         {navItem('photo_processing', <Wand2 size={20} />, 'Processamento')}
+        {['admin', 'superadmin', 'administrador do sistema'].includes(userRole?.toLowerCase() || '') && navItem('ai_prompts', <FileText size={20} />, 'Prompts IA')}
         {['admin', 'superadmin', 'administrador do sistema'].includes(userRole?.toLowerCase() || '') && navItem('ai_config', <Settings size={20} />, 'Configuração IA')}
 
         <div className="pt-4" />
