@@ -1,5 +1,6 @@
 # Stage 1: Build
 FROM node:20-alpine AS builder
+ARG GIT_SHA
 
 # Set working directory
 WORKDIR /app
@@ -20,10 +21,12 @@ RUN npm install -g @nestjs/cli
 COPY . .
 
 # Build the application
-RUN npm run build
+RUN echo "GIT_SHA=$GIT_SHA" && npm run build
 
 # Stage 2: Production Run
 FROM node:20-alpine
+ARG GIT_SHA
+LABEL org.opencontainers.image.revision=$GIT_SHA
 
 # Set working directory
 WORKDIR /app
