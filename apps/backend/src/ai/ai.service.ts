@@ -202,16 +202,47 @@ export class AiService {
   }
 
   private async processImage(config: AiConfig, imagePath: string, promptText: string): Promise<string> {
+    // Handle URLs
+    if (imagePath.startsWith('http')) {
+        try {
+            const urlObj = new URL(imagePath);
+            imagePath = urlObj.pathname;
+        } catch (e) {
+            // ignore invalid urls, treat as path
+        }
+    }
+
     // Resolve full path
-    let fullPath = imagePath.startsWith('/') ? path.join(process.cwd(), imagePath) : imagePath;
+    // We expect images to be in uploads/ folder
+    let relativePath = imagePath;
+    
+    // Remove /uploads/ prefix or uploads/ prefix to normalize
+    if (relativePath.includes('/uploads/')) {
+        relativePath = relativePath.substring(relativePath.indexOf('/uploads/') + 9);
+    } else if (relativePath.startsWith('uploads/')) {
+        relativePath = relativePath.substring(8);
+    }
+    
+    // Remove any leading slashes
+    while (relativePath.startsWith('/')) {
+        relativePath = relativePath.substring(1);
+    }
+
+    // Construct full path assuming standard structure
+    const uploadRoot = path.join(process.cwd(), 'uploads');
+    let fullPath = path.join(uploadRoot, relativePath);
     
     if (!fs.existsSync(fullPath)) {
-        // Try prepending uploads/ if not found
-        const uploadPath = path.join(process.cwd(), 'uploads', imagePath.replace(/^\/uploads\//, ''));
-        if (!fs.existsSync(uploadPath)) {
-             throw new Error(`Imagem não encontrada: ${fullPath}`);
-        }
-        fullPath = uploadPath;
+         // Fallback: try relative to cwd directly (legacy or different structure)
+         const altPath = path.join(process.cwd(), imagePath.startsWith('/') ? imagePath.substring(1) : imagePath);
+         if (fs.existsSync(altPath)) {
+             fullPath = altPath;
+         } else {
+             // Try one more: maybe it's in uploads but path was absolute /var/www/...
+             // If we can't find it, log and throw
+             this.logger.warn(`Image not found at ${fullPath} or ${altPath}. Original: ${imagePath}`);
+             throw new Error(`Imagem não encontrada: ${relativePath}`);
+         }
     }
 
     const imageBuffer = fs.readFileSync(fullPath);
