@@ -119,10 +119,13 @@ const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts
   );
 };
 
-const DraggableRouteCard = ({ route, onClick, onDelete }: any) => {
+const DraggableRouteCard = ({ route, onClick, onDelete, onDuplicate }: any) => {
+  const isDraggable = route.status !== 'COMPLETED' && route.status !== 'IN_PROGRESS';
+  
   const {attributes, listeners, setNodeRef, transform} = useDraggable({
     id: route.id,
-    data: { route }
+    data: { route },
+    disabled: !isDraggable
   });
   
   const style = transform ? {
@@ -137,7 +140,9 @@ const DraggableRouteCard = ({ route, onClick, onDelete }: any) => {
       {...listeners} 
       {...attributes}
       onClick={onClick}
-      className={`p-3 rounded-xl border cursor-pointer hover:shadow-md transition-all touch-none ${
+      className={`p-3 rounded-xl border transition-all touch-none ${
+        isDraggable ? 'cursor-grab active:cursor-grabbing hover:shadow-md' : 'cursor-default opacity-90'
+      } ${
         route.status === 'CONFIRMED' 
           ? 'bg-green-50 border-green-200' 
           : route.status === 'COMPLETED'
@@ -157,6 +162,16 @@ const DraggableRouteCard = ({ route, onClick, onDelete }: any) => {
             <p className="text-xs font-bold text-slate-700 truncate max-w-[100px]">{route.promoter?.name}</p>
         </div>
         <div className="flex gap-1">
+            <button 
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onDuplicate(route);
+                }}
+                className="p-1 hover:bg-blue-100 rounded-full text-blue-500 transition-colors"
+                title="Duplicar Rota"
+            >
+                <Copy size={12} />
+            </button>
             <button 
                 onClick={(e) => {
                     e.stopPropagation();
@@ -887,6 +902,11 @@ const RoutesView: React.FC = () => {
                         route={route} 
                         onClick={() => handleEditRoute(route)}
                         onDelete={(e: any, id: string) => handleQuickDelete(e, id)}
+                        onDuplicate={(r: any) => {
+                           setRouteToDuplicate(r);
+                           setShowDuplicateModal(true);
+                           setDuplicateTargetDates([]);
+                        }}
                     />
                   ))}
                 </DroppableDayColumn>
@@ -1422,8 +1442,9 @@ const RoutesView: React.FC = () => {
                 Duplicando rota de <b>{routeToDuplicate?.promoter?.name}</b> do dia <b>{new Date(routeToDuplicate?.date).toLocaleDateString()}</b>.
               </p>
               <div>
-                <label className="text-xs font-bold text-slate-500 block mb-1">Adicionar Dias</label>
-                <div className="flex gap-2">
+                <label className="text-xs font-bold text-slate-500 block mb-2">Adicionar Dias</label>
+                
+                <div className="flex gap-2 mb-4">
                   <input 
                     type="date" 
                     value={currentDateInput}
@@ -1438,6 +1459,26 @@ const RoutesView: React.FC = () => {
                     <Plus size={20} />
                   </button>
                 </div>
+
+                <button 
+                    onClick={() => {
+                        if (!routeToDuplicate) return;
+                        const sourceDate = new Date(routeToDuplicate.date);
+                        const dates = [];
+                        let current = new Date(sourceDate);
+                        // Generate for next 4 weeks
+                        for (let i = 0; i < 4; i++) {
+                            current.setDate(current.getDate() + 7);
+                            dates.push(current.toISOString().split('T')[0]);
+                        }
+                        const newDates = dates.filter(d => !duplicateTargetDates.includes(d));
+                        setDuplicateTargetDates([...duplicateTargetDates, ...newDates]);
+                    }}
+                    className="w-full py-3 bg-indigo-50 text-indigo-600 rounded-xl font-bold hover:bg-indigo-100 flex items-center justify-center gap-2 border border-indigo-100 mb-2"
+                >
+                    <Copy size={16} />
+                    Repetir nas Próximas 4 Semanas
+                </button>
               </div>
 
               {duplicateTargetDates.length > 0 && (
