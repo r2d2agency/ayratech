@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import client from '../api/client';
-import { FileText, Download, Upload, X } from 'lucide-react';
+import { FileText, Download, Upload, X, Check, Eye } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toast, Toaster } from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -46,6 +46,25 @@ const DocumentsView = () => {
     const cleanUrl = url.startsWith('/') ? url.substring(1) : url;
     // Construct full URL using API base URL
     return `${import.meta.env.VITE_API_URL || 'https://api.ayratech.app.br'}/${cleanUrl}`;
+  };
+
+  const handleMarkAsRead = async (docId: string, url: string) => {
+    try {
+        // Mark as read in backend (fire and forget mostly, or update state)
+        await client.patch(`/employees/documents/${docId}/read`);
+        
+        // Update local state to reflect change immediately
+        setDocuments(prev => prev.map(d => 
+            d.id === docId ? { ...d, readAt: new Date().toISOString() } : d
+        ));
+
+        // Open file
+        window.open(getDownloadUrl(url), '_blank');
+    } catch (error) {
+        console.error('Error marking document as read:', error);
+        // Still open the file even if marking as read fails
+        window.open(getDownloadUrl(url), '_blank');
+    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -169,27 +188,36 @@ const DocumentsView = () => {
           documents.map((doc) => (
             <div key={doc.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
                <div className="flex items-center gap-3 overflow-hidden">
-                 <div className="bg-gray-100 p-2 rounded-lg shrink-0">
-                   <FileText size={20} className="text-gray-600" />
+                 <div className={`p-2 rounded-lg shrink-0 ${doc.readAt ? 'bg-green-100' : 'bg-blue-100'}`}>
+                   {doc.readAt ? (
+                     <Check size={20} className="text-green-600" />
+                   ) : (
+                     <FileText size={20} className="text-blue-600" />
+                   )}
                  </div>
                  <div className="min-w-0">
                    <p className="font-medium text-gray-800 truncate">{doc.type}</p>
                    <p className="text-xs text-gray-500 truncate">{doc.description || doc.filename}</p>
-                   <p className="text-[10px] text-gray-400 mt-0.5">
-                     {format(new Date(doc.sentAt), 'dd/MM/yyyy HH:mm')}
-                   </p>
+                   <div className="flex items-center gap-2 mt-0.5">
+                     <p className="text-[10px] text-gray-400">
+                       {format(new Date(doc.sentAt), 'dd/MM/yyyy HH:mm')}
+                     </p>
+                     {doc.readAt && (
+                       <span className="text-[10px] text-green-600 font-medium bg-green-50 px-1.5 py-0.5 rounded">
+                         Lido
+                       </span>
+                     )}
+                   </div>
                  </div>
                </div>
                
-               <a 
-                 href={getDownloadUrl(doc.fileUrl)} 
-                 target="_blank" 
-                 rel="noopener noreferrer"
-                 className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                 download // Hint to browser to download
+               <button 
+                 onClick={() => handleMarkAsRead(doc.id, doc.fileUrl)}
+                 className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                 title={doc.readAt ? "Baixar novamente" : "Ler documento"}
                >
-                 <Download size={20} />
-               </a>
+                 {doc.readAt ? <Download size={20} /> : <Eye size={20} />}
+               </button>
             </div>
           ))
         )}
