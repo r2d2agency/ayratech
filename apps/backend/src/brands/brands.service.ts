@@ -62,6 +62,14 @@ export class BrandsService {
   }
 
   remove(id: string) {
-    return this.brandsRepository.delete(id);
+    return this.brandsRepository.findOne({ where: { id }, relations: ['products'] }).then(existing => {
+      if (!existing) throw new NotFoundException('Marca não encontrada');
+      if (existing.products && existing.products.length > 0) {
+        throw new BadRequestException('Não é possível excluir uma marca que possui produtos associados. Remova ou reassocie os produtos primeiro.');
+      }
+      return this.brandsRepository.delete(id);
+    }).catch(err => {
+      throw new BadRequestException(err.message || 'Erro ao excluir marca');
+    });
   }
 }

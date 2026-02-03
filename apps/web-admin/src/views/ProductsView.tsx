@@ -25,6 +25,7 @@ const ProductsView: React.FC = () => {
   const [referenceImageFile, setReferenceImageFile] = useState<File | null>(null);
   const [referenceImagePreview, setReferenceImagePreview] = useState<string>('');
   const [generatingPrompt, setGeneratingPrompt] = useState(false);
+  const [activeTab, setActiveTab] = useState<'geral' | 'ia'>('geral');
 
   const [productForm, setProductForm] = useState({
     name: '',
@@ -90,7 +91,9 @@ const ProductsView: React.FC = () => {
         subcategory: p.subcategory,
         status: p.status,
         categoryRef: p.categoryRef,
-        checklistTemplateId: p.checklistTemplate?.id || ''
+        checklistTemplateId: p.checklistTemplate?.id || '',
+        referenceImageUrl: p.referenceImageUrl,
+        analysisPrompt: p.analysisPrompt
       }});
       setProducts(mappedProducts);
 
@@ -193,6 +196,22 @@ const ProductsView: React.FC = () => {
             }
          }
          formData.append('image', imageUrl);
+      }
+
+      // Append Reference Image if exists
+      if (referenceImageFile) {
+        formData.append('referenceImage', referenceImageFile);
+      } else if (productForm.referenceImageUrl) {
+         let refUrl = productForm.referenceImageUrl;
+         if (refUrl.startsWith(API_URL)) {
+            refUrl = refUrl.replace(API_URL, '');
+         } else if (refUrl.startsWith('http')) {
+            try {
+              const urlObj = new URL(refUrl);
+              refUrl = urlObj.pathname;
+            } catch (e) {}
+         }
+         formData.append('referenceImageUrl', refUrl);
       }
 
       if (referenceImageFile) {
@@ -443,7 +462,25 @@ const ProductsView: React.FC = () => {
             </div>
             
             <form onSubmit={handleSaveProduct} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex gap-2 mb-4">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('geral')}
+                  className={`px-4 py-2 rounded-xl font-bold ${activeTab === 'geral' ? 'text-white' : 'text-slate-700'} border border-slate-200`}
+                  style={{ backgroundColor: activeTab === 'geral' ? settings.primaryColor : 'transparent' }}
+                >
+                  Geral
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('ia')}
+                  className={`px-4 py-2 rounded-xl font-bold ${activeTab === 'ia' ? 'text-white' : 'text-slate-700'} border border-slate-200`}
+                  style={{ backgroundColor: activeTab === 'ia' ? settings.primaryColor : 'transparent' }}
+                >
+                  IA
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ display: activeTab === 'geral' ? 'grid' : 'none' }}>
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Nome do Produto</label>
                   <input
@@ -667,6 +704,88 @@ const ProductsView: React.FC = () => {
                       )}
                     </div>
                   </div>
+                </div>
+              </div>
+              <div className="space-y-4" style={{ display: activeTab === 'ia' ? 'block' : 'none' }}>
+                <div className="border border-slate-200 rounded-xl p-4">
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Imagem de Referência (IA)</label>
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-24 h-24 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden bg-slate-50 group hover:border-blue-400 transition-all cursor-pointer">
+                      {referenceImagePreview ? (
+                        <img src={referenceImagePreview} className="w-full h-full object-cover" alt="Preview" />
+                      ) : (
+                        <div className="text-center p-2">
+                          <span className="text-xs text-slate-400 font-medium">Upload</span>
+                        </div>
+                      )}
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          if (file) {
+                            setReferenceImageFile(file);
+                            setReferenceImagePreview(URL.createObjectURL(file));
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-slate-600 mb-1">Imagem usada pela IA para descrever o produto.</p>
+                      <p className="text-xs text-slate-400">Formatos aceitos: JPG, PNG, WEBP. Otimização automática.</p>
+                      {referenceImagePreview && (
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            setReferenceImageFile(null);
+                            setReferenceImagePreview('');
+                            setProductForm({...productForm, referenceImageUrl: ''});
+                          }}
+                          className="mt-2 text-xs font-bold text-red-500 hover:text-red-600"
+                        >
+                          Remover Imagem
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="border border-slate-200 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Wand2 size={18} className="text-blue-600" />
+                      <span className="text-sm font-bold text-slate-700">Inteligência Artificial</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <select
+                        className="h-9 px-3 rounded-lg border border-slate-200 outline-none text-sm bg-white"
+                        value={selectedPromptId}
+                        onChange={(e) => setSelectedPromptId(e.target.value)}
+                      >
+                        <option value="">Prompt Padrão</option>
+                        {aiPrompts.filter((p: any) => p.supportsImageAnalysis !== false).map((p: any) => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={handleGeneratePrompt}
+                        disabled={generatingPrompt}
+                        className="px-3 py-2 rounded-lg text-white font-bold shadow-sm disabled:opacity-60"
+                        style={{ backgroundColor: settings.primaryColor }}
+                      >
+                        {generatingPrompt ? 'Gerando...' : 'Gerar com IA'}
+                      </button>
+                    </div>
+                  </div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Prompt da Imagem</label>
+                  <textarea
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-50 outline-none transition-all font-mono text-sm"
+                    rows={6}
+                    value={productForm.analysisPrompt}
+                    onChange={e => setProductForm({ ...productForm, analysisPrompt: e.target.value })}
+                    placeholder="Descrição detalhada gerada pela IA para identificar o produto na imagem."
+                  />
                 </div>
               </div>
 
