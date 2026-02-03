@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPinned, Plus, Trash2, CheckCircle, Save, Settings, List, Clock, MoveUp, MoveDown, Copy, FileText, Check, Search, GripVertical } from 'lucide-react';
+import { Calendar, MapPinned, Plus, Trash2, CheckCircle, Save, Settings, List, Clock, MoveUp, MoveDown, Copy, FileText, Check, Search, GripVertical, XCircle } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import api from '../api/client';
 import { jwtDecode } from "jwt-decode";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, useDraggable, useDroppable } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -119,6 +119,90 @@ const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts
   );
 };
 
+const DraggableRouteCard = ({ route, onClick, onDelete }: any) => {
+  const {attributes, listeners, setNodeRef, transform} = useDraggable({
+    id: route.id,
+    data: { route }
+  });
+  
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    zIndex: 1000,
+  } : undefined;
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      {...listeners} 
+      {...attributes}
+      onClick={onClick}
+      className={`p-3 rounded-xl border cursor-pointer hover:shadow-md transition-all touch-none ${
+        route.status === 'CONFIRMED' 
+          ? 'bg-green-50 border-green-200' 
+          : route.status === 'COMPLETED'
+          ? 'bg-emerald-100 border-emerald-300'
+          : 'bg-white border-slate-200'
+      }`}
+    >
+      <div className="flex justify-between items-start mb-2">
+        <div className="flex items-center gap-2">
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${
+                route.status === 'CONFIRMED' ? 'bg-green-200 text-green-700' : 
+                route.status === 'COMPLETED' ? 'bg-emerald-200 text-emerald-700' :
+                'bg-slate-100 text-slate-500'
+            }`}>
+                {route.promoter?.name?.substring(0, 2).toUpperCase()}
+            </div>
+            <p className="text-xs font-bold text-slate-700 truncate max-w-[100px]">{route.promoter?.name}</p>
+        </div>
+        <div className="flex gap-1">
+            <button 
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(e, route.id);
+                }}
+                className="p-1 hover:bg-red-100 rounded-full text-red-500 transition-colors"
+                title="Excluir Rota"
+            >
+                <Trash2 size={12} />
+            </button>
+        </div>
+      </div>
+      <p className="text-xs font-bold text-slate-500 mb-1">{route.items?.length || 0} PDVs</p>
+      {route.items && route.items.length > 0 && (
+          <p className="text-[10px] text-slate-400 truncate">
+              {route.items.map((i: any) => i.supermarket?.fantasyName).join(', ')}
+          </p>
+      )}
+    </div>
+  );
+};
+
+const DroppableDayColumn = ({ dateStr, children, isToday, onAddRoute }: any) => {
+  const {setNodeRef, isOver} = useDroppable({
+    id: dateStr,
+  });
+  
+  return (
+    <div 
+      ref={setNodeRef} 
+      className={`space-y-3 min-h-[400px] rounded-2xl p-2 transition-colors ${
+        isOver ? 'bg-blue-100 ring-2 ring-blue-300' : 
+        isToday ? 'bg-blue-50/50' : ''
+      }`}
+    >
+      {children}
+      <button 
+        onClick={onAddRoute}
+        className="w-full py-2 rounded-lg border-2 border-dashed border-slate-200 text-slate-400 font-bold text-xs hover:border-blue-300 hover:text-blue-500 transition-all flex items-center justify-center gap-1"
+      >
+        <Plus size={14} /> Nova Rota
+      </button>
+    </div>
+  );
+};
+
 const RoutesView: React.FC = () => {
   const { settings } = useBranding();
   
@@ -170,7 +254,8 @@ const RoutesView: React.FC = () => {
   // Duplicate State
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [routeToDuplicate, setRouteToDuplicate] = useState<any>(null);
-  const [duplicateTargetDate, setDuplicateTargetDate] = useState('');
+  const [duplicateTargetDates, setDuplicateTargetDates] = useState<string[]>([]);
+  const [currentDateInput, setCurrentDateInput] = useState('');
 
   // Rules State
   const [rules, setRules] = useState<any[]>([]);
@@ -494,20 +579,36 @@ const RoutesView: React.FC = () => {
   };
 
   const handleDuplicateRoute = async () => {
-    if (!routeToDuplicate || !duplicateTargetDate) return;
+    if (!routeToDuplicate || duplicateTargetDates.length === 0) return;
     try {
-      await api.post(`/routes/${routeToDuplicate.id}/duplicate`, {
-        date: duplicateTargetDate
-      });
+      await Promise.all(duplicateTargetDates.map(date => 
+        api.post(`/routes/${routeToDuplicate.id}/duplicate`, { date })
+      ));
+      
       alert('Rota duplicada com sucesso!');
       setShowDuplicateModal(false);
       setRouteToDuplicate(null);
-      setDuplicateTargetDate('');
+      setDuplicateTargetDates([]);
+      setCurrentDateInput('');
       fetchRoutesForWeek();
     } catch (error) {
       console.error('Error duplicating route:', error);
       alert('Erro ao duplicar rota.');
     }
+  };
+
+  const handleAddDate = () => {
+    if (!currentDateInput) return;
+    if (duplicateTargetDates.includes(currentDateInput)) {
+      alert('Data já adicionada');
+      return;
+    }
+    setDuplicateTargetDates([...duplicateTargetDates, currentDateInput]);
+    setCurrentDateInput('');
+  };
+
+  const handleRemoveDate = (dateToRemove: string) => {
+    setDuplicateTargetDates(duplicateTargetDates.filter(d => d !== dateToRemove));
   };
 
   // --- Planner Logic ---
@@ -621,6 +722,32 @@ const RoutesView: React.FC = () => {
     }
   };
 
+  const handleDragEndPlanner = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    // active.id is routeId, over.id is dateStr
+    const routeId = active.id as string;
+    const newDate = over.id as string;
+
+    const route = weekRoutes.find(r => r.id === routeId);
+    if (!route || route.date === newDate) return;
+
+    // Optimistic Update
+    const originalRoutes = [...weekRoutes];
+    setWeekRoutes(prev => prev.map(r => 
+      r.id === routeId ? { ...r, date: newDate } : r
+    ));
+
+    try {
+      await api.patch(`/routes/${routeId}`, { date: newDate });
+    } catch (error) {
+      console.error('Error moving route:', error);
+      alert('Erro ao mover rota.');
+      setWeekRoutes(originalRoutes);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
@@ -645,6 +772,7 @@ const RoutesView: React.FC = () => {
 
       {/* --- PLANNER TAB --- */}
       {activeTab === 'planner' && (
+        <DndContext onDragEnd={handleDragEndPlanner} sensors={sensors}>
         <div className="space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 gap-4">
             <div className="flex items-center gap-4">
@@ -736,65 +864,37 @@ const RoutesView: React.FC = () => {
               const isToday = new Date().toISOString().split('T')[0] === dateStr;
 
               return (
-                <div key={dateStr} className={`space-y-3 min-h-[400px] ${isToday ? 'bg-blue-50/50' : ''} rounded-2xl p-2`}>
+                <DroppableDayColumn 
+                    key={dateStr} 
+                    dateStr={dateStr} 
+                    isToday={isToday}
+                    onAddRoute={() => {
+                        setSelectedDate(dateStr);
+                        setRouteItems([]);
+                        setEditingRouteId(null);
+                        setRouteStatus('DRAFT');
+                        setActiveTab('editor');
+                    }}
+                >
                   <div className="text-center mb-4">
                     <p className="text-xs font-black text-slate-400 uppercase">{day.toLocaleDateString('pt-BR', { weekday: 'short' })}</p>
                     <p className={`text-xl font-black ${isToday ? 'text-blue-600' : 'text-slate-900'}`}>{day.getDate()}</p>
                   </div>
 
                   {dayRoutes.map(route => (
-                    <div 
-                      key={route.id}
-                      onClick={() => handleEditRoute(route)}
-                      className={`p-3 rounded-xl border cursor-pointer hover:shadow-md transition-all ${
-                        route.status === 'CONFIRMED' 
-                          ? 'bg-green-50 border-green-200' 
-                          : route.status === 'COMPLETED'
-                          ? 'bg-emerald-100 border-emerald-300'
-                          : 'bg-white border-slate-200'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs font-bold text-slate-700">{(route.promoter?.fullName || route.promoter?.name || 'S/ Promotor')}</span>
-                        <div className="flex items-center gap-1">
-                            <span className={`w-2 h-2 rounded-full ${
-                            route.status === 'CONFIRMED' ? 'bg-green-500' : 'bg-slate-300'
-                            }`} />
-                            <button 
-                                onClick={(e) => handleQuickDelete(e, route.id)}
-                                className="p-1 hover:bg-red-100 rounded-full text-red-500 transition-colors"
-                                title="Excluir Rota"
-                            >
-                                <Trash2 size={12} />
-                            </button>
-                        </div>
-                      </div>
-                      <p className="text-xs font-bold text-slate-500 mb-1">{route.items?.length || 0} PDVs</p>
-                      {route.items && route.items.length > 0 && (
-                          <p className="text-[10px] text-slate-400 truncate">
-                              {route.items.map((i: any) => i.supermarket?.fantasyName).join(', ')}
-                          </p>
-                      )}
-                    </div>
+                    <DraggableRouteCard 
+                        key={route.id} 
+                        route={route} 
+                        onClick={() => handleEditRoute(route)}
+                        onDelete={(e: any, id: string) => handleQuickDelete(e, id)}
+                    />
                   ))}
-
-                  <button 
-                    onClick={() => {
-                      setSelectedDate(dateStr);
-                      setRouteItems([]);
-                      setEditingRouteId(null);
-                      setRouteStatus('DRAFT');
-                      setActiveTab('editor');
-                    }}
-                    className="w-full py-2 rounded-lg border-2 border-dashed border-slate-200 text-slate-400 font-bold text-xs hover:border-blue-300 hover:text-blue-500 transition-all flex items-center justify-center gap-1"
-                  >
-                    <Plus size={14} /> Nova Rota
-                  </button>
-                </div>
+                </DroppableDayColumn>
               );
             })}
           </div>
         </div>
+        </DndContext>
       )}
 
       {/* --- EDITOR TAB --- */}
@@ -1322,26 +1422,57 @@ const RoutesView: React.FC = () => {
                 Duplicando rota de <b>{routeToDuplicate?.promoter?.name}</b> do dia <b>{new Date(routeToDuplicate?.date).toLocaleDateString()}</b>.
               </p>
               <div>
-                <label className="text-xs font-bold text-slate-500 block mb-1">Para o dia</label>
-                <input 
-                  type="date" 
-                  value={duplicateTargetDate}
-                  onChange={e => setDuplicateTargetDate(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none font-bold"
-                />
+                <label className="text-xs font-bold text-slate-500 block mb-1">Adicionar Dias</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="date" 
+                    value={currentDateInput}
+                    onChange={e => setCurrentDateInput(e.target.value)}
+                    className="flex-1 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none font-bold"
+                  />
+                  <button 
+                    onClick={handleAddDate}
+                    disabled={!currentDateInput}
+                    className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl font-bold hover:bg-blue-100 disabled:opacity-50"
+                  >
+                    <Plus size={20} />
+                  </button>
+                </div>
               </div>
+
+              {duplicateTargetDates.length > 0 && (
+                <div className="bg-slate-50 rounded-xl p-3 max-h-40 overflow-y-auto space-y-2">
+                  <p className="text-xs font-bold text-slate-400 mb-2">Dias Selecionados ({duplicateTargetDates.length})</p>
+                  {duplicateTargetDates.map(date => (
+                    <div key={date} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                      <span className="text-sm font-bold text-slate-700">
+                        {new Date(date + 'T12:00:00').toLocaleDateString()}
+                      </span>
+                      <button 
+                        onClick={() => handleRemoveDate(date)}
+                        className="text-red-400 hover:text-red-600 p-1"
+                      >
+                        <XCircle size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="flex gap-3 justify-end pt-4">
                 <button onClick={() => {
                   setShowDuplicateModal(false);
                   setRouteToDuplicate(null);
+                  setDuplicateTargetDates([]);
+                  setCurrentDateInput('');
                 }} className="px-6 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100">Cancelar</button>
                 <button 
                   onClick={handleDuplicateRoute}
-                  disabled={!duplicateTargetDate}
+                  disabled={duplicateTargetDates.length === 0}
                   className="px-6 py-2 rounded-lg font-bold text-white shadow-lg disabled:opacity-50"
                   style={{ backgroundColor: settings.primaryColor }}
                 >
-                  Duplicar
+                  Duplicar ({duplicateTargetDates.length})
                 </button>
               </div>
             </div>

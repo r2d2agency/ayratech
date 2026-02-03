@@ -726,6 +726,8 @@ const RoutesReportView: React.FC = () => {
       'Check-out',
       'Ruptura',
       'Verificado',
+      'Validade',
+      'Estoque',
       'Observação'
     ];
     csvContent.push(headers.join(';'));
@@ -760,6 +762,8 @@ const RoutesReportView: React.FC = () => {
             item.checkOutTime ? new Date(item.checkOutTime).toLocaleTimeString('pt-BR') : '-',
             p.isStockout ? 'Sim' : 'Não',
             p.checked ? 'Sim' : 'Não',
+            p.validityDate ? formatRouteDate(p.validityDate) : '-',
+            p.stockCount || '-',
             p.observation || ''
           ];
           
