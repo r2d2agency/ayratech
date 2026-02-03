@@ -61,6 +61,9 @@ const ProductCheckView: React.FC = () => {
   
   // Track when a product check started (for duration calculation)
   const productStartTimeRef = useRef<Date | null>(null);
+  
+  // Track if we've already auto-opened the product from URL
+  const autoOpenedRef = useRef(false);
 
   // Selected product for detailed editing (stockout type, observation)
   const [selectedProduct, setSelectedProduct] = useState<RouteItemProduct | null>(null);
@@ -79,10 +82,11 @@ const ProductCheckView: React.FC = () => {
   const productIdFromUrl = searchParams.get('productId');
 
   useEffect(() => {
-    if (productIdFromUrl && products.length > 0 && !selectedProduct) {
+    if (productIdFromUrl && products.length > 0 && !selectedProduct && !autoOpenedRef.current) {
        const found = products.find(p => p.productId === productIdFromUrl || p.product?.id === productIdFromUrl);
        if (found) {
            setSelectedProduct(found);
+           autoOpenedRef.current = true;
        }
     }
   }, [productIdFromUrl, products]);

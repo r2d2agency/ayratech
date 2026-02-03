@@ -18,6 +18,7 @@ import BrandsView from './views/BrandsView';
 import EmployeesView from './views/EmployeesView';
 import SupervisorsView from './views/SupervisorsView';
 import AiConfigView from './views/AiConfigView';
+import AiPromptsView from './views/AiPromptsView';
 import PhotoProcessingView from './views/PhotoProcessingView';
 import AppAccessView from './views/AppAccessView';
 import DocumentsView from './views/DocumentsView';
