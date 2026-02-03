@@ -1,6 +1,8 @@
 import { Injectable, BadRequestException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, DataSource } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
+import { v4 as uuidv4 } from 'uuid';
 import { Route } from './entities/route.entity';
 import { RouteItem } from './entities/route-item.entity';
 import { RouteItemProduct } from './entities/route-item-product.entity';
@@ -13,6 +15,7 @@ import { Product } from '../entities/product.entity';
 import { User } from '../users/entities/user.entity';
 import { CreateRouteDto } from './dto/create-route.dto';
 import { UpdateRouteDto } from './dto/update-route.dto';
+import { WhatsappService } from '../notifications/whatsapp.service';
 
 @Injectable()
 export class RoutesService {
@@ -26,6 +29,8 @@ export class RoutesService {
     @InjectRepository(RouteRule)
     private routeRulesRepository: Repository<RouteRule>,
     private dataSource: DataSource,
+    private whatsappService: WhatsappService,
+    private configService: ConfigService,
   ) {}
 
   async create(createRouteDto: CreateRouteDto) {
@@ -561,16 +566,33 @@ export class RoutesService {
           // If status is not already approved, set to pending review
           if (itemProduct.stockCountStatus !== 'APPROVED') {
              itemProduct.stockCountStatus = 'PENDING_REVIEW';
+             if (!itemProduct.approvalToken) {
+               itemProduct.approvalToken = uuidv4();
+             }
              
              const contact = itemProduct.product.brand.stockNotificationContact;
-             const supermarketName = itemProduct.routeItem?.supermarket?.fantasyName || 'PDV Desconhecido';
-             
-             console.log(`[NOTIFICATION SYSTEM]`);
-             console.log(`To: ${contact || 'No contact configured'}`);
-             console.log(`Subject: Validação de Estoque Necessária - ${itemProduct.product.name}`);
-             console.log(`Message: O promotor informou um estoque de ${data.stockCount} unidades para o produto ${itemProduct.product.name} no PDV ${supermarketName}. Aguardando validação para continuar.`);
-             
-             // In a real implementation, call this.mailService.send(...) here
+             if (contact) {
+                const supermarketName = itemProduct.routeItem?.supermarket?.fantasyName || 'PDV Desconhecido';
+                const productName = itemProduct.product.name;
+                const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+                // Generate a simplified link directly to the validation page
+                const approvalLink = `${frontendUrl}/stock-validation?token=${itemProduct.approvalToken}`;
+
+                const message = `*Validação de Estoque Necessária*\n\n` +
+                  `📦 *Produto:* ${productName}\n` +
+                  `🏢 *PDV:* ${supermarketName}\n` +
+                  `🔢 *Estoque Informado:* ${data.stockCount}\n\n` +
+                  `⚠️ O promotor está aguardando liberação.\n` +
+                  `🔗 *Clique para validar:* ${approvalLink}`;
+
+                console.log(`[NOTIFICATION SYSTEM] Sending WhatsApp to ${contact}`);
+                // Fire and forget notification to not block the response time significantly
+                this.whatsappService.sendText(contact, message).catch(err => 
+                  console.error('Failed to send WhatsApp notification', err)
+                );
+             } else {
+                 console.warn(`[NOTIFICATION SYSTEM] Brand ${itemProduct.product.brand.name} has wait enabled but no contact configured.`);
+             }
           }
         }
       }
@@ -710,6 +732,62 @@ export class RoutesService {
     // optionally save location data if we add columns for it
     
     return this.routeItemsRepository.save(item);
+  }
+
+  async getPublicStockValidation(token: string) {
+    const itemProduct = await this.routeItemProductsRepository.findOne({
+      where: { approvalToken: token },
+      relations: ['product', 'product.brand', 'routeItem', 'routeItem.supermarket']
+    });
+
+    if (!itemProduct) {
+      throw new NotFoundException('Validation request not found or expired');
+    }
+
+    return {
+      id: itemProduct.id,
+      productName: itemProduct.product.name,
+      brandName: itemProduct.product.brand.name,
+      supermarketName: itemProduct.routeItem?.supermarket?.fantasyName || 'PDV Desconhecido',
+      stockCount: itemProduct.stockCount,
+      status: itemProduct.stockCountStatus,
+      timestamp: itemProduct.checkInTime || new Date(),
+      observation: itemProduct.observation
+    };
+  }
+
+  async processPublicStockValidation(token: string, action: 'APPROVE' | 'REJECT', observation?: string) {
+    const itemProduct = await this.routeItemProductsRepository.findOne({
+      where: { approvalToken: token },
+      relations: ['product', 'product.brand']
+    });
+
+    if (!itemProduct) {
+      throw new NotFoundException('Validation request not found or expired');
+    }
+
+    if (itemProduct.stockCountStatus === 'APPROVED') {
+       return { success: true, message: 'Already approved' };
+    }
+
+    if (action === 'APPROVE') {
+      itemProduct.stockCountStatus = 'APPROVED';
+      // Clear token after approval? Or keep it for history? 
+      // Keep it for now, maybe nullify later.
+    } else if (action === 'REJECT') {
+      itemProduct.stockCountStatus = 'REJECTED';
+    }
+
+    if (observation) {
+      itemProduct.observation = (itemProduct.observation ? itemProduct.observation + '\n' : '') + `[Validation ${action}]: ${observation}`;
+    }
+
+    await this.routeItemProductsRepository.save(itemProduct);
+    
+    // Notify promoter? (WebSocket or just status update on next fetch)
+    // For now, next fetch.
+
+    return { success: true, status: itemProduct.stockCountStatus };
   }
 
   async checkOut(itemId: string, data: { lat: number; lng: number; timestamp: string }) {

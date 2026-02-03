@@ -56,6 +56,9 @@ export class RouteItemProduct {
   stockCountStatus: string; // NONE, PENDING_REVIEW, APPROVED, REJECTED
 
   @Column({ nullable: true })
+  approvalToken: string; // Token for public/quick approval link
+
+  @Column({ nullable: true })
   observation: string;
 
   @Column({ nullable: true })

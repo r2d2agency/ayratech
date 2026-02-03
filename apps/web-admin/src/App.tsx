@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import { ViewType } from './types';
@@ -29,6 +30,7 @@ import PhotoGalleryView from './views/PhotoGalleryView';
 import TimeClockManagementView from './views/TimeClockManagementView';
 import LoginView from './views/LoginView';
 import ClientDashboardView from './views/ClientDashboardView';
+import StockValidationView from './views/StockValidationView';
 import { BrandingProvider } from './context/BrandingContext';
 import { jwtDecode } from 'jwt-decode';
 
@@ -179,7 +181,12 @@ const App: React.FC = () => {
 
   return (
     <BrandingProvider>
-      {isAuthenticated ? <MainContent onLogout={handleLogout} userRole={userRole} /> : <LoginView onLogin={handleLogin} />}
+      <Routes>
+        <Route path="/validate-stock/:token" element={<StockValidationView />} />
+        <Route path="/*" element={
+          isAuthenticated ? <MainContent onLogout={handleLogout} userRole={userRole} /> : <LoginView onLogin={handleLogin} />
+        } />
+      </Routes>
     </BrandingProvider>
   );
 };
