@@ -24,6 +24,7 @@ import {
 import { ViewType } from '../types';
 import { useBranding } from '../context/BrandingContext';
 import { getImageUrl } from '../utils/image';
+import { WhatsappStatus } from './WhatsappStatus';
 
 interface SidebarProps {
   activeView: ViewType;
@@ -262,6 +263,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
 
       {/* Footer Actions */}
       <div className="p-4 space-y-1">
+        {['admin', 'superadmin', 'administrador do sistema', 'supervisor de operações'].includes(userRole?.toLowerCase() || '') && (
+          <WhatsappStatus expanded={expanded} />
+        )}
+        
         <button 
           onClick={() => setExpanded(!expanded)}
           className="w-full flex items-center gap-3 p-3 rounded-xl text-slate-500 hover:bg-slate-100 transition-all"
