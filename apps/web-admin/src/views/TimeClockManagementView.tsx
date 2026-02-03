@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import React, { useState, useEffect, useMemo } from 'react';
+import { format, parseISO, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar, User, Clock, Plus, Filter, Search, FileText, Download, AlertTriangle, X } from 'lucide-react';
+import { Calendar, User, Clock, Plus, Filter, Search, FileText, Download, AlertTriangle, X, Smartphone, Monitor } from 'lucide-react';
 import api, { API_URL } from '../api/client';
 import SectionHeader from '../components/SectionHeader';
 import { toast } from 'react-hot-toast';
@@ -191,24 +191,66 @@ const TimeClockManagementView = () => {
     setAlerts(prev => prev.filter(a => a.id !== id));
   };
 
-  const getEventTypeLabel = (type: string) => {
-      const map: any = {
-          'ENTRY': 'Entrada',
-          'LUNCH_START': 'Início Almoço',
-          'LUNCH_END': 'Fim Almoço',
-          'EXIT': 'Saída'
-      };
-      return map[type] || type;
-  };
+  const groupedEvents = useMemo(() => {
+    const groups: any = {};
+    
+    events.forEach((event: any) => {
+        if (!event.timestamp) return;
+        const dateKey = format(parseISO(event.timestamp), 'yyyy-MM-dd');
+        const key = `${event.employeeId}-${dateKey}`;
+        
+        if (!groups[key]) {
+            groups[key] = {
+                id: key,
+                employee: event.employee,
+                date: dateKey,
+                entries: {
+                    ENTRY: null,
+                    LUNCH_START: null,
+                    LUNCH_END: null,
+                    EXIT: null
+                }
+            };
+        }
+        
+        // If there's already an entry for this type, we might want to handle it (e.g., multiple entries)
+        // For now, we'll just overwrite or keep the latest, but ideally we'd show all if needed.
+        // A simple approach for the requested table view is to map the standard 4 slots.
+        if (groups[key].entries[event.eventType] === null || new Date(event.timestamp) > new Date(groups[key].entries[event.eventType].timestamp)) {
+             groups[key].entries[event.eventType] = event;
+        }
+    });
+    
+    return Object.values(groups).sort((a: any, b: any) => {
+        if (a.date !== b.date) return b.date.localeCompare(a.date);
+        return (a.employee?.fullName || '').localeCompare(b.employee?.fullName || '');
+    });
+  }, [events]);
 
-  const getEventTypeColor = (type: string) => {
-      const map: any = {
-          'ENTRY': 'bg-green-100 text-green-800',
-          'LUNCH_START': 'bg-yellow-100 text-yellow-800',
-          'LUNCH_END': 'bg-orange-100 text-orange-800',
-          'EXIT': 'bg-red-100 text-red-800'
-      };
-      return map[type] || 'bg-gray-100 text-gray-800';
+  const renderTimeCell = (event: any) => {
+    if (!event) return <span className="text-slate-300 text-sm">-</span>;
+    
+    const time = format(parseISO(event.timestamp), 'HH:mm');
+    const isManual = event.isManual;
+    
+    return (
+        <div className="flex flex-col items-start">
+            <span className={`font-semibold ${isManual ? 'text-purple-700' : 'text-slate-700'}`}>
+                {time}
+            </span>
+            <div className="flex items-center gap-1 mt-0.5">
+                {isManual ? (
+                    <span className="flex items-center gap-1 text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded" title={`Editado por: ${event.editedBy}`}>
+                        <Monitor size={10} /> Manual
+                    </span>
+                ) : (
+                    <span className="flex items-center gap-1 text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">
+                        <Smartphone size={10} /> App
+                    </span>
+                )}
+            </div>
+        </div>
+    );
   };
 
   return (
@@ -317,43 +359,39 @@ const TimeClockManagementView = () => {
                 <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
                         <th className="text-left p-4 text-sm font-semibold text-slate-600">Colaborador</th>
-                        <th className="text-left p-4 text-sm font-semibold text-slate-600">Data/Hora</th>
-                        <th className="text-left p-4 text-sm font-semibold text-slate-600">Tipo</th>
-                        <th className="text-left p-4 text-sm font-semibold text-slate-600">Origem</th>
-                        <th className="text-left p-4 text-sm font-semibold text-slate-600">Observação</th>
+                        <th className="text-left p-4 text-sm font-semibold text-slate-600">Data</th>
+                        <th className="text-left p-4 text-sm font-semibold text-slate-600">Entrada</th>
+                        <th className="text-left p-4 text-sm font-semibold text-slate-600">Início Almoço</th>
+                        <th className="text-left p-4 text-sm font-semibold text-slate-600">Fim Almoço</th>
+                        <th className="text-left p-4 text-sm font-semibold text-slate-600">Saída</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                    {events.length === 0 ? (
+                    {groupedEvents.length === 0 ? (
                         <tr>
-                            <td colSpan={5} className="p-8 text-center text-slate-400">Nenhum registro encontrado.</td>
+                            <td colSpan={6} className="p-8 text-center text-slate-400">Nenhum registro encontrado.</td>
                         </tr>
                     ) : (
-                        events.map((event: any) => (
-                            <tr key={event.id} className="hover:bg-slate-50">
+                        groupedEvents.map((group: any) => (
+                            <tr key={group.id} className="hover:bg-slate-50">
                                 <td className="p-4">
-                                    <div className="font-medium text-slate-900">{event.employee?.fullName}</div>
-                                    <div className="text-xs text-slate-500">{event.employee?.email}</div>
+                                    <div className="font-medium text-slate-900">{group.employee?.fullName}</div>
+                                    <div className="text-xs text-slate-500">{group.employee?.email}</div>
                                 </td>
-                                <td className="p-4 text-slate-700">
-                                    {format(new Date(event.timestamp), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                                <td className="p-4 text-slate-700 font-medium">
+                                    {format(parseISO(group.date), "dd/MM/yyyy", { locale: ptBR })}
                                 </td>
-                                <td className="p-4">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${getEventTypeColor(event.eventType)}`}>
-                                        {getEventTypeLabel(event.eventType)}
-                                    </span>
+                                <td className="p-4 bg-green-50/30">
+                                    {renderTimeCell(group.entries.ENTRY)}
                                 </td>
-                                <td className="p-4">
-                                    {event.isManual ? (
-                                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded font-medium" title={`Editado por: ${event.editedBy}`}>
-                                            Manual ({event.editedBy})
-                                        </span>
-                                    ) : (
-                                        <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded font-medium">App</span>
-                                    )}
+                                <td className="p-4 bg-yellow-50/30">
+                                    {renderTimeCell(group.entries.LUNCH_START)}
                                 </td>
-                                <td className="p-4 text-sm text-slate-500 max-w-xs truncate">
-                                    {event.validationReason || '-'}
+                                <td className="p-4 bg-orange-50/30">
+                                    {renderTimeCell(group.entries.LUNCH_END)}
+                                </td>
+                                <td className="p-4 bg-red-50/30">
+                                    {renderTimeCell(group.entries.EXIT)}
                                 </td>
                             </tr>
                         ))
