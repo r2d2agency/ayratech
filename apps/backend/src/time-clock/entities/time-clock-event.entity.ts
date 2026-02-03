@@ -6,7 +6,7 @@ export class TimeClockEvent {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ insert: false, update: false })
+  @Column()
   employeeId: string;
 
   @ManyToOne(() => Employee)
