@@ -74,6 +74,7 @@ const ProductsView: React.FC = () => {
       setBrands(brandsRes.data);
       setCategories(categoriesRes.data);
       setChecklists(checklistsRes.data.filter((c: any) => c.active));
+      setAiPrompts(promptsRes.data);
 
       const mappedProducts = productsRes.data.map((p: any) => {
         const imgUrl = getImageUrl(p.image);
@@ -105,21 +106,44 @@ const ProductsView: React.FC = () => {
   };
 
   const handleGeneratePrompt = async () => {
+    // We allow generation if we have a saved product ID OR if we have a local file (though backend needs ID for now, 
+    // but with our change backend can take file + ID). 
+    // Actually, backend needs productId to verify product exists, but if we pass file, it doesn't need saved image.
+    // So we still need editingProduct.id.
+    
     if (!editingProduct?.id) {
         alert('Salve o produto antes de gerar o prompt.');
         return;
     }
-    if (!productForm.referenceImageUrl) {
-        alert('O produto precisa ter uma imagem de referência salva.');
+    
+    // If no local file and no saved URL, we can't generate
+    if (!referenceImageFile && !productForm.referenceImageUrl) {
+        alert('O produto precisa ter uma imagem de referência (carregue uma nova ou salve uma URL).');
         return;
     }
 
     setGeneratingPrompt(true);
     try {
-        const res = await api.post('/ai/generate-product-prompt', {
-            productId: editingProduct.id,
-            promptId: selectedPromptId
-        });
+        let res;
+        
+        if (referenceImageFile) {
+            // Use FormData to send file
+            const formData = new FormData();
+            formData.append('productId', editingProduct.id);
+            if (selectedPromptId) {
+                formData.append('promptId', selectedPromptId);
+            }
+            formData.append('image', referenceImageFile);
+            
+            res = await api.post('/ai/generate-product-prompt', formData);
+        } else {
+            // Use JSON for existing saved image
+            res = await api.post('/ai/generate-product-prompt', {
+                productId: editingProduct.id,
+                promptId: selectedPromptId
+            });
+        }
+        
         setProductForm(prev => ({ ...prev, analysisPrompt: res.data.description }));
         alert('Prompt gerado com sucesso!');
     } catch (error) {
@@ -212,10 +236,6 @@ const ProductsView: React.FC = () => {
             } catch (e) {}
          }
          formData.append('referenceImageUrl', refUrl);
-      }
-
-      if (referenceImageFile) {
-        formData.append('referenceImage', referenceImageFile);
       }
       
       if (editingProduct) {

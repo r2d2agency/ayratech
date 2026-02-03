@@ -72,10 +72,10 @@ export class AiService {
     return results;
   }
 
-  async generateProductPrompt(productId: string, promptId?: string) {
-    const product = await this.productRepository.findOne({ where: { id: productId } });
-    if (!product) throw new Error('Produto não encontrado');
-    if (!product.referenceImageUrl) throw new Error('Produto sem imagem de referência');
+  async generateProductPrompt(productId: string, promptId?: string, file?: Express.Multer.File) {
+    let description = '';
+    const config = await this.getActiveConfig();
+    if (!config) throw new Error('IA não configurada.');
 
     let instruction = 'Descreva detalhadamente este produto, incluindo marca, tipo de embalagem, cores principais, textos visíveis e características chave para identificação visual. Responda em português.';
 
@@ -86,9 +86,20 @@ export class AiService {
         }
     }
 
-    const description = await this.processImage(await this.getActiveConfig(), product.referenceImageUrl, instruction);
-    product.analysisPrompt = description;
-    await this.productRepository.save(product);
+    if (file) {
+      description = await this.processImageBuffer(config, file.buffer, file.mimetype, instruction);
+    } else {
+      const product = await this.productRepository.findOne({ where: { id: productId } });
+      if (!product) throw new Error('Produto não encontrado');
+      if (!product.referenceImageUrl) throw new Error('Produto sem imagem de referência');
+      
+      description = await this.processImage(config, product.referenceImageUrl, instruction);
+      
+      // Update product with generated prompt
+      product.analysisPrompt = description;
+      await this.productRepository.save(product);
+    }
+    
     return { description };
   }
 
@@ -204,8 +215,13 @@ export class AiService {
     }
 
     const imageBuffer = fs.readFileSync(fullPath);
-    const base64Image = imageBuffer.toString('base64');
     const mimeType = this.getMimeType(fullPath);
+    
+    return this.processImageBuffer(config, imageBuffer, mimeType, promptText);
+  }
+
+  private async processImageBuffer(config: AiConfig, imageBuffer: Buffer, mimeType: string, promptText: string): Promise<string> {
+    const base64Image = imageBuffer.toString('base64');
 
     if (config.provider === 'gemini') {
       const genAI = new GoogleGenerativeAI(config.apiKey);

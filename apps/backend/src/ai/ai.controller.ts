@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AiService } from './ai.service';
 import { CreateAiConfigDto } from './dto/create-ai-config.dto';
 import { CreateAiPromptDto } from './dto/create-ai-prompt.dto';
@@ -53,7 +54,11 @@ export class AiController {
   }
 
   @Post('generate-product-prompt')
-  generateProductPrompt(@Body() body: { productId: string; promptId?: string }) {
-    return this.aiService.generateProductPrompt(body.productId, body.promptId);
+  @UseInterceptors(FileInterceptor('image'))
+  generateProductPrompt(
+      @Body() body: { productId: string; promptId?: string },
+      @UploadedFile() file: Express.Multer.File
+  ) {
+    return this.aiService.generateProductPrompt(body.productId, body.promptId, file);
   }
 }
