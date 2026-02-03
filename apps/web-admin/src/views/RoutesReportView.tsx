@@ -696,6 +696,16 @@ const RoutesReportView: React.FC = () => {
     return `${minutes}m`;
   };
 
+  const formatRouteDate = (dateString: string) => {
+    if (!dateString) return '-';
+    // Handle YYYY-MM-DD string directly to avoid timezone issues
+    if (dateString.includes('T')) {
+      return new Date(dateString).toLocaleDateString('pt-BR');
+    }
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
+  };
+
   const handleExport = () => {
     if (filteredRoutes.length === 0) {
       alert('Não há dados para exportar.');
@@ -721,7 +731,7 @@ const RoutesReportView: React.FC = () => {
     csvContent.push(headers.join(';'));
 
     filteredRoutes.forEach(route => {
-      const date = new Date(route.date).toLocaleDateString('pt-BR');
+      const date = formatRouteDate(route.date);
       const promoter = route.promoter.fullName;
       const supervisor = route.promoter.supervisor?.fullName || '-';
 
@@ -1026,7 +1036,7 @@ const RoutesReportView: React.FC = () => {
                       >
                         <td className="p-4">
                           <span className="font-bold text-slate-700 text-sm">
-                            {new Date(route.date).toLocaleDateString('pt-BR')}
+                            {formatRouteDate(route.date)}
                           </span>
                         </td>
                         <td className="p-4">
@@ -1196,7 +1206,7 @@ const RoutesReportView: React.FC = () => {
                              <td className="p-3 text-sm text-slate-500">
                                {item.promoterName}
                                <div className="text-[10px] text-slate-400">
-                                 {new Date(item.date).toLocaleDateString('pt-BR')}
+                                 {formatRouteDate(item.date)}
                                </div>
                              </td>
                            </tr>
@@ -1227,7 +1237,7 @@ const RoutesReportView: React.FC = () => {
                 <div className="flex items-center gap-4 mt-2 text-sm text-slate-500">
                   <span className="flex items-center gap-1.5">
                     <Calendar size={14} />
-                    {new Date(selectedRoute.date).toLocaleDateString('pt-BR')}
+                    {formatRouteDate(selectedRoute.date)}
                   </span>
                   <span className="flex items-center gap-1.5">
                     <User size={14} />
