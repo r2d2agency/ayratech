@@ -93,15 +93,37 @@ export class AiService {
   }
 
   async createConfig(data: any) {
-    const config = this.aiConfigRepository.create(data);
-    if (data.isActive) {
-      await this.aiConfigRepository.update({}, { isActive: false });
+    this.logger.log(`Creating AI config for provider: ${data.provider}`);
+    try {
+      const configData = {
+        ...data,
+        model: data.model === '' ? null : data.model
+      };
+      
+      const config = this.aiConfigRepository.create(configData);
+      
+      if (data.isActive) {
+        this.logger.log('Deactivating other configs...');
+        await this.aiConfigRepository.update({ isActive: true }, { isActive: false });
+      }
+      
+      this.logger.log('Saving new config...');
+      const saved = await this.aiConfigRepository.save(config);
+      this.logger.log(`Config saved with ID: ${saved.id}`);
+      return saved;
+    } catch (error) {
+      this.logger.error('Erro ao salvar configuração de IA', error);
+      throw error;
     }
-    return this.aiConfigRepository.save(config);
   }
 
   async getActiveConfig() {
-    return this.aiConfigRepository.findOne({ where: { isActive: true } });
+    try {
+      return await this.aiConfigRepository.findOne({ where: { isActive: true } });
+    } catch (error) {
+      this.logger.error('Erro ao buscar configuração ativa de IA', error);
+      throw error;
+    }
   }
 
   async createPrompt(data: any) {

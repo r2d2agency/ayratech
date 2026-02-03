@@ -8,10 +8,10 @@ export class AiConfig {
   @Column()
   provider: string; // 'gemini' | 'openai'
 
-  @Column()
+  @Column({ type: 'text' })
   apiKey: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   model: string;
 
   @Column({ default: true })
