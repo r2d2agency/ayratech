@@ -108,7 +108,7 @@ export class AiService {
       }
       
       this.logger.log('Saving new config...');
-      const saved = await this.aiConfigRepository.save(config) as AiConfig;
+      const saved = (await this.aiConfigRepository.save(config)) as unknown as AiConfig;
       this.logger.log(`Config saved with ID: ${saved.id}`);
       return saved;
     } catch (error) {
