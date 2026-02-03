@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import client from '../api/client';
+import client, { API_URL } from '../api/client';
 import { FileText, Download, Upload, X, Check, Eye } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toast, Toaster } from 'react-hot-toast';
@@ -45,7 +45,7 @@ const DocumentsView = () => {
     // Remove leading slash if present to avoid double slash issues
     const cleanUrl = url.startsWith('/') ? url.substring(1) : url;
     // Construct full URL using API base URL
-    return `${import.meta.env.VITE_API_URL || 'https://api.ayratech.app.br'}/${cleanUrl}`;
+    return `${API_URL}/${cleanUrl}`;
   };
 
   const handleMarkAsRead = async (docId: string, url: string) => {
