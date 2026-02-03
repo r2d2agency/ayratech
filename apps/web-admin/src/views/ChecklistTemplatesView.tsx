@@ -177,7 +177,7 @@ const ChecklistTemplatesView: React.FC = () => {
           className={`
             group flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-105 active:scale-95
           `}
-          style={{ backgroundColor: settings.colors.primary }}
+          style={{ backgroundColor: settings.primaryColor }}
         >
           <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
           Novo Modelo
@@ -200,7 +200,7 @@ const ChecklistTemplatesView: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredTemplates.map(template => (
           <div key={template.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-all group relative overflow-hidden">
-             <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: settings.colors.primary }} />
+             <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: settings.primaryColor }} />
              
              <div className="flex justify-between items-start mb-4">
                <div>
