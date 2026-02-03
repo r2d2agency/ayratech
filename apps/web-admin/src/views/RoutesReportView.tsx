@@ -149,7 +149,6 @@ const RoutesReportView: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // Photo Processing State
-  const [pendingFiles, setPendingFiles] = useState<{ files: File[], productIndex: number } | null>(null);
   const [photoMeta, setPhotoMeta] = useState({
     date: new Date().toISOString().split('T')[0],
     time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
@@ -157,6 +156,10 @@ const RoutesReportView: React.FC = () => {
     pdvName: ''
   });
   const [processing, setProcessing] = useState(false);
+
+  const [activeProductIndex, setActiveProductIndex] = useState<number | null>(null);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     checkAdmin();
@@ -395,10 +398,8 @@ const RoutesReportView: React.FC = () => {
     }
   };
 
-  const handleFileSelect = (fileList: FileList | null, productIndex: number) => {
-    if (!fileList || fileList.length === 0) return;
-    
-    const files = Array.from(fileList);
+  const openPhotoModal = (index: number) => {
+    setActiveProductIndex(index);
     
     const currentPromoterId = manualForm?.promoterId;
     const currentPromoter = promotersList.find(p => p.id === currentPromoterId);
@@ -417,7 +418,6 @@ const RoutesReportView: React.FC = () => {
         const checkIn = new Date(manualForm.checkInTime);
         if (!isNaN(checkIn.getTime())) {
             initialDate = checkIn.toISOString().split('T')[0];
-            // Format time as HH:mm manually to avoid timezone issues with toLocaleTimeString depending on env
             const hours = checkIn.getHours().toString().padStart(2, '0');
             const minutes = checkIn.getMinutes().toString().padStart(2, '0');
             initialTime = `${hours}:${minutes}`;
@@ -431,14 +431,25 @@ const RoutesReportView: React.FC = () => {
         pdvName: pdvName
     });
 
-    setPendingFiles({ files, productIndex });
+    setShowPhotoModal(true);
   };
 
-  const processAndUploadPhotos = async () => {
-    if (!pendingFiles) return;
+  const handlePhotoModalConfirm = () => {
+    setShowPhotoModal(false);
+    if (fileInputRef.current) {
+        fileInputRef.current.click();
+    }
+  };
+
+  const handleFileSelect = (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0 || activeProductIndex === null) return;
+    const files = Array.from(fileList);
+    processAndUploadPhotos(files, activeProductIndex);
+  };
+
+  const processAndUploadPhotos = async (files: File[], productIndex: number) => {
     setProcessing(true);
     try {
-        const { files, productIndex } = pendingFiles;
         const newPhotos: string[] = [];
         
         // Combine Date and Time
@@ -465,13 +476,12 @@ const RoutesReportView: React.FC = () => {
             newProducts[productIndex].photos = [...(newProducts[productIndex].photos || []), ...newPhotos];
             setManualForm({ ...manualForm, products: newProducts });
         }
-        
-        setPendingFiles(null);
     } catch (err) {
         console.error('Processing/Upload failed', err);
         alert('Erro ao processar/enviar foto(s).');
     } finally {
         setProcessing(false);
+        setActiveProductIndex(null);
     }
   };
 
@@ -1271,20 +1281,13 @@ const RoutesReportView: React.FC = () => {
                           className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
                        />
                        <div className="flex items-center gap-2">
-                         <label className="flex-1 cursor-pointer flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-500 hover:bg-slate-50 transition-colors">
+                         <button 
+                           onClick={() => openPhotoModal(idx)}
+                           className="flex-1 flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-500 hover:bg-slate-50 transition-colors"
+                         >
                            <Camera size={16} />
                            <span className="truncate">Adicionar Fotos</span>
-                           <input 
-                            type="file" 
-                            accept="image/*"
-                            multiple
-                            className="hidden"
-                            onChange={(e) => {
-                              handleFileSelect(e.target.files, idx);
-                              e.target.value = ''; // Reset input value to allow re-selection
-                            }}
-                          />
-                         </label>
+                         </button>
                        </div>
                      </div>
 
@@ -1337,13 +1340,13 @@ const RoutesReportView: React.FC = () => {
         </div>
       )}
       {/* Photo Processing Modal */}
-      {pendingFiles && (
+      {showPhotoModal && (
         <div className="fixed inset-0 bg-slate-900/50 z-[120] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
            <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                <h2 className="text-xl font-black text-slate-900">Dados da Foto</h2>
                <button 
-                  onClick={() => setPendingFiles(null)}
+                  onClick={() => setShowPhotoModal(false)}
                   className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-all"
                 >
                   <X size={20} />
@@ -1352,7 +1355,7 @@ const RoutesReportView: React.FC = () => {
              
              <div className="p-6 space-y-4">
                 <p className="text-sm text-slate-500">
-                  Confirme os dados que serão estampados na marca d'água das {pendingFiles.files.length} fotos selecionadas.
+                  Informe os dados que serão estampados na marca d'água das fotos.
                 </p>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -1399,21 +1402,46 @@ const RoutesReportView: React.FC = () => {
 
              <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
                <button 
-                 onClick={() => setPendingFiles(null)}
+                 onClick={() => setShowPhotoModal(false)}
                  className="px-4 py-2 text-slate-600 font-bold hover:bg-slate-200 rounded-xl transition-colors"
                >
                  Cancelar
                </button>
                <button 
-                 onClick={processAndUploadPhotos}
-                 disabled={processing}
-                 className="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                 onClick={handlePhotoModalConfirm}
+                 className="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2"
                >
-                 {processing ? 'Processando...' : 'Confirmar e Enviar'}
-                 <Upload size={18} />
+                 Selecionar Fotos
+                 <Camera size={18} />
                </button>
              </div>
            </div>
+        </div>
+      )}
+
+      {/* Hidden File Input */}
+      <input 
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+            handleFileSelect(e.target.files);
+            e.target.value = '';
+        }}
+      />
+      
+      {/* Processing Indicator */}
+      {processing && (
+        <div className="fixed inset-0 bg-black/50 z-[130] flex items-center justify-center backdrop-blur-sm animate-in fade-in">
+            <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4 shadow-2xl">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <div className="text-center">
+                    <h3 className="text-lg font-bold text-slate-800">Processando Fotos...</h3>
+                    <p className="text-slate-500 text-sm">Aguarde enquanto adicionamos a marca d'água.</p>
+                </div>
+            </div>
         </div>
       )}
 
