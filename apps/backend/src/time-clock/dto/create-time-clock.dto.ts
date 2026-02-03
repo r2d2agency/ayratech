@@ -1,4 +1,4 @@
-import { IsString, IsUUID, IsOptional, IsDateString, IsNumber, IsEnum } from 'class-validator';
+import { IsString, IsUUID, IsOptional, IsDateString, IsNumber, IsEnum, IsBoolean } from 'class-validator';
 
 export class CreateTimeClockEventDto {
   @IsUUID()

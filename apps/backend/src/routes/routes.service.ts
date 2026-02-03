@@ -545,8 +545,6 @@ export class RoutesService {
       if (data.checkOutTime !== undefined) itemProduct.checkOutTime = new Date(data.checkOutTime);
       if (data.validityDate !== undefined) itemProduct.validityDate = data.validityDate;
 
-      const saved = await this.routeItemProductsRepository.save(itemProduct);
-
       if (data.checklists && data.checklists.length > 0) {
         const checklistRepo = this.dataSource.getRepository(RouteItemProductChecklist);
         for (const c of data.checklists) {
@@ -554,8 +552,18 @@ export class RoutesService {
             isChecked: c.isChecked,
             value: c.value
           });
+
+          // Propagate validity date from checklist to product
+          if (itemProduct.checklists) {
+            const existingChecklist = itemProduct.checklists.find(ec => ec.id === c.id);
+            if (existingChecklist && existingChecklist.type === ChecklistItemType.VALIDITY_CHECK && c.value) {
+              itemProduct.validityDate = c.value;
+            }
+          }
         }
       }
+
+      const saved = await this.routeItemProductsRepository.save(itemProduct);
 
       return saved;
     }

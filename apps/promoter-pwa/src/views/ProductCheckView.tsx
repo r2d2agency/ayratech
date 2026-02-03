@@ -305,7 +305,7 @@ const ProductCheckView: React.FC = () => {
       // 1.Processador de Imagem (Compress & Watermark)
       const watermarkData: WatermarkData = {
         supermarketName: supermarketName || 'PDV',
-        promoterName: user?.name || user?.email || 'Promotor',
+        promoterName: user?.name || 'Promotor',
         timestamp: new Date()
       };
       

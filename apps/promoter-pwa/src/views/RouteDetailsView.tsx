@@ -103,19 +103,7 @@ const RouteDetailsView = () => {
     setProcessing(true);
 
     try {
-        // Need to fetch current user/promoter name. 
-        // Assuming it's stored in localStorage or decoded from JWT.
-        // For now, using a placeholder or decoding JWT if available.
-        // In a real app, use a proper AuthContext.
-        const token = localStorage.getItem('accessToken');
-        let promoterName = 'Promotor';
-        if (token) {
-             // Simple parse to get name if available in payload
-             try {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                promoterName = payload.name || payload.sub || 'Promotor';
-             } catch (e) {}
-        }
+        const promoterName = user?.name || 'Promotor';
 
         const result = await processImage(file, {
             supermarketName: activeItem.supermarket.name,

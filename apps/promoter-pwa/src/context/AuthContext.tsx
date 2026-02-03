@@ -35,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userData: User = {
           ...decoded,
           id: decoded.sub, // Map sub to id
-          name: decoded.username || decoded.name, // Map username to name
+          name: decoded.employee?.fullName || decoded.username || decoded.name, // Map username to name
         };
         setUser(userData);
       } catch (error) {

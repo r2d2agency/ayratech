@@ -87,7 +87,7 @@ const AiConfigView: React.FC = () => {
                   <span className="text-xs opacity-70">Recomendado</span>
                 </button>
                 <button
-                  onClick={() => setProvider('openai')}
+                  onClick={() => { setProvider('openai'); setModel(''); }}
                   className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
                     provider === 'openai' 
                       ? 'border-green-600 bg-green-50 text-green-700' 
@@ -120,17 +120,21 @@ const AiConfigView: React.FC = () => {
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                 <Settings size={14} />
-                Modelo (Opcional)
+                Modelo de IA
               </label>
-              <input 
-                type="text"
+              <select 
                 value={model}
                 onChange={e => setModel(e.target.value)}
-                placeholder={provider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4-vision-preview'}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all"
-              />
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-bold outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all appearance-none cursor-pointer"
+                disabled={!apiKey}
+              >
+                <option value="">Selecione um modelo...</option>
+                {modelsByProvider[provider]?.map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
               <p className="text-xs text-slate-400">
-                Deixe em branco para usar o modelo padrão recomendado.
+                Selecione o modelo desejado para processamento das imagens.
               </p>
             </div>
 
