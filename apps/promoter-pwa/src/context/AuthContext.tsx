@@ -14,6 +14,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  loading: boolean;
   isAuthenticated: boolean;
   login: (token: string, userData: User) => void;
   logout: () => void;
@@ -23,17 +24,26 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        const decoded = jwtDecode<User>(token);
-        setUser(decoded);
+        const decoded = jwtDecode<any>(token);
+        // Map JWT standard fields to our User interface
+        const userData: User = {
+          ...decoded,
+          id: decoded.sub, // Map sub to id
+          name: decoded.username || decoded.name, // Map username to name
+        };
+        setUser(userData);
       } catch (error) {
+        console.error('Invalid token:', error);
         localStorage.removeItem('token');
       }
     }
+    setLoading(false);
   }, []);
 
   const login = (token: string, userData: User) => {
@@ -47,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
