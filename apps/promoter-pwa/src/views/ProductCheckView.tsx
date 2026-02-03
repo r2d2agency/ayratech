@@ -11,7 +11,9 @@ import { useAuth } from '../context/AuthContext';
 enum ChecklistItemType {
   SIMPLE = 'SIMPLE',
   PHOTO = 'PHOTO',
-  VALIDITY_CHECK = 'VALIDITY_CHECK'
+  VALIDITY_CHECK = 'VALIDITY_CHECK',
+  PRICE_CHECK = 'PRICE_CHECK',
+  STOCK_COUNT = 'STOCK_COUNT'
 }
 
 interface Checklist {
@@ -551,6 +553,22 @@ const ProductCheckView: React.FC = () => {
                                   step="0.01"
                                   placeholder="0,00"
                                   className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:border-blue-500 outline-none bg-white"
+                                  value={item.value || ''}
+                                  onChange={(e) => handleChecklistValueChange(item.id, e.target.value)}
+                              />
+                          </div>
+                        </div>
+                      )}
+                      {item.type === ChecklistItemType.STOCK_COUNT && (
+                        <div className="mt-2" onClick={(e) => e.preventDefault()}>
+                          <span className="block text-xs text-blue-600 mb-1">
+                              Contagem de Estoque
+                          </span>
+                          <div className="relative">
+                              <input 
+                                  type="number"
+                                  placeholder="Qtd"
+                                  className="w-full px-3 py-2 border rounded-lg text-sm focus:border-blue-500 outline-none bg-white"
                                   value={item.value || ''}
                                   onChange={(e) => handleChecklistValueChange(item.id, e.target.value)}
                               />

@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, DataSource } from 'typeorm';
+import { Repository, In, DataSource, Brackets } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
 import { Route } from './entities/route.entity';
@@ -531,6 +531,33 @@ export class RoutesService {
     }
 
     return this.routesRepository.delete(id);
+  }
+
+  async getEvidenceReport(startDate: string, endDate: string, clientId?: string) {
+    const query = this.routeItemProductsRepository.createQueryBuilder('rip')
+      .leftJoinAndSelect('rip.routeItem', 'ri')
+      .leftJoinAndSelect('ri.route', 'r')
+      .leftJoinAndSelect('r.promoter', 'promoter')
+      .leftJoinAndSelect('ri.supermarket', 's')
+      .leftJoinAndSelect('rip.product', 'p')
+      .leftJoinAndSelect('p.brand', 'b')
+      .leftJoinAndSelect('rip.checklists', 'cl')
+      .where('r.date BETWEEN :startDate AND :endDate', { startDate, endDate })
+      .orderBy('r.date', 'DESC');
+
+    if (clientId) {
+      query.leftJoin('s.clients', 'c')
+           .andWhere('c.id = :clientId', { clientId });
+    }
+
+    // Filter items that have photos in 'photos' column OR 'checklists' with type PHOTO and value
+    query.andWhere(new Brackets(qb => {
+      qb.where("rip.photos IS NOT NULL AND rip.photos != ''")
+        .orWhere("cl.type = :type AND cl.value IS NOT NULL AND cl.value != ''", { type: ChecklistItemType.PHOTO });
+    }));
+
+    const results = await query.getMany();
+    return results;
   }
 
   // Rules

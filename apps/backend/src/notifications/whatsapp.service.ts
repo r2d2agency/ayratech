@@ -58,4 +58,28 @@ export class WhatsappService {
       // Don't throw to prevent blocking the main flow, just log
     }
   }
+
+  async getConnectionStatus() {
+    if (!this.apiUrl || !this.apiKey || !this.instanceName) {
+      return { status: 'ERROR', message: 'Configuração ausente (URL, Key ou Instance Name)' };
+    }
+
+    const url = `${this.apiUrl}/instance/connectionState/${this.instanceName}`;
+
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          apikey: this.apiKey,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      this.logger.error(`Error checking WhatsApp connection: ${error.message}`, error.response?.data);
+      return { 
+        status: 'ERROR', 
+        message: 'Erro ao conectar com Evolution API', 
+        details: error.response?.data || error.message 
+      };
+    }
+  }
 }

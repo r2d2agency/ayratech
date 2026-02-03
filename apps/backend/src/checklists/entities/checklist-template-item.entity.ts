@@ -6,7 +6,8 @@ export enum ChecklistItemType {
   SIMPLE = 'SIMPLE',
   PHOTO = 'PHOTO',
   VALIDITY_CHECK = 'VALIDITY_CHECK',
-  PRICE_CHECK = 'PRICE_CHECK'
+  PRICE_CHECK = 'PRICE_CHECK',
+  STOCK_COUNT = 'STOCK_COUNT'
 }
 
 @Entity('checklist_template_items')

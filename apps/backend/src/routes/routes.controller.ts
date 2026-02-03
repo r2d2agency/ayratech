@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req, UnauthorizedException, BadRequestException, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, UnauthorizedException, BadRequestException, UseGuards, Query } from '@nestjs/common';
 import { RoutesService } from './routes.service';
 import { CreateRouteDto } from './dto/create-route.dto';
 import { UpdateRouteDto } from './dto/update-route.dto';
@@ -65,6 +65,15 @@ export class RoutesController {
   @Post('rules')
   createRule(@Body() rule: any) {
     return this.routesService.createRule(rule);
+  }
+
+  @Get('report/evidence')
+  getEvidenceReport(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Query('clientId') clientId: string,
+  ) {
+    return this.routesService.getEvidenceReport(startDate, endDate, clientId);
   }
 
   @Get('rules/all')
