@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import client from '../api/client';
-import { Calendar as CalendarIcon, ChevronRight, MapPin, Filter } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronRight, MapPin, Filter, CheckCircle2 } from 'lucide-react';
 import { format, parseISO, isSameDay, isSameWeek, isSameMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -13,6 +13,7 @@ const CalendarView = () => {
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<FilterType>('day');
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const fetchRoutes = async () => {
@@ -30,7 +31,7 @@ const CalendarView = () => {
       }
     };
     fetchRoutes();
-  }, []);
+  }, [location]);
 
   useEffect(() => {
     const today = new Date();
@@ -108,14 +109,19 @@ const CalendarView = () => {
               {month}
             </h2>
             <div className="space-y-3">
-              {monthRoutes.map((route: any) => (
+              {monthRoutes.map((route: any) => {
+                const completedCount = route.items.filter((i: any) => ['CHECKOUT', 'COMPLETED', 'DONE'].includes(i.status)).length;
+                const totalCount = route.items.length;
+                const isFullyCompleted = completedCount === totalCount && totalCount > 0;
+
+                return (
                 <div 
                   key={route.id}
                   onClick={() => navigate(`/routes/${route.id}`)}
-                  className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 active:scale-[0.98] transition-transform"
+                  className={`bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 active:scale-[0.98] transition-transform ${isFullyCompleted ? 'border-l-4 border-l-emerald-500' : ''}`}
                 >
                   <div className="flex-col items-center justify-center text-center min-w-[3rem] border-r border-gray-100 pr-4">
-                    <span className="block text-2xl font-bold text-blue-600">
+                    <span className={`block text-2xl font-bold ${isFullyCompleted ? 'text-emerald-600' : 'text-blue-600'}`}>
                       {format(parseISO(route.date), 'dd')}
                     </span>
                     <span className="block text-xs text-gray-400 uppercase">
@@ -124,8 +130,15 @@ const CalendarView = () => {
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-800 truncate">
-                      {route.items.length} visitas agendadas
+                    <p className={`font-medium truncate flex items-center gap-2 ${isFullyCompleted ? 'text-emerald-700' : 'text-gray-800'}`}>
+                      {isFullyCompleted ? (
+                        <>
+                          <CheckCircle2 size={16} className="text-emerald-600" />
+                          <span>Rota Concluída</span>
+                        </>
+                      ) : (
+                        <span>{completedCount}/{totalCount} visitas realizadas</span>
+                      )}
                     </p>
                     <p className="text-xs text-gray-500 truncate flex items-center gap-1">
                       <MapPin size={10} />
@@ -135,7 +148,7 @@ const CalendarView = () => {
 
                   <ChevronRight className="text-gray-300" size={20} />
                 </div>
-              ))}
+              )})}
             </div>
           </div>
         ))
