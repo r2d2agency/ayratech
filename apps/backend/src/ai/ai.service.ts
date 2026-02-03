@@ -159,7 +159,7 @@ export class AiService {
 
   private async processImage(config: AiConfig, imagePath: string, promptText: string): Promise<string> {
     // Resolve full path
-    const fullPath = imagePath.startsWith('/') ? path.join(process.cwd(), imagePath) : imagePath;
+    let fullPath = imagePath.startsWith('/') ? path.join(process.cwd(), imagePath) : imagePath;
     
     if (!fs.existsSync(fullPath)) {
         // Try prepending uploads/ if not found
@@ -167,6 +167,7 @@ export class AiService {
         if (!fs.existsSync(uploadPath)) {
              throw new Error(`Imagem não encontrada: ${fullPath}`);
         }
+        fullPath = uploadPath;
     }
 
     const imageBuffer = fs.readFileSync(fullPath);
