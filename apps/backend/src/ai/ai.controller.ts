@@ -32,6 +32,11 @@ export class AiController {
     return this.aiService.getPromptByName(name);
   }
 
+  @Delete('prompts/:id')
+  deletePrompt(@Param('id') id: string) {
+    return this.aiService.deletePrompt(id);
+  }
+
   @Get('pending')
   getPendingItems() {
     return this.aiService.getPendingItems();

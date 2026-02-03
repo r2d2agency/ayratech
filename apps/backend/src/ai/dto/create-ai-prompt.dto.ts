@@ -16,4 +16,8 @@ export class CreateAiPromptDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  supportsImageAnalysis?: boolean;
 }

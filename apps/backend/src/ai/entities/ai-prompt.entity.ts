@@ -17,6 +17,9 @@ export class AiPrompt {
   @Column({ default: true })
   isActive: boolean;
 
+  @Column({ default: true })
+  supportsImageAnalysis: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

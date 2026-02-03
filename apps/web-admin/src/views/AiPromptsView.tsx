@@ -8,6 +8,7 @@ interface AiPrompt {
   content: string;
   type: string;
   createdAt: string;
+  supportsImageAnalysis?: boolean;
 }
 
 const AiPromptsView: React.FC = () => {
@@ -136,6 +137,20 @@ const AiPromptsView: React.FC = () => {
               </select>
             </div>
 
+            <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
+              <input
+                type="checkbox"
+                id="supportsImageAnalysis"
+                checked={editingPrompt.supportsImageAnalysis !== false}
+                onChange={e => setEditingPrompt({...editingPrompt, supportsImageAnalysis: e.target.checked})}
+                className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
+              <label htmlFor="supportsImageAnalysis" className="cursor-pointer">
+                <span className="block font-bold text-slate-700">Analisar Imagem</span>
+                <span className="text-xs text-slate-500">Habilitar envio de imagem para a IA junto com este prompt.</span>
+              </label>
+            </div>
+
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Conteúdo / Instruções</label>
               <textarea
@@ -146,7 +161,17 @@ const AiPromptsView: React.FC = () => {
               />
             </div>
 
-            <div className="flex justify-end pt-4">
+            <div className="flex justify-end pt-4 gap-3">
+              {editingPrompt.id && (
+                <button
+                  onClick={handleDelete}
+                  disabled={loading}
+                  className="flex items-center gap-2 bg-red-100 text-red-700 px-6 py-3 rounded-xl font-bold hover:bg-red-200 transition-all disabled:opacity-50"
+                >
+                  <Trash2 size={20} />
+                  Excluir
+                </button>
+              )}
               <button
                 onClick={handleSave}
                 disabled={loading}
@@ -184,6 +209,11 @@ const AiPromptsView: React.FC = () => {
               </p>
               <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
                 <span>Atualizado em {new Date(prompt.createdAt).toLocaleDateString()}</span>
+                {prompt.supportsImageAnalysis !== false && (
+                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-md font-bold text-[10px]">
+                        IMAGEM
+                    </span>
+                )}
               </div>
             </div>
           ))}

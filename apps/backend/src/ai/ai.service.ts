@@ -138,6 +138,10 @@ export class AiService {
     return this.aiPromptRepository.findOne({ where: { name } });
   }
 
+  async deletePrompt(id: string) {
+    return this.aiPromptRepository.delete(id);
+  }
+
   async generateDescription(imagePath: string): Promise<string> {
     const config = await this.getActiveConfig();
     if (!config) throw new Error('IA não configurada.');
