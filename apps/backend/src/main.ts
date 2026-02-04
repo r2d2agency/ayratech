@@ -32,9 +32,11 @@ async function bootstrap() {
         'https://ayratech.app.br',
         'https://www.ayratech.app.br',
         'https://api.ayratech.app.br',
+        'https://promotor.ayratech.app.br',
         'http://localhost:5173',
         'http://localhost:3000',
-        'http://localhost:4173'
+        'http://localhost:4173',
+        'http://localhost:5174'
       ];
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
