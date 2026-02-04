@@ -21,6 +21,9 @@ export class SettingsController {
   @Patch()
   @UseInterceptors(FileFieldsInterceptor([
     { name: 'logo', maxCount: 1 },
+    { name: 'loginLogo', maxCount: 1 },
+    { name: 'systemLogo', maxCount: 1 },
+    { name: 'splashScreen', maxCount: 1 },
     { name: 'favicon', maxCount: 1 },
     { name: 'pwaIcon', maxCount: 1 },
     { name: 'siteIcon', maxCount: 1 },
@@ -29,6 +32,9 @@ export class SettingsController {
     @Body() updateSettingDto: UpdateSettingDto,
     @UploadedFiles() files: { 
         logo?: Express.Multer.File[], 
+        loginLogo?: Express.Multer.File[], 
+        systemLogo?: Express.Multer.File[], 
+        splashScreen?: Express.Multer.File[], 
         favicon?: Express.Multer.File[],
         pwaIcon?: Express.Multer.File[],
         siteIcon?: Express.Multer.File[]
@@ -50,6 +56,15 @@ export class SettingsController {
 
         if (files?.logo?.[0]) {
             updateSettingDto.logoUrl = await processFile(files.logo[0], 'logo');
+        }
+        if (files?.loginLogo?.[0]) {
+            updateSettingDto.loginLogoUrl = await processFile(files.loginLogo[0], 'login-logo');
+        }
+        if (files?.systemLogo?.[0]) {
+            updateSettingDto.systemLogoUrl = await processFile(files.systemLogo[0], 'system-logo');
+        }
+        if (files?.splashScreen?.[0]) {
+            updateSettingDto.splashScreenUrl = await processFile(files.splashScreen[0], 'splash-screen');
         }
         if (files?.favicon?.[0]) {
             updateSettingDto.faviconUrl = await processFile(files.favicon[0], 'favicon');

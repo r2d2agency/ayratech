@@ -12,6 +12,9 @@ const AdminView: React.FC = () => {
   // Local state for branding form
   const [brandingForm, setBrandingForm] = useState(settings);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [loginLogoFile, setLoginLogoFile] = useState<File | null>(null);
+  const [systemLogoFile, setSystemLogoFile] = useState<File | null>(null);
+  const [splashScreenFile, setSplashScreenFile] = useState<File | null>(null);
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
   const [pwaIconFile, setPwaIconFile] = useState<File | null>(null);
   const [siteIconFile, setSiteIconFile] = useState<File | null>(null);
@@ -146,8 +149,14 @@ const AdminView: React.FC = () => {
         formData.append('companyName', brandingForm.companyName);
         formData.append('primaryColor', brandingForm.primaryColor);
         if (brandingForm.logoUrl) formData.append('logoUrl', brandingForm.logoUrl);
+        if (brandingForm.loginLogoUrl) formData.append('loginLogoUrl', brandingForm.loginLogoUrl);
+        if (brandingForm.systemLogoUrl) formData.append('systemLogoUrl', brandingForm.systemLogoUrl);
+        if (brandingForm.splashScreenUrl) formData.append('splashScreenUrl', brandingForm.splashScreenUrl);
 
         if (logoFile) formData.append('logo', logoFile);
+        if (loginLogoFile) formData.append('loginLogo', loginLogoFile);
+        if (systemLogoFile) formData.append('systemLogo', systemLogoFile);
+        if (splashScreenFile) formData.append('splashScreen', splashScreenFile);
         if (faviconFile) formData.append('favicon', faviconFile);
         if (pwaIconFile) formData.append('pwaIcon', pwaIconFile);
         if (siteIconFile) formData.append('siteIcon', siteIconFile);
@@ -161,6 +170,9 @@ const AdminView: React.FC = () => {
         
         // Clear file inputs
         setLogoFile(null);
+        setLoginLogoFile(null);
+        setSystemLogoFile(null);
+        setSplashScreenFile(null);
         setFaviconFile(null);
         setPwaIconFile(null);
         setSiteIconFile(null);
@@ -431,6 +443,95 @@ const AdminView: React.FC = () => {
                       {logoFile && <span className="text-sm text-slate-500">{logoFile.name}</span>}
                   </div>
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Logo Login */}
+                <div>
+                    <label className="text-[11px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Logo Login</label>
+                    <div className="flex flex-col gap-4">
+                        {brandingForm.loginLogoUrl && (
+                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 w-fit">
+                            <img 
+                                src={loginLogoFile ? URL.createObjectURL(loginLogoFile) : getImageUrl(brandingForm.loginLogoUrl)} 
+                                alt="Login Logo Preview" 
+                                className="h-12 object-contain" 
+                            />
+                            </div>
+                        )}
+                        <div className="flex items-center gap-4">
+                            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg cursor-pointer transition-colors font-bold text-sm">
+                                <Upload size={16} />
+                                Arquivo
+                                <input 
+                                    type="file" 
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={e => e.target.files && setLoginLogoFile(e.target.files[0])}
+                                />
+                            </label>
+                            {loginLogoFile && <span className="text-sm text-slate-500 truncate max-w-[100px]">{loginLogoFile.name}</span>}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Logo Sistema */}
+                <div>
+                    <label className="text-[11px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Logo Sistema (Header)</label>
+                    <div className="flex flex-col gap-4">
+                        {brandingForm.systemLogoUrl && (
+                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 w-fit">
+                            <img 
+                                src={systemLogoFile ? URL.createObjectURL(systemLogoFile) : getImageUrl(brandingForm.systemLogoUrl)} 
+                                alt="System Logo Preview" 
+                                className="h-12 object-contain" 
+                            />
+                            </div>
+                        )}
+                        <div className="flex items-center gap-4">
+                            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg cursor-pointer transition-colors font-bold text-sm">
+                                <Upload size={16} />
+                                Arquivo
+                                <input 
+                                    type="file" 
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={e => e.target.files && setSystemLogoFile(e.target.files[0])}
+                                />
+                            </label>
+                            {systemLogoFile && <span className="text-sm text-slate-500 truncate max-w-[100px]">{systemLogoFile.name}</span>}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Splash Screen */}
+                <div>
+                    <label className="text-[11px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Logo App Iniciar</label>
+                    <div className="flex flex-col gap-4">
+                        {brandingForm.splashScreenUrl && (
+                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 w-fit">
+                            <img 
+                                src={splashScreenFile ? URL.createObjectURL(splashScreenFile) : getImageUrl(brandingForm.splashScreenUrl)} 
+                                alt="Splash Preview" 
+                                className="h-12 object-contain" 
+                            />
+                            </div>
+                        )}
+                        <div className="flex items-center gap-4">
+                            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg cursor-pointer transition-colors font-bold text-sm">
+                                <Upload size={16} />
+                                Arquivo
+                                <input 
+                                    type="file" 
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={e => e.target.files && setSplashScreenFile(e.target.files[0])}
+                                />
+                            </label>
+                            {splashScreenFile && <span className="text-sm text-slate-500 truncate max-w-[100px]">{splashScreenFile.name}</span>}
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

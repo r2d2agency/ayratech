@@ -114,20 +114,28 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded shadow-md w-96 flex flex-col items-center">
-        <div 
-          className="mb-6 h-16 w-16 flex items-center justify-center rounded-2xl text-white shadow-lg"
-          style={{ backgroundColor: settings.primaryColor }}
-        >
-          {settings.logoUrl ? (
-            <img 
-              src={getImageUrl(settings.logoUrl)} 
-              alt="Logo" 
-              className="w-10 h-10 object-contain brightness-0 invert" 
-            />
-          ) : (
-            <LayoutGrid size={32} />
-          )}
-        </div>
+        {settings.loginLogoUrl ? (
+          <img 
+            src={getImageUrl(settings.loginLogoUrl)} 
+            alt="Logo" 
+            className="mb-6 h-32 object-contain" 
+          />
+        ) : (
+          <div 
+            className="mb-6 h-16 w-16 flex items-center justify-center rounded-2xl text-white shadow-lg"
+            style={{ backgroundColor: settings.primaryColor }}
+          >
+            {settings.logoUrl ? (
+              <img 
+                src={getImageUrl(settings.logoUrl)} 
+                alt="Logo" 
+                className="w-10 h-10 object-contain brightness-0 invert" 
+              />
+            ) : (
+              <LayoutGrid size={32} />
+            )}
+          </div>
+        )}
         <h2 className="text-2xl font-bold mb-6 text-center" style={{ color: settings.primaryColor }}>Login</h2>
         {error && <p className="text-red-500 mb-4">{error}</p>}
         <form onSubmit={handleSubmit}>

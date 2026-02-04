@@ -89,21 +89,34 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
     >
       {/* Header / Logo */}
       <div className="p-4 h-16 flex items-center gap-3 mb-4">
-        <div 
-          onClick={() => onNavigate('dashboard')}
-          className="flex h-10 w-10 min-w-[40px] items-center justify-center rounded-xl text-white cursor-pointer shadow-md"
-          style={{ backgroundColor: settings.primaryColor }}
-        >
-          {settings.logoUrl ? (
-             <img 
-               src={getImageUrl(settings.logoUrl)} 
-               alt="" 
-               className="w-6 h-6 object-contain brightness-0 invert" 
-             />
-          ) : (
-             <LayoutGrid size={24} />
-          )}
-        </div>
+        {settings.systemLogoUrl ? (
+             <div 
+               onClick={() => onNavigate('dashboard')}
+               className="flex h-10 w-auto min-w-[40px] items-center justify-center cursor-pointer"
+             >
+                <img 
+                  src={getImageUrl(settings.systemLogoUrl)} 
+                  alt="System Logo" 
+                  className="h-10 object-contain" 
+                />
+             </div>
+        ) : (
+          <div 
+            onClick={() => onNavigate('dashboard')}
+            className="flex h-10 w-10 min-w-[40px] items-center justify-center rounded-xl text-white cursor-pointer shadow-md"
+            style={{ backgroundColor: settings.primaryColor }}
+          >
+            {settings.logoUrl ? (
+               <img 
+                 src={getImageUrl(settings.logoUrl)} 
+                 alt="" 
+                 className="w-6 h-6 object-contain brightness-0 invert" 
+               />
+            ) : (
+               <LayoutGrid size={24} />
+            )}
+          </div>
+        )}
         <span className={`font-black text-xl text-slate-900 tracking-tighter transition-all duration-300 truncate ${
           expanded ? 'opacity-100' : 'opacity-0 w-0'
         }`}>

@@ -15,6 +15,15 @@ export class Setting {
   logoUrl: string;
 
   @Column({ nullable: true })
+  loginLogoUrl: string;
+
+  @Column({ nullable: true })
+  systemLogoUrl: string;
+
+  @Column({ nullable: true })
+  splashScreenUrl: string;
+
+  @Column({ nullable: true })
   faviconUrl: string;
 
   @Column({ nullable: true })

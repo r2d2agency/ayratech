@@ -141,7 +141,8 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
   );
 };
 
-const App: React.FC = () => {
+const AppInner: React.FC = () => {
+  const { settings } = useBranding();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string>('');
@@ -179,16 +180,32 @@ const App: React.FC = () => {
     setIsAuthenticated(false);
   };
 
-  if (loading) return null;
+  if (loading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-white">
+           {settings.splashScreenUrl ? (
+             <img src={getImageUrl(settings.splashScreenUrl)} alt="Loading..." className="h-32 w-auto object-contain animate-pulse" />
+           ) : (
+             <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: settings.primaryColor }}></div>
+           )}
+        </div>
+      );
+  }
 
   return (
-    <BrandingProvider>
       <Routes>
         <Route path="/validate-stock/:token" element={<StockValidationView />} />
         <Route path="/*" element={
           isAuthenticated ? <MainContent onLogout={handleLogout} userRole={userRole} /> : <LoginView onLogin={handleLogin} />
         } />
       </Routes>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <BrandingProvider>
+      <AppInner />
     </BrandingProvider>
   );
 };

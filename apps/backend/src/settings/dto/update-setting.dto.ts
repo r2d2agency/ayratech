@@ -16,6 +16,18 @@ export class UpdateSettingDto {
 
   @IsString()
   @IsOptional()
+  loginLogoUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  systemLogoUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  splashScreenUrl?: string;
+
+  @IsString()
+  @IsOptional()
   faviconUrl?: string;
 
   @IsString()
