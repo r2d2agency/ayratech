@@ -135,7 +135,7 @@ export class WorkSchedulesService {
         schedule: {
             start: scheduleDay.startTime,
             end: scheduleDay.endTime,
-            tolerance: scheduleDay.tolerance
+            tolerance: scheduleDay.toleranceMinutes
         },
         extension
     };

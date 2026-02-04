@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { SupermarketGroup } from '../entities/supermarket-group.entity';
+import { SupermarketGroup } from './entities/supermarket-group.entity';
 import { CreateSupermarketGroupDto } from './dto/create-supermarket-group.dto';
 import { UpdateSupermarketGroupDto } from './dto/update-supermarket-group.dto';
 
