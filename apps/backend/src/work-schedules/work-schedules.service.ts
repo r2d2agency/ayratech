@@ -242,8 +242,52 @@ export class WorkSchedulesService {
     return this.schedulesRepository.findOne({ where: { id }, relations: ['days', 'employee'] });
   }
 
-  update(id: string, updateWorkScheduleDto: UpdateWorkScheduleDto) {
-    return this.schedulesRepository.update(id, updateWorkScheduleDto);
+  async update(id: string, updateWorkScheduleDto: UpdateWorkScheduleDto) {
+    const { days, employeeId, ...scheduleData } = updateWorkScheduleDto;
+
+    // 1. Update parent entity fields if any
+    if (Object.keys(scheduleData).length > 0) {
+      await this.schedulesRepository.update(id, scheduleData);
+    }
+
+    // 2. Update days if provided
+    if (days) {
+      // Delete existing days
+      await this.daysRepository.delete({ workScheduleId: id });
+
+      // Create new days
+      const daysEntities: WorkScheduleDay[] = days.map((dayData) => {
+        const day = new WorkScheduleDay();
+        day.dayOfWeek = dayData.dayOfWeek;
+        day.active = !!dayData.active;
+        day.startTime =
+          dayData.startTime && dayData.startTime !== 'null'
+            ? dayData.startTime
+            : '08:00';
+        day.endTime =
+          dayData.endTime && dayData.endTime !== 'null'
+            ? dayData.endTime
+            : '17:00';
+        // Ensure strict null for optional fields
+        day.breakStart =
+          dayData.breakStart && dayData.breakStart !== 'null'
+            ? dayData.breakStart
+            : null;
+        day.breakEnd =
+          dayData.breakEnd && dayData.breakEnd !== 'null'
+            ? dayData.breakEnd
+            : null;
+        day.toleranceMinutes = Number(dayData.toleranceMinutes) || 0;
+
+        // Link to schedule by ID
+        day.workSchedule = { id } as WorkSchedule;
+        return day;
+      });
+
+      await this.daysRepository.save(daysEntities);
+    }
+
+    return this.findOne(id);
   }
 
   remove(id: string) {
