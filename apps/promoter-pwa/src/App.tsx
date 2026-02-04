@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { BrandingProvider } from './context/BrandingContext';
 import LoginView from './views/LoginView';
 import DashboardView from './views/DashboardView';
 import RouteDetailsView from './views/RouteDetailsView';
@@ -39,24 +40,26 @@ const ProtectedLayout = () => {
 
 const App = () => {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginView />} />
-          
-          <Route element={<ProtectedLayout />}>
-            <Route path="/" element={<DashboardView />} />
-            <Route path="/routes/:id" element={<RouteDetailsView />} />
-            <Route path="/routes/:routeId/items/:itemId/check" element={<ProductCheckView />} />
-            <Route path="/calendar" element={<CalendarView />} />
-            <Route path="/documents" element={<DocumentsView />} />
-            <Route path="/time-clock" element={<TimeClockView />} />
-          </Route>
+    <BrandingProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<LoginView />} />
+            
+            <Route element={<ProtectedLayout />}>
+              <Route path="/" element={<DashboardView />} />
+              <Route path="/routes/:id" element={<RouteDetailsView />} />
+              <Route path="/routes/:routeId/items/:itemId/check" element={<ProductCheckView />} />
+              <Route path="/calendar" element={<CalendarView />} />
+              <Route path="/documents" element={<DocumentsView />} />
+              <Route path="/time-clock" element={<TimeClockView />} />
+            </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </BrandingProvider>
   );
 };
 

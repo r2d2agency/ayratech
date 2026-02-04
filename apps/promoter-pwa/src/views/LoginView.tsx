@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { useBranding } from '../context/BrandingContext';
+import { getImageUrl } from '../utils/image';
 import { toast, Toaster } from 'react-hot-toast';
 
 const LoginView = () => {
@@ -9,6 +11,7 @@ const LoginView = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const { settings } = useBranding();
   const navigate = useNavigate();
 
   const formatCpf = (value: string) => {
@@ -57,7 +60,15 @@ const LoginView = () => {
       <Toaster position="top-center" />
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 space-y-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-blue-600 mb-2">Ayratech</h1>
+          {settings.loginLogoUrl || settings.logoUrl ? (
+            <img 
+              src={getImageUrl(settings.loginLogoUrl || settings.logoUrl)} 
+              alt={settings.companyName} 
+              className="h-20 mx-auto mb-4 object-contain"
+            />
+          ) : (
+            <h1 className="text-3xl font-bold text-primary mb-2">{settings.companyName}</h1>
+          )}
           <p className="text-gray-500">App do Promotor</p>
         </div>
 
@@ -68,7 +79,7 @@ const LoginView = () => {
               type="text"
               value={identifier}
               onChange={handleIdentifierChange}
-              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
               placeholder="000.000.000-00 ou email@exemplo.com"
               required
             />
@@ -80,7 +91,7 @@ const LoginView = () => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
               placeholder="••••••••"
               required
             />
@@ -89,7 +100,7 @@ const LoginView = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Entrando...' : 'Entrar'}
           </button>

@@ -1,9 +1,11 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, Calendar, FileText, User, Clock } from 'lucide-react';
+import { useBranding } from '../context/BrandingContext';
 
 const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { settings } = useBranding();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -23,7 +25,7 @@ const BottomNav = () => {
             key={item.path}
             onClick={() => navigate(item.path)}
             className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
-              isActive(item.path) ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'
+              isActive(item.path) ? 'text-primary' : 'text-gray-400 hover:text-gray-600'
             }`}
           >
             <item.icon size={24} strokeWidth={isActive(item.path) ? 2.5 : 2} />

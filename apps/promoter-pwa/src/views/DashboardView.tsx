@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { useBranding } from '../context/BrandingContext';
 import { MapPin, ArrowRight, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -9,6 +10,7 @@ import SupervisorDashboardView from './SupervisorDashboardView';
 
 const DashboardView = () => {
   const { user } = useAuth();
+  const { settings } = useBranding();
   const navigate = useNavigate();
   const [todaysRoutes, setTodaysRoutes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,7 +67,7 @@ const DashboardView = () => {
             {user?.employee?.fullName?.split(' ')[0] || user?.email?.split('@')[0] || 'Promotor'}
           </h1>
         </div>
-        <div className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">
+        <div style={{ backgroundColor: `${settings.primaryColor}20`, color: settings.primaryColor }} className="px-3 py-1 rounded-full text-xs font-bold">
           {format(new Date(), 'dd/MM', { locale: ptBR })}
         </div>
       </header>
@@ -76,8 +78,8 @@ const DashboardView = () => {
         <>
           {/* Summary Cards */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-blue-500 text-white p-4 rounded-2xl shadow-sm">
-              <p className="text-blue-100 text-xs mb-1">Visitas Hoje</p>
+            <div className="bg-primary text-white p-4 rounded-2xl shadow-sm">
+              <p className="text-white/80 text-xs mb-1">Visitas Hoje</p>
               <p className="text-3xl font-bold">
                 {todaysRoutes.reduce((acc, r) => acc + r.items.length, 0)}
               </p>
