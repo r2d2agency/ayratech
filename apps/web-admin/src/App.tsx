@@ -32,7 +32,7 @@ import TimeClockManagementView from './views/TimeClockManagementView';
 import LoginView from './views/LoginView';
 import ClientDashboardView from './views/ClientDashboardView';
 import StockValidationView from './views/StockValidationView';
-import { BrandingProvider } from './context/BrandingContext';
+import { BrandingProvider, useBranding } from './context/BrandingContext';
 import { jwtDecode } from 'jwt-decode';
 
 const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onLogout, userRole }) => {
