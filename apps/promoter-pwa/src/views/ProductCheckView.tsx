@@ -635,48 +635,49 @@ const ProductCheckView: React.FC = () => {
               </div>
             </div>
 
-            <div className={`flex flex-col gap-2 ${
-              selectedProduct.checklists?.some(c => c.type === ChecklistItemType.VALIDITY_CHECK) && 
-              !selectedProduct.checklists?.some(c => c.type === ChecklistItemType.VALIDITY_CHECK && c.isChecked)
-                ? 'opacity-50 pointer-events-none' 
-                : ''
-            }`}>
-              <label className="text-sm font-medium text-gray-700">Data de Validade</label>
-              <input 
-                type="date"
-                className="w-full border rounded-lg p-2 text-sm focus:border-blue-500 outline-none"
-                value={selectedProduct.validityDate || ''}
-                onChange={(e) => setSelectedProduct({...selectedProduct, validityDate: e.target.value})}
-                disabled={selectedProduct.checklists?.some(c => c.type === ChecklistItemType.VALIDITY_CHECK) && !selectedProduct.checklists?.some(c => c.type === ChecklistItemType.VALIDITY_CHECK && c.isChecked)}
-              />
-              {selectedProduct.validityDate && (
-                (() => {
-                  const today = new Date();
-                  today.setHours(0,0,0,0);
-                  const valDate = new Date(selectedProduct.validityDate);
-                  // Calculate diff in days
-                  const diffTime = valDate.getTime() - today.getTime();
-                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                  
-                  if (diffDays < 0) {
-                    return (
-                      <div className="flex items-center gap-2 text-red-600 bg-red-50 p-2 rounded-lg text-xs font-medium">
-                        <AlertTriangle size={16} />
-                        Produto VENCIDO!
-                      </div>
-                    );
-                  } else if (diffDays <= 30) {
-                    return (
-                      <div className="flex items-center gap-2 text-orange-600 bg-orange-50 p-2 rounded-lg text-xs font-medium">
-                        <AlertTriangle size={16} />
-                        Vence em {diffDays} dias (Próximo ao vencimento)
-                      </div>
-                    );
-                  }
-                  return null;
-                })()
-              )}
-            </div>
+            {selectedProduct.checklists?.some(c => c.type === ChecklistItemType.VALIDITY_CHECK) && (
+              <div className={`flex flex-col gap-2 ${
+                !selectedProduct.checklists?.some(c => c.type === ChecklistItemType.VALIDITY_CHECK && c.isChecked)
+                  ? 'opacity-50 pointer-events-none' 
+                  : ''
+              }`}>
+                <label className="text-sm font-medium text-gray-700">Data de Validade</label>
+                <input 
+                  type="date"
+                  className="w-full border rounded-lg p-2 text-sm focus:border-blue-500 outline-none"
+                  value={selectedProduct.validityDate || ''}
+                  onChange={(e) => setSelectedProduct({...selectedProduct, validityDate: e.target.value})}
+                  disabled={!selectedProduct.checklists?.some(c => c.type === ChecklistItemType.VALIDITY_CHECK && c.isChecked)}
+                />
+                {selectedProduct.validityDate && (
+                  (() => {
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    const valDate = new Date(selectedProduct.validityDate);
+                    // Calculate diff in days
+                    const diffTime = valDate.getTime() - today.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays < 0) {
+                      return (
+                        <div className="flex items-center gap-2 text-red-600 bg-red-50 p-2 rounded-lg text-xs font-medium">
+                          <AlertTriangle size={16} />
+                          Produto VENCIDO!
+                        </div>
+                      );
+                    } else if (diffDays <= 30) {
+                      return (
+                        <div className="flex items-center gap-2 text-orange-600 bg-orange-50 p-2 rounded-lg text-xs font-medium">
+                          <AlertTriangle size={16} />
+                          Vence em {diffDays} dias (Próximo ao vencimento)
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()
+                )}
+              </div>
+            )}
 
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-gray-700">Observação</label>
