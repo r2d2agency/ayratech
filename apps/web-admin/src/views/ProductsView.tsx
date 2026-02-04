@@ -146,9 +146,10 @@ const ProductsView: React.FC = () => {
         
         setProductForm(prev => ({ ...prev, analysisPrompt: res.data.description }));
         alert('Prompt gerado com sucesso!');
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error generating prompt', error);
-        alert('Erro ao gerar prompt.');
+        const msg = error.response?.data?.message || error.message || 'Erro ao gerar prompt.';
+        alert(`Erro: ${msg}`);
     } finally {
         setGeneratingPrompt(false);
     }

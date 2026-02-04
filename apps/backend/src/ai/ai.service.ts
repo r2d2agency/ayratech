@@ -82,6 +82,7 @@ export class AiService {
   }
 
   async generateProductPrompt(productId: string, promptId?: string, file?: Express.Multer.File) {
+    this.logger.log(`Gerando prompt para produto ${productId} (PromptID: ${promptId}, File: ${file ? 'Sim' : 'Não'})`);
     let description = '';
     
     try {
