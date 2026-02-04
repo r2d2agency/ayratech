@@ -139,6 +139,32 @@ const DraggableRouteCard = ({ route, onDoubleClick, onDelete, onDuplicate }: any
     zIndex: 1000,
   } : undefined;
 
+  const getStatusColor = () => {
+    switch (status) {
+      case 'CONFIRMED':
+        return 'bg-blue-50 border-blue-200'; // Blue for Scheduled/Confirmed
+      case 'IN_PROGRESS':
+        return 'bg-amber-50 border-amber-200'; // Amber for In Progress
+      case 'COMPLETED':
+        return 'bg-slate-100 border-slate-300 opacity-80'; // Gray for Completed
+      default:
+        return 'bg-white border-slate-200';
+    }
+  };
+
+  const getIconColor = () => {
+    switch (status) {
+      case 'CONFIRMED':
+        return 'bg-blue-200 text-blue-700';
+      case 'IN_PROGRESS':
+        return 'bg-amber-200 text-amber-700';
+      case 'COMPLETED':
+        return 'bg-slate-200 text-slate-600';
+      default:
+        return 'bg-slate-100 text-slate-500';
+    }
+  };
+
   return (
     <div 
       ref={setNodeRef} 
@@ -152,21 +178,11 @@ const DraggableRouteCard = ({ route, onDoubleClick, onDelete, onDuplicate }: any
       }}
       className={`p-3 rounded-xl border transition-all touch-none ${
         isDraggable ? 'cursor-grab active:cursor-grabbing hover:shadow-md' : 'cursor-pointer'
-      } ${
-        route.status === 'CONFIRMED' 
-          ? 'bg-green-50 border-green-200' 
-          : route.status === 'COMPLETED'
-          ? 'bg-emerald-100 border-emerald-300'
-          : 'bg-white border-slate-200'
-      }`}
+      } ${getStatusColor()}`}
     >
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${
-                route.status === 'CONFIRMED' ? 'bg-green-200 text-green-700' : 
-                route.status === 'COMPLETED' ? 'bg-emerald-200 text-emerald-700' :
-                'bg-slate-100 text-slate-500'
-            }`}>
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${getIconColor()}`}>
                 {route.promoter?.name?.substring(0, 2).toUpperCase()}
             </div>
             <p className="text-xs font-bold text-slate-700 truncate max-w-[100px]">{route.promoter?.name}</p>
