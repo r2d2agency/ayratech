@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, MapPinned, Plus, Trash2, CheckCircle, Save, Settings, List, Clock, MoveUp, MoveDown, Copy, FileText, Check, Search, GripVertical, XCircle } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import api from '../api/client';
@@ -123,8 +123,10 @@ const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts
   );
 };
 
-const DraggableRouteCard = ({ route, onClick, onDelete, onDuplicate }: any) => {
-  const isDraggable = route.status !== 'COMPLETED' && route.status !== 'IN_PROGRESS';
+const DraggableRouteCard = ({ route, onDoubleClick, onDelete, onDuplicate }: any) => {
+  const status = route.status?.toUpperCase() || 'DRAFT';
+  const hasStartedItems = route.items?.some((i: any) => !!i.startTime || !!i.checkInTime);
+  const isDraggable = status !== 'COMPLETED' && status !== 'IN_PROGRESS' && !hasStartedItems;
   
   const {attributes, listeners, setNodeRef, transform} = useDraggable({
     id: route.id,
@@ -143,7 +145,11 @@ const DraggableRouteCard = ({ route, onClick, onDelete, onDuplicate }: any) => {
       style={style} 
       {...(isDraggable ? listeners : {})} 
       {...(isDraggable ? attributes : {})}
-      onClick={onClick}
+      onClick={(e) => {
+        if (e.detail === 2) {
+          onDoubleClick(e);
+        }
+      }}
       className={`p-3 rounded-xl border transition-all touch-none ${
         isDraggable ? 'cursor-grab active:cursor-grabbing hover:shadow-md' : 'cursor-pointer'
       } ${
@@ -724,8 +730,14 @@ const RoutesView: React.FC = () => {
     }
   };
 
+  const pointerSensorOptions = useMemo(() => ({
+    activationConstraint: {
+      distance: 8,
+    },
+  }), []);
+
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, pointerSensorOptions),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -916,7 +928,7 @@ const RoutesView: React.FC = () => {
                     <DraggableRouteCard 
                         key={route.id} 
                         route={route} 
-                        onClick={() => handleEditRoute(route)}
+                        onDoubleClick={() => handleEditRoute(route)}
                         onDelete={(e: any, id: string) => handleQuickDelete(e, id)}
                         onDuplicate={(r: any) => {
                            setRouteToDuplicate(r);
