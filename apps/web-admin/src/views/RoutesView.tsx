@@ -7,23 +7,27 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts, products }: any) => {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts, products, disabled }: any) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ 
+      id,
+      disabled
+  });
   
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: disabled ? 0.9 : 1
   };
 
   return (
     <div ref={setNodeRef} style={style} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 group transition-all hover:border-blue-200 mb-4 z-10 relative">
       <div className="flex items-start gap-4">
-        <div className="flex flex-col items-center gap-1 cursor-grab active:cursor-grabbing touch-none" {...attributes} {...listeners}>
+        <div className={`flex flex-col items-center gap-1 touch-none ${disabled ? 'cursor-default opacity-50' : 'cursor-grab active:cursor-grabbing'}`} {...attributes} {...listeners}>
           <div className="h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-black text-sm">
             {index + 1}
           </div>
           <div className="mt-2 text-slate-300 hover:text-slate-500">
-            <GripVertical size={20} />
+            {!disabled && <GripVertical size={20} />}
           </div>
         </div>
 
@@ -137,11 +141,11 @@ const DraggableRouteCard = ({ route, onClick, onDelete, onDuplicate }: any) => {
     <div 
       ref={setNodeRef} 
       style={style} 
-      {...listeners} 
-      {...attributes}
+      {...(isDraggable ? listeners : {})} 
+      {...(isDraggable ? attributes : {})}
       onClick={onClick}
       className={`p-3 rounded-xl border transition-all touch-none ${
-        isDraggable ? 'cursor-grab active:cursor-grabbing hover:shadow-md' : 'cursor-default opacity-90'
+        isDraggable ? 'cursor-grab active:cursor-grabbing hover:shadow-md' : 'cursor-pointer'
       } ${
         route.status === 'CONFIRMED' 
           ? 'bg-green-50 border-green-200' 
@@ -728,6 +732,12 @@ const RoutesView: React.FC = () => {
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
+    // Block reordering if route is started/completed and not admin (or always block if that's preferred, but user said admin can edit)
+    // Actually, user said "admin pode editar", so we allow if admin.
+    if (!isAdmin && (routeStatus === 'COMPLETED' || routeStatus === 'IN_PROGRESS')) {
+        return;
+    }
+
     const { active, over } = event;
     if (active.id !== over?.id) {
       setRouteItems((items) => {
@@ -748,6 +758,11 @@ const RoutesView: React.FC = () => {
 
     const route = weekRoutes.find(r => r.id === routeId);
     if (!route || route.date === newDate) return;
+
+    if (route.status === 'COMPLETED' || route.status === 'IN_PROGRESS') {
+        alert('Não é possível mover uma rota que já foi iniciada ou concluída.');
+        return;
+    }
 
     // Optimistic Update
     const originalRoutes = [...weekRoutes];
@@ -1082,6 +1097,7 @@ const RoutesView: React.FC = () => {
                           onUpdate={handleUpdateItem}
                           onOpenProducts={handleOpenProductModal}
                           products={products}
+                          disabled={!isAdmin && (routeStatus === 'COMPLETED' || routeStatus === 'IN_PROGRESS')}
                         />
                       ))}
                     </SortableContext>

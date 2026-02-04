@@ -1,11 +1,29 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus, UseGuards, Req } from '@nestjs/common';
 import { WorkSchedulesService } from './work-schedules.service';
 import { CreateWorkScheduleDto, CreateWorkScheduleExceptionDto } from './dto/create-work-schedule.dto';
+import { CreateAccessExtensionDto } from './dto/create-access-extension.dto';
 import { UpdateWorkScheduleDto } from './dto/update-work-schedule.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('work-schedules')
 export class WorkSchedulesController {
   constructor(private readonly workSchedulesService: WorkSchedulesService) {}
+
+  @UseGuards(JwtAuthGuard)
+  @Get('access-status')
+  async checkAccessStatus(@Req() req: any) {
+      if (!req.user?.employee?.id) {
+          throw new HttpException('User not linked to employee', HttpStatus.BAD_REQUEST);
+      }
+      return this.workSchedulesService.checkAccessStatus(req.user.employee.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('extensions')
+  async createExtension(@Body() dto: CreateAccessExtensionDto, @Req() req: any) {
+      const userId = req.user.userId;
+      return this.workSchedulesService.createAccessExtension(dto, userId);
+  }
 
   @Post()
   async create(@Body() createWorkScheduleDto: CreateWorkScheduleDto) {

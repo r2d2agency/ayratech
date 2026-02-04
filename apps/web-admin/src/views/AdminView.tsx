@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useBranding } from '../context/BrandingContext';
-import { Save, Shield, Palette, Users, Trash2, Edit } from 'lucide-react';
+import { Save, Shield, Palette, Users, Trash2, Edit, Upload } from 'lucide-react';
 import SectionHeader from '../components/SectionHeader';
 import api from '../api/client';
 import { getImageUrl } from '../utils/image';
@@ -11,6 +11,14 @@ const AdminView: React.FC = () => {
 
   // Local state for branding form
   const [brandingForm, setBrandingForm] = useState(settings);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [faviconFile, setFaviconFile] = useState<File | null>(null);
+  const [pwaIconFile, setPwaIconFile] = useState<File | null>(null);
+  const [siteIconFile, setSiteIconFile] = useState<File | null>(null);
+
+  useEffect(() => {
+      setBrandingForm(settings);
+  }, [settings]);
 
   // Users state
   const [users, setUsers] = useState<any[]>([]);
@@ -130,10 +138,36 @@ const AdminView: React.FC = () => {
     }
   };
 
-  const handleBrandingSave = (e: React.FormEvent) => {
+  const handleBrandingSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateSettings(brandingForm);
-    alert('Configurações de Branding salvas!');
+    
+    try {
+        const formData = new FormData();
+        formData.append('companyName', brandingForm.companyName);
+        formData.append('primaryColor', brandingForm.primaryColor);
+        if (brandingForm.logoUrl) formData.append('logoUrl', brandingForm.logoUrl);
+
+        if (logoFile) formData.append('logo', logoFile);
+        if (faviconFile) formData.append('favicon', faviconFile);
+        if (pwaIconFile) formData.append('pwaIcon', pwaIconFile);
+        if (siteIconFile) formData.append('siteIcon', siteIconFile);
+
+        const response = await api.patch('/settings', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        updateSettings(response.data);
+        alert('Configurações de Branding salvas!');
+        
+        // Clear file inputs
+        setLogoFile(null);
+        setFaviconFile(null);
+        setPwaIconFile(null);
+        setSiteIconFile(null);
+    } catch (error) {
+        console.error('Erro ao salvar branding:', error);
+        alert('Erro ao salvar configurações.');
+    }
   };
 
   const togglePermission = (roleId: string, permission: string) => {
@@ -372,23 +406,120 @@ const AdminView: React.FC = () => {
             </div>
 
             <div>
-              <label className="text-[11px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Logo URL</label>
-              <input 
-                type="text" 
-                value={brandingForm.logoUrl}
-                onChange={e => setBrandingForm({...brandingForm, logoUrl: e.target.value})}
-                className="w-full h-12 px-4 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800"
-                placeholder="https://..."
-              />
-              {brandingForm.logoUrl && (
-                <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100 inline-block">
-                  <img 
-                    src={getImageUrl(brandingForm.logoUrl)} 
-                    alt="Preview" 
-                    className="h-12 object-contain" 
-                  />
+              <label className="text-[11px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Logo da Marca</label>
+              <div className="flex flex-col gap-4">
+                  {brandingForm.logoUrl && (
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 w-fit">
+                      <img 
+                        src={logoFile ? URL.createObjectURL(logoFile) : getImageUrl(brandingForm.logoUrl)} 
+                        alt="Logo Preview" 
+                        className="h-12 object-contain" 
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg cursor-pointer transition-colors font-bold text-sm">
+                          <Upload size={16} />
+                          Escolher Arquivo
+                          <input 
+                              type="file" 
+                              accept="image/*"
+                              className="hidden"
+                              onChange={e => e.target.files && setLogoFile(e.target.files[0])}
+                          />
+                      </label>
+                      {logoFile && <span className="text-sm text-slate-500">{logoFile.name}</span>}
+                  </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Favicon */}
+                <div>
+                    <label className="text-[11px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Favicon (Site)</label>
+                    <div className="flex flex-col gap-4">
+                        {brandingForm.faviconUrl && (
+                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 w-fit">
+                            <img 
+                                src={faviconFile ? URL.createObjectURL(faviconFile) : getImageUrl(brandingForm.faviconUrl)} 
+                                alt="Favicon Preview" 
+                                className="w-8 h-8 object-contain" 
+                            />
+                            </div>
+                        )}
+                        <div className="flex items-center gap-4">
+                            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg cursor-pointer transition-colors font-bold text-sm">
+                                <Upload size={16} />
+                                Arquivo
+                                <input 
+                                    type="file" 
+                                    accept="image/x-icon,image/png"
+                                    className="hidden"
+                                    onChange={e => e.target.files && setFaviconFile(e.target.files[0])}
+                                />
+                            </label>
+                            {faviconFile && <span className="text-sm text-slate-500 truncate max-w-[100px]">{faviconFile.name}</span>}
+                        </div>
+                    </div>
                 </div>
-              )}
+
+                {/* PWA Icon */}
+                <div>
+                    <label className="text-[11px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Ícone App (PWA)</label>
+                    <div className="flex flex-col gap-4">
+                        {brandingForm.pwaIconUrl && (
+                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 w-fit">
+                            <img 
+                                src={pwaIconFile ? URL.createObjectURL(pwaIconFile) : getImageUrl(brandingForm.pwaIconUrl)} 
+                                alt="PWA Icon Preview" 
+                                className="w-12 h-12 object-contain rounded-lg" 
+                            />
+                            </div>
+                        )}
+                        <div className="flex items-center gap-4">
+                            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg cursor-pointer transition-colors font-bold text-sm">
+                                <Upload size={16} />
+                                Arquivo
+                                <input 
+                                    type="file" 
+                                    accept="image/png"
+                                    className="hidden"
+                                    onChange={e => e.target.files && setPwaIconFile(e.target.files[0])}
+                                />
+                            </label>
+                            {pwaIconFile && <span className="text-sm text-slate-500 truncate max-w-[100px]">{pwaIconFile.name}</span>}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Site Icon */}
+                <div>
+                    <label className="text-[11px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Ícone Site (Header)</label>
+                    <div className="flex flex-col gap-4">
+                        {brandingForm.siteIconUrl && (
+                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 w-fit">
+                            <img 
+                                src={siteIconFile ? URL.createObjectURL(siteIconFile) : getImageUrl(brandingForm.siteIconUrl)} 
+                                alt="Site Icon Preview" 
+                                className="w-12 h-12 object-contain" 
+                            />
+                            </div>
+                        )}
+                        <div className="flex items-center gap-4">
+                            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg cursor-pointer transition-colors font-bold text-sm">
+                                <Upload size={16} />
+                                Arquivo
+                                <input 
+                                    type="file" 
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={e => e.target.files && setSiteIconFile(e.target.files[0])}
+                                />
+                            </label>
+                            {siteIconFile && <span className="text-sm text-slate-500 truncate max-w-[100px]">{siteIconFile.name}</span>}
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div className="pt-6 border-t border-slate-100 flex justify-end">

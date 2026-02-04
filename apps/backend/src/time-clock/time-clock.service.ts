@@ -131,6 +131,27 @@ export class TimeClockService {
       if (eventData.latitude) eventData.latitude = Number(eventData.latitude);
       if (eventData.longitude) eventData.longitude = Number(eventData.longitude);
 
+      // Check daily limit (4 punches)
+      // Only for non-manual entries (app usage)
+      if (!eventData['isManual']) {
+        const date = new Date(timestamp);
+        const todayStart = new Date(date);
+        todayStart.setHours(0, 0, 0, 0);
+        const todayEnd = new Date(date);
+        todayEnd.setHours(23, 59, 59, 999);
+
+        const todayCount = await this.eventsRepository.count({
+          where: {
+            employee: { id: employeeId },
+            timestamp: Between(todayStart, todayEnd)
+          }
+        });
+
+        if (todayCount >= 4) {
+          throw new BadRequestException('Limite de 4 batidas diárias atingido.');
+        }
+      }
+
       console.log(`Saving event for employee: ${employeeId}`);
 
       // Use QueryBuilder to force insertion, bypassing repository/entity metadata constraints

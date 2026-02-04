@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, ConflictException, InternalServerErrorException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product } from '../entities/product.entity';
@@ -18,7 +18,7 @@ export class ProductsService {
       
       // Basic validation
       if (!clientId) {
-        throw new InternalServerErrorException('Client ID is required');
+        throw new BadRequestException('Client ID is required');
       }
 
       const product = this.productsRepository.create({
@@ -39,6 +39,9 @@ export class ProductsService {
           throw new ConflictException('Já existe um produto cadastrado com este Nome.');
         }
         throw new ConflictException('Já existe um produto cadastrado com este SKU, Nome ou Código de Barras.');
+      }
+      if (error.code === '23503') {
+        throw new BadRequestException('Cliente, Marca ou Categoria inválidos ou não encontrados.');
       }
       console.error('Error creating product:', error);
       throw error;
@@ -87,8 +90,11 @@ export class ProductsService {
         }
         throw new ConflictException('Já existe um produto cadastrado com este SKU, Nome ou Código de Barras.');
       }
+      if (error.code === '23503') {
+        throw new BadRequestException('Cliente, Marca ou Categoria inválidos ou não encontrados.');
+      }
       console.error('Error updating product:', error);
-      throw error;
+      throw new InternalServerErrorException('Erro ao atualizar produto: ' + error.message);
     }
   }
 

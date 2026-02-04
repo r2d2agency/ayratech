@@ -1,11 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository, IsNull, LessThanOrEqual } from 'typeorm';
 import { WorkSchedule } from './entities/work-schedule.entity';
 import { WorkScheduleDay } from './entities/work-schedule-day.entity';
 import { WorkScheduleException } from './entities/work-schedule-exception.entity';
+import { AccessExtension } from './entities/access-extension.entity';
 import { Employee } from '../employees/entities/employee.entity';
 import { CreateWorkScheduleDto, CreateWorkScheduleExceptionDto } from './dto/create-work-schedule.dto';
+import { CreateAccessExtensionDto } from './dto/create-access-extension.dto';
 import { UpdateWorkScheduleDto } from './dto/update-work-schedule.dto';
 
 @Injectable()
@@ -17,9 +19,127 @@ export class WorkSchedulesService {
     private daysRepository: Repository<WorkScheduleDay>,
     @InjectRepository(WorkScheduleException)
     private exceptionsRepository: Repository<WorkScheduleException>,
+    @InjectRepository(AccessExtension)
+    private accessExtensionsRepository: Repository<AccessExtension>,
     @InjectRepository(Employee)
     private employeesRepository: Repository<Employee>,
   ) {}
+
+  async createAccessExtension(dto: CreateAccessExtensionDto, grantedById: string) {
+    const extension = this.accessExtensionsRepository.create({
+      ...dto,
+      grantedById
+    });
+    return this.accessExtensionsRepository.save(extension);
+  }
+
+  async checkAccessStatus(employeeId: string) {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('pt-BR').split('/').reverse().join('-'); // YYYY-MM-DD
+    const dayOfWeek = now.getDay(); // 0-6
+    const currentTime = now.toTimeString().slice(0, 5); // HH:MM
+
+    // Find active schedule
+    // We get the latest schedule that started before or today
+    const schedules = await this.schedulesRepository.find({
+      where: {
+        employeeId,
+        validFrom: LessThanOrEqual(new Date(dateStr) as any),
+      },
+      relations: ['days'],
+      order: { validFrom: 'DESC' },
+      take: 1
+    });
+    
+    const schedule = schedules[0];
+
+    // Check if expired
+    if (schedule && schedule.validTo) {
+       const validToDate = new Date(schedule.validTo);
+       const todayDate = new Date(dateStr);
+       if (validToDate < todayDate) {
+           return { allowed: false, reason: 'schedule_expired' };
+       }
+    }
+
+    if (!schedule) {
+       // No schedule found = assume allowed or blocked? 
+       // If strict mode, blocked. But maybe default is allowed for legacy?
+       // User said "horario de gestao do app qe precisa ser obedecida".
+       // If no schedule, maybe 8-18? Or block.
+       // Let's block if no schedule is defined, as it implies "compliance required".
+       return { allowed: false, reason: 'no_schedule_defined' };
+    }
+
+    const scheduleDay = schedule.days.find(d => d.dayOfWeek === dayOfWeek);
+
+    // Check extension
+    const extension = await this.accessExtensionsRepository.findOne({
+      where: {
+        employeeId,
+        date: dateStr
+      },
+      order: { createdAt: 'DESC' }
+    });
+
+    const getMinutes = (t: string) => {
+        if (!t) return 0;
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + m;
+    };
+    const currentMin = getMinutes(currentTime);
+
+    // If day is not active (day off)
+    if (!scheduleDay || !scheduleDay.active) {
+        // If extension exists on day off, allow access up to limit
+        if (extension) {
+            const endMin = getMinutes(extension.extendedEndTime);
+             if (currentMin <= endMin) {
+                return { allowed: true, reason: 'extension_day_off', limit: extension.extendedEndTime };
+            }
+        }
+        return { allowed: false, reason: 'day_off' };
+    }
+
+    // Normal working day
+    const startMin = getMinutes(scheduleDay.startTime);
+    let endMin = getMinutes(scheduleDay.endTime);
+    const tolerance = scheduleDay.toleranceMinutes || 0;
+
+    // Apply extension
+    if (extension && getMinutes(extension.extendedEndTime) > endMin) {
+        endMin = getMinutes(extension.extendedEndTime);
+    }
+
+    // Logic: Allow access 30 mins before start (for preparation)
+    if (currentMin < startMin - 30) {
+         return { 
+             allowed: false, 
+             reason: 'too_early', 
+             nextStart: scheduleDay.startTime 
+         };
+    }
+
+    // Logic: Cut off after End + Tolerance
+    if (currentMin > endMin + tolerance) {
+         return { 
+             allowed: false, 
+             reason: 'shift_ended', 
+             end: extension ? extension.extendedEndTime : scheduleDay.endTime,
+             isExtension: !!extension
+         };
+    }
+
+    return { 
+        allowed: true, 
+        schedule: {
+            start: scheduleDay.startTime,
+            end: scheduleDay.endTime,
+            tolerance: scheduleDay.tolerance
+        },
+        extension
+    };
+  }
 
   async create(createWorkScheduleDto: CreateWorkScheduleDto) {
     console.log('Creating work schedule with payload:', JSON.stringify(createWorkScheduleDto));

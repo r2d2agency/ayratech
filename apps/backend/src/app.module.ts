@@ -35,6 +35,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 import { AiModule } from './ai/ai.module';
 import { CompetitorsModule } from './competitors/competitors.module';
+import { SettingsModule } from './settings/settings.module';
 import { UPLOAD_ROOT } from './config/upload.config';
 
 @Module({
@@ -102,6 +103,7 @@ import { UPLOAD_ROOT } from './config/upload.config';
     ChecklistsModule,
     AiModule,
     CompetitorsModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [
