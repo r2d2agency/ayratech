@@ -5,7 +5,6 @@ import { CreateNotificationDto } from './dto/create-notification.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('notifications')
-@UseGuards(JwtAuthGuard)
 export class NotificationsController {
   constructor(
     private readonly notificationsService: NotificationsService,
@@ -18,21 +17,25 @@ export class NotificationsController {
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   create(@Body() createNotificationDto: CreateNotificationDto) {
     return this.notificationsService.create(createNotificationDto);
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   findAll(@Request() req) {
     return this.notificationsService.findAllForUser(req.user.userId);
   }
 
   @Patch(':id/read')
+  @UseGuards(JwtAuthGuard)
   markAsRead(@Param('id') id: string) {
     return this.notificationsService.markAsRead(id);
   }
 
   @Patch('read-all')
+  @UseGuards(JwtAuthGuard)
   markAllAsRead(@Request() req) {
       return this.notificationsService.markAllAsRead(req.user.userId);
   }

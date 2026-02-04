@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, InternalServerErrorException, HttpException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AiConfig } from './entities/ai-config.entity';
@@ -36,6 +36,10 @@ export class AiService {
   }
 
   async analyzeBatch(ids: string[]) {
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return [];
+    }
+
     const items = await this.routeItemProductRepository.find({
       where: { id: In(ids) },
       relations: ['product']
@@ -44,6 +48,11 @@ export class AiService {
     const results = [];
 
     for (const item of items) {
+      if (!item.product) {
+        results.push({ id: item.id, status: 'SKIPPED', reason: 'Produto não encontrado' });
+        continue;
+      }
+
       if (!item.product.analysisPrompt) {
         results.push({ id: item.id, status: 'SKIPPED', reason: 'Produto sem prompt' });
         continue;
@@ -77,7 +86,7 @@ export class AiService {
     
     try {
         const config = await this.getActiveConfig();
-        if (!config) throw new Error('IA não configurada no sistema. Acesse Configurações > IA.');
+        if (!config) throw new BadRequestException('IA não configurada no sistema. Acesse Configurações > IA.');
 
         let instruction = 'Descreva detalhadamente este produto, incluindo marca, tipo de embalagem, cores principais, textos visíveis e características chave para identificação visual. Responda em português.';
 
@@ -92,8 +101,8 @@ export class AiService {
           description = await this.processImageBuffer(config, file.buffer, file.mimetype, instruction);
         } else {
           const product = await this.productRepository.findOne({ where: { id: productId } });
-          if (!product) throw new Error('Produto não encontrado');
-          if (!product.referenceImageUrl) throw new Error('Produto sem imagem de referência para analisar');
+          if (!product) throw new NotFoundException('Produto não encontrado');
+          if (!product.referenceImageUrl) throw new BadRequestException('Produto sem imagem de referência para analisar');
           
           description = await this.processImage(config, product.referenceImageUrl, instruction);
           
@@ -105,7 +114,10 @@ export class AiService {
         return { description };
     } catch (error) {
         this.logger.error(`Erro ao gerar prompt do produto: ${error.message}`, error);
-        throw error; // Let the filter handle it, but logged with context
+        if (error instanceof HttpException) {
+            throw error;
+        }
+        throw new InternalServerErrorException(`Erro ao processar solicitação de IA: ${error.message}`);
     }
   }
 
@@ -149,7 +161,7 @@ export class AiService {
 
   async updatePrompt(id: string, data: any) {
     const prompt = await this.aiPromptRepository.findOne({ where: { id } });
-    if (!prompt) throw new Error('Prompt não encontrado');
+    if (!prompt) throw new NotFoundException('Prompt não encontrado');
     Object.assign(prompt, data);
     return this.aiPromptRepository.save(prompt);
   }
@@ -168,7 +180,7 @@ export class AiService {
 
   async generateDescription(imagePath: string): Promise<string> {
     const config = await this.getActiveConfig();
-    if (!config) throw new Error('IA não configurada.');
+    if (!config) throw new BadRequestException('IA não configurada.');
 
     const prompt = 'Descreva detalhadamente este produto, incluindo marca, tipo de embalagem, cores principais, textos visíveis e características chave para identificação visual. Responda em português.';
     
@@ -177,7 +189,7 @@ export class AiService {
 
   async verifyImage(imagePath: string, referenceDescription: string): Promise<{ status: string; observation: string }> {
     const config = await this.getActiveConfig();
-    if (!config) throw new Error('IA não configurada.');
+    if (!config) throw new BadRequestException('IA não configurada.');
 
     const prompt = `
       Você é um assistente de auditoria de varejo. 
@@ -247,57 +259,73 @@ export class AiService {
              // Try one more: maybe it's in uploads but path was absolute /var/www/...
              // If we can't find it, log and throw
              this.logger.warn(`Image not found at ${fullPath} or ${altPath}. Original: ${imagePath}`);
-             throw new Error(`Imagem não encontrada: ${relativePath}`);
+             throw new NotFoundException(`Imagem não encontrada: ${relativePath}`);
          }
     }
 
-    const imageBuffer = fs.readFileSync(fullPath);
-    const mimeType = this.getMimeType(fullPath);
-    
-    return this.processImageBuffer(config, imageBuffer, mimeType, promptText);
+    try {
+        const imageBuffer = fs.readFileSync(fullPath);
+        const mimeType = this.getMimeType(fullPath);
+        
+        return await this.processImageBuffer(config, imageBuffer, mimeType, promptText);
+    } catch (e) {
+        if (e instanceof HttpException) throw e;
+        this.logger.error(`Erro ao ler/processar imagem ${fullPath}`, e);
+        throw new BadRequestException(`Erro ao ler arquivo de imagem: ${e.message}`);
+    }
   }
 
   private async processImageBuffer(config: AiConfig, imageBuffer: Buffer, mimeType: string, promptText: string): Promise<string> {
     const base64Image = imageBuffer.toString('base64');
 
     if (config.provider === 'gemini') {
-      const genAI = new GoogleGenerativeAI(config.apiKey);
-      const model = genAI.getGenerativeModel({ model: config.model || 'gemini-1.5-flash' });
-      
-      const result = await model.generateContent([
-        promptText,
-        {
-          inlineData: {
-            data: base64Image,
-            mimeType: mimeType
-          }
-        }
-      ]);
-      const response = await result.response;
-      return response.text();
-    } else if (config.provider === 'openai') {
-      const openai = new OpenAI({ apiKey: config.apiKey });
-      const response = await openai.chat.completions.create({
-        model: config.model || 'gpt-4-vision-preview',
-        messages: [
+      try {
+        const genAI = new GoogleGenerativeAI(config.apiKey);
+        const model = genAI.getGenerativeModel({ model: config.model || 'gemini-1.5-flash' });
+        
+        const result = await model.generateContent([
+          promptText,
           {
-            role: 'user',
-            content: [
-              { type: 'text', text: promptText },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:${mimeType};base64,${base64Image}`,
+            inlineData: {
+              data: base64Image,
+              mimeType: mimeType
+            }
+          }
+        ]);
+        const response = await result.response;
+        return response.text();
+      } catch (error) {
+        this.logger.error('Gemini API Error', error);
+        throw new BadRequestException(`Erro ao processar imagem com Gemini: ${error.message}`);
+      }
+    } else if (config.provider === 'openai') {
+      try {
+        const openai = new OpenAI({ apiKey: config.apiKey });
+        const response = await openai.chat.completions.create({
+          model: config.model || 'gpt-4-vision-preview',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: promptText },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:${mimeType};base64,${base64Image}`,
+                  },
                 },
-              },
-            ],
-          },
-        ],
-      });
-      return response.choices[0].message.content || '';
+              ],
+            },
+          ],
+        });
+        return response.choices[0].message.content || '';
+      } catch (error) {
+        this.logger.error('OpenAI API Error', error);
+        throw new BadRequestException(`Erro ao processar imagem com OpenAI: ${error.message}`);
+      }
     }
     
-    throw new Error('Provedor desconhecido');
+    throw new BadRequestException(`Provedor de IA desconhecido: ${config.provider}`);
   }
 
   private getMimeType(filePath: string): string {

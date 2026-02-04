@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Wand2, Check, XCircle } from 'lucide-react';
+import { Wand2, Check, XCircle, Square, CheckSquare, AlertTriangle } from 'lucide-react';
 import api from '../api/client';
 import { getImageUrl } from '../utils/image';
 
 const PhotoProcessingView: React.FC = () => {
   const [items, setItems] = useState<any[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
 
@@ -17,6 +18,9 @@ const PhotoProcessingView: React.FC = () => {
     try {
       const res = await api.get('/ai/pending');
       setItems(res.data);
+      // Automatically select all items that have a prompt
+      const validIds = new Set(res.data.filter((i: any) => i.product?.analysisPrompt).map((i: any) => i.id));
+      setSelectedIds(validIds as Set<string>);
     } catch (error) {
       console.error('Error fetching pending items', error);
     } finally {
@@ -24,9 +28,30 @@ const PhotoProcessingView: React.FC = () => {
     }
   };
 
+  const toggleSelection = (id: string) => {
+    const newSelection = new Set(selectedIds);
+    if (newSelection.has(id)) {
+      newSelection.delete(id);
+    } else {
+      newSelection.add(id);
+    }
+    setSelectedIds(newSelection);
+  };
+
+  const toggleSelectAll = () => {
+    const validItems = items.filter(i => i.product?.analysisPrompt);
+    if (selectedIds.size === validItems.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(validItems.map(i => i.id)));
+    }
+  };
+
   const handleAnalyzeBatch = async () => {
+    if (selectedIds.size === 0) return;
+    
     setProcessing(true);
-    const ids = items.map(i => i.id);
+    const ids = Array.from(selectedIds);
     try {
       const res = await api.post('/ai/analyze-batch', { ids });
       // Update local state based on results
@@ -40,6 +65,11 @@ const PhotoProcessingView: React.FC = () => {
         return item;
       }));
       
+      // Clear processed from selection
+      const newSelection = new Set(selectedIds);
+      results.forEach((r: any) => newSelection.delete(r.id));
+      setSelectedIds(newSelection);
+      
       alert('Análise concluída!');
     } catch (error) {
       alert('Erro na análise em lote.');
@@ -48,6 +78,8 @@ const PhotoProcessingView: React.FC = () => {
     }
   };
 
+  const validItemsCount = items.filter(i => i.product?.analysisPrompt).length;
+
   return (
     <div className="p-8 space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -55,14 +87,27 @@ const PhotoProcessingView: React.FC = () => {
            <h1 className="text-4xl font-black text-slate-900 tracking-tight">Centro de Processamento de Fotos (IA)</h1>
            <p className="text-slate-500 font-medium text-lg">Validação automática de execução no PDV.</p>
         </div>
-        <button 
-          onClick={handleAnalyzeBatch}
-          disabled={processing || items.length === 0}
-          className="flex items-center gap-2 bg-purple-600 text-white px-8 py-3 rounded-2xl font-black shadow-xl shadow-purple-200 hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100"
-        >
-          <Wand2 size={20} />
-          {processing ? 'Processando...' : 'Analisar Lote'}
-        </button>
+        <div className="flex items-center gap-4">
+            <button
+                onClick={toggleSelectAll}
+                className="text-sm font-bold text-slate-500 hover:text-purple-600 flex items-center gap-2"
+            >
+                {selectedIds.size > 0 && selectedIds.size === validItemsCount ? (
+                    <CheckSquare size={20} className="text-purple-600" />
+                ) : (
+                    <Square size={20} />
+                )}
+                Selecionar Todos ({validItemsCount})
+            </button>
+            <button 
+              onClick={handleAnalyzeBatch}
+              disabled={processing || selectedIds.size === 0}
+              className="flex items-center gap-2 bg-purple-600 text-white px-8 py-3 rounded-2xl font-black shadow-xl shadow-purple-200 hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100"
+            >
+              <Wand2 size={20} />
+              {processing ? 'Processando...' : `Analisar Selecionados (${selectedIds.size})`}
+            </button>
+        </div>
       </div>
 
       {items.length === 0 && !loading && (
@@ -72,14 +117,39 @@ const PhotoProcessingView: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {items.map(item => (
-            <div key={item.id} className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all">
-                <div className="grid grid-cols-2 h-48">
+        {items.map(item => {
+            const hasPrompt = !!item.product?.analysisPrompt;
+            const isSelected = selectedIds.has(item.id);
+            
+            return (
+            <div 
+                key={item.id} 
+                className={`relative bg-white rounded-3xl border overflow-hidden shadow-sm transition-all ${
+                    !hasPrompt ? 'opacity-60 border-slate-100' : 
+                    isSelected ? 'border-purple-500 ring-2 ring-purple-100 shadow-md' : 'border-slate-200 hover:shadow-md'
+                }`}
+                onClick={() => hasPrompt && toggleSelection(item.id)}
+            >
+                {/* Selection Overlay/Checkbox */}
+                <div className="absolute top-3 right-3 z-20">
+                    {hasPrompt ? (
+                        <div className={`rounded-lg p-1 transition-all ${isSelected ? 'bg-purple-600 text-white' : 'bg-white/80 text-slate-400 hover:text-purple-600'}`}>
+                            {isSelected ? <CheckSquare size={24} /> : <Square size={24} />}
+                        </div>
+                    ) : (
+                        <div className="bg-orange-100 text-orange-600 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1">
+                            <AlertTriangle size={12} />
+                            SEM PROMPT
+                        </div>
+                    )}
+                </div>
+
+                <div className="grid grid-cols-2 h-48 pointer-events-none">
                     <div className="relative border-r border-slate-100 group">
                         <span className="absolute top-2 left-2 bg-black/50 text-white text-[10px] font-bold px-2 py-1 rounded-full z-10 backdrop-blur-md">Referência</span>
                         <img 
                             src={getImageUrl(item.product?.referenceImageUrl || item.product?.image)} 
-                            className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500" 
+                            className="w-full h-full object-cover" 
                             alt="Reference" 
                         />
                     </div>
@@ -87,7 +157,7 @@ const PhotoProcessingView: React.FC = () => {
                         <span className="absolute top-2 left-2 bg-blue-500/80 text-white text-[10px] font-bold px-2 py-1 rounded-full z-10 backdrop-blur-md">PDV</span>
                         <img 
                             src={getImageUrl(item.photos?.[0])} 
-                            className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500" 
+                            className="w-full h-full object-cover" 
                             alt="PDV" 
                         />
                     </div>
@@ -109,12 +179,12 @@ const PhotoProcessingView: React.FC = () => {
                         </div>
                     ) : (
                          <div className="text-xs p-3 rounded-xl bg-slate-50 text-slate-400 border border-slate-100 italic">
-                            Aguardando análise...
+                            {hasPrompt ? 'Aguardando análise...' : 'Configure o prompt do produto para analisar.'}
                         </div>
                     )}
                 </div>
             </div>
-        ))}
+        )})}
       </div>
     </div>
   );
