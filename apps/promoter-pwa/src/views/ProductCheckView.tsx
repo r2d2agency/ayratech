@@ -273,6 +273,19 @@ const ProductCheckView: React.FC = () => {
     setSelectedProduct({ ...selectedProduct, checklists: updatedChecklists });
   };
 
+  const handleChecklistValueChange = (checklistId: string, value: string) => {
+    if (!selectedProduct || !selectedProduct.checklists) return;
+    
+    const updatedChecklists = selectedProduct.checklists.map(c => {
+      if (c.id === checklistId) {
+        return { ...c, value };
+      }
+      return c;
+    });
+
+    setSelectedProduct({ ...selectedProduct, checklists: updatedChecklists });
+  };
+
   const handleModalSave = async () => {
     if (selectedProduct) {
       setSaving(true);
@@ -542,7 +555,7 @@ const ProductCheckView: React.FC = () => {
                         <span className="block text-xs text-blue-600 mt-0.5">Requer foto</span>
                       )}
                       {item.type === ChecklistItemType.PRICE_CHECK && (
-                        <div className="mt-2" onClick={(e) => e.preventDefault()}>
+                        <div className="mt-2" onClick={(e) => e.stopPropagation()}>
                           <span className="block text-xs text-blue-600 mb-1">
                               Preço {item.competitorName ? `(${item.competitorName})` : ''}
                           </span>
@@ -560,7 +573,7 @@ const ProductCheckView: React.FC = () => {
                         </div>
                       )}
                       {item.type === ChecklistItemType.STOCK_COUNT && (
-                        <div className="mt-2" onClick={(e) => e.preventDefault()}>
+                        <div className="mt-2" onClick={(e) => e.stopPropagation()}>
                           <span className="block text-xs text-blue-600 mb-1">
                               Contagem de Estoque
                           </span>
