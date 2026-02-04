@@ -167,10 +167,11 @@ const DraggableRouteCard = ({ route, onClick, onDelete, onDuplicate }: any) => {
                     e.stopPropagation();
                     onDuplicate(route);
                 }}
-                className="p-1 hover:bg-blue-100 rounded-full text-blue-500 transition-colors"
+                className="flex items-center gap-1 px-2 py-1 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
                 title="Duplicar Rota"
             >
-                <Copy size={12} />
+                <Copy size={10} />
+                <span className="text-[10px] font-bold">Duplicar</span>
             </button>
             <button 
                 onClick={(e) => {

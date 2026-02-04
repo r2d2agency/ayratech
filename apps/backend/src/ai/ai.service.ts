@@ -29,7 +29,7 @@ export class AiService {
   async getPendingItems() {
     return this.routeItemProductRepository.find({
       where: { aiStatus: 'UNCHECKED' },
-      relations: ['product', 'routeItem', 'routeItem.route', 'routeItem.route.user'],
+      relations: ['product', 'routeItem', 'routeItem.route', 'routeItem.route.promoter'],
       take: 50,
       order: { checkInTime: 'DESC' }
     });

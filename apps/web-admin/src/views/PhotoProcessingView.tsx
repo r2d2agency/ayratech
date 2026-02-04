@@ -98,7 +98,7 @@ const PhotoProcessingView: React.FC = () => {
                         <StatusBadge status={item.aiStatus} />
                     </div>
                     <p className="text-xs text-slate-500 mb-3 flex items-center gap-1">
-                        <span className="font-bold">{item.routeItem?.route?.user?.name || 'Promotor'}</span>
+                        <span className="font-bold">{item.routeItem?.route?.promoter?.fullName || 'Promotor'}</span>
                         <span>•</span>
                         <span>{item.checkInTime ? new Date(item.checkInTime).toLocaleDateString() : '-'}</span>
                     </p>
