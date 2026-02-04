@@ -74,33 +74,39 @@ export class AiService {
 
   async generateProductPrompt(productId: string, promptId?: string, file?: Express.Multer.File) {
     let description = '';
-    const config = await this.getActiveConfig();
-    if (!config) throw new Error('IA não configurada.');
-
-    let instruction = 'Descreva detalhadamente este produto, incluindo marca, tipo de embalagem, cores principais, textos visíveis e características chave para identificação visual. Responda em português.';
-
-    if (promptId) {
-        const aiPrompt = await this.aiPromptRepository.findOne({ where: { id: promptId } });
-        if (aiPrompt) {
-            instruction = aiPrompt.content;
-        }
-    }
-
-    if (file) {
-      description = await this.processImageBuffer(config, file.buffer, file.mimetype, instruction);
-    } else {
-      const product = await this.productRepository.findOne({ where: { id: productId } });
-      if (!product) throw new Error('Produto não encontrado');
-      if (!product.referenceImageUrl) throw new Error('Produto sem imagem de referência');
-      
-      description = await this.processImage(config, product.referenceImageUrl, instruction);
-      
-      // Update product with generated prompt
-      product.analysisPrompt = description;
-      await this.productRepository.save(product);
-    }
     
-    return { description };
+    try {
+        const config = await this.getActiveConfig();
+        if (!config) throw new Error('IA não configurada no sistema. Acesse Configurações > IA.');
+
+        let instruction = 'Descreva detalhadamente este produto, incluindo marca, tipo de embalagem, cores principais, textos visíveis e características chave para identificação visual. Responda em português.';
+
+        if (promptId) {
+            const aiPrompt = await this.aiPromptRepository.findOne({ where: { id: promptId } });
+            if (aiPrompt) {
+                instruction = aiPrompt.content;
+            }
+        }
+
+        if (file) {
+          description = await this.processImageBuffer(config, file.buffer, file.mimetype, instruction);
+        } else {
+          const product = await this.productRepository.findOne({ where: { id: productId } });
+          if (!product) throw new Error('Produto não encontrado');
+          if (!product.referenceImageUrl) throw new Error('Produto sem imagem de referência para analisar');
+          
+          description = await this.processImage(config, product.referenceImageUrl, instruction);
+          
+          // Update product with generated prompt
+          product.analysisPrompt = description;
+          await this.productRepository.save(product);
+        }
+        
+        return { description };
+    } catch (error) {
+        this.logger.error(`Erro ao gerar prompt do produto: ${error.message}`, error);
+        throw error; // Let the filter handle it, but logged with context
+    }
   }
 
   async createConfig(data: any) {
@@ -256,7 +262,7 @@ export class AiService {
 
     if (config.provider === 'gemini') {
       const genAI = new GoogleGenerativeAI(config.apiKey);
-      const model = genAI.getGenerativeModel({ model: config.model || 'gemini-pro-vision' });
+      const model = genAI.getGenerativeModel({ model: config.model || 'gemini-1.5-flash' });
       
       const result = await model.generateContent([
         promptText,

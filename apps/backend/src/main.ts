@@ -28,10 +28,24 @@ async function bootstrap() {
   // Enable standard CORS with credentials support
   app.enableCors({
     origin: (origin, callback) => {
+      const allowedOrigins = [
+        'https://ayratech.app.br',
+        'https://www.ayratech.app.br',
+        'https://api.ayratech.app.br',
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'http://localhost:4173'
+      ];
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
-      // Allow any origin dynamically
-      return callback(null, true);
+      
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        // Log blocked origin for debugging
+        console.warn(`Blocked CORS origin: ${origin}`);
+        return callback(null, false);
+      }
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
