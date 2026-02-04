@@ -192,6 +192,7 @@ export class WorkSchedulesService {
       // Create and save schedule first without days
       const schedule = this.schedulesRepository.create({
         ...scheduleData,
+        employeeId, // Explicitly set employeeId
         days: [], // Explicitly empty days
       });
       schedule.employee = employee;

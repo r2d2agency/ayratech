@@ -142,5 +142,7 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 export const useBranding = () => {
   const context = useContext(BrandingContext);
   if (!context) throw new Error('useBranding must be used within a BrandingProvider');
+  // Debug log to trace initialization
+  // console.log('useBranding hook called', context); 
   return context;
 };

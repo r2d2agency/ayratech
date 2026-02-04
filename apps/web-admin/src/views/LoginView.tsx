@@ -9,6 +9,7 @@ interface LoginViewProps {
 }
 
 const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
+  // Ensure hook is called safely
   const { settings } = useBranding();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
