@@ -4,7 +4,7 @@ import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useBranding } from '../context/BrandingContext';
 import { offlineService } from '../services/offline.service';
-import { MapPin, ArrowRight, CheckCircle, WifiOff } from 'lucide-react';
+import { MapPin, ArrowRight, CheckCircle, WifiOff, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import SupervisorDashboardView from './SupervisorDashboardView';
@@ -102,8 +102,16 @@ const DashboardView = () => {
             {user?.employee?.fullName?.split(' ')[0] || user?.email?.split('@')[0] || 'Promotor'}
           </h1>
         </div>
-        <div style={{ backgroundColor: `${settings.primaryColor}20`, color: settings.primaryColor }} className="px-3 py-1 rounded-full text-xs font-bold">
-          {format(new Date(), 'dd/MM', { locale: ptBR })}
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => navigate('/settings')}
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-full transition-colors"
+          >
+            <Settings size={20} />
+          </button>
+          <div style={{ backgroundColor: `${settings.primaryColor}20`, color: settings.primaryColor }} className="px-3 py-1 rounded-full text-xs font-bold">
+            {format(new Date(), 'dd/MM', { locale: ptBR })}
+          </div>
         </div>
       </header>
 
