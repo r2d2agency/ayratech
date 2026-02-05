@@ -4,6 +4,7 @@ import { ArrowLeft, RefreshCw, Wifi, WifiOff, Database, Smartphone } from 'lucid
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { offlineService } from '../services/offline.service';
 import { toast } from 'react-hot-toast';
+import { APP_VERSION } from '../version';
 
 export default function SettingsView() {
   const navigate = useNavigate();
@@ -173,7 +174,7 @@ export default function SettingsView() {
         </div>
 
         <div className="text-center text-xs text-gray-400 mt-8">
-          Ayratech Promotor v1.0.0
+          Ayratech Promotor v{APP_VERSION}
         </div>
       </div>
     </div>

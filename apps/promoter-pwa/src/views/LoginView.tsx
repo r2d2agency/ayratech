@@ -6,6 +6,7 @@ import { useBranding } from '../context/BrandingContext';
 import { getImageUrl } from '../utils/image';
 import { toast, Toaster } from 'react-hot-toast';
 import { saveOfflineSession, verifyOfflineLogin } from '../utils/auth-storage';
+import { APP_VERSION } from '../version';
 
 const LoginView = () => {
   const [identifier, setIdentifier] = useState('');
@@ -128,7 +129,7 @@ const LoginView = () => {
         </form>
         
         <div className="text-center text-xs text-gray-400">
-          v1.4
+          v{APP_VERSION}
         </div>
       </div>
     </div>
