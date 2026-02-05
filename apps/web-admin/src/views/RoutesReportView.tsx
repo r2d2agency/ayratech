@@ -1102,8 +1102,7 @@ const RoutesReportView: React.FC = () => {
                                 {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).slice(0, 3).map((p: any) => (
                                     <div key={p.id} className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs border-2 border-white" title={p.fullName || p.name}>
                                         {(p.fullName || p.name || '?').substring(0, 2).toUpperCase()}
-            </div>
-        ))}                </div>
+                                    </div>
                                 ))}
                                 {((route.promoters?.length || 0) > 3) && (
                                     <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs border-2 border-white">
