@@ -125,4 +125,19 @@ export class AuthService {
       user: payload,
     };
   }
+
+  async changePassword(userId: string, currentPass: string, newPass: string) {
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('Usuário não encontrado.');
+    }
+
+    const isMatch = await bcrypt.compare(currentPass, user.password);
+    if (!isMatch) {
+      throw new UnauthorizedException('Senha atual incorreta.');
+    }
+
+    await this.usersService.update(userId, { password: newPass });
+    return { message: 'Senha alterada com sucesso.' };
+  }
 }

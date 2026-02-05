@@ -31,6 +31,10 @@ class OfflineService {
       .toArray();
   }
 
+  async getAllRoutes() {
+    return await db.routes.toArray();
+  }
+
   async addPendingAction(
     type: PendingAction['type'],
     url: string,

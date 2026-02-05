@@ -596,9 +596,12 @@ export class RoutesService {
   }
 
   async checkProduct(routeItemId: string, productId: string, data: { checked?: boolean, observation?: string, isStockout?: boolean, stockoutType?: string, photos?: string[], checkInTime?: string, checkOutTime?: string, validityDate?: string, stockCount?: number, checklists?: { id: string, isChecked: boolean, value?: string }[] }) {
+    console.log(`RoutesService.checkProduct: Item ${routeItemId}, Product ${productId}`);
+    console.log('Payload:', JSON.stringify(data));
+
     const itemProduct = await this.routeItemProductsRepository.findOne({
       where: { routeItemId, productId },
-      relations: ['product', 'product.brand', 'routeItem', 'routeItem.supermarket']
+      relations: ['product', 'product.brand', 'routeItem', 'routeItem.supermarket', 'checklists']
     });
 
     if (itemProduct) {
@@ -650,21 +653,20 @@ export class RoutesService {
         }
       }
 
-      if (data.checklists && data.checklists.length > 0) {
-        const checklistRepo = this.dataSource.getRepository(RouteItemProductChecklist);
-        for (const c of data.checklists) {
-          await checklistRepo.update(c.id, {
-            isChecked: c.isChecked,
-            value: c.value
-          });
-
-          // Propagate validity date from checklist to product
-          if (itemProduct.checklists) {
-            const existingChecklist = itemProduct.checklists.find(ec => ec.id === c.id);
-            if (existingChecklist && existingChecklist.type === ChecklistItemType.VALIDITY_CHECK && c.value) {
-              itemProduct.validityDate = c.value;
+      if (data.checklists && data.checklists.length > 0 && itemProduct.checklists) {
+        // Update checklists in memory to leverage cascade save and avoid race conditions
+        data.checklists.forEach(incoming => {
+            const existing = itemProduct.checklists.find(c => c.id === incoming.id);
+            if (existing) {
+                existing.isChecked = incoming.isChecked;
+                existing.value = incoming.value;
             }
-          }
+        });
+
+        // Propagate validity date from checklist to product
+        const validityChecklist = itemProduct.checklists.find(c => c.type === ChecklistItemType.VALIDITY_CHECK && c.isChecked && c.value);
+        if (validityChecklist) {
+            itemProduct.validityDate = validityChecklist.value;
         }
       }
 

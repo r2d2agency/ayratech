@@ -63,7 +63,15 @@ const DashboardView = () => {
       setIsOffline(true);
       
       try {
-        const cachedRoutes = await offlineService.getRoutesByDate(today);
+        let cachedRoutes = await offlineService.getRoutesByDate(today);
+        
+        // Fallback: If strict date match fails, get all and filter (robustness)
+        if (!cachedRoutes || cachedRoutes.length === 0) {
+            console.log('No routes found by exact date index, scanning all...');
+            const allRoutes = await offlineService.getAllRoutes();
+            cachedRoutes = allRoutes.filter(r => r.date && r.date.startsWith(today));
+        }
+
         console.log(`Loaded ${cachedRoutes?.length} routes from offline cache for ${today}`);
         
         if (cachedRoutes && cachedRoutes.length > 0) {

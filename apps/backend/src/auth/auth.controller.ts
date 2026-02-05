@@ -48,6 +48,12 @@ export class AuthController {
     return req.user;
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post('change-password')
+  async changePassword(@Request() req, @Body() body: any) {
+    return this.authService.changePassword(req.user.userId, body.currentPassword, body.newPassword);
+  }
+
   @Post('reset')
   async reset(@Request() req, @Body() body: any) {
     const secret = process.env.ADMIN_RESET_TOKEN || 'AYRATECH_DEV_RESET';
