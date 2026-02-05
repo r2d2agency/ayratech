@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import client, { API_URL } from '../api/client';
+import { offlineService } from '../services/offline.service';
 import { FileText, Download, Upload, X, Check, Eye } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toast, Toaster } from 'react-hot-toast';
@@ -75,32 +76,100 @@ const DocumentsView = () => {
     }
   };
 
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
   const handleUpload = async () => {
     if (!selectedFile || !user) return;
-
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-    formData.append('type', 'Outros'); // Default type
-    formData.append('description', description); // Add description
 
     setUploading(true);
     try {
       const employeeId = user?.employee?.id;
       
-      if (employeeId) {
-        await client.post(`/employees/${employeeId}/documents`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        toast.success('Documento enviado com sucesso!');
-        fetchDocuments();
-        setIsModalOpen(false);
-        setSelectedFile(null);
-        setDescription('');
-      } else {
+      if (!employeeId) {
         toast.error('Erro: Funcionário não identificado');
+        setUploading(false);
+        return;
       }
-    } catch (error) {
+
+      // Offline Handling
+      if (!navigator.onLine) {
+         const base64 = await fileToBase64(selectedFile);
+         await offlineService.addPendingAction(
+            'DOCUMENT_UPLOAD',
+            `/employees/${employeeId}/documents`,
+            'POST',
+            {
+                fileBase64: base64,
+                filename: selectedFile.name,
+                type: 'Outros',
+                description: description
+            }
+         );
+         
+         toast.success('Documento salvo offline! Será enviado quando houver conexão.');
+         setIsModalOpen(false);
+         setSelectedFile(null);
+         setDescription('');
+         setUploading(false);
+         return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('type', 'Outros'); // Default type
+      formData.append('description', description); // Add description
+
+      await client.post(`/employees/${employeeId}/documents`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      toast.success('Documento enviado com sucesso!');
+      fetchDocuments();
+      setIsModalOpen(false);
+      setSelectedFile(null);
+      setDescription('');
+      
+    } catch (error: any) {
       console.error('Upload error:', error);
+      
+      // Fallback for network errors when navigator.onLine was true but request failed
+      const isNetworkError = !error.response || error.code === 'ERR_NETWORK';
+      const isServer5xx = error.response && error.response.status >= 500;
+
+      if (isNetworkError || isServer5xx) {
+          try {
+             const base64 = await fileToBase64(selectedFile);
+             const employeeId = user?.employee?.id;
+             
+             if (employeeId) {
+                 await offlineService.addPendingAction(
+                    'DOCUMENT_UPLOAD',
+                    `/employees/${employeeId}/documents`,
+                    'POST',
+                    {
+                        fileBase64: base64,
+                        filename: selectedFile.name,
+                        type: 'Outros',
+                        description: description
+                    }
+                 );
+                 toast.success('Erro de conexão. Documento salvo para envio posterior!');
+                 setIsModalOpen(false);
+                 setSelectedFile(null);
+                 setDescription('');
+                 return;
+             }
+          } catch (offlineError) {
+              console.error('Failed to save offline fallback', offlineError);
+          }
+      }
+
       toast.error('Erro ao enviar documento');
     } finally {
       setUploading(false);

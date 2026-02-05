@@ -89,7 +89,23 @@ class OfflineService {
         console.log(`Syncing action ${action.type}: ${action.url}`, action.payload);
 
         // Execute API call
-        if (action.method === 'POST') {
+        if (action.type === 'DOCUMENT_UPLOAD') {
+             // Reconstruct FormData for file upload
+             const formData = new FormData();
+             const { fileBase64, filename, type, description } = action.payload;
+             
+             // Convert Base64 to Blob
+             const res = await fetch(fileBase64);
+             const blob = await res.blob();
+             
+             formData.append('file', blob, filename);
+             formData.append('type', type || 'Outros');
+             formData.append('description', description || '');
+             
+             await client.post(action.url, formData, {
+                 headers: { 'Content-Type': 'multipart/form-data' }
+             });
+        } else if (action.method === 'POST') {
           await client.post(action.url, action.payload);
         } else if (action.method === 'PUT') {
           await client.put(action.url, action.payload);
