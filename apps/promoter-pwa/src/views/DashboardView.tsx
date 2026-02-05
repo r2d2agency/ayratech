@@ -27,7 +27,10 @@ const DashboardView = () => {
   }, []);
 
   const fetchTodaysRoutes = async () => {
-    const today = new Date().toISOString().split('T')[0];
+    // Use local date to avoid UTC issues (e.g. previous/next day in evening)
+    const date = new Date();
+    const today = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    
     try {
       // Fetch routes for today
       // Ideally backend should support ?date=today&promoterId=me
@@ -46,9 +49,14 @@ const DashboardView = () => {
       setIsOffline(false);
 
       // Cache routes offline
-      filtered.forEach((route: any) => {
-        offlineService.saveRoute(route);
-      });
+      if (filtered.length > 0) {
+        // Clear old routes for this date to avoid duplicates/stale data? 
+        // Dexie put overwrites by ID, so it's fine.
+        filtered.forEach((route: any) => {
+          offlineService.saveRoute(route);
+        });
+        console.log(`Cached ${filtered.length} routes for offline use.`);
+      }
 
     } catch (error) {
       console.error('Error fetching routes, trying offline cache:', error);
@@ -56,11 +64,15 @@ const DashboardView = () => {
       
       try {
         const cachedRoutes = await offlineService.getRoutesByDate(today);
+        console.log(`Loaded ${cachedRoutes?.length} routes from offline cache for ${today}`);
+        
         if (cachedRoutes && cachedRoutes.length > 0) {
           setTodaysRoutes(cachedRoutes);
           toast('Modo Offline: Exibindo rotas salvas localmente.', { icon: '📡' });
         } else {
-          toast.error('Sem conexão e sem rotas salvas localmente.');
+          // Try previous day or next day just in case of timezone confusion?
+          // For now just show error
+          toast.error('Sem conexão e sem rotas salvas para hoje.');
         }
       } catch (cacheError) {
         console.error('Error fetching from offline cache:', cacheError);
