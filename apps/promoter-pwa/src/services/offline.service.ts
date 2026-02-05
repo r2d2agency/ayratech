@@ -23,6 +23,14 @@ class OfflineService {
     return await db.routes.get(routeId);
   }
 
+  async getRoutesByDate(date: string) {
+    // Busca rotas que começam com a data (YYYY-MM-DD)
+    return await db.routes
+      .where('date')
+      .startsWith(date)
+      .toArray();
+  }
+
   async addPendingAction(
     type: PendingAction['type'],
     url: string,

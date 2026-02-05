@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useBranding } from '../context/BrandingContext';
 import { getImageUrl } from '../utils/image';
 import { toast, Toaster } from 'react-hot-toast';
+import { saveOfflineSession, verifyOfflineLogin } from '../utils/auth-storage';
 
 const LoginView = () => {
   const [identifier, setIdentifier] = useState('');
@@ -44,11 +45,31 @@ const LoginView = () => {
     try {
       // Send identifier as 'email' field because backend expects it in DTO (even if it is CPF)
       const response = await client.post('/auth/login', { email: identifier, password });
-      login(response.data.access_token, response.data.user);
+      
+      const { access_token, user } = response.data;
+
+      // Save for offline access
+      await saveOfflineSession(identifier, password, access_token, user);
+
+      login(access_token, user);
       toast.success('Login realizado com sucesso!');
       navigate('/');
     } catch (error: any) {
       console.error('Login error:', error);
+
+      // Try offline login if network error or server unavailable
+      if (!error.response || error.code === 'ERR_NETWORK' || error.response?.status >= 500) {
+        console.log('Attempting offline login...');
+        const offlineSession = await verifyOfflineLogin(identifier, password);
+        
+        if (offlineSession) {
+           login(offlineSession.token, offlineSession.user);
+           toast('Login Offline: Funcionalidades limitadas.', { icon: '📡' });
+           navigate('/');
+           return; // Exit function successfully
+        }
+      }
+
       toast.error(error.response?.data?.message || 'Falha no login');
     } finally {
       setLoading(false);

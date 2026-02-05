@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useBranding } from '../context/BrandingContext';
-import { MapPin, ArrowRight, CheckCircle } from 'lucide-react';
+import { offlineService } from '../services/offline.service';
+import { MapPin, ArrowRight, CheckCircle, WifiOff } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import SupervisorDashboardView from './SupervisorDashboardView';
+import toast from 'react-hot-toast';
 
 const DashboardView = () => {
   const { user } = useAuth();
@@ -14,6 +16,7 @@ const DashboardView = () => {
   const navigate = useNavigate();
   const [todaysRoutes, setTodaysRoutes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
 
   // Check if user is a manager (admin, supervisor, etc.)
   const userRole = user?.role?.toLowerCase() || '';
@@ -24,12 +27,12 @@ const DashboardView = () => {
   }, []);
 
   const fetchTodaysRoutes = async () => {
+    const today = new Date().toISOString().split('T')[0];
     try {
       // Fetch routes for today
       // Ideally backend should support ?date=today&promoterId=me
       // For now fetching all and filtering (MVP)
       const response = await client.get('/routes');
-      const today = new Date().toISOString().split('T')[0];
       
       const filtered = response.data.filter((r: any) => {
         return r.date.startsWith(today) && (
@@ -40,8 +43,28 @@ const DashboardView = () => {
       });
       
       setTodaysRoutes(filtered);
+      setIsOffline(false);
+
+      // Cache routes offline
+      filtered.forEach((route: any) => {
+        offlineService.saveRoute(route);
+      });
+
     } catch (error) {
-      console.error('Error fetching routes:', error);
+      console.error('Error fetching routes, trying offline cache:', error);
+      setIsOffline(true);
+      
+      try {
+        const cachedRoutes = await offlineService.getRoutesByDate(today);
+        if (cachedRoutes && cachedRoutes.length > 0) {
+          setTodaysRoutes(cachedRoutes);
+          toast('Modo Offline: Exibindo rotas salvas localmente.', { icon: '📡' });
+        } else {
+          toast.error('Sem conexão e sem rotas salvas localmente.');
+        }
+      } catch (cacheError) {
+        console.error('Error fetching from offline cache:', cacheError);
+      }
     } finally {
       setLoading(false);
     }
@@ -71,6 +94,13 @@ const DashboardView = () => {
           {format(new Date(), 'dd/MM', { locale: ptBR })}
         </div>
       </header>
+
+      {isOffline && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-2 rounded-lg flex items-center gap-2 text-sm">
+          <WifiOff size={16} />
+          <span>Você está offline. Exibindo dados salvos localmente.</span>
+        </div>
+      )}
 
       {isManager ? (
         <SupervisorDashboardView routes={todaysRoutes} />
