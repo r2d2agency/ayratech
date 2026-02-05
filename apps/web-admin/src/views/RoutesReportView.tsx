@@ -55,6 +55,10 @@ interface RouteReportItem {
       fullName: string;
     };
   };
+  promoters?: Array<{
+    id: string;
+    fullName: string;
+  }>;
   items: Array<{
     id: string;
     status: string;
@@ -86,6 +90,10 @@ interface RouteReportItem {
       };
       validityDate?: string;
       stockCount?: number;
+      completedBy?: {
+        id: string;
+        name: string;
+      };
     }>;
   }>;
 }
@@ -180,6 +188,11 @@ const RoutesReportView: React.FC = () => {
     routes.forEach(r => {
       if (r.promoter.supervisor?.fullName) supervisors.add(r.promoter.supervisor.fullName);
       if (r.promoter.fullName) promoters.add(r.promoter.fullName);
+      if (r.promoters && r.promoters.length > 0) {
+        r.promoters.forEach(p => {
+          if (p.fullName) promoters.add(p.fullName);
+        });
+      }
       
       r.items.forEach(i => {
         if (i.supermarket.fantasyName) pdvs.add(i.supermarket.fantasyName);
@@ -204,7 +217,11 @@ const RoutesReportView: React.FC = () => {
     return routes.filter(r => {
       // Route-level filters
       if (selectedSupervisor && r.promoter.supervisor?.fullName !== selectedSupervisor) return false;
-      if (selectedPromoter && r.promoter.fullName !== selectedPromoter) return false;
+      if (selectedPromoter) {
+        const mainPromoterMatch = r.promoter.fullName === selectedPromoter;
+        const sharedPromoterMatch = r.promoters?.some(p => p.fullName === selectedPromoter);
+        if (!mainPromoterMatch && !sharedPromoterMatch) return false;
+      }
       
       // Item-level filters (Check if ANY item matches)
       // If a filter is set, the route must contain at least one item that satisfies the criteria
@@ -305,7 +322,19 @@ const RoutesReportView: React.FC = () => {
           entry.productsChecked += relevantProducts.filter(p => p.checked).length;
           entry.ruptures += relevantProducts.filter(p => p.isStockout).length;
           
+          // Add actual completers
+          relevantProducts.forEach(p => {
+              if (p.completedBy?.name) {
+                  entry.promoters.add(p.completedBy.name);
+              }
+          });
+
           if (r.promoter.fullName) entry.promoters.add(r.promoter.fullName);
+          if (r.promoters && r.promoters.length > 0) {
+            r.promoters.forEach(p => {
+              if (p.fullName) entry.promoters.add(p.fullName);
+            });
+          }
           if (r.promoter.supervisor?.fullName) entry.supervisors.add(r.promoter.supervisor.fullName);
         }
       });
@@ -366,7 +395,7 @@ const RoutesReportView: React.FC = () => {
                 validityDate: p.validityDate,
                 checked: p.checked,
                 checkInTime: p.checkInTime,
-                promoterName: r.promoter.fullName || 'N/A',
+                promoterName: p.completedBy?.name || r.promoter.fullName || 'N/A',
                 date: r.date
             });
         });
@@ -595,10 +624,22 @@ const RoutesReportView: React.FC = () => {
       supervisors[supName].total++;
       if (isExecuted) supervisors[supName].executed++;
 
-      const promName = route.promoter.fullName || 'Sem Nome';
-      if (!promoters[promName]) promoters[promName] = { name: promName, executed: 0, total: 0 };
-      promoters[promName].total++;
-      if (isExecuted) promoters[promName].executed++;
+      // Count for Main Promoter
+      const mainPromName = route.promoter.fullName || 'Sem Nome';
+      if (!promoters[mainPromName]) promoters[mainPromName] = { name: mainPromName, executed: 0, total: 0 };
+      promoters[mainPromName].total++;
+      if (isExecuted) promoters[mainPromName].executed++;
+
+      // Count for Shared Promoters (if any, preventing double counting if same as main - though shouldn't happen)
+      if (route.promoters && route.promoters.length > 0) {
+        route.promoters.forEach(p => {
+          if (p.id === route.promoter.id) return; // Skip if same as main (just in case)
+          const pName = p.fullName || 'Sem Nome';
+          if (!promoters[pName]) promoters[pName] = { name: pName, executed: 0, total: 0 };
+          promoters[pName].total++;
+          if (isExecuted) promoters[pName].executed++;
+        });
+      }
     });
 
     setStats({
@@ -715,13 +756,14 @@ const RoutesReportView: React.FC = () => {
     const csvContent = [];
     const headers = [
       'Data',
-      'Promotor',
+      'Promotor(es)',
       'Supervisor',
       'PDV',
       'Cidade',
       'Produto',
       'Marca',
       'Status',
+      'Quem Realizou',
       'Check-in',
       'Check-out',
       'Ruptura',
@@ -734,7 +776,17 @@ const RoutesReportView: React.FC = () => {
 
     filteredRoutes.forEach(route => {
       const date = formatRouteDate(route.date);
-      const promoter = route.promoter.fullName;
+      
+      // Combine all promoters
+      let allPromoters = [route.promoter.fullName];
+      if (route.promoters && route.promoters.length > 0) {
+        const otherPromoters = route.promoters
+          .filter(p => p.id !== route.promoter.id)
+          .map(p => p.fullName);
+        allPromoters = [...allPromoters, ...otherPromoters];
+      }
+      const promoterStr = allPromoters.join(', ');
+      
       const supervisor = route.promoter.supervisor?.fullName || '-';
 
       route.items.forEach(item => {
@@ -751,13 +803,14 @@ const RoutesReportView: React.FC = () => {
 
           const row = [
             date,
-            promoter,
+            promoterStr,
             supervisor,
             pdv,
             city,
             p.product.name,
             p.product.brand?.name || '-',
             item.status,
+            p.completedBy?.name || '-',
             item.checkInTime ? new Date(item.checkInTime).toLocaleTimeString('pt-BR') : '-',
             item.checkOutTime ? new Date(item.checkOutTime).toLocaleTimeString('pt-BR') : '-',
             p.isStockout ? 'Sim' : 'Não',
@@ -1025,7 +1078,7 @@ const RoutesReportView: React.FC = () => {
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/50">
                       <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Data</th>
-                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Promotor</th>
+                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Equipe</th>
                       <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Supervisor</th>
                       <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">PDVs</th>
                       <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Status</th>
@@ -1045,10 +1098,23 @@ const RoutesReportView: React.FC = () => {
                         </td>
                         <td className="p-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
-                              {route.promoter.fullName.substring(0, 2).toUpperCase()}
+                            <div className="flex -space-x-2">
+                                {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).slice(0, 3).map((p: any) => (
+                                    <div key={p.id} className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs border-2 border-white" title={p.fullName || p.name}>
+                                        {(p.fullName || p.name || '?').substring(0, 2).toUpperCase()}
+                                    </div>
+                                ))}
+                                {((route.promoters?.length || 0) > 3) && (
+                                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs border-2 border-white">
+                                        +{(route.promoters?.length || 0) - 3}
+                                    </div>
+                                )}
                             </div>
-                            <span className="font-bold text-slate-700 text-sm">{route.promoter.fullName}</span>
+                            <div className="flex flex-col">
+                                <span className="font-bold text-slate-700 text-sm">
+                                    {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => (p.fullName || p.name || '').split(' ')[0]).join(', ')}
+                                </span>
+                            </div>
                           </div>
                         </td>
                         <td className="p-4">
@@ -1153,7 +1219,7 @@ const RoutesReportView: React.FC = () => {
                       <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Produto</th>
                       <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Marca</th>
                       <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Validade</th>
-                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Promotor</th>
+                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Quem Realizou</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1245,7 +1311,9 @@ const RoutesReportView: React.FC = () => {
                   </span>
                   <span className="flex items-center gap-1.5">
                     <User size={14} />
-                    Promotor: <strong className="text-slate-700">{selectedRoute.promoter.fullName}</strong>
+                    Equipe: <strong className="text-slate-700">
+                      {((selectedRoute.promoters && selectedRoute.promoters.length > 0) ? selectedRoute.promoters : (selectedRoute.promoter ? [selectedRoute.promoter] : [])).map((p: any) => p.fullName || p.name).join(', ')}
+                    </strong>
                   </span>
                   {selectedRoute.promoter.supervisor && (
                     <span className="flex items-center gap-1.5">
@@ -1340,6 +1408,7 @@ const RoutesReportView: React.FC = () => {
                           <th className="p-3 w-10">#</th>
                           <th className="p-3">Produto</th>
                           <th className="p-3">Marca</th>
+                          <th className="p-3">Quem</th>
                           <th className="p-3">Validade</th>
                           <th className="p-3">Status</th>
                           <th className="p-3">Fotos</th>
@@ -1352,6 +1421,13 @@ const RoutesReportView: React.FC = () => {
                             <td className="p-3 text-slate-400 text-xs">{pIndex + 1}</td>
                             <td className="p-3 font-medium text-slate-700">{p.product.name}</td>
                             <td className="p-3 text-slate-500">{p.product.brand?.name || '-'}</td>
+                            <td className="p-3 text-xs font-bold text-slate-500">
+                                {p.completedBy ? (
+                                    <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded-md border border-blue-100">
+                                        {p.completedBy.name.split(' ')[0]}
+                                    </span>
+                                ) : '-'}
+                            </td>
                             <td className="p-3 text-xs">
                               {p.validityDate ? (() => {
                                 const today = new Date();

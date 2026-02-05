@@ -37,10 +37,19 @@ export class RoutesService {
     console.log('RoutesService.create input:', JSON.stringify(createRouteDto));
     const { items, ...routeData } = createRouteDto;
     
+    // Handle promoters
+    let promoters: { id: string }[] = [];
+    if (routeData.promoterIds && routeData.promoterIds.length > 0) {
+      promoters = routeData.promoterIds.map(id => ({ id }));
+    } else if (routeData.promoterId) {
+      promoters = [{ id: routeData.promoterId }];
+    }
+
     const route = this.routesRepository.create({
       ...routeData,
-      promoterId: routeData.promoterId,
-      promoter: routeData.promoterId ? { id: routeData.promoterId } : null,
+      promoterId: routeData.promoterId || (promoters.length > 0 ? promoters[0].id : null),
+      promoter: routeData.promoterId ? { id: routeData.promoterId } : (promoters.length > 0 ? promoters[0] : null),
+      promoters: promoters
     });
     console.log('RoutesService.create entity before save:', JSON.stringify(route));
     
@@ -49,14 +58,16 @@ export class RoutesService {
 
     if (items && items.length > 0) {
       // Validate promoter availability for all items first
-      if (savedRoute.promoterId) {
-        for (const item of items) {
-          await this.checkPromoterAvailability(
-            savedRoute.promoterId,
-            savedRoute.date,
-            item.startTime,
-            item.estimatedDuration
-          );
+      if (savedRoute.promoters && savedRoute.promoters.length > 0) {
+        for (const promoter of savedRoute.promoters) {
+          for (const item of items) {
+            await this.checkPromoterAvailability(
+              promoter.id,
+              savedRoute.date,
+              item.startTime,
+              item.estimatedDuration
+            );
+          }
         }
       }
 
@@ -168,6 +179,34 @@ export class RoutesService {
     return this.findOne(savedRoute.id);
   }
 
+  async addPromoter(routeId: string, promoterId: string) {
+    const route = await this.routesRepository.findOne({
+        where: { id: routeId },
+        relations: ['promoters']
+    });
+
+    if (!route) throw new NotFoundException('Route not found');
+
+    const promoter = await this.dataSource.getRepository(Employee).findOne({ where: { id: promoterId } });
+    if (!promoter) throw new NotFoundException('Promoter not found');
+
+    // Check if already assigned
+    if (route.promoters && route.promoters.some(p => p.id === promoterId)) {
+        return route; // Already assigned
+    }
+
+    if (!route.promoters) route.promoters = [];
+    route.promoters.push(promoter);
+    
+    // Maintain backward compatibility
+    if (!route.promoterId) {
+        route.promoter = promoter;
+        route.promoterId = promoterId;
+    }
+
+    return this.routesRepository.save(route);
+  }
+
   async findAll(userId?: string) {
     let allowedClientIds: string[] | null = null;
     
@@ -196,9 +235,11 @@ export class RoutesService {
       .leftJoinAndSelect('route.items', 'items')
       .leftJoinAndSelect('items.supermarket', 'supermarket')
       .leftJoinAndSelect('route.promoter', 'promoter')
+      .leftJoinAndSelect('route.promoters', 'promoters')
       .leftJoinAndSelect('promoter.supervisor', 'supervisor')
       .leftJoinAndSelect('items.products', 'itemProducts')
       .leftJoinAndSelect('itemProducts.product', 'product')
+      .leftJoinAndSelect('itemProducts.completedBy', 'completedBy')
       .leftJoinAndSelect('product.brand', 'brand')
       .orderBy('route.date', 'DESC');
 
@@ -221,11 +262,16 @@ export class RoutesService {
 
   findByPromoter(promoterId: string) {
     return this.routesRepository.find({
-      where: { promoter: { id: promoterId } },
+      where: [
+          { promoter: { id: promoterId } },
+          { promoters: { id: promoterId } }
+      ],
       relations: [
+        'promoters',
         'items', 
         'items.supermarket', 
         'items.products', 
+        'items.products.completedBy',
         'items.products.product', 
         'items.products.product.brand'
       ],
@@ -241,6 +287,7 @@ export class RoutesService {
         .innerJoinAndSelect('items.supermarket', 'supermarket')
         .leftJoinAndSelect('route.promoter', 'promoter')
         .leftJoinAndSelect('items.products', 'itemProducts')
+        .leftJoinAndSelect('itemProducts.completedBy', 'completedBy')
         .leftJoinAndSelect('itemProducts.product', 'product')
         .leftJoinAndSelect('product.client', 'productClient')
         .leftJoinAndSelect('product.brand', 'brand')
@@ -328,9 +375,19 @@ export class RoutesService {
   findOne(id: string) {
     return this.routesRepository.findOne({
       where: { id },
-      relations: ['items', 'items.supermarket', 'promoter', 'items.products', 'items.products.product', 'items.products.checklists']
-    });
-  }
+      relations: [
+        'promoters', 
+        'items', 
+        'items.supermarket', 
+        'promoter', 
+        'items.products', 
+        'items.products.product', 
+         'items.products.checklists',
+         'items.products.checklists.completedBy',
+         'items.products.completedBy'
+       ]
+     });
+   }
 
   async update(id: string, updateRouteDto: UpdateRouteDto, user?: any) {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -343,7 +400,7 @@ export class RoutesService {
       // 1. Fetch route with relations using queryRunner
       const route = await queryRunner.manager.findOne(Route, {
         where: { id },
-        relations: ['items', 'items.products']
+        relations: ['items', 'items.products', 'promoters']
       });
 
       if (!route) {
@@ -370,14 +427,56 @@ export class RoutesService {
       }
 
       const { items, promoterId, ...routeData } = updateRouteDto;
+      
+      // Track added promoters for availability check
+      let addedPromoters: any[] = [];
 
       // 2. Update basic fields using save() to ensure relations are handled correctly
       Object.assign(route, routeData);
       
       // Handle promoter update explicitly
-      if (promoterId !== undefined) {
+      // If promoterIds is provided, use it to update promoters relation
+      if (updateRouteDto.promoterIds !== undefined) {
+         if (updateRouteDto.promoterIds.length > 0) {
+             // Calculate added promoters
+             const newIds = updateRouteDto.promoterIds;
+             const oldIds = route.promoters ? route.promoters.map(p => p.id) : [];
+             const addedIds = newIds.filter(id => !oldIds.includes(id));
+             
+             if (addedIds.length > 0) {
+                 // We need to fetch these employees to use them later, or just use their IDs
+                 // Since checkPromoterAvailability uses ID, we can just store IDs, 
+                 // but for consistency let's store objects if needed. 
+                 // Actually we can just query them or create partial objects.
+                 addedPromoters = addedIds.map(id => ({ id }));
+             }
+
+             // promoterIds are Employee IDs
+             route.promoters = updateRouteDto.promoterIds.map(id => ({ id } as any));
+             
+             // Sync legacy field
+             route.promoter = route.promoters[0];
+             route.promoterId = route.promoters[0].id;
+         } else {
+             route.promoters = [];
+             route.promoter = null;
+             route.promoterId = null;
+         }
+      } else if (promoterId !== undefined) {
+         // Fallback legacy behavior
          route.promoterId = promoterId;
          route.promoter = (promoterId === null || promoterId === '') ? null : { id: promoterId } as any;
+         if (route.promoter) {
+             // If we set single promoter, ensure it's in the list
+             // Check if this promoter was already in list
+             const wasInList = route.promoters?.some(p => p.id === promoterId);
+             if (!wasInList) {
+                 addedPromoters = [route.promoter];
+             }
+             route.promoters = [route.promoter];
+         } else {
+             route.promoters = [];
+         }
       }
 
       await queryRunner.manager.save(Route, route);
@@ -385,22 +484,27 @@ export class RoutesService {
       // 3. Update items if provided
       if (items) {
           // Validate schedule availability for new items
-          if (promoterId || route.promoterId) { // use new promoterId or existing one
-             const targetPromoterId = promoterId !== undefined ? promoterId : route.promoter?.id || route.promoterId;
-             const targetDate = routeData.date || route.date;
+          // Check for ALL assigned promoters (both existing and new)
+          const targetPromoters = route.promoters && route.promoters.length > 0 
+              ? route.promoters 
+              : (route.promoter ? [route.promoter] : []);
              
-             if (targetPromoterId && targetDate) {
-                 for (const item of items) {
+          const targetDate = routeData.date || route.date;
+             
+          if (targetPromoters.length > 0 && targetDate) {
+              for (const promoter of targetPromoters) {
+                  for (const item of items) {
                      await this.checkPromoterAvailability(
-                         targetPromoterId,
+                         promoter.id,
                          targetDate,
                          item.startTime,
                          item.estimatedDuration,
                          id // exclude current route
                      );
-                 }
-             }
+                  }
+              }
           }
+
 
           // Pre-fetch products and checklists
           const allProductIds = new Set<string>();
@@ -520,6 +624,23 @@ export class RoutesService {
                   }
               }
           }
+      } else if (addedPromoters.length > 0) {
+          const targetDate = routeData.date || route.date;
+          if (targetDate && route.items && route.items.length > 0) {
+              for (const promoter of addedPromoters) {
+                  for (const item of route.items) {
+                      if (item.startTime && item.estimatedDuration) {
+                         await this.checkPromoterAvailability(
+                             promoter.id,
+                             targetDate,
+                             item.startTime,
+                             item.estimatedDuration,
+                             id
+                         );
+                      }
+                  }
+              }
+          }
       }
       
       await queryRunner.commitTransaction();
@@ -595,16 +716,32 @@ export class RoutesService {
     return this.routeRulesRepository.find();
   }
 
-  async checkProduct(routeItemId: string, productId: string, data: { checked?: boolean, observation?: string, isStockout?: boolean, stockoutType?: string, photos?: string[], checkInTime?: string, checkOutTime?: string, validityDate?: string, stockCount?: number, checklists?: { id: string, isChecked: boolean, value?: string }[] }) {
+  async checkProduct(routeItemId: string, productId: string, data: { checked?: boolean, observation?: string, isStockout?: boolean, stockoutType?: string, photos?: string[], checkInTime?: string, checkOutTime?: string, validityDate?: string, stockCount?: number, checklists?: { id: string, isChecked: boolean, value?: string }[] }, userId?: string) {
     console.log(`RoutesService.checkProduct: Item ${routeItemId}, Product ${productId}`);
     console.log('Payload:', JSON.stringify(data));
 
     const itemProduct = await this.routeItemProductsRepository.findOne({
       where: { routeItemId, productId },
-      relations: ['product', 'product.brand', 'routeItem', 'routeItem.supermarket', 'checklists']
+      relations: ['product', 'product.brand', 'routeItem', 'routeItem.supermarket', 'routeItem.route', 'checklists', 'completedBy']
     });
 
+    if (itemProduct?.routeItem?.route) {
+        this.validateSyncDeadline(itemProduct.routeItem.route.date);
+    }
+
+    let employee = null;
+    if (userId) {
+        const user = await this.dataSource.getRepository(User).findOne({ 
+            where: { id: userId },
+            relations: ['employee']
+        });
+        employee = user?.employee || null;
+    }
+
     if (itemProduct) {
+      if (employee) {
+          itemProduct.completedBy = employee;
+      }
       if (data.checked !== undefined) itemProduct.checked = data.checked;
       if (data.observation !== undefined) itemProduct.observation = data.observation;
       if (data.isStockout !== undefined) itemProduct.isStockout = data.isStockout;
@@ -660,6 +797,7 @@ export class RoutesService {
             if (existing) {
                 existing.isChecked = incoming.isChecked;
                 existing.value = incoming.value;
+                if (employee) existing.completedBy = employee;
             }
         });
 
@@ -778,9 +916,34 @@ export class RoutesService {
     return this.routeItemsRepository.update(id, updateData);
   }
 
+  private validateSyncDeadline(routeDate: string | Date) {
+    if (!routeDate) return;
+
+    const now = new Date();
+    const dateVal: any = routeDate;
+    const dateStr = dateVal instanceof Date ? dateVal.toISOString().split('T')[0] : dateVal;
+    
+    // Deadline is the next day at 20:00
+    const cutoff20h = new Date(`${dateStr}T20:00:00`);
+    const deadline24h = new Date(cutoff20h);
+    deadline24h.setHours(deadline24h.getHours() + 24);
+
+    if (now > deadline24h) {
+         // "apartir de agora tem que ser feito lançamento manual"
+         throw new BadRequestException('Prazo de sincronismo expirado (> 24h após 20:00). Realize o lançamento manual no painel web.');
+    }
+  }
+
   async checkIn(itemId: string, data: { lat: number; lng: number; timestamp: string }) {
-    const item = await this.routeItemsRepository.findOne({ where: { id: itemId } });
+    const item = await this.routeItemsRepository.findOne({ 
+      where: { id: itemId },
+      relations: ['route']
+    });
     if (!item) throw new NotFoundException('Item not found');
+    
+    if (item.route) {
+        this.validateSyncDeadline(item.route.date);
+    }
     
     item.status = 'CHECKIN';
     item.checkInTime = new Date(data.timestamp);
@@ -853,23 +1016,14 @@ export class RoutesService {
     if (!item) throw new NotFoundException('Item not found');
 
     // Late Sync Validation
-    if (item.route && item.route.date) {
-        const now = new Date();
+    if (item.route) {
+        this.validateSyncDeadline(item.route.date);
+
+        // Optional warning for > 20:00 same day (if needed)
         const dateVal: any = item.route.date;
         const dateStr = dateVal instanceof Date ? dateVal.toISOString().split('T')[0] : dateVal;
         const cutoff20h = new Date(`${dateStr}T20:00:00`);
-        const deadline24h = new Date(cutoff20h);
-        deadline24h.setHours(deadline24h.getHours() + 24);
-
-        if (now > deadline24h) {
-             // Revert to PENDING logic requested by user
-             // "apartir de agora tem que ser feito lançamento manual"
-             // Throwing error to force manual entry
-             throw new BadRequestException('Prazo de sincronismo expirado (> 24h após 20:00). Realize o lançamento manual no painel web.');
-        }
-
-        if (now > cutoff20h) {
-            // "sincronismo fora de horario" -> Add warning
+        if (new Date() > cutoff20h) {
             item.observation = (item.observation || '') + ' [Alerta: Sincronismo fora de horário]';
         }
     }
@@ -894,12 +1048,12 @@ export class RoutesService {
     const startMinutes = this.timeToMinutes(startTime);
     const endMinutes = startMinutes + estimatedDuration;
 
-    // Find other routes for this promoter on this date
+    // Find other routes for this promoter on this date (Main OR Shared)
     const routes = await this.routesRepository.find({
-      where: { 
-        promoter: { id: promoterId },
-        date: date
-      },
+      where: [
+        { promoter: { id: promoterId }, date: date },
+        { promoters: { id: promoterId }, date: date }
+      ],
       relations: ['items', 'items.supermarket']
     });
 
@@ -913,6 +1067,12 @@ export class RoutesService {
         const itemEnd = itemStart + item.estimatedDuration;
 
         // Check overlap: (StartA < EndB) && (EndA > StartB)
+        if (startMinutes < itemEnd && endMinutes > itemStart) {
+           throw new BadRequestException(`O promotor já possui um agendamento conflitante neste horário (PDV: ${item.supermarket?.fantasyName || 'Desconhecido'}, ${item.startTime} - ${this.minutesToTime(itemEnd)}).`);
+        }
+      }
+    }
+  }
         if (startMinutes < itemEnd && endMinutes > itemStart) {
            throw new BadRequestException(`O promotor já possui um agendamento conflitante neste horário (PDV: ${item.supermarket?.fantasyName || 'Desconhecido'}, ${item.startTime} - ${this.minutesToTime(itemEnd)}).`);
         }

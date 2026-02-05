@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany, JoinColumn, ManyToMany, JoinTable } from 'typeorm';
 import { Employee } from '../../employees/entities/employee.entity';
 import { RouteItem } from './route-item.entity';
 
@@ -16,6 +16,14 @@ export class Route {
 
   @Column({ nullable: true })
   promoterId: string;
+
+  @ManyToMany(() => Employee, { eager: true })
+  @JoinTable({
+    name: 'route_promoters',
+    joinColumn: { name: 'routeId', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'employeeId', referencedColumnName: 'id' }
+  })
+  promoters: Employee[];
 
   @Column({ default: 'DRAFT' }) // DRAFT, CONFIRMED, COMPLETED
   status: string;

@@ -51,6 +51,11 @@ export class RoutesController {
     return this.routesService.duplicate(id, body.date, body.promoterId);
   }
 
+  @Post(':id/promoters')
+  addPromoter(@Param('id') id: string, @Body() body: { promoterId: string }) {
+    return this.routesService.addPromoter(id, body.promoterId);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateRouteDto: UpdateRouteDto, @Req() req: any) {
     return this.routesService.update(id, updateRouteDto, req.user);
@@ -86,8 +91,10 @@ export class RoutesController {
     @Param('itemId') itemId: string,
     @Param('productId') productId: string,
     @Body() body: { checked?: boolean; observation?: string; isStockout?: boolean; stockoutType?: string; photos?: string[]; checkInTime?: string; checkOutTime?: string; validityDate?: string; stockCount?: number; checklists?: any[] },
+    @Req() req: any
   ) {
-    return this.routesService.checkProduct(itemId, productId, body);
+    const userId = req.user?.userId || req.user?.id || req.user?.sub;
+    return this.routesService.checkProduct(itemId, productId, body, userId);
   }
 
   @Post('items/:itemId/manual-execution')

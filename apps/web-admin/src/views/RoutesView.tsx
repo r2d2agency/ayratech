@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar, MapPinned, Plus, Trash2, CheckCircle, Save, Settings, List, Clock, MoveUp, MoveDown, Copy, FileText, Check, Search, GripVertical, XCircle } from 'lucide-react';
+import { Calendar, MapPinned, Plus, Trash2, CheckCircle, Save, Settings, List, Clock, MoveUp, MoveDown, Copy, FileText, Check, Search, GripVertical, XCircle, UserPlus, Users } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import api from '../api/client';
 import { jwtDecode } from "jwt-decode";
@@ -123,7 +123,7 @@ const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts
   );
 };
 
-const DraggableRouteCard = ({ route, onDoubleClick, onDelete, onDuplicate }: any) => {
+const DraggableRouteCard = ({ route, onDoubleClick, onDelete, onDuplicate, onManagePromoters }: any) => {
   const status = route.status?.toUpperCase() || 'DRAFT';
   const hasStartedItems = route.items?.some((i: any) => !!i.startTime || !!i.checkInTime);
   const isDraggable = status !== 'COMPLETED' && status !== 'IN_PROGRESS' && !hasStartedItems;
@@ -181,13 +181,34 @@ const DraggableRouteCard = ({ route, onDoubleClick, onDelete, onDuplicate }: any
       } ${getStatusColor()}`}
     >
       <div className="flex justify-between items-start mb-2">
-        <div className="flex items-center gap-2">
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${getIconColor()}`}>
-                {route.promoter?.name?.substring(0, 2).toUpperCase()}
+        <div className="flex flex-col gap-1">
+            <div className="flex -space-x-2">
+                {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).slice(0, 3).map((p: any) => (
+                    <div key={p.id} className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white ${getIconColor()}`} title={p.name}>
+                        {p.name?.substring(0, 2).toUpperCase()}
+                    </div>
+                ))}
+                {((route.promoters?.length || 0) > 3) && (
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white bg-slate-200 text-slate-600">
+                        +{(route.promoters?.length || 0) - 3}
+                    </div>
+                )}
             </div>
-            <p className="text-xs font-bold text-slate-700 truncate max-w-[100px]">{route.promoter?.name}</p>
+            <p className="text-xs font-bold text-slate-700 truncate max-w-[120px]" title={((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p:any) => p.name).join(', ')}>
+                {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p:any) => p.name.split(' ')[0]).join(', ')}
+            </p>
         </div>
         <div className="flex gap-1">
+            <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onManagePromoters(route);
+                }}
+                className="p-1 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"
+                title="Gerenciar Promotores"
+            >
+                <UserPlus size={12} />
+            </button>
             <button 
                 onClick={(e) => {
                     e.stopPropagation();
@@ -263,7 +284,7 @@ const RoutesView: React.FC = () => {
   const [filterSupermarketId, setFilterSupermarketId] = useState<string>('');
 
   // Editor State
-  const [selectedPromoter, setSelectedPromoter] = useState<string | null>(null);
+  const [selectedPromoters, setSelectedPromoters] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [routeItems, setRouteItems] = useState<any[]>([]);
   const [routeStatus, setRouteStatus] = useState<string>('DRAFT');
@@ -298,6 +319,10 @@ const RoutesView: React.FC = () => {
   const [routeToDuplicate, setRouteToDuplicate] = useState<any>(null);
   const [duplicateTargetDates, setDuplicateTargetDates] = useState<string[]>([]);
   const [currentDateInput, setCurrentDateInput] = useState('');
+
+  // Promoter Management State
+  const [managingPromotersRoute, setManagingPromotersRoute] = useState<any>(null);
+  const [managedPromoterIds, setManagedPromoterIds] = useState<string[]>([]);
 
   // Rules State
   const [rules, setRules] = useState<any[]>([]);
@@ -530,15 +555,16 @@ const RoutesView: React.FC = () => {
   };
 
   const handleSaveRoute = async (status: 'DRAFT' | 'CONFIRMED' | 'COMPLETED' = 'DRAFT') => {
-    if (!selectedPromoter || !selectedDate || routeItems.length === 0) {
-      alert('Selecione um promotor, uma data e adicione pontos de venda.');
+    if (selectedPromoters.length === 0 || !selectedDate || routeItems.length === 0) {
+      alert('Selecione pelo menos um promotor, uma data e adicione pontos de venda.');
       return;
     }
 
     setLoading(true);
     try {
       const payload = {
-        promoterId: selectedPromoter,
+        promoterIds: selectedPromoters,
+        promoterId: selectedPromoters[0],
         date: selectedDate,
         status: status,
         items: routeItems.map((item, index) => ({
@@ -580,7 +606,8 @@ const RoutesView: React.FC = () => {
         isTemplate: true,
         templateName: templateName,
         status: 'DRAFT',
-        promoterId: selectedPromoter, // Optional for template
+        promoterIds: selectedPromoters, // Optional for template
+        promoterId: selectedPromoters[0] || null, // Optional for template
         date: selectedDate, // Optional/Dummy
         items: routeItems.map((item, index) => ({
           supermarketId: item.supermarketId,
@@ -653,6 +680,47 @@ const RoutesView: React.FC = () => {
     setDuplicateTargetDates(duplicateTargetDates.filter(d => d !== dateToRemove));
   };
 
+  const handleManagePromoters = (route: any) => {
+    setManagingPromotersRoute(route);
+    if (route.promoters && route.promoters.length > 0) {
+        setManagedPromoterIds(route.promoters.map((p: any) => p.id));
+    } else if (route.promoterId) {
+        setManagedPromoterIds([route.promoterId]);
+    } else if (route.promoter?.id) {
+        setManagedPromoterIds([route.promoter.id]);
+    } else {
+        setManagedPromoterIds([]);
+    }
+  };
+
+  const handleSaveManagedPromoters = async () => {
+    if (!managingPromotersRoute) return;
+    setLoading(true);
+    try {
+        await api.patch(`/routes/${managingPromotersRoute.id}`, {
+            promoterIds: managedPromoterIds
+        });
+        alert('Promotores atualizados com sucesso!');
+        setManagingPromotersRoute(null);
+        fetchRoutesForWeek();
+    } catch (error) {
+        console.error('Error updating promoters:', error);
+        alert('Erro ao atualizar promotores.');
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const handleToggleManagedPromoter = (id: string) => {
+    setManagedPromoterIds(prev => {
+        if (prev.includes(id)) {
+            return prev.filter(pId => pId !== id);
+        } else {
+            return [...prev, id];
+        }
+    });
+  };
+
   // --- Planner Logic ---
   const getDaysOfWeek = (startDate: Date) => {
     const days = [];
@@ -670,12 +738,20 @@ const RoutesView: React.FC = () => {
   const getRoutesForDay = (dateStr: string) => {
     return weekRoutes.filter(r => {
       const matchesDate = r.date === dateStr;
-      const matchesPromoter = !filterPromoterId || r.promoterId === filterPromoterId;
+      const matchesPromoter = !filterPromoterId || 
+        r.promoterId === filterPromoterId || 
+        (r.promoters && r.promoters.some((p: any) => p.id === filterPromoterId));
       
       let matchesSupervisor = true;
       if (filterSupervisorId) {
-         const promoter = allEmployees.find(e => e.id === r.promoterId);
-         matchesSupervisor = !!(promoter && (promoter.supervisorId === filterSupervisorId || (promoter.supervisor && promoter.supervisor.id === filterSupervisorId)));
+         // Check supervisors of all assigned promoters
+         const promotersToCheck = r.promoters && r.promoters.length > 0 
+            ? r.promoters.map((p: any) => allEmployees.find(e => e.id === p.id)).filter(Boolean)
+            : [allEmployees.find(e => e.id === r.promoterId)].filter(Boolean);
+            
+         matchesSupervisor = promotersToCheck.some((promoter: any) => 
+            promoter && (promoter.supervisorId === filterSupervisorId || (promoter.supervisor && promoter.supervisor.id === filterSupervisorId))
+         );
       }
 
       let matchesGroup = true;
@@ -708,7 +784,15 @@ const RoutesView: React.FC = () => {
   };
 
   const handleEditRoute = (route: any) => {
-    setSelectedPromoter(route.promoterId || route.promoter?.id);
+    if (route.promoters && route.promoters.length > 0) {
+      setSelectedPromoters(route.promoters.map((p: any) => p.id));
+    } else if (route.promoterId) {
+      setSelectedPromoters([route.promoterId]);
+    } else if (route.promoter?.id) {
+      setSelectedPromoters([route.promoter.id]);
+    } else {
+      setSelectedPromoters([]);
+    }
     setSelectedDate(route.date.split('T')[0]);
     setRouteStatus(route.status);
     setEditingRouteId(route.id);
@@ -805,6 +889,16 @@ const RoutesView: React.FC = () => {
       alert('Erro ao mover rota.');
       setWeekRoutes(originalRoutes);
     }
+  };
+
+  const handleTogglePromoter = (id: string) => {
+    setSelectedPromoters(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(pId => pId !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
   };
 
   return (
@@ -946,6 +1040,7 @@ const RoutesView: React.FC = () => {
                         route={route} 
                         onDoubleClick={() => handleEditRoute(route)}
                         onDelete={(e: any, id: string) => handleQuickDelete(e, id)}
+                        onManagePromoters={handleManagePromoters}
                         onDuplicate={(r: any) => {
                            setRouteToDuplicate(r);
                            setShowDuplicateModal(true);
@@ -981,7 +1076,7 @@ const RoutesView: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">
-                  1. Selecione o Promotor *
+                  1. Selecione os Promotores *
                 </label>
                 <div className="mb-2">
                   <input
@@ -995,34 +1090,37 @@ const RoutesView: React.FC = () => {
                 <div className="h-64 overflow-y-auto space-y-2 pr-2">
                   {promoters
                     .filter(p => p.name.toLowerCase().includes(promoterSearch.toLowerCase()))
-                    .map(promoter => (
-                    <button 
-                      key={promoter.id}
-                      onClick={() => setSelectedPromoter(promoter.id)}
-                      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
-                        selectedPromoter === promoter.id 
-                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
-                          : 'bg-white border border-slate-100 hover:bg-slate-50 text-slate-600'
-                      }`}
-                    >
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                        selectedPromoter === promoter.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
-                      }`}>
-                        {promoter.name.charAt(0)}
-                      </div>
-                      <div className="text-left">
-                        <p className="font-bold">{promoter.name}</p>
-                        <p className={`text-xs ${selectedPromoter === promoter.id ? 'text-blue-100' : 'text-slate-400'}`}>
-                          {promoter.email}
-                        </p>
-                      </div>
-                      {selectedPromoter === promoter.id && (
-                        <div className="ml-auto">
-                          <CheckCircle size={20} className="text-white" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
+                    .map(promoter => {
+                      const isSelected = selectedPromoters.includes(promoter.id);
+                      return (
+                        <button 
+                          key={promoter.id}
+                          onClick={() => handleTogglePromoter(promoter.id)}
+                          className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
+                            isSelected
+                              ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
+                              : 'bg-white border border-slate-100 hover:bg-slate-50 text-slate-600'
+                          }`}
+                        >
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                            isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                          }`}>
+                            {promoter.name.charAt(0)}
+                          </div>
+                          <div className="text-left">
+                            <p className="font-bold">{promoter.name}</p>
+                            <p className={`text-xs ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
+                              {promoter.email}
+                            </p>
+                          </div>
+                          {isSelected && (
+                            <div className="ml-auto">
+                              <CheckCircle size={20} className="text-white" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
                   {promoters.filter(p => p.name.toLowerCase().includes(promoterSearch.toLowerCase())).length === 0 && (
                      <div className="text-center py-4 text-slate-400 text-sm">Nenhum promotor encontrado</div>
                   )}
@@ -1467,6 +1565,69 @@ const RoutesView: React.FC = () => {
                   onClick={handleSaveTemplate}
                   disabled={!templateName}
                   className="px-6 py-2 rounded-lg font-bold text-white shadow-lg disabled:opacity-50"
+                  style={{ backgroundColor: settings.primaryColor }}
+                >
+                  Salvar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manage Promoters Modal */}
+      {managingPromotersRoute && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <h3 className="text-xl font-bold text-slate-900 mb-4">Gerenciar Promotores</h3>
+            <div className="space-y-4">
+              <p className="text-sm text-slate-500">
+                Adicione ou remova promotores para esta rota em execução.
+              </p>
+              
+              <div className="h-64 overflow-y-auto space-y-2 pr-2 border border-slate-100 rounded-xl p-2">
+                  {promoters
+                    .map(promoter => {
+                      const isSelected = managedPromoterIds.includes(promoter.id);
+                      return (
+                        <button 
+                          key={promoter.id}
+                          onClick={() => handleToggleManagedPromoter(promoter.id)}
+                          className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
+                            isSelected
+                              ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
+                              : 'bg-white border border-slate-100 hover:bg-slate-50 text-slate-600'
+                          }`}
+                        >
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                            isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                          }`}>
+                            {promoter.name.charAt(0)}
+                          </div>
+                          <div className="text-left">
+                            <p className="font-bold">{promoter.name}</p>
+                            <p className={`text-xs ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
+                              {promoter.email}
+                            </p>
+                          </div>
+                          {isSelected && (
+                            <div className="ml-auto">
+                              <CheckCircle size={20} className="text-white" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4">
+                <button onClick={() => {
+                  setManagingPromotersRoute(null);
+                  setManagedPromoterIds([]);
+                }} className="px-6 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100">Cancelar</button>
+                <button 
+                  onClick={handleSaveManagedPromoters}
+                  className="px-6 py-2 rounded-lg font-bold text-white shadow-lg"
                   style={{ backgroundColor: settings.primaryColor }}
                 >
                   Salvar

@@ -424,37 +424,56 @@ const RouteDetailsView = () => {
       <Toaster position="top-center" />
       
       {/* Header */}
-      <div className="bg-white px-4 py-3 shadow-sm flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/')} className="p-1">
-            <ArrowLeft size={24} className="text-gray-600" />
-            </button>
-            <div>
-            <h1 className="font-bold text-gray-800">Detalhes da Rota</h1>
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-                <span>{format(new Date(route.date), 'dd/MM/yyyy')}</span>
-                <span>•</span>
-                <span className="flex items-center gap-1"><Clock size={10} /> {totalDurationStr}</span>
-            </div>
-            </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-            {pendingCount > 0 && (
-                <button 
-                    onClick={() => offlineService.syncPendingActions()}
-                    className="p-2 bg-orange-100 text-orange-600 rounded-full animate-pulse"
-                    title={`${pendingCount} ações pendentes. Clique para sincronizar.`}
-                >
-                    <RefreshCw size={20} />
+      <div className="bg-white px-4 py-3 shadow-sm flex flex-col gap-2 sticky top-0 z-10">
+        <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+                <button onClick={() => navigate('/')} className="p-1">
+                <ArrowLeft size={24} className="text-gray-600" />
                 </button>
-            )}
-            {isOnline ? (
-                <Wifi size={20} className="text-green-500" title="Online" />
-            ) : (
-                <WifiOff size={20} className="text-red-500" title="Offline" />
-            )}
+                <div>
+                <h1 className="font-bold text-gray-800">Detalhes da Rota</h1>
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span>{format(new Date(route.date), 'dd/MM/yyyy')}</span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1"><Clock size={10} /> {totalDurationStr}</span>
+                </div>
+                </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+                {pendingCount > 0 && (
+                    <button 
+                        onClick={() => offlineService.syncPendingActions()}
+                        className="p-2 bg-orange-100 text-orange-600 rounded-full animate-pulse"
+                        title={`${pendingCount} ações pendentes. Clique para sincronizar.`}
+                    >
+                        <RefreshCw size={20} />
+                    </button>
+                )}
+                {isOnline ? (
+                    <Wifi size={20} className="text-green-500" title="Online" />
+                ) : (
+                    <WifiOff size={20} className="text-red-500" title="Offline" />
+                )}
+            </div>
         </div>
+
+        {/* Promoters List */}
+        {((route.promoters && route.promoters.length > 0) || route.promoter) && (
+            <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                <span className="text-xs font-bold text-gray-500">Equipe:</span>
+                <div className="flex -space-x-2">
+                    {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => (
+                        <div key={p.id} className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 border-2 border-white flex items-center justify-center text-[10px] font-bold" title={p.name}>
+                            {p.name.charAt(0)}
+                        </div>
+                    ))}
+                </div>
+                <span className="text-xs text-gray-400 ml-1">
+                    {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => p.name.split(' ')[0]).join(', ')}
+                </span>
+            </div>
+        )}
       </div>
 
       <div className="p-4 space-y-4">
@@ -534,16 +553,26 @@ const RouteDetailsView = () => {
                             {item.products?.map((prod: any) => (
                               <div 
                                 key={prod.id} 
-                                className="flex items-center gap-2 bg-white p-3 rounded border border-blue-100 cursor-pointer hover:bg-blue-50 transition-colors"
+                                className="flex flex-col gap-1 bg-white p-3 rounded border border-blue-100 cursor-pointer hover:bg-blue-50 transition-colors"
                                 onClick={() => navigate(`/routes/${id}/items/${activeItem.id}/check?productId=${prod.product?.id || prod.productId}`)}
                               >
-                                <div className={`p-1 rounded-full ${prod.checked ? 'text-green-500' : 'text-gray-300'}`}>
-                                  {prod.checked ? <CheckCircle size={20} /> : <Circle size={20} />}
+                                <div className="flex items-center gap-2">
+                                  <div className={`p-1 rounded-full ${prod.checked ? 'text-green-500' : 'text-gray-300'}`}>
+                                    {prod.checked ? <CheckCircle size={20} /> : <Circle size={20} />}
+                                  </div>
+                                  <span className={`text-sm flex-1 ${prod.checked ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                                    {prod.product?.name}
+                                  </span>
+                                  <ChevronRight size={16} className="text-gray-400" />
                                 </div>
-                                <span className={`text-sm flex-1 ${prod.checked ? 'line-through text-gray-400' : 'text-gray-700'}`}>
-                                  {prod.product?.name}
-                                </span>
-                                <ChevronRight size={16} className="text-gray-400" />
+                                {prod.completedBy && (
+                                  <div className="ml-9 text-[10px] text-blue-600 font-bold flex items-center gap-1">
+                                     <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center text-[8px]">
+                                        {prod.completedBy.name?.charAt(0) || '?'}
+                                     </div>
+                                     {prod.completedBy.name?.split(' ')[0]}
+                                  </div>
+                                )}
                               </div>
                             ))}
                             {(!item.products || item.products.length === 0) && (

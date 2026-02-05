@@ -22,6 +22,10 @@ interface Checklist {
   type: ChecklistItemType;
   isChecked: boolean;
   value?: string;
+  completedBy?: {
+    id: string;
+    name: string;
+  };
 }
 
 interface Product {
@@ -44,6 +48,10 @@ interface RouteItemProduct {
   checkOutTime?: string;
   validityDate?: string;
   checklists?: Checklist[];
+  completedBy?: {
+    id: string;
+    name: string;
+  };
 }
 
 const ProductCheckView: React.FC = () => {
@@ -162,7 +170,8 @@ const ProductCheckView: React.FC = () => {
       // Reset stockout details if not stockout
       stockoutType: isStockout ? (prod.stockoutType || 'PHYSICAL') : undefined,
       checkInTime: new Date().toISOString(),
-      checkOutTime: new Date().toISOString()
+      checkOutTime: new Date().toISOString(),
+      completedBy: user?.employee ? { id: user.employee.id, name: user.name } : undefined
     };
 
     updateLocalState(updatedProduct);
@@ -196,7 +205,8 @@ const ProductCheckView: React.FC = () => {
           checkInTime: productData.checkInTime,
           checkOutTime: productData.checkOutTime,
           validityDate: productData.validityDate,
-          checklists: productData.checklists
+          checklists: productData.checklists,
+          completedBy: productData.completedBy
         });
       } else {
         // Offline: Add to pending actions
@@ -213,7 +223,8 @@ const ProductCheckView: React.FC = () => {
              checkInTime: productData.checkInTime,
              checkOutTime: productData.checkOutTime,
              validityDate: productData.validityDate,
-             checklists: productData.checklists
+             checklists: productData.checklists,
+             completedBy: productData.completedBy
           }
         );
       }
@@ -254,7 +265,8 @@ const ProductCheckView: React.FC = () => {
            observation: productData.observation,
            photos: productData.photos,
            validityDate: productData.validityDate,
-           checklists: productData.checklists
+           checklists: productData.checklists,
+           completedBy: productData.completedBy
         }
       );
     }
@@ -294,7 +306,8 @@ const ProductCheckView: React.FC = () => {
         const updatedProduct = {
             ...selectedProduct,
             checkInTime: startTime.toISOString(),
-            checkOutTime: new Date().toISOString()
+            checkOutTime: new Date().toISOString(),
+            completedBy: user?.employee ? { id: user.employee.id, name: user.name } : undefined
         };
 
         await saveProductCheck(updatedProduct);
@@ -450,6 +463,12 @@ const ProductCheckView: React.FC = () => {
                   {prod.product.brand && (
                     <p className="text-sm text-gray-500">{prod.product.brand.name}</p>
                   )}
+                  {prod.completedBy && (
+                     <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                        <CheckCircle size={12} />
+                        Feito por: {prod.completedBy.name.split(' ')[0]}
+                     </p>
+                  )}
                   {prod.observation && (
                     <p className="text-xs text-orange-600 mt-1 italic">Obs: {prod.observation}</p>
                   )}
@@ -547,6 +566,9 @@ const ProductCheckView: React.FC = () => {
                     <div className="flex-1">
                       <span className={`text-sm font-medium ${item.isChecked ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
                         {item.description}
+                        {item.completedBy && (
+                            <span className="text-xs text-blue-600 ml-2">({item.completedBy.name.split(' ')[0]})</span>
+                        )}
                       </span>
                       {item.type === ChecklistItemType.VALIDITY_CHECK && (
                         <span className="block text-xs text-orange-600 mt-0.5">Habilita campo de validade</span>

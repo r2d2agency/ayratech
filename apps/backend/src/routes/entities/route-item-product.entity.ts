@@ -2,6 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMan
 import { RouteItem } from './route-item.entity';
 import { Product } from '../../entities/product.entity';
 import { RouteItemProductChecklist } from './route-item-product-checklist.entity';
+import { Employee } from '../../employees/entities/employee.entity';
 
 @Entity()
 export class RouteItemProduct {
@@ -21,6 +22,13 @@ export class RouteItemProduct {
 
   @Column()
   productId: string;
+
+  @ManyToOne(() => Employee, { nullable: true })
+  @JoinColumn({ name: 'completedById' })
+  completedBy: Employee;
+
+  @Column({ nullable: true })
+  completedById: string;
 
   @Column({ default: false })
   checked: boolean;

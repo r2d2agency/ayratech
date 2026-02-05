@@ -50,6 +50,11 @@ export class CreateRouteDto {
   promoterId?: string;
 
   @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  promoterIds?: string[];
+
+  @IsOptional()
   @IsString()
   status?: string;
 
