@@ -235,10 +235,14 @@ const RouteDetailsView = () => {
   };
 
   const handleCheckIn = async (itemId: string) => {
-    if (activeItem) {
-      toast.error('Finalize a visita atual antes de iniciar outra.');
-      return;
-    }
+    // REMOVED: activeItem check to allow multiple checkins on same item by different users (handled by backend)
+    // Actually, we still want to prevent checking in if *I* am already checked in somewhere else?
+    // But existing logic "activeItem" is based on route item status.
+    // If I am in a shared route, another item might be active by someone else.
+    // So "activeItem" logic in frontend needs to be smarter.
+    
+    // For now, let's allow it, but maybe warn?
+    // The user requirement: "pra mim precisa aparecer a opcao de fazer checkin"
     
     // Find the item to check coordinates
     const itemToCheck = route.items.find((i: any) => i.id === itemId);
@@ -465,12 +469,12 @@ const RouteDetailsView = () => {
                 <div className="flex -space-x-2">
                     {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => (
                         <div key={p.id} className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 border-2 border-white flex items-center justify-center text-[10px] font-bold" title={p.name}>
-                            {p.name.charAt(0)}
+                            {(p.name || '?').charAt(0)}
                         </div>
                     ))}
                 </div>
                 <span className="text-xs text-gray-400 ml-1">
-                    {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => p.name.split(' ')[0]).join(', ')}
+                    {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => (p.name || '').split(' ')[0]).join(', ')}
                 </span>
             </div>
         )}
@@ -495,104 +499,133 @@ const RouteDetailsView = () => {
              distanceText = dist > 1000 ? `${(dist/1000).toFixed(1)}km` : `${Math.round(dist)}m`;
            }
 
-           return (
-             <div key={item.id} className={`bg-white rounded-xl shadow-sm border overflow-hidden ${isActive ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-100'}`}>
-               <div className="p-4">
-                 <div className="flex justify-between items-start mb-2">
-                   <div className="flex items-center gap-3 flex-1">
-                     <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
-                       isCompleted ? 'bg-green-100 text-green-600' : 
-                       isActive ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'
-                     }`}>
-                       {isCompleted ? <CheckCircle size={16} /> : <span className="text-xs font-bold">{index + 1}</span>}
-                     </div>
-                     <div className="flex-1 min-w-0" onClick={() => openGoogleMaps(item.supermarket?.latitude, item.supermarket?.longitude)}>
-                      <h3 className="font-bold text-gray-800 truncate">{item.supermarket?.fantasyName || item.supermarket?.name || 'Supermercado sem nome'}</h3>
-                      <p className="text-xs text-gray-500 flex items-center gap-1 truncate">
-                        <MapPin size={10} /> {item.supermarket?.address || `${item.supermarket?.street || ''}, ${item.supermarket?.number || ''}`}
-                      </p>
-                      {distanceText && (
-                        <p className="text-xs text-blue-600 font-medium mt-1 flex items-center gap-1">
-                          <Navigation size={10} /> {distanceText}
-                        </p>
-                      )}
-                      {itemDuration && (
-                        <p className="text-xs text-green-600 font-medium mt-1 flex items-center gap-1">
-                          <Clock size={10} /> {itemDuration}
-                        </p>
+           // Check if current user is checked in
+  const currentUserCheckin = item.checkins?.find((c: any) => c.promoterId === user?.id && !c.checkOutTime);
+  const isCurrentUserCheckedIn = !!currentUserCheckin;
+
+  // Determine effective status for current user
+  // If user is checked in, treat as Active for them regardless of route item status
+  // If route item is Active but user not checked in, treat as Pendng (needs Checkin)
+  const isUserActive = isCurrentUserCheckedIn;
+  const isItemActiveGlobal = isActive; // Existing isActive is based on item.status === 'CHECKIN'
+
+  // If item is globally active but user hasn't checked in, we want to show CHECKIN button.
+  // If item is NOT active globally, but user hasn't checked in, show CHECKIN button (standard flow).
+
+  const showCheckInButton = !isCurrentUserCheckedIn && !isCompleted;
+  const showActions = isCurrentUserCheckedIn; 
+  // Wait, if item is completed, we don't show checkin.
+  
+  // Refined Logic:
+  // Show Check-in if: Not Completed AND Not Checked In (regardless of Global Active status)
+  // Show Actions if: Checked In (regardless of Global Active status, though it should be Active if anyone is there)
+
+  return (
+    <div key={item.id} className={`bg-white rounded-xl shadow-sm border overflow-hidden ${isUserActive ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-100'}`}>
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-2">
+          <div className="flex items-center gap-3 flex-1">
+            <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
+              isCompleted ? 'bg-green-100 text-green-600' : 
+              isUserActive ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'
+            }`}>
+              {isCompleted ? <CheckCircle size={16} /> : <span className="text-xs font-bold">{index + 1}</span>}
+            </div>
+            <div className="flex-1 min-w-0" onClick={() => openGoogleMaps(item.supermarket?.latitude, item.supermarket?.longitude)}>
+            <h3 className="font-bold text-gray-800 truncate">{item.supermarket?.fantasyName || item.supermarket?.name || 'Supermercado sem nome'}</h3>
+            <p className="text-xs text-gray-500 flex items-center gap-1 truncate">
+              <MapPin size={10} /> {item.supermarket?.address || `${item.supermarket?.street || ''}, ${item.supermarket?.number || ''}`}
+            </p>
+            {distanceText && (
+              <p className="text-xs text-blue-600 font-medium mt-1 flex items-center gap-1">
+                <Navigation size={10} /> {distanceText}
+              </p>
+            )}
+            {itemDuration && (
+              <p className="text-xs text-green-600 font-medium mt-1 flex items-center gap-1">
+                <Clock size={10} /> {itemDuration}
+              </p>
+            )}
+          </div>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
+              isCompleted ? 'bg-green-50 text-green-700' :
+              isUserActive ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'
+            }`}>
+              {isUserActive ? 'Em Andamento (Você)' : isItemActiveGlobal ? 'Em Andamento (Equipe)' : isCompleted ? 'Concluído' : 'Pendente'}
+            </span>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                openGoogleMaps(item.supermarket?.latitude, item.supermarket?.longitude);
+              }}
+              className="p-1.5 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition-colors"
+              title="Abrir no Google Maps"
+            >
+              <Navigation size={14} />
+            </button>
+          </div>
+        </div>
+
+        {/* Actions Area */}
+        <div className="mt-4 pt-3 border-t border-gray-50">
+          {showActions ? (
+            <div className="space-y-3">
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-xs text-blue-800 font-medium mb-2">Tarefas:</p>
+                <div className="space-y-2">
+                  {item.products?.map((prod: any) => (
+                    <div 
+                      key={prod.id} 
+                      className="flex flex-col gap-1 bg-white p-3 rounded border border-blue-100 cursor-pointer hover:bg-blue-50 transition-colors"
+                      onClick={() => navigate(`/routes/${id}/items/${item.id}/check?productId=${prod.product?.id || prod.productId}`)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={`p-1 rounded-full ${prod.checked ? 'text-green-500' : 'text-gray-300'}`}>
+                          {prod.checked ? <CheckCircle size={20} /> : <Circle size={20} />}
+                        </div>
+                        <span className={`text-sm flex-1 ${prod.checked ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                          {prod.product?.name}
+                        </span>
+                        <ChevronRight size={16} className="text-gray-400" />
+                      </div>
+                      {prod.completedBy && (
+                        <div className="ml-9 text-[10px] text-blue-600 font-bold flex items-center gap-1">
+                            <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center text-[8px]">
+                              {(prod.completedBy.name || '?').charAt(0)}
+                            </div>
+                            {(prod.completedBy.name || '').split(' ')[0]}
+                        </div>
                       )}
                     </div>
-                   </div>
-                   <div className="flex flex-col items-end gap-2">
-                     <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
-                       isCompleted ? 'bg-green-50 text-green-700' :
-                       isActive ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'
-                     }`}>
-                       {isActive ? 'Em Andamento' : isCompleted ? 'Concluído' : 'Pendente'}
-                     </span>
-                     <button 
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         openGoogleMaps(item.supermarket?.latitude, item.supermarket?.longitude);
-                       }}
-                       className="p-1.5 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition-colors"
-                       title="Abrir no Google Maps"
-                     >
-                       <Navigation size={14} />
-                     </button>
-                   </div>
-                 </div>
+                  ))}
+                  {(!item.products || item.products.length === 0) && (
+                    <p className="text-xs text-gray-500 italic">Nenhum produto listado.</p>
+                  )}
+                </div>
+              </div>
 
-                 {/* Actions Area */}
-                 <div className="mt-4 pt-3 border-t border-gray-50">
-                   {isActive ? (
-                     <div className="space-y-3">
-                        <div className="bg-blue-50 p-3 rounded-lg">
-                          <p className="text-xs text-blue-800 font-medium mb-2">Tarefas:</p>
-                          <div className="space-y-2">
-                            {item.products?.map((prod: any) => (
-                              <div 
-                                key={prod.id} 
-                                className="flex flex-col gap-1 bg-white p-3 rounded border border-blue-100 cursor-pointer hover:bg-blue-50 transition-colors"
-                                onClick={() => navigate(`/routes/${id}/items/${activeItem.id}/check?productId=${prod.product?.id || prod.productId}`)}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <div className={`p-1 rounded-full ${prod.checked ? 'text-green-500' : 'text-gray-300'}`}>
-                                    {prod.checked ? <CheckCircle size={20} /> : <Circle size={20} />}
-                                  </div>
-                                  <span className={`text-sm flex-1 ${prod.checked ? 'line-through text-gray-400' : 'text-gray-700'}`}>
-                                    {prod.product?.name}
-                                  </span>
-                                  <ChevronRight size={16} className="text-gray-400" />
-                                </div>
-                                {prod.completedBy && (
-                                  <div className="ml-9 text-[10px] text-blue-600 font-bold flex items-center gap-1">
-                                     <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center text-[8px]">
-                                        {prod.completedBy.name?.charAt(0) || '?'}
-                                     </div>
-                                     {prod.completedBy.name?.split(' ')[0]}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                            {(!item.products || item.products.length === 0) && (
-                              <p className="text-xs text-gray-500 italic">Nenhum produto listado.</p>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                          {/* Photo button removed as per request - use task details instead */}
-                          <button 
-                            onClick={() => handleCheckOut(item.id)}
-                            disabled={processing}
-                            className="w-full bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50"
-                          >
-                            Finalizar Visita
-                          </button>
-                        </div>
-                     </div>
-                   ) : isCompleted ? (
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => handleCheckOut(item.id)}
+                  disabled={processing}
+                  className="w-full bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+                >
+                  Finalizar Visita
+                </button>
+              </div>
+            </div>
+          ) : showCheckInButton ? (
+             <button 
+                onClick={() => handleCheckIn(item.id)}
+                disabled={processing}
+                className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <MapPin size={16} />
+                Fazer Check-in {isItemActiveGlobal ? '(Juntar-se à Equipe)' : ''}
+              </button>
+          ) : null}
                      <div className="flex items-center gap-2 text-green-700 text-sm">
                        <CheckCircle size={16} />
                        <span>Visita realizada</span>

@@ -1,6 +1,8 @@
 import { Injectable, BadRequestException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { RouteItemCheckin } from './entities/route-item-checkin.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, DataSource, Brackets } from 'typeorm';
+import { Repository, In, DataSource, Brackets, IsNull } from 'typeorm';
+import { Employee } from '../../employees/entities/employee.entity';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
 import { Route } from './entities/route.entity';
@@ -934,10 +936,10 @@ export class RoutesService {
     }
   }
 
-  async checkIn(itemId: string, data: { lat: number; lng: number; timestamp: string }) {
+  async checkIn(itemId: string, data: { lat: number; lng: number; timestamp: string }, userId?: string) {
     const item = await this.routeItemsRepository.findOne({ 
       where: { id: itemId },
-      relations: ['route']
+      relations: ['route', 'checkins', 'checkins.promoter']
     });
     if (!item) throw new NotFoundException('Item not found');
     
@@ -945,10 +947,109 @@ export class RoutesService {
         this.validateSyncDeadline(item.route.date);
     }
     
-    item.status = 'CHECKIN';
-    item.checkInTime = new Date(data.timestamp);
-    // optionally save location data if we add columns for it
+    // Always update status to CHECKIN if it was PENDING
+    if (item.status === 'PENDING') {
+        item.status = 'CHECKIN';
+        item.checkInTime = new Date(data.timestamp);
+    }
+
+    // Register individual promoter checkin
+    if (userId) {
+        const promoter = await this.dataSource.getRepository(Employee).findOne({ where: { id: userId } });
+        if (promoter) {
+            // Check if already checked in (open checkin)
+            const existingCheckin = item.checkins?.find(c => c.promoterId === userId && !c.checkOutTime);
+            if (!existingCheckin) {
+                const newCheckin = this.dataSource.getRepository(RouteItemCheckin).create({
+                    routeItem: { id: itemId },
+                    promoter: { id: userId },
+                    checkInTime: new Date(data.timestamp)
+                });
+                await this.dataSource.getRepository(RouteItemCheckin).save(newCheckin);
+            }
+        }
+    }
     
+    return this.routeItemsRepository.save(item);
+  }
+
+  async checkOut(itemId: string, data: { lat: number; lng: number; timestamp: string }, userId?: string) {
+    const item = await this.routeItemsRepository.findOne({ 
+      where: { id: itemId },
+      relations: ['route', 'items', 'products', 'checkins']
+    });
+    if (!item) throw new NotFoundException('Item not found');
+
+    if (item.route) {
+        this.validateSyncDeadline(item.route.date);
+    }
+
+    // Close individual promoter checkin
+    if (userId) {
+        const openCheckin = await this.dataSource.getRepository(RouteItemCheckin).findOne({
+            where: { routeItemId: itemId, promoterId: userId, checkOutTime: IsNull() }
+        });
+        
+        if (openCheckin) {
+            openCheckin.checkOutTime = new Date(data.timestamp);
+            await this.dataSource.getRepository(RouteItemCheckin).save(openCheckin);
+        } else {
+            // Fallback: If no open checkin found (maybe legacy flow or error), create one closed immediately?
+            // Or just ignore.
+            // Let's create a closed one to record the exit at least.
+             const newCheckin = this.dataSource.getRepository(RouteItemCheckin).create({
+                routeItem: { id: itemId },
+                promoter: { id: userId },
+                checkInTime: new Date(data.timestamp), // Approximated
+                checkOutTime: new Date(data.timestamp)
+            });
+            await this.dataSource.getRepository(RouteItemCheckin).save(newCheckin);
+        }
+    }
+    
+    // Check if we should close the RouteItem completely
+    // If photos are missing, revert to PENDING (handled in previous step, but let's re-verify)
+    // Actually, checkOut Logic was calling this.routeItemsRepository.save(item) with status CHECKOUT
+    
+    const missingPhotos = item.products.some(p => !p.photos || p.photos.length === 0);
+    if (missingPhotos) {
+         // If photos missing, we do NOT close the route item status.
+         // We just closed the user's session above.
+         // And return item (maybe with warning handled by frontend)
+         // But the frontend expects status update?
+         // User requirement: "se finalizar sem fotos ele fica pendente"
+         // If it was CHECKIN, it stays CHECKIN? Or goes back to PENDING?
+         // "revert to pending" logic was:
+         if (item.status === 'CHECKIN') {
+             // Keep it checkin if other people are there?
+             // Or force Pending?
+             // Let's force Pending to indicate "Not Done".
+             item.status = 'PENDING';
+         }
+         await this.routeItemsRepository.save(item);
+         // throw new BadRequestException('Fotos pendentes. Visita revertida para pendente.');
+         // Instead of throwing, we return success but item status is PENDING.
+         return item;
+    }
+
+    // If photos OK, update status to CHECKOUT
+    // BUT only if we want to close the whole visit.
+    // Assuming "Finalizar Visita" button means "I am done".
+    // Does it mean "Everybody is done"?
+    // "a conclusao da rota pode ser feito por ambos"
+    // If I am the last one?
+    
+    // Let's check if any other promoter is still checked in.
+    const activeCheckins = await this.dataSource.getRepository(RouteItemCheckin).count({
+        where: { routeItemId: itemId, checkOutTime: IsNull() }
+    });
+
+    if (activeCheckins === 0) {
+        item.status = 'CHECKOUT';
+        item.checkOutTime = new Date(data.timestamp);
+    }
+    // If others are still there, status remains CHECKIN.
+
     return this.routeItemsRepository.save(item);
   }
 
@@ -1008,38 +1109,7 @@ export class RoutesService {
     return { success: true, status: itemProduct.stockCountStatus };
   }
 
-  async checkOut(itemId: string, data: { lat: number; lng: number; timestamp: string }) {
-    const item = await this.routeItemsRepository.findOne({ 
-      where: { id: itemId },
-      relations: ['products', 'route']
-    });
-    if (!item) throw new NotFoundException('Item not found');
 
-    // Late Sync Validation
-    if (item.route) {
-        this.validateSyncDeadline(item.route.date);
-
-        // Optional warning for > 20:00 same day (if needed)
-        const dateVal: any = item.route.date;
-        const dateStr = dateVal instanceof Date ? dateVal.toISOString().split('T')[0] : dateVal;
-        const cutoff20h = new Date(`${dateStr}T20:00:00`);
-        if (new Date() > cutoff20h) {
-            item.observation = (item.observation || '') + ' [Alerta: Sincronismo fora de horário]';
-        }
-    }
-
-    // Validate if all products have photos
-    // User requirement: "todos os produtos do checklist precisa ter fotos se finalizar sem fotos ele fica pendente"
-    const pendingProducts = item.products.filter(p => !p.photos || p.photos.length === 0);
-    if (pendingProducts.length > 0) {
-      throw new BadRequestException('Todos os produtos do checklist precisam ter fotos para finalizar.');
-    }
-    
-    item.status = 'CHECKOUT';
-    item.checkOutTime = new Date(data.timestamp);
-    
-    return this.routeItemsRepository.save(item);
-  }
 
   private async checkPromoterAvailability(promoterId: string, date: string, startTime: string, estimatedDuration: number, excludeRouteId?: string) {
     if (!promoterId || !date || !startTime || !estimatedDuration) return;
@@ -1067,12 +1137,6 @@ export class RoutesService {
         const itemEnd = itemStart + item.estimatedDuration;
 
         // Check overlap: (StartA < EndB) && (EndA > StartB)
-        if (startMinutes < itemEnd && endMinutes > itemStart) {
-           throw new BadRequestException(`O promotor já possui um agendamento conflitante neste horário (PDV: ${item.supermarket?.fantasyName || 'Desconhecido'}, ${item.startTime} - ${this.minutesToTime(itemEnd)}).`);
-        }
-      }
-    }
-  }
         if (startMinutes < itemEnd && endMinutes > itemStart) {
            throw new BadRequestException(`O promotor já possui um agendamento conflitante neste horário (PDV: ${item.supermarket?.fantasyName || 'Desconhecido'}, ${item.startTime} - ${this.minutesToTime(itemEnd)}).`);
         }

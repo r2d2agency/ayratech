@@ -2,6 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany, JoinColum
 import { Route } from './route.entity';
 import { Supermarket } from '../../entities/supermarket.entity';
 import { RouteItemProduct } from './route-item-product.entity';
+import { RouteItemCheckin } from './route-item-checkin.entity';
 
 @Entity()
 export class RouteItem {
@@ -54,4 +55,7 @@ export class RouteItem {
 
   @OneToMany(() => RouteItemProduct, (product) => product.routeItem, { cascade: true, eager: true })
   products: RouteItemProduct[];
+
+  @OneToMany(() => RouteItemCheckin, (checkin) => checkin.routeItem, { cascade: true, eager: true })
+  checkins: RouteItemCheckin[];
 }
