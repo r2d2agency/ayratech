@@ -259,7 +259,7 @@ export class RoutesService {
             const roleName = user.role?.name?.toLowerCase() || '';
             const isAdmin = ['admin', 'administrador do sistema', 'manager', 'rh'].includes(roleName);
             
-            console.log(`RoutesService.findAll: User ${user.username} (${userId}), Role: ${roleName}, IsAdmin: ${isAdmin}, Employee: ${user.employee?.id}, Clients: ${user.clients?.length}`);
+            console.log(`RoutesService.findAll: User ${user.email} (${userId}), Role: ${roleName}, IsAdmin: ${isAdmin}, Employee: ${user.employee?.id}, Clients: ${user.clients?.length}`);
 
             if (!isAdmin) {
                 // 1. Client Restriction
