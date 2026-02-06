@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import client from '../api/client';
 import { offlineService } from '../services/offline.service';
 import { processImage } from '../utils/image-processor';
@@ -42,6 +42,7 @@ function formatDuration(start?: string | Date, end?: string | Date) {
 const RouteDetailsView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [route, setRoute] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -50,6 +51,24 @@ const RouteDetailsView = () => {
   
   // State for active item (being visited)
   const [activeItem, setActiveItem] = useState<any>(null);
+
+  // Scroll to target item when route loads
+  useEffect(() => {
+    if (route && !loading) {
+      const targetId = location.state?.targetItemId;
+      if (targetId) {
+        setTimeout(() => {
+          const element = document.getElementById(`item-${targetId}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Highlight it temporarily?
+            element.classList.add('ring-2', 'ring-blue-500');
+            setTimeout(() => element.classList.remove('ring-2', 'ring-blue-500'), 2000);
+          }
+        }, 500); // Small delay to ensure render
+      }
+    }
+  }, [route, loading, location.state]);
 
   // Photo Capture State
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -521,7 +540,7 @@ const RouteDetailsView = () => {
   // Show Actions if: Checked In (regardless of Global Active status, though it should be Active if anyone is there)
 
   return (
-    <div key={item.id} className={`bg-white rounded-xl shadow-sm border overflow-hidden ${isUserActive ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-100'}`}>
+    <div id={`item-${item.id}`} key={item.id} className={`bg-white rounded-xl shadow-sm border overflow-hidden ${isUserActive ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-100'}`}>
       <div className="p-4">
         <div className="flex justify-between items-start mb-2">
           <div className="flex items-center gap-3 flex-1">

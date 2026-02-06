@@ -28,7 +28,15 @@ export class EmployeesService {
   ) {}
 
   async findByCpf(cpf: string): Promise<Employee | undefined> {
-    return this.employeesRepository.findOne({ where: { cpf } });
+    const clean = cpf.replace(/\D/g, '');
+    const formatted = clean.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    
+    return this.employeesRepository.findOne({ 
+        where: [
+            { cpf: clean },
+            { cpf: formatted }
+        ] 
+    });
   }
 
   async updateLocation(userId: string, lat: number, lng: number) {
@@ -404,15 +412,19 @@ export class EmployeesService {
                   throw new BadRequestException(`Erro ao desativar acesso: ${e.message}`);
               }
           }
-      } else if (shouldHaveAccess && hasUser && appPassword) {
-          // Update Password
+      } else if (shouldHaveAccess && hasUser) {
+          // Ensure user is active and Update Password if provided
           const user = await this.usersService.findByEmployeeId(id);
           if (user) {
               try {
-                  await this.usersService.update(user.id, { password: appPassword });
+                  const updateData: any = { status: 'active' };
+                  if (appPassword) {
+                      updateData.password = appPassword;
+                  }
+                  await this.usersService.update(user.id, updateData);
               } catch (e) {
-                  console.error('Error updating password:', e);
-                  throw new BadRequestException(`Erro ao atualizar senha: ${e.message}`);
+                  console.error('Error updating user status/password:', e);
+                  throw new BadRequestException(`Erro ao atualizar usuário: ${e.message}`);
               }
           }
       }

@@ -169,7 +169,7 @@ const DashboardView = () => {
                       return (
                         <div 
                           key={item.id}
-                          onClick={() => navigate(`/routes/${route.id}`)}
+                          onClick={() => navigate(`/routes/${route.id}`, { state: { targetItemId: item.id } })}
                           className={`relative bg-white p-4 rounded-xl shadow-sm border flex gap-4 items-center active:scale-[0.98] transition-transform ${
                             isInProgress ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-100'
                           }`}

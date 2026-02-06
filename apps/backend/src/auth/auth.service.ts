@@ -47,6 +47,10 @@ export class AuthService {
       
       const isPasswordValid = await bcrypt.compare(pass, user.password);
       if (user && isPasswordValid) {
+        if (user.status !== 'active') {
+             console.warn(`User ${user.email} is not active`);
+             return null;
+        }
         console.log(`User validated successfully: ${user.email}`);
         const { password, ...result } = user;
         return result;
