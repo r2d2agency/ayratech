@@ -195,7 +195,7 @@ const DraggableRouteCard = ({ route, onDoubleClick, onDelete, onDuplicate, onMan
                 )}
             </div>
             <p className="text-xs font-bold text-slate-700 truncate max-w-[120px]" title={((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p:any) => p.name).join(', ')}>
-                {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p:any) => p.name.split(' ')[0]).join(', ')}
+                {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p:any) => (p.name || '').split(' ')[0]).join(', ')}
             </p>
         </div>
         <div className="flex gap-1">

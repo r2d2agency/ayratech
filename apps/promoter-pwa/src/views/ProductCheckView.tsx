@@ -466,7 +466,7 @@ const ProductCheckView: React.FC = () => {
                   {prod.completedBy && (
                      <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
                         <CheckCircle size={12} />
-                        Feito por: {prod.completedBy.name.split(' ')[0]}
+                        Feito por: {(prod.completedBy.name || '').split(' ')[0]}
                      </p>
                   )}
                   {prod.observation && (
@@ -567,7 +567,7 @@ const ProductCheckView: React.FC = () => {
                       <span className={`text-sm font-medium ${item.isChecked ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
                         {item.description}
                         {item.completedBy && (
-                            <span className="text-xs text-blue-600 ml-2">({item.completedBy.name.split(' ')[0]})</span>
+                            <span className="text-xs text-blue-600 ml-2">({(item.completedBy.name || '').split(' ')[0]})</span>
                         )}
                       </span>
                       {item.type === ChecklistItemType.VALIDITY_CHECK && (
