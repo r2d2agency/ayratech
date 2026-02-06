@@ -97,13 +97,13 @@ export class EmployeesService {
 
     if (baseSalary) {
       const compensation = this.compensationRepository.create({
-        employee: savedEmployee,
         validFrom: new Date(), // Today as start of validity
         remunerationType: 'mensal',
         baseSalary: baseSalary,
         transportVoucher: transportVoucher || 0,
         mealVoucher: mealVoucher || 0
       });
+      compensation.employee = savedEmployee;
       await this.compensationRepository.save(compensation);
     }
 
