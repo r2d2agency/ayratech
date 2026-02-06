@@ -40,7 +40,6 @@ const DashboardView = () => {
       const filtered = response.data.filter((r: any) => {
         return r.date.startsWith(today) && (
           isManager || // Managers see all routes
-          !user?.employee?.id || // Fallback if no employee linked
           r.promoter?.id === user.employee.id || // Legacy single promoter check
           (r.promoters && r.promoters.some((p: any) => p.id === user.employee.id)) // Multi-promoter check
         );

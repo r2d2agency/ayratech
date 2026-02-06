@@ -233,12 +233,13 @@ export class RoutesService {
 
   async findAll(userId?: string) {
     let allowedClientIds: string[] | null = null;
+    let restrictToPromoterId: string | null = null;
     
     if (userId) {
         const userRepo = this.dataSource.getRepository(User);
         const user = await userRepo.findOne({ 
             where: { id: userId }, 
-            relations: ['clients', 'role'] 
+            relations: ['clients', 'role', 'employee'] 
         });
 
         if (user) {
@@ -249,6 +250,11 @@ export class RoutesService {
                 if (user.clients && user.clients.length > 0) {
                     allowedClientIds = user.clients.map(c => c.id);
                 } else if (roleName.includes('supervisor')) {
+                    allowedClientIds = [];
+                } else if (user.employee) {
+                    restrictToPromoterId = user.employee.id;
+                } else {
+                    // If not admin, not client, and not employee -> Show nothing
                     allowedClientIds = [];
                 }
             }
@@ -266,6 +272,10 @@ export class RoutesService {
       .leftJoinAndSelect('itemProducts.completedBy', 'completedBy')
       .leftJoinAndSelect('product.brand', 'brand')
       .orderBy('route.date', 'DESC');
+
+    if (restrictToPromoterId) {
+        qb.andWhere('(promoter.id = :promoterId OR promoters.id = :promoterId)', { promoterId: restrictToPromoterId });
+    }
 
     if (allowedClientIds !== null) {
         if (allowedClientIds.length === 0) {
