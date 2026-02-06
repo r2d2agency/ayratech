@@ -1409,6 +1409,8 @@ const RoutesReportView: React.FC = () => {
                           <th className="p-3">Produto</th>
                           <th className="p-3">Marca</th>
                           <th className="p-3">Quem</th>
+                          <th className="p-3">Estoque</th>
+                          <th className="p-3">Preço</th>
                           <th className="p-3">Validade</th>
                           <th className="p-3">Status</th>
                           <th className="p-3">Fotos</th>
@@ -1427,6 +1429,15 @@ const RoutesReportView: React.FC = () => {
                                         {(p.completedBy?.name || '').split(' ')[0]}
                                     </span>
                                 ) : '-'}
+                            </td>
+                            <td className="p-3 text-xs text-slate-700 font-bold">
+                                {p.stockCount !== null && p.stockCount !== undefined ? p.stockCount : '-'}
+                            </td>
+                            <td className="p-3 text-xs text-slate-700">
+                                {(() => {
+                                    const priceCheck = p.checklists?.find((c: any) => c.type === 'PRICE_CHECK');
+                                    return priceCheck && priceCheck.value ? `R$ ${priceCheck.value}` : '-';
+                                })()}
                             </td>
                             <td className="p-3 text-xs">
                               {p.validityDate ? (() => {

@@ -302,6 +302,7 @@ export class RoutesService {
       .leftJoinAndSelect('items.products', 'itemProducts')
       .leftJoinAndSelect('itemProducts.product', 'product')
       .leftJoinAndSelect('itemProducts.completedBy', 'completedBy')
+      .leftJoinAndSelect('itemProducts.checklists', 'checklists')
       .leftJoinAndSelect('product.brand', 'brand')
       .leftJoinAndSelect('items.checkins', 'checkins')
       .leftJoinAndSelect('checkins.promoter', 'checkinPromoter')
@@ -356,6 +357,7 @@ export class RoutesService {
         .leftJoinAndSelect('route.promoter', 'promoter')
         .leftJoinAndSelect('items.products', 'itemProducts')
         .leftJoinAndSelect('itemProducts.completedBy', 'completedBy')
+        .leftJoinAndSelect('itemProducts.checklists', 'checklists')
         .leftJoinAndSelect('itemProducts.product', 'product')
         .leftJoinAndSelect('product.client', 'productClient')
         .leftJoinAndSelect('product.brand', 'brand')
@@ -1128,6 +1130,22 @@ export class RoutesService {
     // If others are still there, status remains CHECKIN.
 
     await this.routeItemsRepository.save(item);
+
+    // Check if all items in the route are completed
+    if (item.route) {
+        const routeItems = await this.routeItemsRepository.find({ 
+            where: { route: { id: item.route.id } } 
+        });
+        
+        const allCompleted = routeItems.every(i => 
+            i.id === item.id ? (item.status === 'CHECKOUT' || item.status === 'COMPLETED') : 
+            (i.status === 'CHECKOUT' || i.status === 'COMPLETED')
+        );
+
+        if (allCompleted) {
+            await this.routesRepository.update(item.route.id, { status: 'COMPLETED' });
+        }
+    }
 
     return this.routeItemsRepository.findOne({ 
         where: { id: itemId },

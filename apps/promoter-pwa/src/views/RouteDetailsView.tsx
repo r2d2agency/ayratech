@@ -427,10 +427,23 @@ const RouteDetailsView = () => {
           toast.success('Visita finalizada!');
           
           // Optimistic update for immediate feedback
-          const updatedItems = route.items.map((i: any) => 
-            i.id === itemId ? { ...i, status: 'CHECKOUT', checkOutTime: new Date().toISOString() } : i
-          );
-          setRoute({ ...route, items: updatedItems });
+          const updatedItems = route.items.map((i: any) => {
+            if (i.id === itemId) {
+                const promoterId = user?.employee?.id || user?.id;
+                const updatedCheckins = (i.checkins || []).map((c: any) => {
+                    const cPid = c.promoterId || c.promoter?.id;
+                    if (cPid === promoterId && !c.checkOutTime) {
+                        return { ...c, checkOutTime: new Date().toISOString() };
+                    }
+                    return c;
+                });
+                return { ...i, status: 'CHECKOUT', checkOutTime: new Date().toISOString(), checkins: updatedCheckins };
+            }
+            return i;
+          });
+          
+          const allDone = updatedItems.every((i: any) => i.status === 'CHECKOUT' || i.status === 'COMPLETED');
+          setRoute({ ...route, status: allDone ? 'COMPLETED' : route.status, items: updatedItems });
           setActiveItem(null);
           
           fetchRoute();
@@ -452,10 +465,23 @@ const RouteDetailsView = () => {
           );
 
           // Optimistic update
-          const updatedItems = route.items.map((i: any) => 
-            i.id === itemId ? { ...i, status: 'CHECKOUT' } : i
-          );
-          setRoute({ ...route, items: updatedItems });
+          const updatedItems = route.items.map((i: any) => {
+            if (i.id === itemId) {
+                const promoterId = user?.employee?.id || user?.id;
+                const updatedCheckins = (i.checkins || []).map((c: any) => {
+                    const cPid = c.promoterId || c.promoter?.id;
+                    if (cPid === promoterId && !c.checkOutTime) {
+                        return { ...c, checkOutTime: new Date().toISOString() };
+                    }
+                    return c;
+                });
+                return { ...i, status: 'CHECKOUT', checkOutTime: new Date().toISOString(), checkins: updatedCheckins };
+            }
+            return i;
+          });
+          
+          const allDone = updatedItems.every((i: any) => i.status === 'CHECKOUT' || i.status === 'COMPLETED');
+          setRoute({ ...route, status: allDone ? 'COMPLETED' : route.status, items: updatedItems });
           setActiveItem(null);
           updatePendingCount();
         } finally {
