@@ -162,6 +162,33 @@ const DashboardView = () => {
               <div className="space-y-4">
                 {todaysRoutes.map((route) => (
                   <div key={route.id} className="space-y-3">
+                    {/* Route Header with Promoters */}
+                    <div className="flex items-center justify-between px-2">
+                         <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-gray-500">Equipe:</span>
+                            <div className="flex -space-x-2">
+                                {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => (
+                                    <div key={p.id} className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 border-2 border-white flex items-center justify-center text-[10px] font-bold" title={p.name}>
+                                        {(p.name || '?').charAt(0)}
+                                    </div>
+                                ))}
+                            </div>
+                            <span className="text-xs text-gray-400 ml-1">
+                                {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => String(p?.name || '').split(' ')[0]).join(', ')}
+                            </span>
+                         </div>
+                         <div className="flex items-center gap-2">
+                            {route.status === 'COMPLETED' && (
+                                <span className="text-[10px] text-green-700 bg-green-100 px-2 py-1 rounded-full font-bold">
+                                    Finalizada
+                                </span>
+                            )}
+                            <div className="text-[10px] text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+                                Rota #{route.id.slice(0, 4)}
+                            </div>
+                         </div>
+                    </div>
+
                     {route.items.sort((a: any, b: any) => a.order - b.order).map((item: any) => {
                       const isCompleted = item.status === 'CHECKOUT' || item.status === 'COMPLETED';
                       const isInProgress = item.status === 'CHECKIN';

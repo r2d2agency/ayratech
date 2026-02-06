@@ -64,7 +64,10 @@ const BrandsView: React.FC = () => {
       fetchBrands();
     } catch (error: any) {
       console.error("Error saving brand:", error);
-      const message = error.response?.data?.message || 'Erro ao salvar marca.';
+      let message = error.response?.data?.message || 'Erro ao salvar marca.';
+      if (typeof message === 'object' && !Array.isArray(message)) {
+        message = JSON.stringify(message);
+      }
       alert(Array.isArray(message) ? message.join('\n') : message);
     }
   };

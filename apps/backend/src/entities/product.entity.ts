@@ -28,6 +28,9 @@ export class Product {
   brandId: string;
 
   @Column({ nullable: true })
+  barcode: string;
+
+  @Column({ nullable: true })
   referenceImageUrl: string;
 
   @Column('text', { nullable: true })

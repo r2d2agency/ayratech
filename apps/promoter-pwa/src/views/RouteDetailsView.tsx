@@ -425,9 +425,24 @@ const RouteDetailsView = () => {
             timestamp: new Date().toISOString()
           });
           toast.success('Visita finalizada!');
+          
+          // Optimistic update for immediate feedback
+          const updatedItems = route.items.map((i: any) => 
+            i.id === itemId ? { ...i, status: 'CHECKOUT', checkOutTime: new Date().toISOString() } : i
+          );
+          setRoute({ ...route, items: updatedItems });
           setActiveItem(null);
+          
           fetchRoute();
-        } catch (err) {
+        } catch (err: any) {
+          // Fix: If it's a 4xx error (Client Error), do NOT queue for offline. Show error and stop.
+          if (err.response && err.response.status >= 400 && err.response.status < 500) {
+               console.error('Checkout failed with 4xx:', err.response.data);
+               toast.error(`Erro: ${err.response.data?.message || 'Erro ao finalizar visita'}`);
+               setProcessing(false);
+               return;
+          }
+
           console.error('API failed, saving offline action', err);
           await offlineService.addPendingAction(
             'CHECKOUT',
@@ -603,20 +618,21 @@ const RouteDetailsView = () => {
   // If route item is Active but user not checked in, treat as Pendng (needs Checkin)
   const isUserActive = isCurrentUserCheckedIn;
   const isItemActiveGlobal = isActive; // Existing isActive is based on item.status === 'CHECKIN'
+  const isRouteCompleted = route.status === 'COMPLETED';
 
   // If item is globally active but user hasn't checked in, we want to show CHECKIN button.
   // If item is NOT active globally, but user hasn't checked in, show CHECKIN button (standard flow).
 
-  const showCheckInButton = !isCurrentUserCheckedIn && !isCompleted;
-  const showActions = isCurrentUserCheckedIn; 
+  const showCheckInButton = !isCurrentUserCheckedIn && !isCompleted && !isRouteCompleted;
+  const showActions = isCurrentUserCheckedIn && !isRouteCompleted; 
   // Wait, if item is completed, we don't show checkin.
   
   // Refined Logic:
-  // Show Check-in if: Not Completed AND Not Checked In (regardless of Global Active status)
-  // Show Actions if: Checked In (regardless of Global Active status, though it should be Active if anyone is there)
+  // Show Check-in if: Not Completed AND Not Checked In (regardless of Global Active status) AND Route Not Completed
+  // Show Actions if: Checked In (regardless of Global Active status) AND Route Not Completed
 
   return (
-    <div id={`item-${item.id}`} key={item.id} className={`bg-white rounded-xl shadow-sm border overflow-hidden ${isUserActive ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-100'}`}>
+    <div id={`item-${item.id}`} key={item.id} className={`bg-white rounded-xl shadow-sm border overflow-hidden ${isUserActive ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-100'} ${isRouteCompleted ? 'opacity-75' : ''}`}>
       <div className="p-4">
         <div className="flex justify-between items-start mb-2">
           <div className="flex items-center gap-3 flex-1">
@@ -721,6 +737,11 @@ const RouteDetailsView = () => {
                 </span>
               )}
             </div>
+          ) : isRouteCompleted ? (
+             <div className="flex items-center gap-2 text-gray-500 text-sm bg-gray-50 p-2 rounded">
+                <CheckCircle size={16} />
+                <span>Rota Finalizada</span>
+             </div>
           ) : (
             <button 
               onClick={() => handleCheckIn(item.id)}
