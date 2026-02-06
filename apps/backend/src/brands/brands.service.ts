@@ -43,22 +43,28 @@ export class BrandsService {
     });
   }
 
-  update(id: string, updateBrandDto: UpdateBrandDto) {
+  async update(id: string, updateBrandDto: UpdateBrandDto) {
     const { clientId, ...brandData } = updateBrandDto;
-    return this.brandsRepository.findOne({ where: { id } }).then(existing => {
+    
+    try {
+      const existing = await this.brandsRepository.findOne({ where: { id } });
       if (!existing) throw new NotFoundException('Marca não encontrada');
+
       if (clientId) {
-        return this.clientsRepository.findOne({ where: { id: clientId } }).then(client => {
-          if (!client) throw new NotFoundException('Cliente não encontrado');
-          const toSave = { ...existing, ...brandData, client };
-          return this.brandsRepository.save(toSave);
-        });
+        const client = await this.clientsRepository.findOne({ where: { id: clientId } });
+        if (!client) throw new NotFoundException('Cliente não encontrado');
+        
+        const toSave = { ...existing, ...brandData, client };
+        return await this.brandsRepository.save(toSave);
       }
+
       const toSave = { ...existing, ...brandData };
-      return this.brandsRepository.save(toSave);
-    }).catch(err => {
+      return await this.brandsRepository.save(toSave);
+    } catch (err) {
+      console.error('Error updating brand:', err);
+      if (err instanceof NotFoundException) throw err;
       throw new BadRequestException(err.message || 'Erro ao atualizar marca');
-    });
+    }
   }
 
   remove(id: string) {

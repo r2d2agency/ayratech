@@ -62,9 +62,10 @@ const BrandsView: React.FC = () => {
       setShowModal(false);
       resetForm();
       fetchBrands();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving brand:", error);
-      alert('Erro ao salvar marca.');
+      const message = error.response?.data?.message || 'Erro ao salvar marca.';
+      alert(Array.isArray(message) ? message.join('\n') : message);
     }
   };
 
