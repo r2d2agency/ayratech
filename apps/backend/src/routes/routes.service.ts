@@ -2,7 +2,7 @@ import { Injectable, BadRequestException, InternalServerErrorException, NotFound
 import { RouteItemCheckin } from './entities/route-item-checkin.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, DataSource, Brackets, IsNull } from 'typeorm';
-import { Employee } from '../../employees/entities/employee.entity';
+import { Employee } from '../employees/entities/employee.entity';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
 import { Route } from './entities/route.entity';
