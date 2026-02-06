@@ -166,11 +166,14 @@ const DashboardView = () => {
                       const isCompleted = item.status === 'CHECKOUT' || item.status === 'COMPLETED';
                       const isInProgress = item.status === 'CHECKIN';
                       
+                      const currentUserCheckin = item.checkins?.find((c: any) => c.promoterId === user?.id || c.promoterId === user?.employee?.id);
+                      const isCurrentUserCheckedIn = !!currentUserCheckin;
+
                       return (
                         <div 
                           key={item.id}
                           onClick={() => {
-                            if (isInProgress) {
+                            if (isCurrentUserCheckedIn) {
                                 navigate(`/routes/${route.id}/items/${item.id}/check`);
                             } else {
                                 navigate(`/routes/${route.id}`, { state: { targetItemId: item.id } });

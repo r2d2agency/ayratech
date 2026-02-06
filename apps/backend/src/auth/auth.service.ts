@@ -31,24 +31,23 @@ export class AuthService {
       if (!isEmail && cleanIdentifier.length === 11) {
           const employees = await this.employeesService.findByCpf(cleanIdentifier);
           
-          // Iterate through all matching employees to find one with a valid active user
           for (const employee of employees) {
               const candidateUser = await this.usersService.findByEmployeeId(employee.id);
               
-              // If we find a user, check if it's active. If so, this is our user.
-              // If it's inactive, we keep looking (maybe there's another employee record with an active user)
-              // But if we don't find any active user, we'll fall back to the last found user or null
               if (candidateUser) {
+                  // Check password for EVERY candidate, if Active
                   if (candidateUser.status === 'active') {
-                      user = candidateUser;
-                      break; // Found the active user!
-                  }
-                  // Keep this as a fallback if no active user is found
-                  if (!user) {
-                      user = candidateUser;
+                      const isMatch = await bcrypt.compare(pass, candidateUser.password);
+                      if (isMatch) {
+                          console.log(`User validated successfully: ${candidateUser.email}`);
+                          const { password, ...result } = candidateUser;
+                          return result;
+                      }
                   }
               }
           }
+          // If we are here, no active user with correct password was found via CPF.
+          // Fall through to email check or return null
       }
 
       // Fallback to email search if not found via CPF

@@ -131,13 +131,21 @@ class OfflineService {
              toast.error('Sessão inválida: Faça logout e login novamente.', { duration: 5000 });
         }
 
-        // Exception: 409 Conflict (already exists) -> treat as success?
+        // Exception: 409 Conflict (already exists) -> treat as success
         if (statusCode === 409) {
              console.warn('Action conflict (already exists), removing from queue:', action.id);
              await db.pendingActions.delete(action.id!);
              successCount++;
-        } else {
-             // Atualiza com erro detalhado
+        } 
+        // Fatal Client Errors (4xx) except 408 (Timeout) and 429 (Too Many Requests)
+        else if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 408 && statusCode !== 429) {
+             console.error(`Fatal error ${statusCode} for action ${action.id}. Removing from queue.`);
+             await db.pendingActions.delete(action.id!);
+             toast.error(`Ação cancelada: ${errorMessage}`);
+             // Don't count as success, but don't block queue
+        }
+        else {
+             // Server Errors (5xx) or Network Errors -> Retry later
              await db.pendingActions.update(action.id!, { 
                status: 'ERROR', 
                error: errorMessage,
