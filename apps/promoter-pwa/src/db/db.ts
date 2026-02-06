@@ -4,6 +4,7 @@ export interface OfflineRoute {
   id: string;
   date: string;
   promoterId: string;
+  promoters?: any[];
   items: any[]; // Storing full route items structure
   status: string;
   syncedAt: Date;

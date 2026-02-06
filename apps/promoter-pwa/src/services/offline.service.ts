@@ -9,6 +9,7 @@ class OfflineService {
         id: route.id,
         date: route.date,
         promoterId: route.promoter?.id,
+        promoters: route.promoters,
         items: route.items,
         status: route.status,
         syncedAt: new Date()
