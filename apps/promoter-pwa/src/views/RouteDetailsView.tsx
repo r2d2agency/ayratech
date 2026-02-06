@@ -239,7 +239,15 @@ const RouteDetailsView = () => {
       // Find active item (status CHECKIN)
       const active = response.data.items.find((i: any) => i.status === 'CHECKIN');
       setActiveItem(active || null);
-    } catch (error) {
+    } catch (error: any) {
+      // Fix: If 4xx error, do not treat as offline
+      if (error.response && error.response.status >= 400 && error.response.status < 500) {
+           console.error('Error fetching route (4xx):', error.response.data);
+           toast.error(`Erro ao carregar rota: ${error.response.data?.message || 'Dados inválidos'}`);
+           setLoading(false);
+           return;
+      }
+
       console.error('Error fetching route from API, trying offline cache:', error);
       const cachedRoute = await offlineService.getRoute(id!);
       if (cachedRoute) {
@@ -290,7 +298,15 @@ const RouteDetailsView = () => {
             });
             toast.success('Check-in realizado!');
             fetchRoute();
-        } catch (err) {
+        } catch (err: any) {
+            // Fix: If it's a 4xx error (Client Error), do NOT queue for offline. Show error and stop.
+            if (err.response && err.response.status >= 400 && err.response.status < 500) {
+                 console.error('Check-in failed with 4xx:', err.response.data);
+                 toast.error(`Erro: ${err.response.data?.message || 'Check-in não permitido'}`);
+                 setProcessing(false);
+                 return;
+            }
+
             console.error('API failed, saving offline action', err);
             await offlineService.addPendingAction(
                 'CHECKIN', 
@@ -361,10 +377,11 @@ const RouteDetailsView = () => {
                 proceedWithCheckIn(userLat, userLng);
             },
             (error) => {
-               toast.error('Erro de geolocalização: ' + error.message);
+               console.warn('Geolocation error:', error);
+               toast.error('Erro de geolocalização: ' + (error.message || 'Tempo esgotado'));
                setProcessing(false);
             }, 
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 }
         );
     } else {
         toast.error('Geolocalização não suportada');

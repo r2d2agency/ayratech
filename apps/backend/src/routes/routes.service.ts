@@ -37,148 +37,161 @@ export class RoutesService {
 
   async create(createRouteDto: CreateRouteDto) {
     console.log('RoutesService.create input:', JSON.stringify(createRouteDto));
-    const { items, ...routeData } = createRouteDto;
-    
-    // Handle promoters
-    let promoters: { id: string }[] = [];
-    if (routeData.promoterIds && routeData.promoterIds.length > 0) {
-      promoters = routeData.promoterIds.map(id => ({ id }));
-    } else if (routeData.promoterId) {
-      promoters = [{ id: routeData.promoterId }];
-    }
 
-    const route = this.routesRepository.create({
-      ...routeData,
-      promoterId: routeData.promoterId || (promoters.length > 0 ? promoters[0].id : null),
-      promoter: routeData.promoterId ? { id: routeData.promoterId } : (promoters.length > 0 ? promoters[0] : null),
-      promoters: promoters
-    });
-    console.log('RoutesService.create entity before save:', JSON.stringify(route));
-    
-    const savedRoute = await this.routesRepository.save(route);
-    console.log('RoutesService.create saved entity:', JSON.stringify(savedRoute));
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    if (items && items.length > 0) {
-      // Validate promoter availability for all items first
-      if (savedRoute.promoters && savedRoute.promoters.length > 0) {
-        for (const promoter of savedRoute.promoters) {
-          for (const item of items) {
-            await this.checkPromoterAvailability(
-              promoter.id,
-              savedRoute.date,
-              item.startTime,
-              item.estimatedDuration
-            );
-          }
-        }
+    try {
+      const { items, ...routeData } = createRouteDto;
+      
+      // Handle promoters
+      let promoters: { id: string }[] = [];
+      if (routeData.promoterIds && routeData.promoterIds.length > 0) {
+        promoters = routeData.promoterIds.map(id => ({ id }));
+      } else if (routeData.promoterId) {
+        promoters = [{ id: routeData.promoterId }];
       }
 
-      // Pre-fetch products and checklists
-      const allProductIds = new Set<string>();
-      const allChecklistTemplateIds = new Set<string>();
-
-      items.forEach(item => {
-        if (item.productIds) item.productIds.forEach(id => allProductIds.add(id));
-        if (item.products) {
-            item.products.forEach(p => {
-                allProductIds.add(p.productId);
-                if (p.checklistTemplateId) allChecklistTemplateIds.add(p.checklistTemplateId);
-            });
-        }
+      const route = this.routesRepository.create({
+        ...routeData,
+        promoterId: routeData.promoterId || (promoters.length > 0 ? promoters[0].id : null),
+        promoter: routeData.promoterId ? { id: routeData.promoterId } : (promoters.length > 0 ? promoters[0] : null),
+        promoters: promoters
       });
+      console.log('RoutesService.create entity before save:', JSON.stringify(route));
+      
+      const savedRoute = await queryRunner.manager.save(Route, route);
+      console.log('RoutesService.create saved entity:', JSON.stringify(savedRoute));
 
-      const productsMap = new Map<string, Product>();
-      if (allProductIds.size > 0) {
-        const products = await this.dataSource.getRepository(Product).find({
-            where: { id: In(Array.from(allProductIds)) },
-            relations: ['checklistTemplate', 'checklistTemplate.items', 'checklistTemplate.items.competitor', 'checklistTemplate.items.competitors']
-        });
-        products.forEach(p => productsMap.set(p.id, p));
-      }
-
-      const checklistTemplatesMap = new Map<string, ChecklistTemplate>();
-      if (allChecklistTemplateIds.size > 0) {
-          const templates = await this.dataSource.getRepository(ChecklistTemplate).find({
-              where: { id: In(Array.from(allChecklistTemplateIds)) },
-              relations: ['items', 'items.competitor', 'items.competitors']
-          });
-          templates.forEach(t => checklistTemplatesMap.set(t.id, t));
-      }
-
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        const routeItem = this.routeItemsRepository.create({
-          supermarket: { id: item.supermarketId },
-          supermarketId: item.supermarketId,
-          route: { id: savedRoute.id },
-          routeId: savedRoute.id,
-          order: item.order || i + 1,
-          startTime: item.startTime,
-          endTime: item.endTime,
-          estimatedDuration: item.estimatedDuration
-        });
-        const savedItem = await this.routeItemsRepository.save(routeItem);
-
-        const itemProductsToProcess: { productId: string, checklistTemplateId?: string }[] = [];
-        if (item.products) itemProductsToProcess.push(...item.products);
-        if (item.productIds) {
-           item.productIds.forEach(pid => {
-               if (!itemProductsToProcess.find(p => p.productId === pid)) {
-                   itemProductsToProcess.push({ productId: pid });
-               }
-           });
+      if (items && items.length > 0) {
+        // Validate promoter availability for all items first
+        if (savedRoute.promoters && savedRoute.promoters.length > 0) {
+          for (const promoter of savedRoute.promoters) {
+            for (const item of items) {
+              await this.checkPromoterAvailability(
+                promoter.id,
+                savedRoute.date,
+                item.startTime,
+                item.estimatedDuration
+              );
+            }
+          }
         }
 
-        if (itemProductsToProcess.length > 0) {
-          for (const prodData of itemProductsToProcess) {
-             const rip = this.routeItemProductsRepository.create({
-                 routeItem: { id: savedItem.id },
-                 routeItemId: savedItem.id,
-                 product: { id: prodData.productId },
-                 productId: prodData.productId,
-                 checklistTemplateId: prodData.checklistTemplateId
-             });
-             const savedRip = await this.routeItemProductsRepository.save(rip);
-             
-             let checklistTemplate = null;
-             if (prodData.checklistTemplateId) {
-                 checklistTemplate = checklistTemplatesMap.get(prodData.checklistTemplateId);
-             } else {
-                 const product = productsMap.get(prodData.productId);
-                 checklistTemplate = product?.checklistTemplate;
-             }
-             
-             if (checklistTemplate?.items?.length) {
-                 const checklists = [];
-                 for (const tplItem of checklistTemplate.items) {
-                    if (tplItem.type === ChecklistItemType.PRICE_CHECK && tplItem.competitors?.length > 0) {
-                        for (const comp of tplItem.competitors) {
-                            checklists.push(this.dataSource.getRepository(RouteItemProductChecklist).create({
-                                routeItemProduct: savedRip,
-                                description: tplItem.description,
-                                type: tplItem.type,
-                                isChecked: false,
-                                competitorName: comp.name
-                            }));
-                        }
-                    } else {
-                        checklists.push(this.dataSource.getRepository(RouteItemProductChecklist).create({
-                            routeItemProduct: savedRip,
-                            description: tplItem.description,
-                            type: tplItem.type,
-                            isChecked: false,
-                            competitorName: tplItem.competitor?.name || null
-                        }));
-                    }
+        // Pre-fetch products and checklists
+        const allProductIds = new Set<string>();
+        const allChecklistTemplateIds = new Set<string>();
+
+        items.forEach(item => {
+          if (item.productIds) item.productIds.forEach(id => allProductIds.add(id));
+          if (item.products) {
+              item.products.forEach(p => {
+                  allProductIds.add(p.productId);
+                  if (p.checklistTemplateId) allChecklistTemplateIds.add(p.checklistTemplateId);
+              });
+          }
+        });
+
+        const productsMap = new Map<string, Product>();
+        if (allProductIds.size > 0) {
+          const products = await queryRunner.manager.find(Product, {
+              where: { id: In(Array.from(allProductIds)) },
+              relations: ['checklistTemplate', 'checklistTemplate.items', 'checklistTemplate.items.competitor', 'checklistTemplate.items.competitors']
+          });
+          products.forEach(p => productsMap.set(p.id, p));
+        }
+
+        const checklistTemplatesMap = new Map<string, ChecklistTemplate>();
+        if (allChecklistTemplateIds.size > 0) {
+            const templates = await queryRunner.manager.find(ChecklistTemplate, {
+                where: { id: In(Array.from(allChecklistTemplateIds)) },
+                relations: ['items', 'items.competitor', 'items.competitors']
+            });
+            templates.forEach(t => checklistTemplatesMap.set(t.id, t));
+        }
+
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          const routeItem = this.routeItemsRepository.create({
+            supermarket: { id: item.supermarketId },
+            supermarketId: item.supermarketId,
+            route: { id: savedRoute.id },
+            routeId: savedRoute.id,
+            order: item.order || i + 1,
+            startTime: item.startTime,
+            endTime: item.endTime,
+            estimatedDuration: item.estimatedDuration
+          });
+          const savedItem = await queryRunner.manager.save(RouteItem, routeItem);
+
+          const itemProductsToProcess: { productId: string, checklistTemplateId?: string }[] = [];
+          if (item.products) itemProductsToProcess.push(...item.products);
+          if (item.productIds) {
+             item.productIds.forEach(pid => {
+                 if (!itemProductsToProcess.find(p => p.productId === pid)) {
+                     itemProductsToProcess.push({ productId: pid });
                  }
-                 await this.dataSource.getRepository(RouteItemProductChecklist).save(checklists);
-             }
+             });
+          }
+
+          if (itemProductsToProcess.length > 0) {
+            for (const prodData of itemProductsToProcess) {
+               const rip = this.routeItemProductsRepository.create({
+                   routeItem: { id: savedItem.id },
+                   routeItemId: savedItem.id,
+                   product: { id: prodData.productId },
+                   productId: prodData.productId,
+                   checklistTemplateId: prodData.checklistTemplateId
+               });
+               const savedRip = await queryRunner.manager.save(RouteItemProduct, rip);
+               
+               let checklistTemplate = null;
+               if (prodData.checklistTemplateId) {
+                   checklistTemplate = checklistTemplatesMap.get(prodData.checklistTemplateId);
+               } else {
+                   const product = productsMap.get(prodData.productId);
+                   checklistTemplate = product?.checklistTemplate;
+               }
+               
+               if (checklistTemplate?.items?.length) {
+                   const checklists = [];
+                   for (const tplItem of checklistTemplate.items) {
+                      if (tplItem.type === ChecklistItemType.PRICE_CHECK && tplItem.competitors?.length > 0) {
+                          for (const comp of tplItem.competitors) {
+                              checklists.push(this.dataSource.getRepository(RouteItemProductChecklist).create({
+                                  routeItemProduct: savedRip,
+                                  description: tplItem.description,
+                                  type: tplItem.type,
+                                  isChecked: false,
+                                  competitorName: comp.name
+                              }));
+                          }
+                      } else {
+                          checklists.push(this.dataSource.getRepository(RouteItemProductChecklist).create({
+                              routeItemProduct: savedRip,
+                              description: tplItem.description,
+                              type: tplItem.type,
+                              isChecked: false,
+                              competitorName: tplItem.competitor?.name || null
+                          }));
+                      }
+                   }
+                   await queryRunner.manager.save(RouteItemProductChecklist, checklists);
+               }
+            }
           }
         }
       }
-    }
 
-    return this.findOne(savedRoute.id);
+      await queryRunner.commitTransaction();
+      return this.findOne(savedRoute.id);
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async addPromoter(routeId: string, promoterId: string) {
