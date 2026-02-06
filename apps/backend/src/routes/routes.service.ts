@@ -1019,13 +1019,22 @@ export class RoutesService {
         }
     }
     
-    return this.routeItemsRepository.save(item);
+    // Always update status to CHECKIN if it was PENDING
+    // Note: We do this after creating checkin record to ensure consistency
+    await this.routeItemsRepository.save(item);
+
+    // Return the FRESH item with all relations (including the new checkin)
+    // This is crucial for the frontend to see the new checkin in the 'checkins' array
+    return this.routeItemsRepository.findOne({ 
+      where: { id: itemId },
+      relations: ['route', 'checkins', 'checkins.promoter', 'products']
+    });
   }
 
   async checkOut(itemId: string, data: { lat: number; lng: number; timestamp: string }, userId?: string) {
     const item = await this.routeItemsRepository.findOne({ 
       where: { id: itemId },
-      relations: ['route', 'items', 'products', 'checkins']
+      relations: ['route', 'products', 'checkins'] // Removed invalid 'items' relation
     });
     if (!item) throw new NotFoundException('Item not found');
 
@@ -1099,7 +1108,12 @@ export class RoutesService {
     }
     // If others are still there, status remains CHECKIN.
 
-    return this.routeItemsRepository.save(item);
+    await this.routeItemsRepository.save(item);
+
+    return this.routeItemsRepository.findOne({ 
+        where: { id: itemId },
+        relations: ['route', 'products', 'checkins', 'checkins.promoter']
+    });
   }
 
   async getPublicStockValidation(token: string) {

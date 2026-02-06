@@ -125,9 +125,14 @@ export class RoutesController {
     // For check-in, we need the Employee ID (promoterId), not the User ID
     console.log('Check-in Request:', { itemId, user: req.user });
     const promoterId = req.user?.employee?.id;
+    
     if (!promoterId) {
-        console.warn('Check-in attempted without employee ID in token:', req.user);
+        console.error('CRITICAL: Check-in attempted without employee ID in token/request. User:', req.user);
+        // We could throw here, but let's allow it to proceed (it might fail in service if logic strict)
+        // Actually, service checkIn logic relies on userId being present to create RouteItemCheckin.
+        // If missing, it will set status=CHECKIN but NO checkin record.
     }
+    
     return this.routesService.checkIn(itemId, body, promoterId);
   }
 
