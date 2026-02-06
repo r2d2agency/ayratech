@@ -121,12 +121,20 @@ export class RoutesController {
   }
 
   @Post('items/:itemId/check-in')
-  checkIn(@Param('itemId') itemId: string, @Body() body: { lat: number; lng: number; timestamp: string }) {
-    return this.routesService.checkIn(itemId, body);
+  checkIn(@Param('itemId') itemId: string, @Body() body: { lat: number; lng: number; timestamp: string }, @Req() req: any) {
+    // For check-in, we need the Employee ID (promoterId), not the User ID
+    console.log('Check-in Request:', { itemId, user: req.user });
+    const promoterId = req.user?.employee?.id;
+    if (!promoterId) {
+        console.warn('Check-in attempted without employee ID in token:', req.user);
+    }
+    return this.routesService.checkIn(itemId, body, promoterId);
   }
 
   @Post('items/:itemId/check-out')
-  checkOut(@Param('itemId') itemId: string, @Body() body: { lat: number; lng: number; timestamp: string }) {
-    return this.routesService.checkOut(itemId, body);
+  checkOut(@Param('itemId') itemId: string, @Body() body: { lat: number; lng: number; timestamp: string }, @Req() req: any) {
+    // For check-out, we need the Employee ID (promoterId), not the User ID
+    const promoterId = req.user?.employee?.id;
+    return this.routesService.checkOut(itemId, body, promoterId);
   }
 }

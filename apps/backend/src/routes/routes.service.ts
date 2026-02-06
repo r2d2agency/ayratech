@@ -284,6 +284,8 @@ export class RoutesService {
       .leftJoinAndSelect('itemProducts.product', 'product')
       .leftJoinAndSelect('itemProducts.completedBy', 'completedBy')
       .leftJoinAndSelect('product.brand', 'brand')
+      .leftJoinAndSelect('items.checkins', 'checkins')
+      .leftJoinAndSelect('checkins.promoter', 'checkinPromoter')
       .orderBy('route.date', 'DESC');
 
     if (restrictToPromoterId) {
@@ -432,7 +434,8 @@ export class RoutesService {
          'items.products.checklists',
          'items.products.checklists.completedBy',
          'items.products.completedBy',
-         'items.checkins'
+         'items.checkins',
+         'items.checkins.promoter'
        ]
      });
    }
