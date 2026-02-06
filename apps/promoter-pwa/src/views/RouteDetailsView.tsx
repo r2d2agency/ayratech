@@ -258,7 +258,8 @@ const RouteDetailsView = () => {
   const handleCheckIn = async (itemId: string) => {
     // Check if route date is today
     const todayStr = format(new Date(), 'yyyy-MM-dd');
-    const routeDateStr = format(new Date(route.date), 'yyyy-MM-dd');
+    // Use string manipulation to avoid timezone shifts (e.g. UTC midnight becoming previous day)
+    const routeDateStr = String(route.date).split('T')[0];
     
     if (todayStr !== routeDateStr) {
         toast.error('Check-in permitido apenas na data agendada da visita.');
@@ -492,7 +493,7 @@ const RouteDetailsView = () => {
                 <div>
                 <h1 className="font-bold text-gray-800">Detalhes da Rota</h1>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <span>{format(new Date(route.date), 'dd/MM/yyyy')}</span>
+                    <span>{String(route.date).split('T')[0].split('-').reverse().join('/')}</span>
                     <span>•</span>
                     <span className="flex items-center gap-1"><Clock size={10} /> {totalDurationStr}</span>
                 </div>
