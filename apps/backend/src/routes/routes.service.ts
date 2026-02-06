@@ -198,15 +198,37 @@ export class RoutesService {
     }
 
     if (!route.promoters) route.promoters = [];
-    route.promoters.push(promoter);
+    route.promoters.push(promoter as Employee);
     
     // Maintain backward compatibility
     if (!route.promoterId) {
-        route.promoter = promoter;
+        route.promoter = promoter as Employee;
         route.promoterId = promoterId;
     }
 
-    return this.routesRepository.save(route);
+    // Workaround for type issue:
+    // The Route entity defines 'promoters' as Employee[], but TypeORM save might complain if we pass partial objects
+    // or if the type checking is strict about missing properties.
+    // However, for relations, we usually just need the ID.
+    // The error says: "Type 'ObjectLiteral' is missing the following properties from type 'Employee': id, fullName, cpf, rg, and 30 more."
+    // This suggests that 'promoter' variable is typed as ObjectLiteral or similar, but the entity expects full Employee.
+    // We already fetched 'promoter' from DB as Employee, so it should be fine unless the type inference is wrong.
+    // Let's cast it to any to bypass the strict check during assignment if needed, or ensure it's fully typed.
+    
+    // Actually, looking at the error log:
+    // src/routes/routes.service.ts:201:26 - error TS2345: Argument of type 'ObjectLiteral' is not assignable to parameter of type 'Employee'.
+    // src/routes/routes.service.ts:205:9 - error TS2740: Type 'ObjectLiteral' is missing the following properties from type 'Employee'
+    
+    // The 'promoter' variable comes from:
+    // const promoter = await this.dataSource.getRepository(Employee).findOne({ where: { id: promoterId } });
+    
+    // If it's found, it is an Employee.
+    // Wait, lines 5, 201, 205 in the error log correspond to the file content.
+    
+    // Let's explicitely type it or cast it.
+    
+    await this.routesRepository.save(route);
+    return this.findOne(route.id);
   }
 
   async findAll(userId?: string) {
