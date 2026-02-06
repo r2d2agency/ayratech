@@ -576,7 +576,11 @@ const RouteDetailsView = () => {
            }
 
            // Check if current user is checked in
-           const currentUserCheckin = item.checkins?.find((c: any) => (c.promoterId === user?.id || c.promoterId === user?.employee?.id) && !c.checkOutTime);
+           const currentUserCheckin = item.checkins?.find((c: any) => {
+             const pId = c.promoterId || c.promoter?.id;
+             const uId = user?.employee?.id || user?.id;
+             return pId === uId && !c.checkOutTime;
+           });
            const isCurrentUserCheckedIn = !!currentUserCheckin;
 
   // Determine effective status for current user
@@ -669,9 +673,9 @@ const RouteDetailsView = () => {
                       {prod.completedBy && (
                         <div className="ml-9 text-[10px] text-blue-600 font-bold flex items-center gap-1">
                             <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center text-[8px]">
-                              {(prod.completedBy.name || '?').charAt(0)}
+                              {(prod.completedBy.fullName || prod.completedBy.name || '?').charAt(0)}
                             </div>
-                            {(prod.completedBy.name || '').split(' ')[0]}
+                            {(prod.completedBy.fullName || prod.completedBy.name || '').split(' ')[0]}
                         </div>
                       )}
                     </div>
@@ -755,7 +759,11 @@ const RouteDetailsView = () => {
       />
 
       {/* Bottom Actions Bar (Only if checked in) */}
-      {activeItem && (activeItem.checkins?.some((c: any) => (c.promoterId === user?.id || c.promoterId === user?.employee?.id) && !c.checkOutTime)) && (
+      {activeItem && (activeItem.checkins?.some((c: any) => {
+          const pId = c.promoterId || c.promoter?.id;
+          const uId = user?.employee?.id || user?.id;
+          return pId === uId && !c.checkOutTime;
+      })) && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-around items-center z-10">
           {/* <button 
             onClick={() => fileInputRef.current?.click()}
