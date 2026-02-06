@@ -51,8 +51,23 @@ const RouteDetailsView = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingCount, setPendingCount] = useState(0);
   
-  // State for active item (being visited)
-  const [activeItem, setActiveItem] = useState<any>(null);
+  // Find item where CURRENT user is checked in (Independent of global status)
+  const userActiveItem = route?.items?.find((item: any) => 
+    item.checkins?.some((c: any) => {
+      const pId = c.promoterId || c.promoter?.id;
+      const uId = user?.employee?.id || user?.id;
+      return pId === uId && !c.checkOutTime;
+    })
+  );
+
+  // Find globally active item (fallback)
+  const globalActiveItem = route?.items?.find((i: any) => i.status === 'CHECKIN');
+  
+  // Use userActiveItem if available, otherwise globalActiveItem (for view only)
+  const activeItem = userActiveItem || globalActiveItem || null;
+  
+  // Shim setActiveItem to avoid breaking existing calls
+  const setActiveItem = (val: any) => {};
 
   // Scroll to target item when route loads
   useEffect(() => {
@@ -74,10 +89,7 @@ const RouteDetailsView = () => {
 
   // Photo Capture State
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [showPhotoPreview, setShowPhotoPreview] = useState(false);
-  const [currentPhoto, setCurrentPhoto] = useState<{ blob: Blob, url: string } | null>(null);
-
-  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  // Removed duplicate state declarations (moved to top)
 
   useEffect(() => {
     fetchRoute();

@@ -259,16 +259,35 @@ export class RoutesService {
             const roleName = user.role?.name?.toLowerCase() || '';
             const isAdmin = ['admin', 'administrador do sistema', 'manager', 'rh'].includes(roleName);
             
+            console.log(`RoutesService.findAll: User ${user.username} (${userId}), Role: ${roleName}, IsAdmin: ${isAdmin}, Employee: ${user.employee?.id}, Clients: ${user.clients?.length}`);
+
             if (!isAdmin) {
+                // 1. Client Restriction
                 if (user.clients && user.clients.length > 0) {
                     allowedClientIds = user.clients.map(c => c.id);
+                    console.log('RoutesService.findAll: Restricting by Clients:', allowedClientIds);
                 } else if (roleName.includes('supervisor')) {
-                    allowedClientIds = [];
-                } else if (user.employee) {
+                    // Existing logic: Supervisors without clients see nothing? 
+                    // Keeping this behavior for now to avoid regressions, but it seems strict.
+                    if (!allowedClientIds) allowedClientIds = [];
+                    console.log('RoutesService.findAll: Supervisor role detected, but no clients linked?');
+                }
+
+                // 2. Promoter Restriction (Decoupled from Client Restriction)
+                // If user has an employee record, isn't a supervisor, and isn't a client account -> Restrict to their ID.
+                // This ensures Promoters ONLY see their routes, even if they accidentally have clients linked.
+                const isSupervisor = roleName.includes('supervisor');
+                const isClient = roleName === 'client';
+
+                if (user.employee && !isSupervisor && !isClient) {
                     restrictToPromoterId = user.employee.id;
-                } else {
-                    // If not admin, not client, and not employee -> Show nothing
+                    console.log('RoutesService.findAll: Restricting to Promoter:', restrictToPromoterId);
+                }
+
+                // 3. Fallback: If no filters set, show nothing
+                if (!allowedClientIds && !restrictToPromoterId) {
                     allowedClientIds = [];
+                    console.log('RoutesService.findAll: No access rights detected');
                 }
             }
         }
