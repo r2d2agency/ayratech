@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Search, Bell, FileText, Info, CheckCircle, Menu } from 'lucide-react';
 import api from '../api/client';
 import { useNavigate } from 'react-router-dom';
+import { getImageUrl } from '../utils/image';
 
 interface HeaderProps {
   onToggleSidebar?: () => void;
@@ -222,7 +223,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           <div className="h-10 w-10 overflow-hidden rounded-xl ring-2 ring-slate-100 cursor-pointer transition-all hover:ring-blue-100 bg-slate-100">
             {user?.employee?.facialPhotoUrl ? (
                <img 
-                 src={`${api.defaults.baseURL?.replace('/api', '')}${user.employee.facialPhotoUrl}`} 
+                 src={getImageUrl(user.employee.facialPhotoUrl)} 
                  alt="User" 
                  className="h-full w-full object-cover"
                />
