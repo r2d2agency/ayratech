@@ -54,7 +54,8 @@ export class UsersService implements OnModuleInit {
   async findByEmployeeId(employeeId: string): Promise<User | undefined> {
     return this.usersRepository.findOne({ 
       where: { employeeId },
-      relations: ['role', 'employee', 'clients']
+      relations: ['role', 'employee', 'clients'],
+      order: { status: 'ASC', updatedAt: 'DESC' } // Prefer active users, then most recently updated
     });
   }
 

@@ -29,9 +29,25 @@ export class AuthService {
       const isEmail = identifier.includes('@');
       
       if (!isEmail && cleanIdentifier.length === 11) {
-          const employee = await this.employeesService.findByCpf(cleanIdentifier);
-          if (employee) {
-              user = await this.usersService.findByEmployeeId(employee.id);
+          const employees = await this.employeesService.findByCpf(cleanIdentifier);
+          
+          // Iterate through all matching employees to find one with a valid active user
+          for (const employee of employees) {
+              const candidateUser = await this.usersService.findByEmployeeId(employee.id);
+              
+              // If we find a user, check if it's active. If so, this is our user.
+              // If it's inactive, we keep looking (maybe there's another employee record with an active user)
+              // But if we don't find any active user, we'll fall back to the last found user or null
+              if (candidateUser) {
+                  if (candidateUser.status === 'active') {
+                      user = candidateUser;
+                      break; // Found the active user!
+                  }
+                  // Keep this as a fallback if no active user is found
+                  if (!user) {
+                      user = candidateUser;
+                  }
+              }
           }
       }
 
@@ -47,7 +63,7 @@ export class AuthService {
       
       const isPasswordValid = await bcrypt.compare(pass, user.password);
       if (user && isPasswordValid) {
-        if (user.status !== 'active') {
+        if (user.status?.toLowerCase() !== 'active') {
              console.warn(`User ${user.email} is not active`);
              return null;
         }

@@ -27,11 +27,11 @@ export class EmployeesService {
     private notificationsService: NotificationsService,
   ) {}
 
-  async findByCpf(cpf: string): Promise<Employee | undefined> {
+  async findByCpf(cpf: string): Promise<Employee[]> {
     const clean = cpf.replace(/\D/g, '');
     const formatted = clean.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
     
-    return this.employeesRepository.findOne({ 
+    return this.employeesRepository.find({ 
         where: [
             { cpf: clean },
             { cpf: formatted }
