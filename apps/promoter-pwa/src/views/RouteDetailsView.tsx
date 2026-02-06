@@ -50,6 +50,9 @@ const RouteDetailsView = () => {
   const [processing, setProcessing] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingCount, setPendingCount] = useState(0);
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [currentPhoto, setCurrentPhoto] = useState<{blob: Blob, url: string} | null>(null);
+  const [showPhotoPreview, setShowPhotoPreview] = useState(false);
   
   // Find item where CURRENT user is checked in (Independent of global status)
   const userActiveItem = route?.items?.find((item: any) => 
