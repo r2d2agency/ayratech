@@ -418,7 +418,8 @@ export class RoutesService {
         'items.products.product', 
          'items.products.checklists',
          'items.products.checklists.completedBy',
-         'items.products.completedBy'
+         'items.products.completedBy',
+         'items.checkins'
        ]
      });
    }

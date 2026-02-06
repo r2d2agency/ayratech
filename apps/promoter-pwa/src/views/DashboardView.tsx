@@ -107,7 +107,7 @@ const DashboardView = () => {
         <div>
           <p className="text-gray-500 text-sm">{getGreeting()},</p>
           <h1 className="text-2xl font-bold text-gray-800">
-            {user?.employee?.fullName?.split(' ')[0] || user?.email?.split('@')[0] || 'Promotor'}
+            {String(user?.employee?.fullName || user?.name || user?.email || 'Promotor').split(' ')[0]}
           </h1>
         </div>
         <div className="flex items-center gap-2">

@@ -332,7 +332,7 @@ export default function TimeClockView() {
       if (type === 'EXIT' && data.summary.exit) return false;
 
       // Current Time vs Scheduled + Tolerance
-      const [h, m] = scheduled.split(':').map(Number);
+      const [h, m] = String(scheduled || '00:00').split(':').map(Number);
       const limit = new Date();
       limit.setHours(h, m + data.schedule.toleranceMinutes, 0, 0);
       

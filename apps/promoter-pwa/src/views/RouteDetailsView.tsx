@@ -256,6 +256,15 @@ const RouteDetailsView = () => {
   };
 
   const handleCheckIn = async (itemId: string) => {
+    // Check if route date is today
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const routeDateStr = format(new Date(route.date), 'yyyy-MM-dd');
+    
+    if (todayStr !== routeDateStr) {
+        toast.error('Check-in permitido apenas na data agendada da visita.');
+        return;
+    }
+
     // REMOVED: activeItem check to allow multiple checkins on same item by different users (handled by backend)
     // Actually, we still want to prevent checking in if *I* am already checked in somewhere else?
     // But existing logic "activeItem" is based on route item status.
@@ -290,11 +299,36 @@ const RouteDetailsView = () => {
             );
             
             // Optimistic update
-            const updatedItems = route.items.map((i: any) => 
-                i.id === itemId ? { ...i, status: 'CHECKIN' } : i
-            );
+            const updatedItems = route.items.map((i: any) => {
+                if (i.id === itemId) {
+                    // Create a fake checkin record for current user
+                    // Use exact same logic as validation to ensure consistency
+                    const promoterId = user?.employee?.id || user?.id;
+                    
+                    const newCheckin = {
+                        id: 'temp-' + Date.now(),
+                        promoterId: promoterId,
+                        checkInTime: new Date().toISOString(),
+                        checkOutTime: null
+                    };
+                    
+                    // Add to existing checkins or create new array
+                    const existingCheckins = i.checkins || [];
+                    
+                    return { 
+                        ...i, 
+                        status: 'CHECKIN',
+                        checkins: [...existingCheckins, newCheckin]
+                    };
+                }
+                return i;
+            });
+
             setRoute({ ...route, items: updatedItems });
-            setActiveItem({ ...itemToCheck, status: 'CHECKIN' });
+            // Update active item reference with new checkins
+            const updatedActiveItem = updatedItems.find((i: any) => i.id === itemId);
+            setActiveItem(updatedActiveItem);
+            
             updatePendingCount();
         } finally {
             setProcessing(false);
@@ -495,14 +529,17 @@ const RouteDetailsView = () => {
                     ))}
                 </div>
                 <span className="text-xs text-gray-400 ml-1">
-                    {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => (p?.name || '').split(' ')[0]).join(', ')}
+                    {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => String(p?.name || '').split(' ')[0]).join(', ')}
                 </span>
             </div>
         )}
       </div>
 
       <div className="p-4 space-y-4">
-        {route.items.sort((a: any, b: any) => a.order - b.order).map((item: any, index: number) => {
+        {/* Deduplicate items just in case */}
+        {Array.from(new Map(route.items.map((item: any) => [item.id, item])).values())
+            .sort((a: any, b: any) => a.order - b.order)
+            .map((item: any, index: number) => {
            const isActive = activeItem?.id === item.id;
            const isCompleted = item.status === 'CHECKOUT' || item.status === 'COMPLETED';
            // const isPending = item.status === 'PENDING' || !item.status;
@@ -700,7 +737,7 @@ const RouteDetailsView = () => {
       />
 
       {/* Bottom Actions Bar (Only if checked in) */}
-      {activeItem && (
+      {activeItem && (activeItem.checkins?.some((c: any) => (c.promoterId === user?.id || c.promoterId === user?.employee?.id) && !c.checkOutTime)) && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-around items-center z-10">
           {/* <button 
             onClick={() => fileInputRef.current?.click()}

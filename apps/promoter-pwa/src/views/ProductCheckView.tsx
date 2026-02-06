@@ -67,6 +67,7 @@ const ProductCheckView: React.FC = () => {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [supermarketName, setSupermarketName] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [verifyingCheckIn, setVerifyingCheckIn] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Track when a product check started (for duration calculation)
@@ -100,6 +101,46 @@ const ProductCheckView: React.FC = () => {
        }
     }
   }, [productIdFromUrl, products]);
+
+  useEffect(() => {
+    // Check if user is checked in for this item
+    // We can check this by looking at the route item's checkins array (if available in cache/state)
+    // Or relying on the "activeItem" logic in RouteDetails.
+    // However, ProductCheckView fetches products directly.
+    
+    const verifyCheckIn = async () => {
+        if (!routeId || !itemId) return;
+        
+        setVerifyingCheckIn(true);
+        try {
+            // Fetch route to check status
+            // We use offlineService to get the latest state including local checkins
+            const route = await offlineService.getRoute(routeId);
+            if (route) {
+                const item = route.items.find((i: any) => i.id === itemId);
+                if (item) {
+                    // Check if current user has an open checkin
+                    const userCheckin = item.checkins?.find((c: any) => 
+                        (c.promoterId === user?.id || c.promoterId === user?.employee?.id) && 
+                        !c.checkOutTime
+                    );
+
+                    const isManager = ['admin', 'superadmin', 'supervisor', 'gerente', 'coordenador'].some(role => user?.role?.toLowerCase().includes(role));
+
+                    if (!userCheckin && !isManager) {
+                        toast.error('Você precisa fazer check-in para acessar esta tarefa.');
+                        navigate(`/routes/${routeId}`, { replace: true });
+                        return;
+                    }
+                }
+            }
+        } finally {
+            setVerifyingCheckIn(false);
+        }
+    };
+
+    verifyCheckIn();
+  }, [routeId, itemId, user]);
 
   useEffect(() => {
     fetchProducts();
@@ -443,7 +484,9 @@ const ProductCheckView: React.FC = () => {
 
       {/* Product List */}
       <div className="p-4 flex flex-col gap-3">
-        {loading ? (
+        {verifyingCheckIn ? (
+            <div className="text-center py-10 text-gray-500">Verificando check-in...</div>
+        ) : loading ? (
           <div className="text-center py-10 text-gray-500">Carregando produtos...</div>
         ) : filteredProducts.length === 0 ? (
           <div className="text-center py-10 text-gray-500">Nenhum produto encontrado.</div>
@@ -466,7 +509,7 @@ const ProductCheckView: React.FC = () => {
                   {prod.completedBy && (
                      <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
                         <CheckCircle size={12} />
-                        Feito por: {(prod.completedBy.name || '').split(' ')[0]}
+                        Feito por: {(prod.completedBy?.name || '').split(' ')[0]}
                      </p>
                   )}
                   {prod.observation && (
