@@ -1112,7 +1112,7 @@ const RoutesReportView: React.FC = () => {
                             </div>
                             <div className="flex flex-col">
                                 <span className="font-bold text-slate-700 text-sm">
-                                    {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => (p.fullName || p.name || '').split(' ')[0]).join(', ')}
+                                    {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => (p?.fullName || p?.name || '').split(' ')[0]).join(', ')}
                                 </span>
                             </div>
                           </div>
@@ -1424,7 +1424,7 @@ const RoutesReportView: React.FC = () => {
                             <td className="p-3 text-xs font-bold text-slate-500">
                                 {p.completedBy ? (
                                     <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded-md border border-blue-100">
-                                        {(p.completedBy.name || '').split(' ')[0]}
+                                        {(p.completedBy?.name || '').split(' ')[0]}
                                     </span>
                                 ) : '-'}
                             </td>

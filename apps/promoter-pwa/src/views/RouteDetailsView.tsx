@@ -474,7 +474,7 @@ const RouteDetailsView = () => {
                     ))}
                 </div>
                 <span className="text-xs text-gray-400 ml-1">
-                    {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => (p.name || '').split(' ')[0]).join(', ')}
+                    {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => (p?.name || '').split(' ')[0]).join(', ')}
                 </span>
             </div>
         )}
