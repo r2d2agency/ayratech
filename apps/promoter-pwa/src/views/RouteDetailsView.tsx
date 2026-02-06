@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import client from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import { offlineService } from '../services/offline.service';
 import { processImage } from '../utils/image-processor';
 import { MapPin, ArrowLeft, CheckCircle, Circle, Camera, Navigation, Wifi, WifiOff, RefreshCw, X, ChevronRight, Clock } from 'lucide-react';
@@ -40,6 +41,7 @@ function formatDuration(start?: string | Date, end?: string | Date) {
 }
 
 const RouteDetailsView = () => {
+  const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -519,8 +521,8 @@ const RouteDetailsView = () => {
            }
 
            // Check if current user is checked in
-  const currentUserCheckin = item.checkins?.find((c: any) => c.promoterId === user?.id && !c.checkOutTime);
-  const isCurrentUserCheckedIn = !!currentUserCheckin;
+           const currentUserCheckin = item.checkins?.find((c: any) => (c.promoterId === user?.id || c.promoterId === user?.employee?.id) && !c.checkOutTime);
+           const isCurrentUserCheckedIn = !!currentUserCheckin;
 
   // Determine effective status for current user
   // If user is checked in, treat as Active for them regardless of route item status
