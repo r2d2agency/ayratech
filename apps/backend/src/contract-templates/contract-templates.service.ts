@@ -50,8 +50,11 @@ export class ContractTemplatesService {
     return this.contractTemplatesRepository.findOneBy({ id });
   }
 
-  update(id: string, updateContractTemplateDto: UpdateContractTemplateDto) {
-    return this.contractTemplatesRepository.update(id, updateContractTemplateDto);
+  async update(id: string, updateContractTemplateDto: UpdateContractTemplateDto) {
+    if (Object.keys(updateContractTemplateDto).length > 0) {
+      await this.contractTemplatesRepository.update(id, updateContractTemplateDto);
+    }
+    return this.findOne(id);
   }
 
   remove(id: string) {

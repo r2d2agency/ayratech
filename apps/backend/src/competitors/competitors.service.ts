@@ -25,8 +25,11 @@ export class CompetitorsService {
     return this.competitorsRepository.findOne({ where: { id } });
   }
 
-  update(id: string, updateCompetitorDto: UpdateCompetitorDto) {
-    return this.competitorsRepository.update(id, updateCompetitorDto);
+  async update(id: string, updateCompetitorDto: UpdateCompetitorDto) {
+    if (Object.keys(updateCompetitorDto).length > 0) {
+      await this.competitorsRepository.update(id, updateCompetitorDto);
+    }
+    return this.findOne(id);
   }
 
   remove(id: string) {

@@ -46,8 +46,11 @@ export class RolesService implements OnModuleInit {
     return this.rolesRepository.findOne({ where: { id } });
   }
 
-  update(id: string, updateRoleDto: UpdateRoleDto) {
-    return this.rolesRepository.update(id, updateRoleDto);
+  async update(id: string, updateRoleDto: UpdateRoleDto) {
+    if (Object.keys(updateRoleDto).length > 0) {
+      await this.rolesRepository.update(id, updateRoleDto);
+    }
+    return this.findOne(id);
   }
 
   remove(id: string) {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Search, CheckCircle, AlertTriangle, X, Save, RefreshCw, Camera, Trash2, Plus } from 'lucide-react';
+import { ArrowLeft, Search, CheckCircle, AlertTriangle, X, Save, RefreshCw, Camera, Trash2, Plus, Lock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../api/client';
 import { offlineService } from '../services/offline.service';
@@ -31,7 +31,11 @@ interface Checklist {
 interface Product {
   id: string;
   name: string;
-  brand?: { name: string };
+  brand?: { 
+    name: string;
+    waitForStockCount?: boolean;
+    stockNotificationContact?: string;
+  };
   ean?: string;
 }
 
@@ -52,6 +56,8 @@ interface RouteItemProduct {
     id: string;
     name: string;
   };
+  stockCount?: number;
+  stockCountStatus?: 'NONE' | 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
 }
 
 const ProductCheckView: React.FC = () => {
@@ -68,6 +74,7 @@ const ProductCheckView: React.FC = () => {
   const [supermarketName, setSupermarketName] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
   const [verifyingCheckIn, setVerifyingCheckIn] = useState(true);
+  const [isRouteCompleted, setIsRouteCompleted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Track when a product check started (for duration calculation)
@@ -79,10 +86,20 @@ const ProductCheckView: React.FC = () => {
   // Selected product for detailed editing (stockout type, observation)
   const [selectedProduct, setSelectedProduct] = useState<RouteItemProduct | null>(null);
 
-  const openProductModal = (prod: RouteItemProduct) => {
+  const openProductModal = async (prod: RouteItemProduct) => {
     // Only set start time if we are opening a new product, not updating existing selection
     if (!selectedProduct || selectedProduct.id !== prod.id) {
         productStartTimeRef.current = new Date();
+        
+        // Mark as "In Progress" (set checkInTime) if not already set
+        if (!prod.checkInTime) {
+            const now = new Date().toISOString();
+            const updated = { ...prod, checkInTime: now };
+            updateLocalState(updated);
+            
+            // Persist start time quietly
+            await saveProductCheck(updated, true); // true = silent/partial
+        }
     }
     setSelectedProduct(prod);
   };
@@ -118,6 +135,10 @@ const ProductCheckView: React.FC = () => {
             const route = await offlineService.getRoute(routeId);
             if (route) {
                 const item = route.items.find((i: any) => i.id === itemId);
+                const isItemCompleted = item && (item.status === 'CHECKOUT' || item.status === 'COMPLETED');
+                
+                setIsRouteCompleted(route.status === 'COMPLETED' || isItemCompleted);
+                
                 if (item) {
                     // Check if current user has an open checkin
                     const userCheckin = item.checkins?.find((c: any) => 
@@ -127,7 +148,7 @@ const ProductCheckView: React.FC = () => {
 
                     const isManager = ['admin', 'superadmin', 'supervisor', 'gerente', 'coordenador'].some(role => user?.role?.toLowerCase().includes(role));
 
-                    if (!userCheckin && !isManager) {
+                    if (!userCheckin && !isManager && route.status !== 'COMPLETED') {
                         toast.error('Você precisa fazer check-in para acessar esta tarefa.');
                         navigate(`/routes/${routeId}`, { replace: true });
                         return;
@@ -180,6 +201,9 @@ const ProductCheckView: React.FC = () => {
       if (navigator.onLine) {
         const response = await api.get(`/routes/${routeId}`);
         const item = response.data.items.find((i: any) => i.id === itemId);
+        const isItemCompleted = item && (item.status === 'CHECKOUT' || item.status === 'COMPLETED');
+        setIsRouteCompleted(response.data.status === 'COMPLETED' || isItemCompleted);
+        
         if (item && item.products) {
           setSupermarketName(item.supermarket?.fantasyName || item.supermarket?.name || 'PDV');
           setProducts(item.products);
@@ -340,7 +364,22 @@ const ProductCheckView: React.FC = () => {
   };
 
   const handleModalSave = async () => {
-    if (selectedProduct) {
+    if (selectedProduct && !isRouteCompleted) {
+      // Validation: Photos required
+      if (!selectedProduct.photos || selectedProduct.photos.length === 0) {
+        toast.error('É obrigatório tirar pelo menos uma foto para concluir.');
+        return;
+      }
+
+      // Validation: Checklist required
+      if (selectedProduct.checklists && selectedProduct.checklists.length > 0) {
+        const incompleteItems = selectedProduct.checklists.filter(c => !c.isChecked);
+        if (incompleteItems.length > 0) {
+          toast.error('Complete todos os itens do checklist para concluir.');
+          return;
+        }
+      }
+
       setSaving(true);
       try {
         const startTime = productStartTimeRef.current || new Date();
@@ -461,7 +500,14 @@ const ProductCheckView: React.FC = () => {
           <button onClick={() => navigate(-1)} className="text-gray-600">
             <ArrowLeft size={24} />
           </button>
-          <h1 className="text-lg font-bold flex-1">Pesquisa de Produtos</h1>
+          <div className="flex-1">
+            <h1 className="text-lg font-bold">Pesquisa de Produtos</h1>
+            {isRouteCompleted && (
+                <span className="text-xs text-red-500 font-bold flex items-center gap-1">
+                    <Lock size={12} /> Visita Finalizada - Modo Leitura
+                </span>
+            )}
+          </div>
           <div className="text-sm text-gray-500">
             {products.filter(p => p.checked).length}/{products.length}
           </div>
@@ -502,7 +548,22 @@ const ProductCheckView: React.FC = () => {
             >
               <div className="flex justify-between items-start gap-3">
                 <div className="flex-1" onClick={() => openProductModal(prod)}>
-                  <h3 className="font-medium text-gray-900">{prod.product.name}</h3>
+                  <div className="flex justify-between items-start">
+                    <h3 className={`font-medium ${
+                      prod.checked 
+                        ? 'text-green-700' 
+                        : prod.checkInTime && !prod.checkOutTime 
+                          ? 'text-yellow-700'
+                          : 'text-gray-900'
+                    }`}>
+                      {prod.product.name}
+                    </h3>
+                    {!prod.checked && prod.checkInTime && !prod.checkOutTime && (
+                       <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 whitespace-nowrap">
+                         Em Andamento
+                       </span>
+                    )}
+                  </div>
                   {prod.product.brand && (
                     <p className="text-sm text-gray-500">{prod.product.brand.name}</p>
                   )}
@@ -520,22 +581,24 @@ const ProductCheckView: React.FC = () => {
                 <div className="flex gap-2">
                   <button 
                     onClick={() => handleStatusChange(prod, false)}
+                    disabled={isRouteCompleted}
                     className={`p-2 rounded-full transition-colors ${
                       prod.checked && !prod.isStockout 
                         ? 'bg-green-100 text-green-600' 
                         : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                    }`}
+                    } ${isRouteCompleted ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <CheckCircle size={24} />
                   </button>
                   
                   <button 
                     onClick={() => handleStatusChange(prod, true)}
+                    disabled={isRouteCompleted}
                     className={`p-2 rounded-full transition-colors ${
                       prod.checked && prod.isStockout 
                         ? 'bg-red-100 text-red-600' 
                         : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                    }`}
+                    } ${isRouteCompleted ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <AlertTriangle size={24} />
                   </button>
@@ -575,6 +638,86 @@ const ProductCheckView: React.FC = () => {
               </button>
             </div>
 
+            {/* Pre-approval Logic */}
+            {selectedProduct.product.brand?.waitForStockCount && (
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-4">
+                    <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                        {selectedProduct.stockCountStatus === 'APPROVED' ? <CheckCircle size={18} /> : 
+                         selectedProduct.stockCountStatus === 'PENDING_REVIEW' ? <RefreshCw className="animate-spin" size={18} /> :
+                         selectedProduct.stockCountStatus === 'REJECTED' ? <AlertTriangle size={18} /> :
+                         <AlertTriangle size={18} />}
+                        
+                        {selectedProduct.stockCountStatus === 'APPROVED' ? 'Estoque Aprovado' :
+                         selectedProduct.stockCountStatus === 'PENDING_REVIEW' ? 'Aguardando Aprovação' :
+                         selectedProduct.stockCountStatus === 'REJECTED' ? 'Estoque Reprovado' :
+                         'Validação de Estoque Necessária'}
+                    </h3>
+                    
+                    {selectedProduct.stockCountStatus === 'PENDING_REVIEW' ? (
+                        <div className="text-sm text-blue-700">
+                            O estoque informado ({selectedProduct.stockCount}) foi enviado para aprovação. 
+                            Aguarde a liberação para prosseguir.
+                            <button 
+                                onClick={() => handleModalSave()} 
+                                className="mt-2 text-xs underline font-bold"
+                            >
+                                Verificar Status
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm font-medium text-gray-700">Contagem de Estoque (Unidades)</label>
+                            <div className="flex gap-2">
+                                <input 
+                                    type="number" 
+                                    className="flex-1 border rounded-lg p-2 text-sm bg-white"
+                                    placeholder="Qtd"
+                                    value={selectedProduct.stockCount || ''}
+                                    onChange={(e) => setSelectedProduct({...selectedProduct, stockCount: parseInt(e.target.value) || 0})}
+                                    disabled={selectedProduct.stockCountStatus === 'APPROVED'}
+                                />
+                                {selectedProduct.stockCountStatus !== 'APPROVED' && (
+                                    <button 
+                                        onClick={async () => {
+                                            if (!selectedProduct.stockCount) {
+                                                toast.error('Informe a quantidade.');
+                                                return;
+                                            }
+                                            setSaving(true);
+                                            try {
+                                                const updated = { 
+                                                    ...selectedProduct, 
+                                                    stockCountStatus: 'PENDING_REVIEW' as any 
+                                                };
+                                                await saveProductCheck(updated);
+                                                updateLocalState(updated);
+                                                setSelectedProduct(updated);
+                                                toast.success('Enviado para aprovação!');
+                                            } catch(e) {
+                                                toast.error('Erro ao enviar.');
+                                            } finally {
+                                                setSaving(false);
+                                            }
+                                        }}
+                                        className="bg-blue-600 text-white px-4 rounded-lg text-sm font-bold"
+                                        disabled={saving}
+                                    >
+                                        Enviar
+                                    </button>
+                                )}
+                            </div>
+                            {selectedProduct.stockCountStatus === 'REJECTED' && (
+                                <p className="text-xs text-red-600 font-bold">
+                                    Sua contagem anterior foi rejeitada. Verifique e envie novamente.
+                                </p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {( !selectedProduct.product.brand?.waitForStockCount || selectedProduct.stockCountStatus === 'APPROVED' ) && (
+            <>
             {selectedProduct.isStockout && (
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-700">Tipo de Ruptura</label>
@@ -778,6 +921,8 @@ const ProductCheckView: React.FC = () => {
                 </>
               )}
             </button>
+            </>
+            )}
           </div>
         </div>
       )}

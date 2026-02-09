@@ -4,7 +4,7 @@ import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useBranding } from '../context/BrandingContext';
 import { offlineService } from '../services/offline.service';
-import { MapPin, ArrowRight, CheckCircle, WifiOff, Settings } from 'lucide-react';
+import { MapPin, ArrowRight, CheckCircle, WifiOff, Settings, ListTodo } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import SupervisorDashboardView from './SupervisorDashboardView';
@@ -152,7 +152,7 @@ const DashboardView = () => {
 
           {/* Current/Next Route */}
           <section>
-            <h2 className="text-lg font-bold text-gray-800 mb-3">Roteiro de Hoje</h2>
+            <h2 className="text-lg font-bold text-gray-800 mb-3">Agenda do Dia</h2>
             
             {todaysRoutes.length === 0 ? (
               <div className="bg-white rounded-xl p-8 text-center border border-dashed border-gray-300">
@@ -193,18 +193,16 @@ const DashboardView = () => {
                       const isCompleted = item.status === 'CHECKOUT' || item.status === 'COMPLETED';
                       const isInProgress = item.status === 'CHECKIN';
                       
-                      const currentUserCheckin = item.checkins?.find((c: any) => c.promoterId === user?.id || c.promoterId === user?.employee?.id);
+                      const currentUserCheckin = item.checkins?.find((c: any) => (c.promoterId === user?.id || c.promoterId === user?.employee?.id) && !c.checkOutTime);
                       const isCurrentUserCheckedIn = !!currentUserCheckin;
 
                       return (
                         <div 
                           key={item.id}
                           onClick={() => {
-                            if (isCurrentUserCheckedIn) {
-                                navigate(`/routes/${route.id}/items/${item.id}/check`);
-                            } else {
-                                navigate(`/routes/${route.id}`, { state: { targetItemId: item.id } });
-                            }
+                            // Always navigate to Route Details first, as requested
+                            // "ao clicar abre o detalhe da rota.. e ai as tarefas"
+                            navigate(`/routes/${route.id}`, { state: { targetItemId: item.id } });
                           }}
                           className={`relative bg-white p-4 rounded-xl shadow-sm border flex gap-4 items-center active:scale-[0.98] transition-transform ${
                             isInProgress ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-100'
@@ -221,6 +219,16 @@ const DashboardView = () => {
                             <p className="text-xs text-gray-500 truncate flex items-center gap-1">
                               <MapPin size={10} /> {item.supermarket.address}
                             </p>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/routes/${route.id}`, { state: { targetItemId: item.id, openTasks: true } });
+                                }}
+                                className="mt-2 text-xs flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-1 rounded-md font-medium hover:bg-blue-100 transition-colors w-fit"
+                            >
+                                <ListTodo size={12} />
+                                Tarefas
+                            </button>
                           </div>
 
                           <div className="shrink-0">

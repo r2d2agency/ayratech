@@ -304,6 +304,9 @@ export class RoutesService {
       .leftJoinAndSelect('itemProducts.completedBy', 'completedBy')
       .leftJoinAndSelect('itemProducts.checklists', 'checklists')
       .leftJoinAndSelect('product.brand', 'brand')
+      .leftJoinAndSelect('product.checklistTemplate', 'checklistTemplate')
+      .leftJoinAndSelect('checklistTemplate.items', 'templateItems')
+      .leftJoinAndSelect('templateItems.competitors', 'templateCompetitors')
       .leftJoinAndSelect('items.checkins', 'checkins')
       .leftJoinAndSelect('checkins.promoter', 'checkinPromoter')
       .orderBy('route.date', 'DESC');
@@ -359,6 +362,9 @@ export class RoutesService {
         .leftJoinAndSelect('itemProducts.completedBy', 'completedBy')
         .leftJoinAndSelect('itemProducts.checklists', 'checklists')
         .leftJoinAndSelect('itemProducts.product', 'product')
+        .leftJoinAndSelect('product.checklistTemplate', 'checklistTemplate')
+        .leftJoinAndSelect('checklistTemplate.items', 'templateItems')
+        .leftJoinAndSelect('templateItems.competitors', 'templateCompetitors')
         .leftJoinAndSelect('product.client', 'productClient')
         .leftJoinAndSelect('product.brand', 'brand')
         .leftJoinAndSelect('brand.client', 'brandClient')
@@ -452,7 +458,10 @@ export class RoutesService {
         'promoter', 
         'items.products', 
         'items.products.product', 
-         'items.products.checklists',
+        'items.products.product.brand',
+        'items.products.product.checklistTemplate',
+        'items.products.product.checklistTemplate.items',
+        'items.products.checklists',
          'items.products.checklists.completedBy',
          'items.products.completedBy',
          'items.checkins',
@@ -902,7 +911,16 @@ export class RoutesService {
       checked: boolean; 
       isStockout: boolean; 
       observation?: string; 
-      photos?: string[] 
+      photos?: string[];
+      validityDate?: string;
+      stockCount?: number;
+      checklists?: Array<{
+        description: string;
+        type: string;
+        value?: string;
+        isChecked: boolean;
+        competitorName?: string;
+      }>;
     }[] 
   }, user?: any) {
     const item = await this.routeItemsRepository.findOne({ 
@@ -931,7 +949,8 @@ export class RoutesService {
     if (data.products && data.products.length > 0) {
       for (const p of data.products) {
         let productRel = await this.routeItemProductsRepository.findOne({
-          where: { routeItemId: itemId, productId: p.productId }
+          where: { routeItemId: itemId, productId: p.productId },
+          relations: ['checklists']
         });
 
         if (!productRel) {
@@ -950,6 +969,34 @@ export class RoutesService {
         if ((p as any).validityDate) productRel.validityDate = (p as any).validityDate;
         if ((p as any).stockCount) productRel.stockCount = (p as any).stockCount;
         
+        // Checklist Handling
+        if (p.checklists && p.checklists.length > 0) {
+            if (!productRel.checklists) productRel.checklists = [];
+            
+            for (const checkData of p.checklists) {
+                const existing = productRel.checklists.find(c => 
+                    c.description === checkData.description && 
+                    c.competitorName === checkData.competitorName
+                );
+
+                if (existing) {
+                    existing.isChecked = checkData.isChecked;
+                    existing.value = checkData.value;
+                    await this.dataSource.getRepository(RouteItemProductChecklist).save(existing);
+                } else {
+                    const newChecklist = this.dataSource.getRepository(RouteItemProductChecklist).create({
+                        routeItemProduct: productRel,
+                        description: checkData.description,
+                        type: checkData.type as any,
+                        value: checkData.value,
+                        isChecked: checkData.isChecked,
+                        competitorName: checkData.competitorName
+                    });
+                    await this.dataSource.getRepository(RouteItemProductChecklist).save(newChecklist);
+                }
+            }
+        }
+
         await this.routeItemProductsRepository.save(productRel);
       }
     }

@@ -76,7 +76,10 @@ export class ProductsService {
         updateData.categoryRef = { id: categoryId };
       }
       
-      await this.productsRepository.update(id, updateData);
+      if (Object.keys(updateData).length > 0) {
+        await this.productsRepository.update(id, updateData);
+      }
+      
       return this.findOne(id);
     } catch (error) {
       if (error.code === '23505') {

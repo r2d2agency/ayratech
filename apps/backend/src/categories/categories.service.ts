@@ -43,7 +43,9 @@ export class CategoriesService {
       updateData.parent = parentId ? { id: parentId } : null;
     }
 
-    await this.categoriesRepository.update(id, updateData);
+    if (Object.keys(updateData).length > 0) {
+      await this.categoriesRepository.update(id, updateData);
+    }
     return this.findOne(id);
   }
 

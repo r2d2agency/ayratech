@@ -25,10 +25,20 @@ export class SupermarketsService {
       });
       return await this.supermarketsRepository.save(supermarket);
     } catch (error) {
+      console.error('Error creating supermarket:', error);
       if (error.code === '23503') {
         throw new BadRequestException('Grupo ou Clientes inválidos ou não encontrados.');
       }
-      throw error;
+      if (error.code === '23502') {
+        throw new BadRequestException('Campo obrigatório ausente: ' + (error.column || 'desconhecido'));
+      }
+      if (error.code === '22P02') {
+        throw new BadRequestException('Formato de dados inválido (ex: número ou UUID malformado).');
+      }
+      if (error.code === '22001') {
+        throw new BadRequestException('Texto muito longo para um dos campos.');
+      }
+      throw new InternalServerErrorException('Erro ao criar supermercado: ' + error.message);
     }
   }
 
@@ -76,10 +86,20 @@ export class SupermarketsService {
       
       return this.findOne(id);
     } catch (error) {
+      console.error('Error updating supermarket:', error);
       if (error.code === '23503') {
         throw new BadRequestException('Grupo ou Clientes inválidos ou não encontrados.');
       }
-      throw error;
+      if (error.code === '23502') {
+        throw new BadRequestException('Campo obrigatório ausente: ' + (error.column || 'desconhecido'));
+      }
+      if (error.code === '22P02') {
+        throw new BadRequestException('Formato de dados inválido (ex: número ou UUID malformado).');
+      }
+      if (error.code === '22001') {
+        throw new BadRequestException('Texto muito longo para um dos campos.');
+      }
+      throw new InternalServerErrorException('Erro ao atualizar supermercado: ' + error.message);
     }
   }
 

@@ -87,9 +87,27 @@ interface RouteReportItem {
         brand?: {
           name: string;
         };
+        checklistTemplate?: {
+            id: string;
+            title: string;
+            items: Array<{
+                id: string;
+                description: string;
+                type: string;
+                competitors?: Array<{ id: string; name: string }>;
+            }>;
+        };
       };
       validityDate?: string;
       stockCount?: number;
+      checklists?: Array<{
+          id: string;
+          type: string;
+          value?: string;
+          isChecked: boolean;
+          competitorName?: string;
+          description: string;
+      }>;
       completedBy?: {
         id: string;
         name: string;
@@ -155,6 +173,16 @@ const RoutesReportView: React.FC = () => {
       observation: string; 
       photos: string[];
       productName: string;
+      validityDate?: string;
+      stockCount?: number;
+      checklists?: Array<{
+        description: string;
+        type: string;
+        value?: string;
+        isChecked: boolean;
+        competitorName?: string;
+      }>;
+      checklistTemplate?: any;
     }[];
   } | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -535,16 +563,52 @@ const RoutesReportView: React.FC = () => {
       checkOutTime: toLocalISO(initialCheckOut),
       promoterId: routePromoterId,
       observation: item.observation || '',
-      products: item.products.map((p: any) => ({
-        productId: p.product.id,
-        checked: p.checked || false,
-        isStockout: p.isStockout || false,
-        observation: p.observation || '',
-        photos: p.photos || [],
-        productName: p.product.name,
-        validityDate: p.validityDate || '',
-        stockCount: p.stockCount || ''
-      }))
+      products: item.products.map((p: any) => {
+        // Prepare initial checklists based on template or existing data
+        let initialChecklists = [];
+        if (p.checklists && p.checklists.length > 0) {
+             initialChecklists = p.checklists.map((c: any) => ({
+                 description: c.description,
+                 type: c.type,
+                 value: c.value,
+                 isChecked: c.isChecked,
+                 competitorName: c.competitorName
+             }));
+        } else if (p.product.checklistTemplate?.items) {
+             // Initialize from template if no data exists
+             initialChecklists = p.product.checklistTemplate.items.flatMap((tmplItem: any) => {
+                 if (tmplItem.competitors && tmplItem.competitors.length > 0) {
+                     return tmplItem.competitors.map((comp: any) => ({
+                         description: tmplItem.description,
+                         type: tmplItem.type,
+                         value: '',
+                         isChecked: false,
+                         competitorName: comp.name
+                     }));
+                 }
+                 return [{
+                     description: tmplItem.description,
+                     type: tmplItem.type,
+                     value: '',
+                     isChecked: false,
+                     competitorName: undefined
+                 }];
+             });
+        }
+
+        return {
+            productId: p.product.id,
+            checked: p.checked || false,
+            isStockout: p.isStockout || false,
+            observation: p.observation || '',
+            photos: p.photos || [],
+            productName: p.product.name,
+            validityDate: p.validityDate || '',
+            stockCount: p.stockCount || '',
+            checklistTemplate: p.product.checklistTemplate,
+            checklists: initialChecklists
+        };
+      })
     });
   };
 
@@ -1410,7 +1474,7 @@ const RoutesReportView: React.FC = () => {
                           <th className="p-3">Marca</th>
                           <th className="p-3">Quem</th>
                           <th className="p-3">Estoque</th>
-                          <th className="p-3">Preço</th>
+                          <th className="p-3">Checklist / Detalhes</th>
                           <th className="p-3">Validade</th>
                           <th className="p-3">Status</th>
                           <th className="p-3">Fotos</th>
@@ -1434,10 +1498,38 @@ const RoutesReportView: React.FC = () => {
                                 {p.stockCount !== null && p.stockCount !== undefined ? p.stockCount : '-'}
                             </td>
                             <td className="p-3 text-xs text-slate-700">
-                                {(() => {
-                                    const priceCheck = p.checklists?.find((c: any) => c.type === 'PRICE_CHECK');
-                                    return priceCheck && priceCheck.value ? `R$ ${priceCheck.value}` : '-';
-                                })()}
+                                {p.product.checklistTemplate?.title && (
+                                    <div className="mb-1 pb-1 border-b border-slate-100">
+                                        <span className="text-[10px] font-bold text-slate-700 bg-slate-200 px-1 rounded block w-fit">
+                                            {p.product.checklistTemplate.title}
+                                        </span>
+                                    </div>
+                                )}
+                                {p.checklists && p.checklists.length > 0 ? (
+                                    <div className="flex flex-col gap-1">
+                                        {p.checklists.map((c: any, cIdx: number) => (
+                                            <div key={c.id || cIdx} className="flex flex-col border-b last:border-0 border-slate-100 pb-1 last:pb-0">
+                                                <span className="font-semibold text-[10px] text-slate-500">{c.description}</span>
+                                                {c.competitorName && (
+                                                    <span className="text-[10px] text-orange-600 font-bold">{c.competitorName}</span>
+                                                )}
+                                                <div className="flex items-center gap-1">
+                                                    {c.type === 'BINARY' ? (
+                                                        c.isChecked ? 
+                                                            <span className="text-emerald-600 font-bold flex items-center gap-1"><CheckCircle2 size={10}/> Sim</span> : 
+                                                            <span className="text-red-500 font-bold flex items-center gap-1"><XCircle size={10}/> Não</span>
+                                                    ) : (
+                                                        <span className="font-mono bg-slate-100 px-1 rounded text-slate-700">
+                                                            {c.type === 'PRICE_CHECK' ? 'R$ ' : ''}{c.value || '-'}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <span className="text-slate-300">-</span>
+                                )}
                             </td>
                             <td className="p-3 text-xs">
                               {p.validityDate ? (() => {
@@ -1587,6 +1679,19 @@ const RoutesReportView: React.FC = () => {
                         <span className="font-bold text-slate-700">{prod.productName}</span>
                         <div className="flex items-center gap-4">
                          <div className="flex items-center gap-2">
+                           <label className="text-xs font-bold text-slate-500">Validade:</label>
+                           <input 
+                             type="date" 
+                             value={prod.validityDate || ''}
+                             onChange={e => {
+                               const newProds = [...manualForm.products];
+                               newProds[idx].validityDate = e.target.value;
+                               setManualForm({...manualForm, products: newProds});
+                             }}
+                             className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 w-32"
+                           />
+                         </div>
+                         <div className="flex items-center gap-2">
                            <label className="text-xs font-bold text-slate-500">Estoque:</label>
                            <input 
                              type="number" 
@@ -1628,6 +1733,79 @@ const RoutesReportView: React.FC = () => {
                           </label>
                         </div>
                      </div>
+                     
+                     {/* Checklist Items */}
+                     {prod.checklists && prod.checklists.length > 0 && (
+                        <div className="bg-slate-100 p-4 rounded-xl space-y-3 border border-slate-200">
+                            <h4 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                                <List size={14} /> Checklist / Detalhes
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {prod.checklists.map((checkItem, cIdx) => (
+                                <div key={cIdx} className="flex flex-col gap-1.5 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                                    <div className="flex justify-between items-start">
+                                        <span className="text-sm font-medium text-slate-700 leading-tight">
+                                            {checkItem.description} 
+                                            {checkItem.competitorName && <span className="text-orange-600 font-bold ml-1 text-xs">({checkItem.competitorName})</span>}
+                                        </span>
+                                    </div>
+                                    {checkItem.type === 'BINARY' ? (
+                                        <div className="flex items-center gap-4 mt-1">
+                                            <label className="flex items-center gap-2 text-sm cursor-pointer hover:bg-emerald-50 px-2 py-1 rounded transition-colors">
+                                                <input 
+                                                    type="radio"
+                                                    name={`check_${idx}_${cIdx}`}
+                                                    checked={checkItem.isChecked}
+                                                    onChange={() => {
+                                                        const newProds = [...manualForm.products];
+                                                        if (newProds[idx].checklists) {
+                                                            newProds[idx].checklists![cIdx].isChecked = true;
+                                                        }
+                                                        setManualForm({...manualForm, products: newProds});
+                                                    }}
+                                                    className="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
+                                                />
+                                                <span className={checkItem.isChecked ? 'font-bold text-emerald-700' : 'text-slate-600'}>Sim</span>
+                                            </label>
+                                            <label className="flex items-center gap-2 text-sm cursor-pointer hover:bg-red-50 px-2 py-1 rounded transition-colors">
+                                                <input 
+                                                    type="radio"
+                                                    name={`check_${idx}_${cIdx}`}
+                                                    checked={!checkItem.isChecked}
+                                                    onChange={() => {
+                                                        const newProds = [...manualForm.products];
+                                                        if (newProds[idx].checklists) {
+                                                            newProds[idx].checklists![cIdx].isChecked = false;
+                                                        }
+                                                        setManualForm({...manualForm, products: newProds});
+                                                    }}
+                                                    className="w-4 h-4 text-red-600 focus:ring-red-500"
+                                                />
+                                                <span className={!checkItem.isChecked ? 'font-bold text-red-700' : 'text-slate-600'}>Não</span>
+                                            </label>
+                                        </div>
+                                    ) : (
+                                        <div className="mt-1">
+                                            <input 
+                                                type="text" 
+                                                placeholder={checkItem.type === 'PRICE_CHECK' ? 'R$ 0,00' : 'Valor'}
+                                                value={checkItem.value || ''}
+                                                onChange={e => {
+                                                    const newProds = [...manualForm.products];
+                                                    if (newProds[idx].checklists) {
+                                                        newProds[idx].checklists![cIdx].value = e.target.value;
+                                                    }
+                                                    setManualForm({...manualForm, products: newProds});
+                                                }}
+                                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                            </div>
+                        </div>
+                     )}
                      
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                        <input 

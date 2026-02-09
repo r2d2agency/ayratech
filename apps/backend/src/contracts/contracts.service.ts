@@ -76,8 +76,11 @@ export class ContractsService {
     });
   }
 
-  update(id: string, updateContractDto: UpdateContractDto) {
-    return this.contractsRepository.update(id, updateContractDto);
+  async update(id: string, updateContractDto: UpdateContractDto) {
+    if (Object.keys(updateContractDto).length > 0) {
+      await this.contractsRepository.update(id, updateContractDto);
+    }
+    return this.findOne(id);
   }
 
   remove(id: string) {

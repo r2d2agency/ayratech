@@ -30,8 +30,11 @@ export class AbsencesService {
     return this.absencesRepository.findOne({ where: { id }, relations: ['employee', 'approver'] });
   }
 
-  update(id: string, updateAbsenceRequestDto: UpdateAbsenceRequestDto) {
-    return this.absencesRepository.update(id, updateAbsenceRequestDto);
+  async update(id: string, updateAbsenceRequestDto: UpdateAbsenceRequestDto) {
+    if (Object.keys(updateAbsenceRequestDto).length > 0) {
+      await this.absencesRepository.update(id, updateAbsenceRequestDto);
+    }
+    return this.findOne(id);
   }
 
   remove(id: string) {

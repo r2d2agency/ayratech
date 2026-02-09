@@ -46,7 +46,11 @@ export class ClientsService {
       updateClientDto.password = await bcrypt.hash(updateClientDto.password, 10);
     }
     const { supermarketIds, ...rest } = updateClientDto as any;
-    await this.clientsRepository.update(id, rest);
+    
+    // Only perform update if there are fields to update
+    if (Object.keys(rest).length > 0) {
+      await this.clientsRepository.update(id, rest);
+    }
 
     if (supermarketIds) {
       const client = await this.clientsRepository.findOne({

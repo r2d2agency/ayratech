@@ -53,7 +53,9 @@ export class ChecklistsService {
   async update(id: string, updateDto: UpdateChecklistTemplateDto) {
     const { items, ...templateData } = updateDto;
     
-    await this.checklistRepository.update(id, templateData);
+    if (Object.keys(templateData).length > 0) {
+      await this.checklistRepository.update(id, templateData);
+    }
 
     if (items) {
       // Simplest update strategy: Delete all existing items and recreate

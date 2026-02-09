@@ -25,8 +25,11 @@ export class SupermarketGroupsService {
     return this.supermarketGroupRepository.findOneBy({ id });
   }
 
-  update(id: string, updateSupermarketGroupDto: UpdateSupermarketGroupDto) {
-    return this.supermarketGroupRepository.update(id, updateSupermarketGroupDto);
+  async update(id: string, updateSupermarketGroupDto: UpdateSupermarketGroupDto) {
+    if (Object.keys(updateSupermarketGroupDto).length > 0) {
+      await this.supermarketGroupRepository.update(id, updateSupermarketGroupDto);
+    }
+    return this.findOne(id);
   }
 
   remove(id: string) {
