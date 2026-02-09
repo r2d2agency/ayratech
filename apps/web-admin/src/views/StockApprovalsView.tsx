@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../api/client';
+import api from '../api/client';
 import { Check, X, CheckSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
 
