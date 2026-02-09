@@ -19,6 +19,7 @@ import {
   Clock,
   Wand2,
   CheckSquare,
+  ClipboardCheck,
   Image as ImageIcon
 } from 'lucide-react';
 import { ViewType } from '../types';
@@ -241,6 +242,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
         </p>
         {navItem('routes', <Map size={20} />, 'Rotas e Visitas')}
         {navItem('checklist_templates', <CheckSquare size={20} />, 'Modelos de Checklist')}
+        {navItem('stock_approvals', <ClipboardCheck size={20} />, 'Aprovações de Estoque')}
         
         <div className="pt-4" />
         <p className={`text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 mb-2 h-4 overflow-hidden transition-all ${expanded ? 'opacity-100' : 'opacity-0'}`}>

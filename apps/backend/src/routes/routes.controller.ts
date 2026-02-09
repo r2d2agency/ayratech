@@ -86,6 +86,19 @@ export class RoutesController {
     return this.routesService.findAllRules();
   }
 
+  @Get('approvals/pending')
+  findPendingApprovals() {
+    return this.routesService.findPendingApprovals();
+  }
+
+  @Post('approvals/:id')
+  processStockApproval(
+    @Param('id') id: string,
+    @Body() body: { action: 'APPROVE' | 'REJECT'; observation?: string },
+  ) {
+    return this.routesService.processStockApproval(id, body.action, body.observation);
+  }
+
   @Patch('items/:itemId/products/:productId/check')
   checkProduct(
     @Param('itemId') itemId: string,

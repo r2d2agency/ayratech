@@ -1200,6 +1200,42 @@ export class RoutesService {
     });
   }
 
+  async findPendingApprovals() {
+    return this.routeItemProductsRepository.find({
+      where: { stockCountStatus: 'PENDING_REVIEW' },
+      relations: ['product', 'product.brand', 'routeItem', 'routeItem.supermarket', 'routeItem.route'],
+      order: { checkInTime: 'DESC' }
+    });
+  }
+
+  async processStockApproval(id: string, action: 'APPROVE' | 'REJECT', observation?: string) {
+    const itemProduct = await this.routeItemProductsRepository.findOne({
+      where: { id },
+      relations: ['product', 'product.brand']
+    });
+
+    if (!itemProduct) {
+      throw new NotFoundException('Product check not found');
+    }
+
+    if (itemProduct.stockCountStatus === 'APPROVED') {
+       return { success: true, message: 'Already approved' };
+    }
+
+    if (action === 'APPROVE') {
+      itemProduct.stockCountStatus = 'APPROVED';
+    } else if (action === 'REJECT') {
+      itemProduct.stockCountStatus = 'REJECTED';
+    }
+
+    if (observation) {
+      itemProduct.observation = (itemProduct.observation ? itemProduct.observation + '\n' : '') + `[Admin ${action}]: ${observation}`;
+    }
+
+    await this.routeItemProductsRepository.save(itemProduct);
+    return { success: true, status: itemProduct.stockCountStatus };
+  }
+
   async getPublicStockValidation(token: string) {
     const itemProduct = await this.routeItemProductsRepository.findOne({
       where: { approvalToken: token },

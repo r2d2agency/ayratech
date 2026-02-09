@@ -32,6 +32,7 @@ import TimeClockManagementView from './views/TimeClockManagementView';
 import LoginView from './views/LoginView';
 import ClientDashboardView from './views/ClientDashboardView';
 import StockValidationView from './views/StockValidationView';
+import StockApprovalsView from './views/StockApprovalsView';
 import { BrandingProvider, useBranding } from './context/BrandingContext';
 import { jwtDecode } from 'jwt-decode';
 
@@ -112,6 +113,7 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
           {activeView === 'live_map' && <LiveMapView onNavigate={handleNavigate} />}
           {activeView === 'routes' && <RoutesView />}
           {activeView === 'checklist_templates' && <ChecklistTemplatesView />}
+          {activeView === 'stock_approvals' && <StockApprovalsView />}
           {activeView === 'supermarkets_list' && <SupermarketsListView onNavigate={handleNavigate} />}
           {activeView === 'supermarket_form' && <SupermarketFormView onNavigate={handleNavigate} />}
           {activeView === 'supermarket_groups_list' && <SupermarketGroupsListView onNavigate={handleNavigate} />}
