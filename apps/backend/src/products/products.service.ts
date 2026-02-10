@@ -61,26 +61,28 @@ export class ProductsService {
 
   async update(id: string, updateProductDto: UpdateProductDto) {
     try {
+      const product = await this.productsRepository.findOne({ where: { id } });
+      if (!product) {
+        throw new NotFoundException('Produto não encontrado');
+      }
+
       const { brandId, clientId, categoryId, ...rest } = updateProductDto;
-      const updateData: any = { ...rest };
+      
+      this.productsRepository.merge(product, rest);
       
       if (brandId) {
-        updateData.brand = { id: brandId };
+        product.brand = { id: brandId } as any;
       }
       
       if (clientId) {
-        updateData.client = { id: clientId };
+        product.client = { id: clientId } as any;
       }
 
       if (categoryId) {
-        updateData.categoryRef = { id: categoryId };
+        product.categoryRef = { id: categoryId } as any;
       }
       
-      if (Object.keys(updateData).length > 0) {
-        await this.productsRepository.update(id, updateData);
-      }
-      
-      return this.findOne(id);
+      return await this.productsRepository.save(product);
     } catch (error) {
       if (error.code === '23505') {
         const detail = error.detail || '';
