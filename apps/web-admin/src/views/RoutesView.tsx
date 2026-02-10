@@ -636,6 +636,7 @@ const RoutesView: React.FC = () => {
       supermarket: item.supermarket,
       order: item.order,
       startTime: item.startTime || '',
+      endTime: item.endTime || '',
       estimatedDuration: item.estimatedDuration || 30,
       productIds: item.products?.map((p: any) => p.productId) || [],
       products: item.products?.map((p: any) => ({
@@ -803,6 +804,7 @@ const RoutesView: React.FC = () => {
       supermarket: item.supermarket,
       order: item.order,
       startTime: item.startTime || '',
+      endTime: item.endTime || '',
       estimatedDuration: item.estimatedDuration || 30,
       productIds: item.products?.map((p: any) => p.productId) || [],
       products: item.products?.map((p: any) => ({

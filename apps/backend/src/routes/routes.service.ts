@@ -837,20 +837,26 @@ export class RoutesService {
 
         // Check for brand notification logic
         if (itemProduct.product?.brand?.waitForStockCount) {
-          // If status is not already approved, set to pending review
-          if (itemProduct.stockCountStatus !== 'APPROVED') {
-             itemProduct.stockCountStatus = 'PENDING_REVIEW';
-             if (!itemProduct.approvalToken) {
-               itemProduct.approvalToken = uuidv4();
-             }
-             
-             const contact = itemProduct.product.brand.stockNotificationContact;
-             if (contact) {
-                const supermarketName = itemProduct.routeItem?.supermarket?.fantasyName || 'PDV Desconhecido';
-                const productName = itemProduct.product.name;
-                const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-                // Generate a simplified link directly to the validation page
-                const approvalLink = `${frontendUrl}/stock-validation?token=${itemProduct.approvalToken}`;
+          // Check if product has STOCK_COUNT checklist
+          const hasStockCountChecklist = itemProduct.checklists?.some(c => c.type === ChecklistItemType.STOCK_COUNT) || 
+                                         itemProduct.checklists?.some(c => c.description?.toLowerCase().includes('estoque') || c.description?.toLowerCase().includes('contagem'));
+
+          // Only trigger approval if it has the specific checklist
+          if (hasStockCountChecklist) {
+            // If status is not already approved, set to pending review
+            if (itemProduct.stockCountStatus !== 'APPROVED') {
+               itemProduct.stockCountStatus = 'PENDING_REVIEW';
+               if (!itemProduct.approvalToken) {
+                 itemProduct.approvalToken = uuidv4();
+               }
+               
+               const contact = itemProduct.product.brand.stockNotificationContact;
+               if (contact) {
+                  const supermarketName = itemProduct.routeItem?.supermarket?.fantasyName || 'PDV Desconhecido';
+                  const productName = itemProduct.product.name;
+                  const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+                  // Generate a simplified link directly to the validation page
+                   const approvalLink = `${frontendUrl}/stock-validation?token=${itemProduct.approvalToken}`;
 
                 const message = `*Validação de Estoque Necessária*\n\n` +
                   `📦 *Produto:* ${productName}\n` +
