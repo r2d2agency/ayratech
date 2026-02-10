@@ -54,14 +54,19 @@ export class BrandsService {
 
       if (clientId) {
         const client = await this.clientsRepository.findOne({ where: { id: clientId } });
-        if (!client) throw new NotFoundException('Cliente não encontrado');
+        if (!client) {
+          throw new BadRequestException('Cliente não encontrado');
+        }
         brand.client = client;
       }
 
       return await this.brandsRepository.save(brand);
     } catch (err) {
       console.error('Error updating brand:', err);
-      if (err instanceof NotFoundException) throw err;
+      if (err instanceof NotFoundException || err instanceof BadRequestException) throw err;
+      if (err.code === '23503') {
+        throw new BadRequestException('Cliente inválido ou não encontrado');
+      }
       throw new BadRequestException(err.message || 'Erro ao atualizar marca');
     }
   }
