@@ -47,19 +47,18 @@ export class BrandsService {
     const { clientId, ...brandData } = updateBrandDto;
     
     try {
-      const existing = await this.brandsRepository.findOne({ where: { id } });
-      if (!existing) throw new NotFoundException('Marca não encontrada');
+      const brand = await this.brandsRepository.findOne({ where: { id } });
+      if (!brand) throw new NotFoundException('Marca não encontrada');
+
+      this.brandsRepository.merge(brand, brandData);
 
       if (clientId) {
         const client = await this.clientsRepository.findOne({ where: { id: clientId } });
         if (!client) throw new NotFoundException('Cliente não encontrado');
-        
-        const toSave = { ...existing, ...brandData, client };
-        return await this.brandsRepository.save(toSave);
+        brand.client = client;
       }
 
-      const toSave = { ...existing, ...brandData };
-      return await this.brandsRepository.save(toSave);
+      return await this.brandsRepository.save(brand);
     } catch (err) {
       console.error('Error updating brand:', err);
       if (err instanceof NotFoundException) throw err;
