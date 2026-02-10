@@ -876,6 +876,7 @@ export class RoutesService {
           }
         }
       }
+      }
 
       if (data.checklists && data.checklists.length > 0 && itemProduct.checklists) {
         // Update checklists in memory to leverage cascade save and avoid race conditions
