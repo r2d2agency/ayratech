@@ -52,6 +52,7 @@ const RouteDetailsView = () => {
   const [pendingCount, setPendingCount] = useState(0);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [currentPhoto, setCurrentPhoto] = useState<{blob: Blob, url: string} | null>(null);
+  const [showPhotoPreview, setShowPhotoPreview] = useState(false);
   const [showTasksModal, setShowTasksModal] = useState(false);
   
   // Find item where CURRENT user is checked in (Independent of global status)
