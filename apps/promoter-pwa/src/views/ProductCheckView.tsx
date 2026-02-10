@@ -373,11 +373,22 @@ const ProductCheckView: React.FC = () => {
 
       // Validation: Checklist required
       if (selectedProduct.checklists && selectedProduct.checklists.length > 0) {
-        const incompleteItems = selectedProduct.checklists.filter(c => !c.isChecked);
+        const incompleteItems = selectedProduct.checklists.filter(c => 
+          !c.isChecked && 
+          !(c.type === ChecklistItemType.STOCK_COUNT && selectedProduct.product.brand?.waitForStockCount)
+        );
         if (incompleteItems.length > 0) {
           toast.error('Complete todos os itens do checklist para concluir.');
           return;
         }
+      }
+
+      // Validation: Stock Count Approval
+      if (selectedProduct.product.brand?.waitForStockCount && 
+          selectedProduct.checklists?.some(c => c.type === ChecklistItemType.STOCK_COUNT) && 
+          selectedProduct.stockCountStatus !== 'APPROVED') {
+          toast.error('Aguarde a aprovação do estoque para concluir.');
+          return;
       }
 
       setSaving(true);
@@ -639,7 +650,7 @@ const ProductCheckView: React.FC = () => {
             </div>
 
             {/* Pre-approval Logic */}
-            {selectedProduct.product.brand?.waitForStockCount && (
+            {selectedProduct.product.brand?.waitForStockCount && selectedProduct.checklists?.some(c => c.type === ChecklistItemType.STOCK_COUNT) && (
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-4">
                     <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
                         {selectedProduct.stockCountStatus === 'APPROVED' ? <CheckCircle size={18} /> : 
@@ -716,7 +727,6 @@ const ProductCheckView: React.FC = () => {
                 </div>
             )}
 
-            {( !selectedProduct.product.brand?.waitForStockCount || selectedProduct.stockCountStatus === 'APPROVED' ) && (
             <>
             {selectedProduct.isStockout && (
               <div className="flex flex-col gap-2">
@@ -742,7 +752,7 @@ const ProductCheckView: React.FC = () => {
               <div className="flex flex-col gap-2 border-t pt-4 border-b pb-4">
                 <label className="text-sm font-medium text-gray-700">Checklist de Tarefas</label>
                 {selectedProduct.checklists.map(item => (
-                  <label key={item.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                  <label key={item.id} className={`flex items-start gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors ${item.type === ChecklistItemType.STOCK_COUNT && selectedProduct.product.brand?.waitForStockCount ? 'hidden' : ''}`}>
                     <input 
                       type="checkbox"
                       className="mt-1 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"

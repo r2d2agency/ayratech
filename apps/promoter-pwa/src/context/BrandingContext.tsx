@@ -88,8 +88,8 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 theme_color: settings.primaryColor || '#ffffff',
                 background_color: '#ffffff',
                 display: 'standalone',
-                scope: '/',
-                start_url: '/',
+                scope: window.location.origin + '/',
+                start_url: window.location.origin + '/',
                 icons: [
                     {
                         src: pwaIconFullUrl,

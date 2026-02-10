@@ -29,9 +29,9 @@ client.interceptors.response.use(
       // Evita loop de redirecionamento se já estiver na tela de login
       if (window.location.pathname !== '/login') {
           console.warn('Sessão expirada ou inválida (401).');
-          // NÃO deslogar automaticamente para evitar saída indesejada em caso de erro intermitente
-          // localStorage.removeItem('token');
-          // window.location.href = '/login';
+          // Force logout on 401 to prevent stuck state
+          localStorage.removeItem('token');
+          window.location.href = '/login';
       }
     }
     return Promise.reject(error);

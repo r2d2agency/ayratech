@@ -81,6 +81,7 @@ export class EmployeesController {
   }
 
   @Post('location')
+  @Roles('admin', 'rh', 'manager', 'supervisor de operações', 'promotor')
   updateLocation(@Body() data: { lat: number; lng: number }, @Request() req: any) {
     // Assuming req.user contains the user info including employeeId
     // If user is just a "User" entity linked to "Employee", we need to find the employee.

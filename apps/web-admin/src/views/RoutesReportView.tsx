@@ -1056,7 +1056,7 @@ const RoutesReportView: React.FC = () => {
                 Execução por Supervisor
               </h3>
               <div style={{ width: '100%', height: '320px', minHeight: '320px' }}>
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <BarChart data={supervisorData} layout="vertical" margin={{ left: 40 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={false} />
                     <XAxis type="number" />
@@ -1076,7 +1076,7 @@ const RoutesReportView: React.FC = () => {
                 Execução por Promotor
               </h3>
               <div style={{ width: '100%', height: '320px', minHeight: '320px' }}>
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <BarChart data={promoterData.slice(0, 10)} layout="vertical" margin={{ left: 40 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={false} />
                     <XAxis type="number" />
