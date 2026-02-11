@@ -13,6 +13,7 @@ const ProductsView: React.FC = () => {
   const [brands, setBrands] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [checklists, setChecklists] = useState<any[]>([]);
+  const [supermarketGroups, setSupermarketGroups] = useState<any[]>([]);
   const [aiPrompts, setAiPrompts] = useState<any[]>([]);
   const [selectedPromptId, setSelectedPromptId] = useState('');
   const [loading, setLoading] = useState(true);
@@ -40,7 +41,8 @@ const ProductsView: React.FC = () => {
     status: 'active',
     checklistTemplateId: '',
     referenceImageUrl: '',
-    analysisPrompt: ''
+    analysisPrompt: '',
+    supermarketGroupIds: [] as string[]
   });
 
   const [selectedParentId, setSelectedParentId] = useState('');
@@ -49,6 +51,9 @@ const ProductsView: React.FC = () => {
   // Client Search State
   const [clientSearch, setClientSearch] = useState('');
   const [showClientDropdown, setShowClientDropdown] = useState(false);
+  
+  // Group Search State
+  const [showGroupDropdown, setShowGroupDropdown] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -56,13 +61,14 @@ const ProductsView: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const [productsRes, clientsRes, brandsRes, categoriesRes, checklistsRes, promptsRes] = await Promise.all([
+      const [productsRes, clientsRes, brandsRes, categoriesRes, checklistsRes, promptsRes, groupsRes] = await Promise.all([
         api.get('/products'),
         api.get('/clients'),
         api.get('/brands'),
         api.get('/categories'),
         api.get('/checklists'),
-        api.get('/ai/prompts')
+        api.get('/ai/prompts'),
+        api.get('/supermarket-groups')
       ]);
 
       const mappedClients = clientsRes.data.map((c: any) => ({
@@ -75,6 +81,7 @@ const ProductsView: React.FC = () => {
       setCategories(categoriesRes.data);
       setChecklists(checklistsRes.data.filter((c: any) => c.active));
       setAiPrompts(promptsRes.data);
+      setSupermarketGroups(groupsRes.data);
 
       const mappedProducts = productsRes.data.map((p: any) => {
         const imgUrl = getImageUrl(p.image);
@@ -94,7 +101,8 @@ const ProductsView: React.FC = () => {
         categoryRef: p.categoryRef,
         checklistTemplateId: p.checklistTemplate?.id || '',
         referenceImageUrl: p.referenceImageUrl,
-        analysisPrompt: p.analysisPrompt
+        analysisPrompt: p.analysisPrompt,
+        supermarketGroupIds: p.supermarketGroups?.map((g: any) => g.id) || []
       }});
       setProducts(mappedProducts);
 
@@ -176,6 +184,14 @@ const ProductsView: React.FC = () => {
         // Skip image string if we are uploading a file (controller will handle it)
         // Or if it's just the placeholder/empty
         if (key === 'image') return; 
+
+        // Handle supermarketGroupIds specifically
+        if (key === 'supermarketGroupIds') {
+           if (Array.isArray(value) && value.length > 0) {
+             formData.append('supermarketGroupIds', JSON.stringify(value));
+           }
+           return;
+        }
 
         if (value !== undefined && value !== null) {
           formData.append(key, value as string);
@@ -330,7 +346,8 @@ const ProductsView: React.FC = () => {
       status: product.status || 'active',
       checklistTemplateId: product.checklistTemplateId || '',
       referenceImageUrl: product.referenceImageUrl || '',
-      analysisPrompt: product.analysisPrompt || ''
+      analysisPrompt: product.analysisPrompt || '',
+      supermarketGroupIds: product.supermarketGroupIds || []
     });
     
     // Set initial client search value
@@ -358,7 +375,8 @@ const ProductsView: React.FC = () => {
       status: 'active',
       checklistTemplateId: '',
       referenceImageUrl: '',
-      analysisPrompt: ''
+      analysisPrompt: '',
+      supermarketGroupIds: []
     });
     setSelectedParentId('');
     setSelectedSubId('');
@@ -654,6 +672,54 @@ const ProductsView: React.FC = () => {
                             <div className="px-4 py-3 text-sm text-slate-500 text-center">Nenhum cliente encontrado</div>
                         )}
                     </div>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Redes (Opcional)</label>
+                  <button
+                    type="button"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium bg-white text-left flex justify-between items-center"
+                    onClick={() => setShowGroupDropdown(!showGroupDropdown)}
+                  >
+                    <span className={productForm.supermarketGroupIds.length === 0 ? "text-slate-400" : "text-slate-700"}>
+                      {productForm.supermarketGroupIds.length === 0 
+                        ? "Selecione as redes..." 
+                        : `${productForm.supermarketGroupIds.length} redes selecionadas`}
+                    </span>
+                    <ChevronDown size={16} className="text-slate-400" />
+                  </button>
+                  
+                  {showGroupDropdown && (
+                    <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowGroupDropdown(false)}></div>
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                            {supermarketGroups.length === 0 ? (
+                            <div className="px-4 py-3 text-sm text-slate-500 text-center">Nenhuma rede cadastrada</div>
+                            ) : (
+                            supermarketGroups.map(group => {
+                                const isSelected = productForm.supermarketGroupIds.includes(group.id);
+                                return (
+                                <div 
+                                    key={group.id}
+                                    className="px-4 py-2 hover:bg-slate-50 cursor-pointer flex items-center gap-3"
+                                    onClick={() => {
+                                    const newIds = isSelected
+                                        ? productForm.supermarketGroupIds.filter(id => id !== group.id)
+                                        : [...productForm.supermarketGroupIds, group.id];
+                                    setProductForm({...productForm, supermarketGroupIds: newIds});
+                                    }}
+                                >
+                                    <div className={`w-5 h-5 rounded border flex items-center justify-center ${isSelected ? 'bg-blue-500 border-blue-500' : 'border-slate-300'}`}>
+                                    {isSelected && <Check size={12} className="text-white" />}
+                                    </div>
+                                    <span className="font-medium text-slate-700">{group.name}</span>
+                                </div>
+                                );
+                            })
+                            )}
+                        </div>
+                    </>
                   )}
                 </div>
 

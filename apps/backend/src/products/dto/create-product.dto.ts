@@ -45,4 +45,7 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   analysisPrompt?: string;
+
+  @IsOptional()
+  supermarketGroupIds?: string[];
 }

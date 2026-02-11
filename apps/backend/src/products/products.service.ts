@@ -14,7 +14,7 @@ export class ProductsService {
 
   async create(createProductDto: CreateProductDto) {
     try {
-      const { brandId, clientId, categoryId, ...productData } = createProductDto;
+      const { brandId, clientId, categoryId, supermarketGroupIds, ...productData } = createProductDto;
       
       // Basic validation
       if (!clientId) {
@@ -25,7 +25,8 @@ export class ProductsService {
         ...productData,
         brand: brandId ? { id: brandId } : null,
         client: clientId ? { id: clientId } : null,
-        categoryRef: categoryId ? { id: categoryId } : null
+        categoryRef: categoryId ? { id: categoryId } : null,
+        supermarketGroups: supermarketGroupIds ? supermarketGroupIds.map(id => ({ id })) : []
       });
       return await this.productsRepository.save(product);
     } catch (error) {
@@ -49,13 +50,13 @@ export class ProductsService {
   }
 
   findAll() {
-    return this.productsRepository.find({ relations: ['brand', 'brand.client', 'client', 'categoryRef', 'categoryRef.parent', 'checklistTemplate'] });
+    return this.productsRepository.find({ relations: ['brand', 'brand.client', 'client', 'categoryRef', 'categoryRef.parent', 'checklistTemplate', 'supermarketGroups'] });
   }
 
   findOne(id: string) {
     return this.productsRepository.findOne({ 
       where: { id },
-      relations: ['brand', 'brand.client', 'client', 'categoryRef', 'categoryRef.parent', 'checklistTemplate']
+      relations: ['brand', 'brand.client', 'client', 'categoryRef', 'categoryRef.parent', 'checklistTemplate', 'supermarketGroups']
     });
   }
 

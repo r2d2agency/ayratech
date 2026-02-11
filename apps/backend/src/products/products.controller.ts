@@ -22,6 +22,15 @@ export class ProductsController {
     @UploadedFiles() files: { image?: Express.Multer.File[], referenceImage?: Express.Multer.File[] }
   ) {
     try {
+      // Parse supermarketGroupIds if it is a string (multipart/form-data)
+      if (typeof createProductDto.supermarketGroupIds === 'string') {
+        try {
+          createProductDto.supermarketGroupIds = JSON.parse(createProductDto.supermarketGroupIds);
+        } catch (e) {
+          // ignore error
+        }
+      }
+
       if (files?.image?.[0]) {
         const file = files.image[0];
         const filename = `product-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
@@ -115,6 +124,15 @@ export class ProductsController {
     @UploadedFiles() files: { image?: Express.Multer.File[], referenceImage?: Express.Multer.File[] }
   ) {
     try {
+      // Parse supermarketGroupIds if it is a string (multipart/form-data)
+      if (typeof updateProductDto.supermarketGroupIds === 'string') {
+        try {
+          updateProductDto.supermarketGroupIds = JSON.parse(updateProductDto.supermarketGroupIds);
+        } catch (e) {
+          // ignore error
+        }
+      }
+
       if (files?.image?.[0]) {
         const file = files.image[0];
         const filename = `product-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;

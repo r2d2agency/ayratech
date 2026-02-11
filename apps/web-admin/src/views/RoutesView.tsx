@@ -86,9 +86,9 @@ const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts
                 item.productIds?.forEach((pid: string) => {
                   const product = products.find((p: any) => p.id === pid);
                   if (product) {
-                    const clientName = product.client?.fantasyName || product.client?.name || 'Outros';
-                    if (!groupedProducts[clientName]) groupedProducts[clientName] = [];
-                    groupedProducts[clientName].push(product);
+                    const categoryName = product.categoryRef?.name || product.category || 'Sem Categoria';
+                    if (!groupedProducts[categoryName]) groupedProducts[categoryName] = [];
+                    groupedProducts[categoryName].push(product);
                   }
                 });
 
@@ -98,11 +98,11 @@ const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts
                   );
                 }
 
-                return Object.entries(groupedProducts).map(([clientName, clientProducts], gIndex) => (
-                  <div key={clientName} className="border-l-2 border-slate-200 pl-3">
-                    <h6 className="text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">{clientName}</h6>
+                return Object.entries(groupedProducts).map(([categoryName, categoryProducts], gIndex) => (
+                  <div key={categoryName} className="border-l-2 border-slate-200 pl-3">
+                    <h6 className="text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">{categoryName}</h6>
                     <div className="space-y-2">
-                      {clientProducts.map((product, pIndex) => (
+                      {categoryProducts.map((product, pIndex) => (
                         <div key={product.id} className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg border border-slate-100">
                           <span className="text-xs font-bold text-slate-400 w-6">{(gIndex + 1)}.{pIndex + 1}</span>
                           <div className="flex-1">
@@ -1369,7 +1369,19 @@ const RoutesView: React.FC = () => {
           <div className="bg-white rounded-2xl w-full max-w-lg max-h-[70vh] flex flex-col p-4 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-slate-900">
-                {selectedClientForModal ? 'Selecionar Produtos para Agendamento' : 'Selecionar Cliente'}
+                {selectedClientForModal ? (
+                  currentRouteItemIndex !== null && routeItems[currentRouteItemIndex] ? (
+                    <span>
+                      Selecionar Produtos <span className="text-slate-400 text-sm font-normal mx-2">|</span> 
+                      {routeItems[currentRouteItemIndex].supermarket.fantasyName}
+                      {routeItems[currentRouteItemIndex].supermarket.group && (
+                        <span className="ml-2 text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-xs uppercase tracking-wider">
+                          {routeItems[currentRouteItemIndex].supermarket.group.name}
+                        </span>
+                      )}
+                    </span>
+                  ) : 'Selecionar Produtos'
+                ) : 'Selecionar Cliente'}
               </h3>
               <button onClick={() => {
                 setShowProductModal(false);
@@ -1397,14 +1409,24 @@ const RoutesView: React.FC = () => {
                    </div>
                    {(() => {
                       const currentSupermarket = currentRouteItemIndex !== null ? routeItems[currentRouteItemIndex].supermarket : null;
-                      // Use supermarket clients if available, otherwise fallback to all clients from products
+                      
+                      // Filter products based on group restrictions
+                      const allowedProducts = products.filter(p => {
+                          if (p.supermarketGroups && p.supermarketGroups.length > 0) {
+                              if (!currentSupermarket?.group) return false;
+                              return p.supermarketGroups.some((g: any) => g.id === currentSupermarket.group.id);
+                          }
+                          return true;
+                      });
+
+                      // Use supermarket clients if available, otherwise fallback to all clients from ALLOWED products
                       const availableClients = (currentSupermarket?.clients && currentSupermarket.clients.length > 0)
                         ? currentSupermarket.clients
-                        : Array.from(new Set(products.map(p => p.client?.id).filter(Boolean))).map(id => ({ id }));
+                        : Array.from(new Set(allowedProducts.map(p => p.client?.id).filter(Boolean))).map(id => ({ id }));
                         
-                      // Filter out clients that don't have any products in the global list (optional optimization)
+                      // Filter out clients that don't have any products in the allowed list
                       const clientsWithProducts = availableClients.filter((c: any) => 
-                        products.some(p => p.client?.id === c.id)
+                        allowedProducts.some(p => p.client?.id === c.id)
                       );
                       
                       // Remove duplicates just in case
@@ -1412,7 +1434,7 @@ const RoutesView: React.FC = () => {
                         .map(id => {
                             // Find full client data either from supermarket.clients or from product.client
                             const fromSup = currentSupermarket?.clients?.find((c: any) => c.id === id);
-                            const fromProd = products.find(p => p.client?.id === id)?.client;
+                            const fromProd = allowedProducts.find(p => p.client?.id === id)?.client;
                             // Prioritize the client object from supermarket relation, then from product
                             return fromSup || fromProd;
                         })
@@ -1428,7 +1450,7 @@ const RoutesView: React.FC = () => {
 
                       return uniqueClients.map((client: any) => {
                         const clientId = client.id;
-                        const clientProducts = products.filter(p => p.client?.id === clientId);
+                        const clientProducts = allowedProducts.filter(p => p.client?.id === clientId);
                         const selectedCount = clientProducts.filter(p => tempSelectedProducts.includes(p.id)).length;
                         
                         return (
@@ -1473,13 +1495,45 @@ const RoutesView: React.FC = () => {
                      </div>
                    </div>
                    
-                   {products
+                   {Object.entries(products
                      .filter(p => p.client?.id === selectedClientForModal)
                      .filter(p => {
+                        // Search Filter
                         const search = productSearch.toLowerCase();
-                        return p.name.toLowerCase().includes(search) || (p.sku && p.sku.toLowerCase().includes(search));
+                        const matchesSearch = p.name.toLowerCase().includes(search) || (p.sku && p.sku.toLowerCase().includes(search));
+                        if (!matchesSearch) return false;
+
+                        // Supermarket Group Filter
+                        const currentSupermarket = currentRouteItemIndex !== null && routeItems[currentRouteItemIndex] 
+                            ? routeItems[currentRouteItemIndex].supermarket 
+                            : null;
+
+                        if (p.supermarketGroups && p.supermarketGroups.length > 0) {
+                            // If product has restrictions, supermarket MUST belong to one of the groups
+                            if (!currentSupermarket || !currentSupermarket.group) {
+                                return false; // Supermarket has no group -> Restricted product hidden
+                            }
+                            const isAllowed = p.supermarketGroups.some((g: any) => g.id === currentSupermarket.group.id);
+                            if (!isAllowed) {
+                                return false; // Product group doesn't match supermarket group -> Hidden
+                            }
+                        }
+                        
+                        return true;
                      })
-                     .map(product => (
+                     .reduce((acc, product) => {
+                        const categoryName = product.categoryRef?.name || product.category || 'Sem Categoria';
+                        if (!acc[categoryName]) acc[categoryName] = [];
+                        acc[categoryName].push(product);
+                        return acc;
+                     }, {} as Record<string, any[]>)
+                   ).sort((a, b) => a[0].localeCompare(b[0])).map(([categoryName, categoryProducts]) => (
+                     <div key={categoryName}>
+                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-1 sticky top-0 bg-white z-10 py-1 border-b border-slate-50">
+                          {categoryName} <span className="text-slate-300 font-normal">({categoryProducts.length})</span>
+                        </h4>
+                        <div className="space-y-2 mb-4">
+                           {categoryProducts.map(product => (
                       <div 
                         key={product.id} 
                         onClick={() => handleToggleProductSelection(product.id)}
@@ -1523,7 +1577,10 @@ const RoutesView: React.FC = () => {
                           </div>
                         )}
                       </div>
-                    ))}
+                        ))}
+                     </div>
+                  </div>
+               ))}
                 </div>
               )}
             </div>

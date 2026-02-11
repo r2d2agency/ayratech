@@ -329,6 +329,7 @@ export class RoutesService {
     const qb = this.routesRepository.createQueryBuilder('route')
       .leftJoinAndSelect('route.items', 'items')
       .leftJoinAndSelect('items.supermarket', 'supermarket')
+      .leftJoinAndSelect('supermarket.group', 'group')
       .leftJoinAndSelect('route.promoter', 'promoter')
       .leftJoinAndSelect('route.promoters', 'promoters')
       .leftJoinAndSelect('promoter.supervisor', 'supervisor')
@@ -379,6 +380,7 @@ export class RoutesService {
         'promoters',
         'items', 
         'items.supermarket', 
+        'items.supermarket.group',
         'items.products', 
         'items.products.completedBy',
         'items.products.product', 
@@ -492,6 +494,7 @@ export class RoutesService {
         'promoters', 
         'items', 
         'items.supermarket', 
+        'items.supermarket.group',
         'promoter', 
         'items.products', 
         'items.products.product', 
@@ -628,8 +631,10 @@ export class RoutesService {
           // Pre-fetch products and checklists
           const allProductIds = new Set<string>();
           const allChecklistTemplateIds = new Set<string>();
+          const allSupermarketIds = new Set<string>(); // Add this
 
           items.forEach(item => {
+            allSupermarketIds.add(item.supermarketId); // Add this
             if (item.productIds) item.productIds.forEach(id => allProductIds.add(id));
             if (item.products) {
                 item.products.forEach(p => {
@@ -643,9 +648,18 @@ export class RoutesService {
           if (allProductIds.size > 0) {
             const products = await queryRunner.manager.find(Product, {
                 where: { id: In(Array.from(allProductIds)) },
-                relations: ['checklistTemplate', 'checklistTemplate.items', 'checklistTemplate.items.competitor', 'checklistTemplate.items.competitors']
+                relations: ['checklistTemplate', 'checklistTemplate.items', 'checklistTemplate.items.competitor', 'checklistTemplate.items.competitors', 'supermarketGroups']
             });
             products.forEach(p => productsMap.set(p.id, p));
+          }
+
+          const supermarketsMap = new Map<string, any>();
+          if (allSupermarketIds.size > 0) {
+              const supermarkets = await queryRunner.manager.find(Supermarket, {
+                  where: { id: In(Array.from(allSupermarketIds)) },
+                  relations: ['group']
+              });
+              supermarkets.forEach((s: any) => supermarketsMap.set(s.id, s));
           }
 
           const checklistTemplatesMap = new Map<string, ChecklistTemplate>();
@@ -696,8 +710,26 @@ export class RoutesService {
               }
 
               if (itemProductsToProcess.length > 0) {
-                  for (const prodData of itemProductsToProcess) {
-                     const rip = queryRunner.manager.create(RouteItemProduct, {
+                const currentSupermarket = supermarketsMap.get(item.supermarketId);
+
+                for (const prodData of itemProductsToProcess) {
+                   const product = productsMap.get(prodData.productId);
+                   
+                   // FILTERING LOGIC: Check Assortment (SupermarketGroup)
+                   // If product has restricted groups, supermarket MUST belong to one of them.
+                   if (product && product.supermarketGroups && product.supermarketGroups.length > 0) {
+                       if (!currentSupermarket || !currentSupermarket.group) {
+                           // Supermarket has no group, but product is restricted -> SKIP
+                           continue;
+                       }
+                       const isAllowed = product.supermarketGroups.some(g => g.id === currentSupermarket.group.id);
+                       if (!isAllowed) {
+                           // Product is restricted to groups A, B, but Supermarket is in group C (or A != C) -> SKIP
+                           continue;
+                       }
+                   }
+
+                   const rip = queryRunner.manager.create(RouteItemProduct, {
                          routeItem: savedItem,
                          routeItemId: savedItem.id,
                          product: { id: prodData.productId },
@@ -810,6 +842,7 @@ export class RoutesService {
         'items.products.product',
         'items.products.product.brand',
         'items.products.product.client',
+        'items.products.product.categoryRef',
       ],
     });
 
@@ -820,9 +853,9 @@ export class RoutesService {
     return {
       routeId: route.id,
       date: route.date,
-      promoterName: route.promoter?.name || 'N/A',
+      promoterName: route.promoter?.fullName || 'N/A',
       items: route.items.map((item) => ({
-        supermarketName: item.supermarket?.name || 'N/A',
+        supermarketName: item.supermarket?.fantasyName || 'N/A',
         checkInTime: item.checkInTime,
         checkOutTime: item.checkOutTime,
         products: item.products.map((p) => {
@@ -830,8 +863,8 @@ export class RoutesService {
           const inventory = p.inventoryCount || 0;
           return {
             productName: p.product.name,
-            ean: p.product.ean,
-            category: p.product.category,
+            ean: p.product.barcode,
+            category: p.product.categoryRef?.name || p.product.category || 'Sem Categoria',
             brand: p.product.brand?.name || 'N/A',
             gondolaCount: p.gondolaCount,
             inventoryCount: p.inventoryCount,
@@ -1003,7 +1036,6 @@ export class RoutesService {
              }
           }
         }
-      }
       }
 
       if (data.checklists && data.checklists.length > 0 && itemProduct.checklists) {
@@ -1330,8 +1362,8 @@ export class RoutesService {
     }
 
     return this.routeItemsRepository.findOne({ 
-        where: { id: itemId },
-        relations: ['route', 'products', 'checkins', 'checkins.promoter']
+      where: { id: itemId },
+      relations: ['route', 'products', 'checkins', 'checkins.promoter']
     });
   }
 
