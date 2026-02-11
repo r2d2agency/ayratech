@@ -17,6 +17,7 @@ import { ChecklistTemplate } from '../checklists/entities/checklist-template.ent
 import { ChecklistItemType } from '../checklists/entities/checklist-template-item.entity';
 import { Client } from '../entities/client.entity';
 import { Product } from '../entities/product.entity';
+import { Supermarket } from '../entities/supermarket.entity';
 import { User } from '../users/entities/user.entity';
 import { CreateRouteDto } from './dto/create-route.dto';
 import { UpdateRouteDto } from './dto/update-route.dto';
