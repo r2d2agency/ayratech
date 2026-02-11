@@ -54,6 +54,16 @@ export class CreateClientDto {
   logo?: string;
 
   @IsOptional()
+  @IsObject()
+  photoConfig?: {
+    labels?: {
+      before?: string;
+      storage?: string;
+      after?: string;
+    }
+  };
+
+  @IsOptional()
   @IsString()
   password?: string;
 }

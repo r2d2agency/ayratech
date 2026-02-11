@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req, UnauthorizedException, BadRequestException, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, UnauthorizedException, BadRequestException, UseGuards, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { RoutesService } from './routes.service';
 import { CreateRouteDto } from './dto/create-route.dto';
 import { UpdateRouteDto } from './dto/update-route.dto';
@@ -9,14 +10,24 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 export class RoutesController {
   constructor(private readonly routesService: RoutesService) {}
 
+  @Post('items/:itemId/photos')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadPhoto(
+    @Param('itemId') itemId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: { type: string, category?: string }
+  ) {
+    return this.routesService.uploadPhoto(itemId, file, body.type, body.category);
+  }
+
   @Post()
   create(@Body() createRouteDto: CreateRouteDto) {
     return this.routesService.create(createRouteDto);
   }
 
   @Get()
-  findAll(@Req() req) {
-    return this.routesService.findAll(req.user?.userId);
+  findAll(@Req() req, @Query('date') date?: string) {
+    return this.routesService.findAll(req.user?.userId, date);
   }
 
   @Get('client/all')
@@ -39,6 +50,11 @@ export class RoutesController {
   @Get('templates/all')
   findTemplates() {
     return this.routesService.findTemplates();
+  }
+
+  @Get(':id/report')
+  getRouteReport(@Param('id') id: string) {
+    return this.routesService.getRouteReport(id);
   }
 
   @Get(':id')
@@ -103,11 +119,34 @@ export class RoutesController {
   checkProduct(
     @Param('itemId') itemId: string,
     @Param('productId') productId: string,
-    @Body() body: { checked?: boolean; observation?: string; isStockout?: boolean; stockoutType?: string; photos?: string[]; checkInTime?: string; checkOutTime?: string; validityDate?: string; stockCount?: number; checklists?: any[] },
+    @Body() body: { 
+      checked?: boolean; 
+      observation?: string; 
+      isStockout?: boolean; 
+      stockoutType?: string; 
+      photos?: string[]; 
+      checkInTime?: string; 
+      checkOutTime?: string; 
+      validityDate?: string; 
+      stockCount?: number; 
+      gondolaCount?: number;
+      inventoryCount?: number;
+      ruptureReason?: string;
+      checklists?: any[] 
+    },
     @Req() req: any
   ) {
     const userId = req.user?.userId || req.user?.id || req.user?.sub;
     return this.routesService.checkProduct(itemId, productId, body, userId);
+  }
+
+  @Patch('items/:itemId')
+  updateItem(
+    @Param('itemId') itemId: string,
+    @Body() body: { categoryPhotos?: any },
+    @Req() req: any
+  ) {
+    return this.routesService.updateItem(itemId, body);
   }
 
   @Post('items/:itemId/manual-execution')

@@ -27,6 +27,7 @@ const ClientsView: React.FC = () => {
   const [detailsClient, setDetailsClient] = useState<any | null>(null);
   const [detailsTab, setDetailsTab] = useState<'products' | 'pdvs'>('products');
   const [searchTerm, setSearchTerm] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState('');
   
   // Client Form State
   const [newClient, setNewClient] = useState({
@@ -43,7 +44,11 @@ const ClientsView: React.FC = () => {
     estado: '',
     cep: '',
     logo: '',
-    password: ''
+    password: '',
+    photoConfig: {
+      labels: { before: '', storage: '', after: '' },
+      categories: {} as Record<string, any>
+    }
   });
 
   // Contract Form State
@@ -205,10 +210,43 @@ const ClientsView: React.FC = () => {
       estado: '',
       cep: '',
       logo: '',
-      password: ''
+      password: '',
+      photoConfig: {
+        labels: { before: '', storage: '', after: '' },
+        categories: {}
+      }
     });
     setLogoFile(null);
     setEditingClient(null);
+  };
+
+  const handleAddCategory = () => {
+    if (!newCategoryName.trim()) return;
+    setNewClient(prev => ({
+      ...prev,
+      photoConfig: {
+        ...prev.photoConfig,
+        categories: {
+          ...prev.photoConfig.categories,
+          [newCategoryName]: {
+            labels: { before: '', storage: '', after: '' }
+          }
+        }
+      }
+    }));
+    setNewCategoryName('');
+  };
+
+  const handleRemoveCategory = (category: string) => {
+    const newCategories = { ...newClient.photoConfig.categories };
+    delete newCategories[category];
+    setNewClient(prev => ({
+      ...prev,
+      photoConfig: {
+        ...prev.photoConfig,
+        categories: newCategories
+      }
+    }));
   };
 
   const handleClientSubmit = async (e: React.FormEvent) => {
@@ -228,6 +266,11 @@ const ClientsView: React.FC = () => {
       if (newClient.estado) formData.append('estado', newClient.estado);
       if (newClient.cep) formData.append('cep', newClient.cep);
       if (newClient.password) formData.append('password', newClient.password);
+      
+      // Append photoConfig as JSON string
+      if (newClient.photoConfig) {
+        formData.append('photoConfig', JSON.stringify(newClient.photoConfig));
+      }
       
       if (logoFile) {
         formData.append('logo', logoFile);
@@ -272,7 +315,11 @@ const ClientsView: React.FC = () => {
       estado: client.estado || '',
       cep: client.cep || '',
       logo: client.logo || '',
-      password: ''
+      password: '',
+      photoConfig: client.photoConfig || {
+        labels: { before: '', storage: '', after: '' },
+        categories: {}
+      }
     });
     setShowClientModal(true);
   };
@@ -332,6 +379,152 @@ const ClientsView: React.FC = () => {
                       </div>
                     ))
                   }
+                </div>
+              </div>
+
+              <div className="border-t border-slate-100 pt-4">
+                <h3 className="text-sm font-black text-slate-900 mb-4 uppercase tracking-wide">Configuração de Fotos (Checklist)</h3>
+                
+                {/* Default Config */}
+                <div className="mb-6">
+                  <h4 className="text-xs font-bold text-slate-700 mb-3">Rótulos Padrão</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Foto Antes</label>
+                      <input 
+                        type="text" 
+                        value={newClient.photoConfig?.labels?.before || ''}
+                        onChange={e => setNewClient(prev => ({
+                          ...prev,
+                          photoConfig: { ...prev.photoConfig, labels: { ...prev.photoConfig?.labels, before: e.target.value } }
+                        }))}
+                        className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm"
+                        placeholder="Ex: Foto Gôndola"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Foto Estoque</label>
+                      <input 
+                        type="text" 
+                        value={newClient.photoConfig?.labels?.storage || ''}
+                        onChange={e => setNewClient(prev => ({
+                          ...prev,
+                          photoConfig: { ...prev.photoConfig, labels: { ...prev.photoConfig?.labels, storage: e.target.value } }
+                        }))}
+                        className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm"
+                        placeholder="Ex: Foto Câmara Fria"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Foto Depois</label>
+                      <input 
+                        type="text" 
+                        value={newClient.photoConfig?.labels?.after || ''}
+                        onChange={e => setNewClient(prev => ({
+                          ...prev,
+                          photoConfig: { ...prev.photoConfig, labels: { ...prev.photoConfig?.labels, after: e.target.value } }
+                        }))}
+                        className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm"
+                        placeholder="Ex: Foto Gôndola Arrumada"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Category Configs */}
+                <div>
+                  <h4 className="text-xs font-bold text-slate-700 mb-3">Personalizar por Categoria</h4>
+                  
+                  <div className="flex gap-2 mb-4">
+                    <input 
+                      type="text" 
+                      value={newCategoryName}
+                      onChange={e => setNewCategoryName(e.target.value)}
+                      className="flex-1 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm"
+                      placeholder="Nome da Categoria (ex: Laticínios)"
+                    />
+                    <button 
+                      type="button"
+                      onClick={handleAddCategory}
+                      className="px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-bold hover:bg-slate-700"
+                    >
+                      Adicionar
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {Object.entries(newClient.photoConfig?.categories || {}).map(([category, config]: [string, any]) => (
+                      <div key={category} className="bg-slate-50 p-3 rounded-xl border border-slate-200 relative">
+                        <button 
+                          type="button"
+                          onClick={() => handleRemoveCategory(category)}
+                          className="absolute top-2 right-2 text-red-500 hover:bg-red-50 p-1 rounded"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                        <h5 className="text-sm font-bold text-slate-800 mb-2">{category}</h5>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                          <input 
+                            type="text" 
+                            value={config.labels?.before || ''}
+                            onChange={e => setNewClient(prev => ({
+                              ...prev,
+                              photoConfig: {
+                                ...prev.photoConfig,
+                                categories: {
+                                  ...prev.photoConfig.categories,
+                                  [category]: {
+                                    ...prev.photoConfig.categories[category],
+                                    labels: { ...prev.photoConfig.categories[category]?.labels, before: e.target.value }
+                                  }
+                                }
+                              }
+                            }))}
+                            className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs"
+                            placeholder="Rótulo Antes"
+                          />
+                          <input 
+                            type="text" 
+                            value={config.labels?.storage || ''}
+                            onChange={e => setNewClient(prev => ({
+                              ...prev,
+                              photoConfig: {
+                                ...prev.photoConfig,
+                                categories: {
+                                  ...prev.photoConfig.categories,
+                                  [category]: {
+                                    ...prev.photoConfig.categories[category],
+                                    labels: { ...prev.photoConfig.categories[category]?.labels, storage: e.target.value }
+                                  }
+                                }
+                              }
+                            }))}
+                            className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs"
+                            placeholder="Rótulo Estoque"
+                          />
+                          <input 
+                            type="text" 
+                            value={config.labels?.after || ''}
+                            onChange={e => setNewClient(prev => ({
+                              ...prev,
+                              photoConfig: {
+                                ...prev.photoConfig,
+                                categories: {
+                                  ...prev.photoConfig.categories,
+                                  [category]: {
+                                    ...prev.photoConfig.categories[category],
+                                    labels: { ...prev.photoConfig.categories[category]?.labels, after: e.target.value }
+                                  }
+                                }
+                              }
+                            }))}
+                            className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs"
+                            placeholder="Rótulo Depois"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center justify-center">

@@ -60,6 +60,15 @@ export class RouteItemProduct {
   @Column({ nullable: true, type: 'int' })
   stockCount: number;
 
+  @Column({ nullable: true, type: 'int' })
+  gondolaCount: number;
+
+  @Column({ nullable: true, type: 'int' })
+  inventoryCount: number;
+
+  @Column({ nullable: true })
+  ruptureReason: string;
+
   @Column({ default: 'NONE' })
   stockCountStatus: string; // NONE, PENDING_REVIEW, APPROVED, REJECTED
 

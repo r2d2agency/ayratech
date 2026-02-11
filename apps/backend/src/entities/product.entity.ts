@@ -1,8 +1,9 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, ManyToMany, JoinTable } from 'typeorm';
 import { Client } from './client.entity';
 import { Brand } from './brand.entity';
 import { Category } from '../categories/entities/category.entity';
 import { ChecklistTemplate } from '../checklists/entities/checklist-template.entity';
+import { SupermarketGroup } from '../supermarket-groups/entities/supermarket-group.entity';
 
 @Entity()
 export class Product {
@@ -53,4 +54,8 @@ export class Product {
 
   @Column({ nullable: true })
   checklistTemplateId: string;
+
+  @ManyToMany(() => SupermarketGroup, (group) => group.products)
+  @JoinTable({ name: 'product_supermarket_groups' })
+  supermarketGroups: SupermarketGroup[];
 }

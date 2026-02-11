@@ -35,6 +35,14 @@ export class ClientsController {
       // Store relative path to allow frontend to prepend correct API URL
       createClientDto.logo = `/uploads/clients/${file.filename}`;
     }
+    // Parse photoConfig if it is a string (multipart/form-data)
+    if (typeof createClientDto.photoConfig === 'string') {
+      try {
+        createClientDto.photoConfig = JSON.parse(createClientDto.photoConfig);
+      } catch (e) {
+        // ignore error, leave as is or set to undefined
+      }
+    }
     return this.clientsService.create(createClientDto);
   }
 
@@ -68,6 +76,14 @@ export class ClientsController {
   update(@Param('id') id: string, @Body() updateClientDto: UpdateClientDto, @UploadedFile() file?: Express.Multer.File) {
     if (file) {
       updateClientDto.logo = `/uploads/clients/${file.filename}`;
+    }
+    // Parse photoConfig if it is a string (multipart/form-data)
+    if (typeof updateClientDto.photoConfig === 'string') {
+      try {
+        updateClientDto.photoConfig = JSON.parse(updateClientDto.photoConfig);
+      } catch (e) {
+        // ignore error
+      }
     }
     return this.clientsService.update(id, updateClientDto);
   }

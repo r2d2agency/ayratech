@@ -5,6 +5,9 @@ import { Repository, In, DataSource, Brackets, IsNull } from 'typeorm';
 import { Employee } from '../employees/entities/employee.entity';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
+import * as fs from 'fs';
+import * as path from 'path';
+import { UPLOAD_ROOT } from '../config/upload.config';
 import { Route } from './entities/route.entity';
 import { RouteItem } from './entities/route-item.entity';
 import { RouteItemProduct } from './entities/route-item-product.entity';
@@ -82,8 +85,10 @@ export class RoutesService {
         // Pre-fetch products and checklists
         const allProductIds = new Set<string>();
         const allChecklistTemplateIds = new Set<string>();
+        const allSupermarketIds = new Set<string>();
 
         items.forEach(item => {
+          allSupermarketIds.add(item.supermarketId);
           if (item.productIds) item.productIds.forEach(id => allProductIds.add(id));
           if (item.products) {
               item.products.forEach(p => {
@@ -93,11 +98,21 @@ export class RoutesService {
           }
         });
 
+        // Pre-fetch Supermarkets with Groups
+        const supermarketsMap = new Map<string, any>();
+        if (allSupermarketIds.size > 0) {
+            const supermarkets = await queryRunner.manager.find('Supermarket', {
+                where: { id: In(Array.from(allSupermarketIds)) },
+                relations: ['group']
+            });
+            supermarkets.forEach((s: any) => supermarketsMap.set(s.id, s));
+        }
+
         const productsMap = new Map<string, Product>();
         if (allProductIds.size > 0) {
           const products = await queryRunner.manager.find(Product, {
               where: { id: In(Array.from(allProductIds)) },
-              relations: ['checklistTemplate', 'checklistTemplate.items', 'checklistTemplate.items.competitor', 'checklistTemplate.items.competitors']
+              relations: ['checklistTemplate', 'checklistTemplate.items', 'checklistTemplate.items.competitor', 'checklistTemplate.items.competitors', 'supermarketGroups']
           });
           products.forEach(p => productsMap.set(p.id, p));
         }
@@ -124,6 +139,7 @@ export class RoutesService {
             estimatedDuration: item.estimatedDuration
           });
           const savedItem = await queryRunner.manager.save(RouteItem, routeItem);
+          const currentSupermarket = supermarketsMap.get(item.supermarketId);
 
           const itemProductsToProcess: { productId: string, checklistTemplateId?: string }[] = [];
           if (item.products) itemProductsToProcess.push(...item.products);
@@ -137,6 +153,23 @@ export class RoutesService {
 
           if (itemProductsToProcess.length > 0) {
             for (const prodData of itemProductsToProcess) {
+               const product = productsMap.get(prodData.productId);
+               
+               // FILTERING LOGIC: Check Assortment (SupermarketGroup)
+               // If product has restricted groups, supermarket MUST belong to one of them.
+               if (product && product.supermarketGroups && product.supermarketGroups.length > 0) {
+                   if (!currentSupermarket || !currentSupermarket.group) {
+                       // Supermarket has no group, but product is restricted -> SKIP
+                       continue;
+                   }
+                   const isAllowed = product.supermarketGroups.some(g => g.id === currentSupermarket.group.id);
+                   if (!isAllowed) {
+                       // Product is restricted to groups A, B, but Supermarket is in group C (or A != C) -> SKIP
+                       continue;
+                   }
+               }
+               // If product.supermarketGroups is empty, it's available to all (Global).
+
                const rip = this.routeItemProductsRepository.create({
                    routeItem: { id: savedItem.id },
                    routeItemId: savedItem.id,
@@ -244,7 +277,7 @@ export class RoutesService {
     return this.findOne(route.id);
   }
 
-  async findAll(userId?: string) {
+  async findAll(userId?: string, date?: string) {
     let allowedClientIds: string[] | null = null;
     let restrictToPromoterId: string | null = null;
     
@@ -310,6 +343,10 @@ export class RoutesService {
       .leftJoinAndSelect('items.checkins', 'checkins')
       .leftJoinAndSelect('checkins.promoter', 'checkinPromoter')
       .orderBy('route.date', 'DESC');
+
+    if (date) {
+        qb.andWhere('route.date = :date', { date });
+    }
 
     if (restrictToPromoterId) {
         qb.andWhere('(promoter.id = :promoterId OR promoters.id = :promoterId)', { promoterId: restrictToPromoterId });
@@ -458,6 +495,7 @@ export class RoutesService {
         'promoter', 
         'items.products', 
         'items.products.product', 
+        'items.products.product.client',
         'items.products.product.brand',
         'items.products.product.checklistTemplate',
         'items.products.product.checklistTemplate.items',
@@ -761,6 +799,51 @@ export class RoutesService {
     return this.routesRepository.delete(id);
   }
 
+  async getRouteReport(id: string) {
+    const route = await this.routesRepository.findOne({
+      where: { id },
+      relations: [
+        'promoter',
+        'items',
+        'items.supermarket',
+        'items.products',
+        'items.products.product',
+        'items.products.product.brand',
+        'items.products.product.client',
+      ],
+    });
+
+    if (!route) {
+      throw new NotFoundException('Route not found');
+    }
+
+    return {
+      routeId: route.id,
+      date: route.date,
+      promoterName: route.promoter?.name || 'N/A',
+      items: route.items.map((item) => ({
+        supermarketName: item.supermarket?.name || 'N/A',
+        checkInTime: item.checkInTime,
+        checkOutTime: item.checkOutTime,
+        products: item.products.map((p) => {
+          const gondola = p.gondolaCount || 0;
+          const inventory = p.inventoryCount || 0;
+          return {
+            productName: p.product.name,
+            ean: p.product.ean,
+            category: p.product.category,
+            brand: p.product.brand?.name || 'N/A',
+            gondolaCount: p.gondolaCount,
+            inventoryCount: p.inventoryCount,
+            totalCount: gondola + inventory,
+            ruptureReason: p.ruptureReason,
+            isCompleted: (p.gondolaCount !== null && p.inventoryCount !== null) || !!p.ruptureReason,
+          };
+        }),
+      })),
+    };
+  }
+
   async getEvidenceReport(startDate: string, endDate: string, clientId?: string) {
     const query = this.routeItemProductsRepository.createQueryBuilder('rip')
       .leftJoinAndSelect('rip.routeItem', 'ri')
@@ -797,7 +880,35 @@ export class RoutesService {
     return this.routeRulesRepository.find();
   }
 
-  async checkProduct(routeItemId: string, productId: string, data: { checked?: boolean, observation?: string, isStockout?: boolean, stockoutType?: string, photos?: string[], checkInTime?: string, checkOutTime?: string, validityDate?: string, stockCount?: number, checklists?: { id: string, isChecked: boolean, value?: string }[] }, userId?: string) {
+  async updateItem(id: string, data: { categoryPhotos?: any }) {
+    const item = await this.routeItemsRepository.findOne({ where: { id } });
+    if (!item) throw new NotFoundException('Route Item not found');
+
+    if (data.categoryPhotos !== undefined) {
+      item.categoryPhotos = data.categoryPhotos;
+    }
+
+    return this.routeItemsRepository.save(item);
+  }
+
+  async uploadPhoto(itemId: string, file: any, type: string, category?: string) {
+    const item = await this.routeItemsRepository.findOne({ where: { id: itemId } });
+    if (!item) throw new NotFoundException('Route Item not found');
+
+    const fileName = `${itemId}_${Date.now()}_${file.originalname.replace(/\s+/g, '_')}`;
+    const filePath = path.join(UPLOAD_ROOT, fileName);
+    
+    if (!fs.existsSync(UPLOAD_ROOT)) {
+      fs.mkdirSync(UPLOAD_ROOT, { recursive: true });
+    }
+
+    fs.writeFileSync(filePath, file.buffer);
+    const url = `/uploads/${fileName}`;
+
+    return { url };
+  }
+
+  async checkProduct(routeItemId: string, productId: string, data: { checked?: boolean, observation?: string, isStockout?: boolean, stockoutType?: string, photos?: string[], checkInTime?: string, checkOutTime?: string, validityDate?: string, stockCount?: number, gondolaCount?: number, inventoryCount?: number, ruptureReason?: string, checklists?: { id: string, isChecked: boolean, value?: string }[] }, userId?: string) {
     console.log(`RoutesService.checkProduct: Item ${routeItemId}, Product ${productId}`);
     console.log('Payload:', JSON.stringify(data));
 
@@ -831,12 +942,29 @@ export class RoutesService {
       if (data.checkInTime !== undefined) itemProduct.checkInTime = new Date(data.checkInTime);
       if (data.checkOutTime !== undefined) itemProduct.checkOutTime = new Date(data.checkOutTime);
       if (data.validityDate !== undefined) itemProduct.validityDate = data.validityDate;
+      if (data.ruptureReason !== undefined) itemProduct.ruptureReason = data.ruptureReason;
       
+      // Handle Counts
+      if (data.gondolaCount !== undefined) itemProduct.gondolaCount = data.gondolaCount;
+      if (data.inventoryCount !== undefined) itemProduct.inventoryCount = data.inventoryCount;
+      
+      // Calculate total stock count if both are provided or update individually
+      // If stockCount is provided directly (legacy), use it. 
+      // Otherwise, sum gondola + inventory if available.
       if (data.stockCount !== undefined) {
         itemProduct.stockCount = data.stockCount;
+      } else {
+        // Auto-sum if we have the components
+        const g = itemProduct.gondolaCount || 0;
+        const i = itemProduct.inventoryCount || 0;
+        // Only update stockCount if we actually received update for one of the components
+        if (data.gondolaCount !== undefined || data.inventoryCount !== undefined) {
+             itemProduct.stockCount = g + i;
+        }
+      }
 
-        // Check for brand notification logic
-        if (itemProduct.product?.brand?.waitForStockCount) {
+      // Check for brand notification logic
+      if (itemProduct.product?.brand?.waitForStockCount) {
           // Check if product has STOCK_COUNT checklist
           const hasStockCountChecklist = itemProduct.checklists?.some(c => c.type === ChecklistItemType.STOCK_COUNT) || 
                                          itemProduct.checklists?.some(c => c.description?.toLowerCase().includes('estoque') || c.description?.toLowerCase().includes('contagem'));

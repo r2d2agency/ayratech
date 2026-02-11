@@ -14,4 +14,7 @@ export class SupermarketGroup {
 
   @OneToMany(() => Supermarket, (supermarket) => supermarket.group)
   supermarkets: Supermarket[];
+
+  @ManyToMany(() => Product, (product) => product.supermarketGroups)
+  products: Product[];
 }

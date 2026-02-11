@@ -34,8 +34,8 @@ const DashboardView = () => {
     try {
       // Fetch routes for today
       // Ideally backend should support ?date=today&promoterId=me
-      // For now fetching all and filtering (MVP)
-      const response = await client.get('/routes');
+      // Now fetching filtered by date to improve performance
+      const response = await client.get('/routes', { params: { date: today } });
       
       const filtered = response.data.filter((r: any) => {
         return r.date.startsWith(today) && (

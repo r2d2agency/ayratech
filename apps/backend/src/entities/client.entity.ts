@@ -48,6 +48,15 @@ export class Client {
   @Column({ nullable: true })
   logo: string;
 
+  @Column({ type: 'simple-json', nullable: true })
+  photoConfig: {
+    labels?: {
+      before?: string;
+      storage?: string;
+      after?: string;
+    }
+  };
+
   @Column({ nullable: true, select: false })
   password: string;
 

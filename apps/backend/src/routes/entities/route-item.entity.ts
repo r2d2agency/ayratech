@@ -53,6 +53,9 @@ export class RouteItem {
   @Column({ nullable: true, type: 'text' })
   observation: string;
 
+  @Column('simple-json', { nullable: true })
+  categoryPhotos: Record<string, { before?: string; after?: string; storage?: string }>;
+
   @OneToMany(() => RouteItemProduct, (product) => product.routeItem, { cascade: true, eager: true })
   products: RouteItemProduct[];
 

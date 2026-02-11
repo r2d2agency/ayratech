@@ -54,6 +54,7 @@ const RouteDetailsView = () => {
   const [currentPhoto, setCurrentPhoto] = useState<{blob: Blob, url: string} | null>(null);
   const [showPhotoPreview, setShowPhotoPreview] = useState(false);
   const [showTasksModal, setShowTasksModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
   // Find item where CURRENT user is checked in (Independent of global status)
   const userActiveItem = route?.items?.find((item: any) => 
@@ -769,85 +770,93 @@ const RouteDetailsView = () => {
 
       {/* Tasks Modal */}
       {showTasksModal && activeItem && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex flex-col justify-end sm:justify-center">
-            <div className="bg-white rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col w-full sm:max-w-md mx-auto">
-                <div className="p-4 border-b flex justify-between items-center">
-                    <div>
-                        <h3 className="font-bold text-lg text-gray-800">Tarefas da Visita</h3>
-                        <p className="text-xs text-gray-500">{activeItem.supermarket.name}</p>
+        selectedCategory ? (
+            <CategoryTaskFlow
+                routeItem={activeItem}
+                category={selectedCategory}
+                products={activeItem.products.filter((p: any) => (p.product?.category || 'Geral') === selectedCategory)}
+                photoConfig={activeItem.products.find((p: any) => (p.product?.category || 'Geral') === selectedCategory)?.product?.client?.photoConfig}
+                onUpdateItem={async (itemId, data) => {
+                    // Optimistic update
+                    const updatedItems = route.items.map((i: any) => i.id === itemId ? { ...i, ...data } : i);
+                    setRoute({ ...route, items: updatedItems });
+                    await client.patch(`/routes/items/${itemId}`, data);
+                }}
+                onUpdateProduct={async (productId, data) => {
+                    // Optimistic update
+                    const updatedItems = route.items.map((i: any) => {
+                        if (i.id === activeItem.id) {
+                            return {
+                                ...i,
+                                products: i.products.map((p: any) => p.productId === productId ? { ...p, ...data } : p)
+                            };
+                        }
+                        return i;
+                    });
+                    setRoute({ ...route, items: updatedItems });
+                    await client.patch(`/routes/items/${activeItem.id}/products/${productId}/check`, data);
+                }}
+                onFinish={() => setSelectedCategory(null)}
+                onBack={() => setSelectedCategory(null)}
+            />
+        ) : (
+            <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex flex-col justify-end sm:justify-center">
+                <div className="bg-white rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col w-full sm:max-w-md mx-auto">
+                    <div className="p-4 border-b flex justify-between items-center">
+                        <div>
+                            <h3 className="font-bold text-lg text-gray-800">Tarefas da Visita</h3>
+                            <p className="text-xs text-gray-500">{activeItem.supermarket.name}</p>
+                        </div>
+                        <button onClick={() => setShowTasksModal(false)} className="p-2 bg-gray-100 rounded-full">
+                            <X size={20} />
+                        </button>
                     </div>
-                    <button onClick={() => setShowTasksModal(false)} className="p-2 bg-gray-100 rounded-full">
-                        <X size={20} />
-                    </button>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                    {activeItem.products?.map((prod: any) => (
-                        <div 
-                            key={prod.id} 
-                            className="flex flex-col gap-2 bg-white p-3 rounded-xl border border-gray-200 shadow-sm active:bg-gray-50 transition-colors"
-                            onClick={() => {
-                                setShowTasksModal(false);
-                                navigate(`/routes/${id}/items/${activeItem.id}/check?productId=${prod.product?.id || prod.productId}`);
-                            }}
-                        >
-                            <div className="flex items-start gap-3">
-                                <div className={`mt-0.5 p-1 rounded-full ${prod.checked ? 'text-green-500 bg-green-50' : 'text-gray-300 bg-gray-50'}`}>
-                                    {prod.checked ? <CheckCircle size={20} /> : <Circle size={20} />}
-                                </div>
-                                <div className="flex-1">
-                                    <span className={`text-sm font-medium ${prod.checked ? 'text-gray-500' : 'text-gray-800'}`}>
-                                        {prod.product?.name}
-                                    </span>
-                                    {prod.product?.brand && (
-                                        <p className="text-xs text-gray-400">{prod.product.brand.name}</p>
-                                    )}
-                                </div>
-                                <ChevronRight size={16} className="text-gray-400 mt-1" />
-                            </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                         {Array.from(new Set(activeItem.products?.map((p: any) => p.product?.category || 'Geral') as string[])).sort().map((cat) => {
+                            const catProducts = activeItem.products.filter((p: any) => (p.product?.category || 'Geral') === cat);
+                            const total = catProducts.length;
+                            const completed = catProducts.filter((p: any) => 
+                                (p.gondolaCount !== null && p.gondolaCount !== undefined) && 
+                                (p.inventoryCount !== null && p.inventoryCount !== undefined)
+                            ).length;
                             
-                            {/* Checklist Indicator */}
-                            {(prod.checklists?.length > 0 || prod.product?.checklistTemplate) && (
-                                <div className="ml-9 flex flex-wrap gap-1">
-                                    <span className="text-[10px] px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full border border-purple-100">
-                                        Checklist
-                                    </span>
-                                </div>
-                            )}
+                            const isDone = completed === total && total > 0;
+                            const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-                            {prod.completedBy && (
-                                <div className="ml-9 flex items-center gap-1.5 mt-1">
-                                    <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-[10px] text-blue-700 font-bold">
-                                        {(prod.completedBy.fullName || prod.completedBy.name || '?').charAt(0)}
+                            return (
+                                <div 
+                                    key={cat}
+                                    onClick={() => setSelectedCategory(cat as string)}
+                                    className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm active:bg-gray-50 transition-colors flex justify-between items-center"
+                                >
+                                    <div className="flex-1 mr-4">
+                                        <h4 className="font-bold text-gray-800">{cat}</h4>
+                                        <div className="flex items-center gap-2 mt-1 mb-1">
+                                            <span className="text-xs text-gray-500">{completed}/{total} itens</span>
+                                            {isDone && <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Concluído</span>}
+                                        </div>
+                                        <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                                            <div 
+                                                className={`h-full rounded-full ${progress === 100 ? 'bg-green-500' : 'bg-blue-500'}`} 
+                                                style={{ width: `${progress}%` }} 
+                                            />
+                                        </div>
                                     </div>
-                                    <span className="text-xs text-gray-500">
-                                        Feito por {(prod.completedBy.fullName || prod.completedBy.name || '').split(' ')[0]}
-                                    </span>
+                                    <ChevronRight size={20} className="text-gray-400" />
                                 </div>
-                            )}
-                        </div>
-                    ))}
-                    {(!activeItem.products || activeItem.products.length === 0) && (
-                        <div className="text-center py-8 text-gray-500">
-                            <ListTodo size={48} className="mx-auto mb-2 opacity-20" />
-                            <p>Nenhuma tarefa listada.</p>
-                        </div>
-                    )}
-                </div>
-
-                <div className="p-4 border-t bg-gray-50 rounded-b-2xl">
-                    <button 
-                        onClick={() => {
-                            setShowTasksModal(false);
-                            navigate(`/routes/${id}/items/${activeItem.id}/check`);
-                        }}
-                        className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-sm"
-                    >
-                        Iniciar Execução
-                    </button>
+                            );
+                        })}
+                        {(!activeItem.products || activeItem.products.length === 0) && (
+                            <div className="text-center py-8 text-gray-500">
+                                <ListTodo size={48} className="mx-auto mb-2 opacity-20" />
+                                <p>Nenhuma tarefa listada.</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
+        )
       )}
 
       {/* Modal Preview Photo */}
