@@ -69,7 +69,15 @@ export class SupermarketsService {
       const updateData: any = { ...rest };
       
       if (groupId !== undefined) {
-          updateData.group = groupId ? { id: groupId } : null;
+          if (groupId) {
+             const groupExists = await this.groupsRepository.findOne({ where: { id: groupId } });
+             if (!groupExists) {
+                 throw new BadRequestException('Grupo de supermercado não encontrado.');
+             }
+             updateData.group = { id: groupId };
+          } else {
+             updateData.group = null;
+          }
       }
       
       // Merge updates into existing entity to ensure full object for save
