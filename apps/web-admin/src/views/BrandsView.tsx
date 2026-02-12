@@ -52,11 +52,17 @@ const BrandsView: React.FC = () => {
         return;
       }
 
+      // Clean up payload
+      const payload = { ...formData };
+      if (!payload.waitForStockCount) {
+        payload.stockNotificationContact = '';
+      }
+
       if (editingBrand) {
-        await api.patch(`/brands/${editingBrand.id}`, formData);
+        await api.patch(`/brands/${editingBrand.id}`, payload);
         alert('Marca atualizada com sucesso!');
       } else {
-        await api.post('/brands', formData);
+        await api.post('/brands', payload);
         alert('Marca criada com sucesso!');
       }
       setShowModal(false);

@@ -62,10 +62,14 @@ export class BrandsService {
 
       return await this.brandsRepository.save(brand);
     } catch (err) {
-      console.error('Error updating brand:', err);
+      console.error(`Error updating brand ${id}:`, err);
       if (err instanceof NotFoundException || err instanceof BadRequestException) throw err;
       if (err.code === '23503') {
         throw new BadRequestException('Cliente inválido ou não encontrado');
+      }
+      // Log detailed error for debugging schema mismatches
+      if (err.code === '42703') { // Undefined column
+         console.error('Database schema mismatch: Column not found. Ensure migrations have run.');
       }
       throw new BadRequestException(err.message || 'Erro ao atualizar marca');
     }
