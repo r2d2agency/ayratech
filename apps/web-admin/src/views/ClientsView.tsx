@@ -29,6 +29,10 @@ const ClientsView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [newCategoryName, setNewCategoryName] = useState('');
   
+  // Supermarket Groups for Link Modal
+  const [supermarketGroups, setSupermarketGroups] = useState<any[]>([]);
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState('');
+
   // Client Form State
   const [newClient, setNewClient] = useState({
     razaoSocial: '',
@@ -83,11 +87,15 @@ const ClientsView: React.FC = () => {
     setLinkClient(client);
     setSelectedSupermarketIds((client.supermarkets || []).map((s: any) => s.id));
     try {
-      const res = await api.get('/supermarkets');
-      setAvailableSupermarkets(res.data);
+      const [resSupermarkets, resGroups] = await Promise.all([
+        api.get('/supermarkets'),
+        api.get('/supermarket-groups')
+      ]);
+      setAvailableSupermarkets(resSupermarkets.data);
+      setSupermarketGroups(resGroups.data);
       setShowLinkModal(true);
     } catch (e) {
-      console.error('Failed to fetch supermarkets', e);
+      console.error('Failed to fetch supermarkets or groups', e);
     }
   };
 
@@ -249,6 +257,18 @@ const ClientsView: React.FC = () => {
     }));
   };
 
+  const handleAddAllFiltered = () => {
+    const toAdd = availableSupermarkets
+      .filter(s => !selectedSupermarketIds.includes(s.id))
+      .filter(s => !selectedGroupFilter || (s.group?.id === selectedGroupFilter))
+      .filter(s => (s.fantasyName || '').toLowerCase().includes(leftSearch.toLowerCase()))
+      .map(s => s.id);
+      
+    if (toAdd.length > 0) {
+      setSelectedSupermarketIds(prev => [...prev, ...toAdd]);
+    }
+  };
+
   const handleClientSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -351,7 +371,26 @@ const ClientsView: React.FC = () => {
             <h2 className="text-2xl font-black text-slate-900 mb-6">Vincular PDVs - {linkClient.nome}</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
-                <div className="mb-3">
+                <div className="mb-3 space-y-2">
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedGroupFilter}
+                      onChange={e => setSelectedGroupFilter(e.target.value)}
+                      className="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm"
+                    >
+                      <option value="">Todas as Redes</option>
+                      {supermarketGroups.map(g => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={handleAddAllFiltered}
+                      className="px-3 py-2 bg-blue-100 text-blue-700 rounded-xl text-xs font-bold hover:bg-blue-200 whitespace-nowrap"
+                      title="Adicionar todos os PDVs filtrados"
+                    >
+                      Add Todos
+                    </button>
+                  </div>
                   <input 
                     type="text"
                     value={leftSearch}
@@ -362,8 +401,9 @@ const ClientsView: React.FC = () => {
                 </div>
                 <div className="max-h-80 overflow-y-auto space-y-2">
                   {availableSupermarkets
-                    .filter(s => (s.fantasyName || '').toLowerCase().includes(leftSearch.toLowerCase()))
                     .filter(s => !selectedSupermarketIds.includes(s.id))
+                    .filter(s => !selectedGroupFilter || (s.group?.id === selectedGroupFilter))
+                    .filter(s => (s.fantasyName || '').toLowerCase().includes(leftSearch.toLowerCase()))
                     .map(s => (
                       <div key={s.id} className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-3 py-2">
                         <div className="min-w-0">
