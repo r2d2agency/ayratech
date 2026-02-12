@@ -47,5 +47,9 @@ export class CreateProductDto {
   analysisPrompt?: string;
 
   @IsOptional()
+  @IsString()
+  checklistTemplateId?: string;
+
+  @IsOptional()
   supermarketGroupIds?: string[];
 }
