@@ -67,7 +67,7 @@ export class ProductsService {
         throw new NotFoundException('Produto não encontrado');
       }
 
-      const { brandId, clientId, categoryId, ...rest } = updateProductDto;
+      const { brandId, clientId, categoryId, supermarketGroupIds, ...rest } = updateProductDto;
       
       this.productsRepository.merge(product, rest);
       
@@ -81,6 +81,10 @@ export class ProductsService {
 
       if (categoryId) {
         product.categoryRef = { id: categoryId } as any;
+      }
+
+      if (supermarketGroupIds) {
+        product.supermarketGroups = supermarketGroupIds.map(id => ({ id } as any));
       }
       
       return await this.productsRepository.save(product);
