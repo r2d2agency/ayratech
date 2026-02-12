@@ -422,11 +422,8 @@ const ClientsView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="border-t border-slate-100 pt-4">
-                {/* Photo Config Moved to Client Edit Modal */}
-              </div>
               <div className="flex items-center justify-center">
-                <div className="text-slate-400 font-bold text-sm">Selecionar</div>
+                <div className="text-slate-400 font-bold text-sm">Selecionar &rarr;</div>
               </div>
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
                 <div className="mb-3">
