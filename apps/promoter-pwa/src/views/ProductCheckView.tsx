@@ -931,8 +931,6 @@ const ProductCheckView: React.FC = () => {
                 </>
               )}
             </button>
-            </>
-            )}
           </div>
         </div>
       )}
