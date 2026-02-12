@@ -57,36 +57,48 @@ export class SupermarketsService {
 
   async update(id: string, updateSupermarketDto: UpdateSupermarketDto) {
     try {
+      // First check if supermarket exists
+      const existingSupermarket = await this.supermarketsRepository.findOne({ where: { id } });
+      if (!existingSupermarket) {
+        throw new NotFoundException(`Supermercado com ID ${id} não encontrado.`);
+      }
+
       const { clientIds, groupId, ...rest } = updateSupermarketDto;
       
-      // Handle groupId update
-      if (groupId) {
-          await this.supermarketsRepository.save({
-              id,
-              ...rest,
-              group: { id: groupId }
-          });
-      } else if (Object.keys(rest).length > 0) {
-          // First update basic fields
-          await this.supermarketsRepository.update(id, rest);
+      // Update basic fields and group
+      const updateData: any = { ...rest };
+      
+      if (groupId !== undefined) {
+          updateData.group = groupId ? { id: groupId } : null;
       }
+      
+      // Merge updates into existing entity to ensure full object for save
+      const updatedSupermarket = this.supermarketsRepository.merge(existingSupermarket, updateData);
+      
+      await this.supermarketsRepository.save(updatedSupermarket);
       
       // If clientIds provided, we need to update the relationship
       if (clientIds) {
-        const supermarket = await this.supermarketsRepository.findOne({ 
+        // Reload with clients relation to ensure clean update
+        const supermarketWithClients = await this.supermarketsRepository.findOne({ 
           where: { id },
           relations: ['clients'] 
         });
         
-        if (supermarket) {
-          supermarket.clients = clientIds.map(cid => ({ id: cid } as any));
-          await this.supermarketsRepository.save(supermarket);
+        if (supermarketWithClients) {
+          supermarketWithClients.clients = clientIds.map(cid => ({ id: cid } as any));
+          await this.supermarketsRepository.save(supermarketWithClients);
         }
       }
       
       return this.findOne(id);
     } catch (error) {
       console.error('Error updating supermarket:', error);
+      
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      
       if (error.code === '23503') {
         throw new BadRequestException('Grupo ou Clientes inválidos ou não encontrados.');
       }
@@ -99,7 +111,11 @@ export class SupermarketsService {
       if (error.code === '22001') {
         throw new BadRequestException('Texto muito longo para um dos campos.');
       }
-      throw new InternalServerErrorException('Erro ao atualizar supermercado: ' + error.message);
+      if (error.code === '22003') {
+        throw new BadRequestException('Valor numérico fora do alcance permitido (ex: latitude/longitude).');
+      }
+      
+      throw new InternalServerErrorException('Erro ao atualizar supermercado: ' + (error.message || 'Erro desconhecido'));
     }
   }
 
