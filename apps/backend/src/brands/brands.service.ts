@@ -65,6 +65,17 @@ export class BrandsService {
         return brand;
       }
 
+      // If only clientId changed, TypeORM sometimes fails to detect change if using .save() on retrieved entity
+      // without other column changes.
+      // We can explicitly update the relation column or force an update.
+      
+      // If brandData is empty but clientId is present, it means we only update the client.
+      if (Object.keys(brandData).length === 0 && clientId) {
+         // Direct update to avoid "update values are not defined"
+         await this.brandsRepository.update(id, { client: { id: clientId } });
+         return this.findOne(id);
+      }
+
       return await this.brandsRepository.save(brand);
     } catch (err) {
       console.error(`Error updating brand ${id}:`, err);
