@@ -54,10 +54,27 @@ const BrandsView: React.FC = () => {
       }
 
       // Clean up payload
-      const payload = { ...formData };
+      const payload: any = { ...formData };
+      
+      // Ensure waitForStockCount is boolean
+      payload.waitForStockCount = !!payload.waitForStockCount;
+      
+      if (payload.name) {
+        payload.name = payload.name.trim();
+      }
+
       if (!payload.waitForStockCount) {
         payload.stockNotificationContact = '';
       }
+      
+      // If stockNotificationContact is empty string, send it as is (allowed by DTO) 
+      // or consider sending null if backend supports it. 
+      // For now, let's keep it as string but ensure it's trimmed if it's not empty.
+      if (payload.stockNotificationContact) {
+        payload.stockNotificationContact = payload.stockNotificationContact.trim();
+      }
+
+      console.log('Saving brand payload:', payload);
 
       if (editingBrand) {
         await api.patch(`/brands/${editingBrand.id}`, payload);
@@ -71,11 +88,17 @@ const BrandsView: React.FC = () => {
       fetchBrands();
     } catch (error: any) {
       console.error("Error saving brand:", error);
+      console.error("Error response data:", error.response?.data);
+      
       let message = error.response?.data?.message || 'Erro ao salvar marca.';
-      if (typeof message === 'object' && !Array.isArray(message)) {
-        message = JSON.stringify(message);
+      if (typeof message === 'object') {
+        if (Array.isArray(message)) {
+           message = message.join('\n');
+        } else {
+           message = JSON.stringify(message);
+        }
       }
-      alert(Array.isArray(message) ? message.join('\n') : message);
+      alert(message);
     }
   };
 
