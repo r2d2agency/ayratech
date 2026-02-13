@@ -72,7 +72,13 @@ export class BrandsService {
       // If brandData is empty but clientId is present, it means we only update the client.
       if (Object.keys(brandData).length === 0 && clientId) {
          // Direct update to avoid "update values are not defined"
-         await this.brandsRepository.update(id, { client: { id: clientId } });
+         // Using QueryBuilder to ensure update happens even if TypeORM thinks nothing changed
+         await this.brandsRepository.createQueryBuilder()
+           .update(Brand)
+           .set({ client: { id: clientId } })
+           .where("id = :id", { id })
+           .execute();
+           
          return this.findOne(id);
       }
 
