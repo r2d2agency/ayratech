@@ -62,13 +62,13 @@ export class BrandsService {
           throw new BadRequestException('Cliente não encontrado');
         }
         
-        // Use QueryBuilder to update the relation column directly
-        // This bypasses TypeORM's object dirty checking which is failing here
-        await this.brandsRepository.createQueryBuilder()
-          .update(Brand)
-          .set({ client: client }) 
-          .where("id = :id", { id })
-          .execute();
+        // Use Raw Query to update the relation column directly
+        // This bypasses TypeORM's object dirty checking AND the update: false restriction on the column
+        // Using metadata.tableName ensures we use the correct table name
+        await this.brandsRepository.query(
+            `UPDATE "${this.brandsRepository.metadata.tableName}" SET "clientId" = $1 WHERE id = $2`,
+            [clientId, id]
+        );
       }
 
       // 3. Return the updated entity
