@@ -50,39 +50,29 @@ export class BrandsService {
       const brand = await this.brandsRepository.findOne({ where: { id } });
       if (!brand) throw new NotFoundException('Marca não encontrada');
 
-      this.brandsRepository.merge(brand, brandData);
+      // 1. If there are simple fields to update, update them
+      if (Object.keys(brandData).length > 0) {
+        await this.brandsRepository.update(id, brandData);
+      }
 
+      // 2. If there is a clientId change, update the relation specifically
       if (clientId) {
         const client = await this.clientsRepository.findOne({ where: { id: clientId } });
         if (!client) {
           throw new BadRequestException('Cliente não encontrado');
         }
-        brand.client = client;
-      }
-      
-      // If no data to update (brandData is empty and clientId is not provided), just return the existing brand
-      if (Object.keys(brandData).length === 0 && !clientId) {
-        return brand;
-      }
-
-      // If only clientId changed, TypeORM sometimes fails to detect change if using .save() on retrieved entity
-      // without other column changes.
-      // We can explicitly update the relation column or force an update.
-      
-      // If brandData is empty but clientId is present, it means we only update the client.
-      if (Object.keys(brandData).length === 0 && clientId) {
-         // Direct update to avoid "update values are not defined"
-         // Using QueryBuilder to ensure update happens even if TypeORM thinks nothing changed
-         await this.brandsRepository.createQueryBuilder()
-           .update(Brand)
-           .set({ client: { id: clientId } })
-           .where("id = :id", { id })
-           .execute();
-           
-         return this.findOne(id);
+        
+        // Use QueryBuilder to update the relation column directly
+        // This bypasses TypeORM's object dirty checking which is failing here
+        await this.brandsRepository.createQueryBuilder()
+          .update(Brand)
+          .set({ client: client }) 
+          .where("id = :id", { id })
+          .execute();
       }
 
-      return await this.brandsRepository.save(brand);
+      // 3. Return the updated entity
+      return this.findOne(id);
     } catch (err) {
       console.error(`Error updating brand ${id}:`, err);
       if (err instanceof NotFoundException || err instanceof BadRequestException) throw err;
