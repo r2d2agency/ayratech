@@ -124,6 +124,10 @@ const BrandsView: React.FC = () => {
   };
 
   const openEditModal = (brand: any) => {
+    console.log('Opening edit modal for brand:', brand);
+    console.log('Brand client:', brand.client);
+    console.log('Computed clientId:', brand.clientId || brand.client?.id || '');
+    
     setEditingBrand(brand);
     setFormData({
       name: brand.name,
