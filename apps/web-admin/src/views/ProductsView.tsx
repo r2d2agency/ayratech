@@ -351,8 +351,8 @@ const ProductsView: React.FC = () => {
     });
     
     // Set initial client search value
-    const client = clients.find(c => c.id === (product.clientId || ''));
-    setClientSearch(client ? client.nome : '');
+    // const client = clients.find(c => c.id === (product.clientId || ''));
+    // setClientSearch(client ? client.nome : '');
 
     setImagePreview(product.imagem === 'https://via.placeholder.com/150' ? '' : product.imagem);
     setImageFile(null);
@@ -380,7 +380,7 @@ const ProductsView: React.FC = () => {
     });
     setSelectedParentId('');
     setSelectedSubId('');
-    setClientSearch('');
+    // setClientSearch('');
     setImagePreview('');
     setImageFile(null);
     setReferenceImagePreview('');
