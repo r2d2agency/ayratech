@@ -4,6 +4,7 @@ import { useBranding } from '../context/BrandingContext';
 import { ViewType, SupermarketGroup } from '../types';
 import api from '../api/client';
 import MapModal from '../components/MapModal';
+import { SearchableSelect } from '../components/SearchableSelect';
 
 interface SupermarketFormViewProps {
   onNavigate: (view: ViewType) => void;
@@ -139,32 +140,29 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
              </div>
              
              <div>
-                <label className="text-[11px] font-black text-slate-400 uppercase mb-3 block tracking-widest">Rede / Grupo</label>
-                <select 
-                    name="groupId"
-                    value={formData.groupId}
-                    onChange={handleChange}
-                    className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-black text-slate-700"
-                >
-                   <option value="">Selecione...</option>
-                   {groups.map(group => (
-                     <option key={group.id} value={group.id}>{group.name}</option>
-                   ))}
-                </select>
+                <SearchableSelect
+                  label="Rede / Grupo"
+                  placeholder="Selecione..."
+                  value={formData.groupId}
+                  onChange={(val) => setFormData(prev => ({ ...prev, groupId: val }))}
+                  options={[
+                    { value: '', label: 'Selecione...' },
+                    ...groups.map(group => ({ value: group.id, label: group.name }))
+                  ]}
+                />
              </div>
 
              <div>
-                <label className="text-[11px] font-black text-slate-400 uppercase mb-3 block tracking-widest">Classificação</label>
-                <select 
-                    name="classification"
-                    value={formData.classification}
-                    onChange={handleChange}
-                    className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-black text-slate-700"
-                >
-                   <option value="Ouro">Ouro</option>
-                   <option value="Prata">Prata</option>
-                   <option value="Bronze">Bronze</option>
-                </select>
+                <SearchableSelect
+                  label="Classificação"
+                  value={formData.classification}
+                  onChange={(val) => setFormData(prev => ({ ...prev, classification: val }))}
+                  options={[
+                    { value: 'Ouro', label: 'Ouro' },
+                    { value: 'Prata', label: 'Prata' },
+                    { value: 'Bronze', label: 'Bronze' }
+                  ]}
+                />
              </div>
 
              {/* Address Section */}

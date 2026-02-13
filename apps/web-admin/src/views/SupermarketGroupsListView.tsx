@@ -3,6 +3,7 @@ import { Plus, Search, Edit, Trash, X } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import { ViewType, SupermarketGroup } from '../types';
 import api from '../api/client';
+import { SearchableSelect } from '../components/SearchableSelect';
 
 interface SupermarketGroupsListViewProps {
   onNavigate: (view: ViewType) => void;
@@ -208,15 +209,15 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
               </div>
 
               <div>
-                 <label className="text-[11px] font-black text-slate-400 uppercase mb-3 block tracking-widest">Status</label>
-                 <select 
-                     value={formData.status ? 'true' : 'false'}
-                     onChange={(e) => setFormData({...formData, status: e.target.value === 'true'})}
-                     className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-black text-slate-700"
-                 >
-                    <option value="true">Ativo</option>
-                    <option value="false">Inativo</option>
-                 </select>
+                 <SearchableSelect
+                   label="Status"
+                   value={formData.status ? 'true' : 'false'}
+                   onChange={(val) => setFormData({...formData, status: val === 'true'})}
+                   options={[
+                     { value: 'true', label: 'Ativo' },
+                     { value: 'false', label: 'Inativo' }
+                   ]}
+                 />
               </div>
 
               <div className="pt-6 border-t border-slate-100 flex justify-end gap-4">

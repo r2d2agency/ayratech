@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, X, Edit, Trash, ChevronDown, Check, Wand2 } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
+import { SearchableSelect } from '../components/SearchableSelect';
+import { SearchableMultiSelect } from '../components/SearchableMultiSelect';
 import api, { API_URL } from '../api/client';
 import { getImageUrl } from '../utils/image';
 
@@ -47,13 +49,6 @@ const ProductsView: React.FC = () => {
 
   const [selectedParentId, setSelectedParentId] = useState('');
   const [selectedSubId, setSelectedSubId] = useState('');
-
-  // Client Search State
-  const [clientSearch, setClientSearch] = useState('');
-  const [showClientDropdown, setShowClientDropdown] = useState(false);
-  
-  // Group Search State
-  const [showGroupDropdown, setShowGroupDropdown] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -187,8 +182,13 @@ const ProductsView: React.FC = () => {
 
         // Handle supermarketGroupIds specifically
         if (key === 'supermarketGroupIds') {
-           if (Array.isArray(value) && value.length > 0) {
-             formData.append('supermarketGroupIds', JSON.stringify(value));
+           const val = productForm.supermarketGroupIds;
+           if (Array.isArray(val)) {
+             console.log('Appending supermarketGroupIds:', JSON.stringify(val));
+             formData.append('supermarketGroupIds', JSON.stringify(val));
+           } else {
+             console.log('supermarketGroupIds is not an array:', val);
+             formData.append('supermarketGroupIds', '[]');
            }
            return;
         }
@@ -441,14 +441,17 @@ const ProductsView: React.FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <select 
-            className="h-12 px-6 rounded-xl border border-slate-200 outline-none text-sm font-black text-slate-700 bg-white"
-            value={selectedClient}
-            onChange={(e) => setSelectedClient(e.target.value)}
-          >
-            <option>Todos os Clientes</option>
-            {clients.map(c => <option key={c.id}>{c.nome}</option>)}
-          </select>
+          <div className="w-64">
+            <SearchableSelect
+              placeholder="Todos os Clientes"
+              value={selectedClient === 'Todos os Clientes' ? '' : selectedClient}
+              onChange={(val) => setSelectedClient(val || 'Todos os Clientes')}
+              options={[
+                { value: '', label: 'Todos os Clientes' },
+                ...clients.map(c => ({ value: c.nome, label: c.nome }))
+              ]}
+            />
+          </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-8">
           {filteredProducts.map(p => (
@@ -553,46 +556,38 @@ const ProductsView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Categoria</label>
-                  <select
+                  <SearchableSelect
+                    label="Categoria"
                     required
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium bg-white"
+                    placeholder="Selecione..."
                     value={selectedParentId}
-                    onChange={e => {
-                      setSelectedParentId(e.target.value);
+                    onChange={(val) => {
+                      setSelectedParentId(val);
                       setSelectedSubId('');
                     }}
-                  >
-                    <option value="">Selecione...</option>
-                    {categories.filter(c => !c.parent).map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+                    options={categories.filter(c => !c.parent).map(c => ({ value: c.id, label: c.name }))}
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Subcategoria</label>
-                  <select
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium bg-white"
+                  <SearchableSelect
+                    label="Subcategoria"
+                    placeholder="Selecione..."
                     value={selectedSubId}
-                    onChange={e => setSelectedSubId(e.target.value)}
+                    onChange={(val) => setSelectedSubId(val)}
                     disabled={!selectedParentId}
-                  >
-                    <option value="">Selecione...</option>
-                    {selectedParentId && categories.filter(c => c.parent?.id === selectedParentId).map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+                    options={selectedParentId ? categories.filter(c => c.parent?.id === selectedParentId).map(c => ({ value: c.id, label: c.name })) : []}
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Marca</label>
-                  <select
+                  <SearchableSelect
+                    label="Marca"
                     required
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium bg-white"
+                    placeholder="Selecione..."
                     value={productForm.brandId}
-                    onChange={e => {
-                      const selectedBrandId = e.target.value;
+                    onChange={(val) => {
+                      const selectedBrandId = val;
                       const brand = brands.find(b => b.id === selectedBrandId);
                       const newClientId = brand?.client?.id || productForm.clientId;
                       
@@ -602,151 +597,54 @@ const ProductsView: React.FC = () => {
                         // Auto-select client if brand has one
                         clientId: newClientId
                       }));
-                      
-                      // Update search text if client changed
-                      if (brand?.client) {
-                        setClientSearch(brand.client.nome || brand.client.fantasyName || '');
-                      }
                     }}
-                  >
-                    <option value="">Selecione...</option>
-                    {brands
+                    options={brands
                       .filter(b => !productForm.clientId || !b.client || b.client.id === productForm.clientId)
-                      .map(brand => (
-                      <option key={brand.id} value={brand.id}>{brand.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="relative">
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Fabricante/Cliente</label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      required
-                      placeholder="Buscar Cliente..."
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium bg-white"
-                      value={clientSearch}
-                      onChange={e => {
-                         setClientSearch(e.target.value);
-                         if (!showClientDropdown) setShowClientDropdown(true);
-                         if (productForm.clientId) {
-                             const currentClient = clients.find(c => c.id === productForm.clientId);
-                             if (currentClient && currentClient.nome !== e.target.value) {
-                                 setProductForm(prev => ({ ...prev, clientId: '' }));
-                             }
-                         }
-                      }}
-                      onFocus={() => setShowClientDropdown(true)}
-                      onBlur={() => setShowClientDropdown(false)}
-                    />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                      <ChevronDown size={16} />
-                    </div>
-                  </div>
-                  
-                  {showClientDropdown && (
-                    <div 
-                        className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto"
-                        onMouseDown={(e) => e.preventDefault()}
-                    >
-                        {clients
-                           .filter(c => c.nome.toLowerCase().includes(clientSearch.toLowerCase()))
-                           .slice(0, 50)
-                           .map(c => (
-                             <div 
-                               key={c.id}
-                               className="px-4 py-2 hover:bg-slate-50 cursor-pointer flex items-center justify-between"
-                               onClick={() => {
-                                 setProductForm(prev => ({ ...prev, clientId: c.id }));
-                                 setClientSearch(c.nome);
-                                 setShowClientDropdown(false);
-                               }}
-                             >
-                               <span className="font-medium text-slate-700">{c.nome}</span>
-                               {productForm.clientId === c.id && <Check size={16} className="text-blue-500" />}
-                             </div>
-                           ))
-                        }
-                        {clients.filter(c => c.nome.toLowerCase().includes(clientSearch.toLowerCase())).length === 0 && (
-                            <div className="px-4 py-3 text-sm text-slate-500 text-center">Nenhum cliente encontrado</div>
-                        )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="relative">
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Redes (Opcional)</label>
-                  <button
-                    type="button"
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium bg-white text-left flex justify-between items-center"
-                    onClick={() => setShowGroupDropdown(!showGroupDropdown)}
-                  >
-                    <span className={productForm.supermarketGroupIds.length === 0 ? "text-slate-400" : "text-slate-700"}>
-                      {productForm.supermarketGroupIds.length === 0 
-                        ? "Selecione as redes..." 
-                        : `${productForm.supermarketGroupIds.length} redes selecionadas`}
-                    </span>
-                    <ChevronDown size={16} className="text-slate-400" />
-                  </button>
-                  
-                  {showGroupDropdown && (
-                    <>
-                        <div className="fixed inset-0 z-40" onClick={() => setShowGroupDropdown(false)}></div>
-                        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
-                            {supermarketGroups.length === 0 ? (
-                            <div className="px-4 py-3 text-sm text-slate-500 text-center">Nenhuma rede cadastrada</div>
-                            ) : (
-                            supermarketGroups.map(group => {
-                                const isSelected = productForm.supermarketGroupIds.includes(group.id);
-                                return (
-                                <div 
-                                    key={group.id}
-                                    className="px-4 py-2 hover:bg-slate-50 cursor-pointer flex items-center gap-3"
-                                    onClick={() => {
-                                    const newIds = isSelected
-                                        ? productForm.supermarketGroupIds.filter(id => id !== group.id)
-                                        : [...productForm.supermarketGroupIds, group.id];
-                                    setProductForm({...productForm, supermarketGroupIds: newIds});
-                                    }}
-                                >
-                                    <div className={`w-5 h-5 rounded border flex items-center justify-center ${isSelected ? 'bg-blue-500 border-blue-500' : 'border-slate-300'}`}>
-                                    {isSelected && <Check size={12} className="text-white" />}
-                                    </div>
-                                    <span className="font-medium text-slate-700">{group.name}</span>
-                                </div>
-                                );
-                            })
-                            )}
-                        </div>
-                    </>
-                  )}
+                      .map(b => ({ value: b.id, label: b.name }))}
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Status</label>
-                  <select
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium bg-white"
+                  <SearchableSelect
+                    label="Fabricante/Cliente"
+                    required
+                    placeholder="Buscar Cliente..."
+                    value={productForm.clientId}
+                    onChange={(val) => setProductForm(prev => ({ ...prev, clientId: val }))}
+                    options={clients.map(c => ({ value: c.id, label: c.nome }))}
+                  />
+                </div>
+
+                <div>
+                  <SearchableMultiSelect
+                    label="Redes (Opcional)"
+                    placeholder="Selecione as redes..."
+                    value={productForm.supermarketGroupIds}
+                    onChange={(vals) => setProductForm({...productForm, supermarketGroupIds: vals})}
+                    options={supermarketGroups.map(g => ({ value: g.id, label: g.name }))}
+                  />
+                </div>
+
+                <div>
+                  <SearchableSelect
+                    label="Status"
                     value={productForm.status}
-                    onChange={e => setProductForm({...productForm, status: e.target.value})}
-                  >
-                    <option value="active">Ativo</option>
-                    <option value="inactive">Inativo</option>
-                  </select>
+                    onChange={(val) => setProductForm({...productForm, status: val})}
+                    options={[
+                      { value: 'active', label: 'Ativo' },
+                      { value: 'inactive', label: 'Inativo' }
+                    ]}
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Checklist de Tarefas</label>
-                  <select
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium bg-white"
+                  <SearchableSelect
+                    label="Checklist de Tarefas"
+                    placeholder="Nenhum"
                     value={productForm.checklistTemplateId}
-                    onChange={e => setProductForm({...productForm, checklistTemplateId: e.target.value})}
-                  >
-                    <option value="">Nenhum</option>
-                    {checklists.map(t => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => setProductForm({...productForm, checklistTemplateId: val})}
+                    options={checklists.map(t => ({ value: t.id, label: t.name }))}
+                  />
                 </div>
 
                 <div className="col-span-2">
@@ -844,21 +742,22 @@ const ProductsView: React.FC = () => {
                       <span className="text-sm font-bold text-slate-700">Inteligência Artificial</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <select
-                        className="h-9 px-3 rounded-lg border border-slate-200 outline-none text-sm bg-white"
-                        value={selectedPromptId}
-                        onChange={(e) => setSelectedPromptId(e.target.value)}
-                      >
-                        <option value="">Prompt Padrão</option>
-                        {aiPrompts.filter((p: any) => p.supportsImageAnalysis !== false).map((p: any) => (
-                          <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                      </select>
+                      <div className="w-48">
+                        <SearchableSelect
+                          placeholder="Prompt Padrão"
+                          value={selectedPromptId}
+                          onChange={(val) => setSelectedPromptId(val)}
+                          options={[
+                            { value: '', label: 'Prompt Padrão' },
+                            ...aiPrompts.filter((p: any) => p.supportsImageAnalysis !== false).map((p: any) => ({ value: p.id, label: p.name }))
+                          ]}
+                        />
+                      </div>
                       <button
                         type="button"
                         onClick={handleGeneratePrompt}
                         disabled={generatingPrompt}
-                        className="px-3 py-2 rounded-lg text-white font-bold shadow-sm disabled:opacity-60"
+                        className="px-3 py-2 rounded-lg text-white font-bold shadow-sm disabled:opacity-60 h-[42px]"
                         style={{ backgroundColor: settings.primaryColor }}
                       >
                         {generatingPrompt ? 'Gerando...' : 'Gerar com IA'}

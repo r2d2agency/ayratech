@@ -71,7 +71,14 @@ export class CreateClientDto {
       before?: string;
       storage?: string;
       after?: string;
-    }
+    };
+    categories?: Record<string, {
+      labels?: {
+        before?: string;
+        storage?: string;
+        after?: string;
+      }
+    }>;
   };
 
   @IsOptional()

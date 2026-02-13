@@ -3,6 +3,7 @@ import { Plus, X, Trash2, Edit, Eye, Store, Package } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import api from '../api/client';
 import { getImageUrl } from '../utils/image';
+import { SearchableSelect } from '../components/SearchableSelect';
 
 const ClientsView: React.FC = () => {
   const { settings } = useBranding();
@@ -321,6 +322,10 @@ const ClientsView: React.FC = () => {
 
   const handleEditClient = (client: any) => {
     setEditingClient(client.id);
+    const photoConfig = client.photoConfig || {};
+    if (!photoConfig.labels) photoConfig.labels = { before: '', storage: '', after: '' };
+    if (!photoConfig.categories) photoConfig.categories = {};
+
     setNewClient({
       razaoSocial: client.razaoSocial || '',
       nomeFantasia: client.nomeFantasia || '',
@@ -336,10 +341,7 @@ const ClientsView: React.FC = () => {
       cep: client.cep || '',
       logo: client.logo || '',
       password: '',
-      photoConfig: client.photoConfig || {
-        labels: { before: '', storage: '', after: '' },
-        categories: {}
-      }
+      photoConfig
     });
     setShowClientModal(true);
   };
@@ -361,7 +363,7 @@ const ClientsView: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500 relative">
       {showLinkModal && linkClient && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-4xl w-full shadow-2xl relative">
+          <div className="bg-white rounded-3xl p-8 max-w-6xl w-full shadow-2xl relative flex flex-col max-h-[90vh]">
             <button 
               onClick={() => setShowLinkModal(false)}
               className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full transition-colors"
@@ -369,20 +371,22 @@ const ClientsView: React.FC = () => {
               <X size={20} className="text-slate-400" />
             </button>
             <h2 className="text-2xl font-black text-slate-900 mb-6">Vincular PDVs - {linkClient.nome}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
-                <div className="mb-3 space-y-2">
+            <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-6">
+              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col h-full">
+                <div className="mb-3 space-y-2 flex-shrink-0">
                   <div className="flex gap-2">
-                    <select
-                      value={selectedGroupFilter}
-                      onChange={e => setSelectedGroupFilter(e.target.value)}
-                      className="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm"
-                    >
-                      <option value="">Todas as Redes</option>
-                      {supermarketGroups.map(g => (
-                        <option key={g.id} value={g.id}>{g.name}</option>
-                      ))}
-                    </select>
+                    <div className="flex-1 relative z-20">
+                      <SearchableSelect
+                        placeholder="Todas as Redes"
+                        value={selectedGroupFilter}
+                        onChange={(val) => setSelectedGroupFilter(val)}
+                        options={[
+                          { value: '', label: 'Todas as Redes' },
+                          ...supermarketGroups.map(g => ({ value: g.id, label: g.name }))
+                        ]}
+                        className="w-full"
+                      />
+                    </div>
                     <button
                       onClick={handleAddAllFiltered}
                       className="px-3 py-2 bg-blue-100 text-blue-700 rounded-xl text-xs font-bold hover:bg-blue-200 whitespace-nowrap"
@@ -399,7 +403,7 @@ const ClientsView: React.FC = () => {
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm"
                   />
                 </div>
-                <div className="max-h-80 overflow-y-auto space-y-2">
+                <div className="flex-1 overflow-y-auto space-y-2 pr-1">
                   {availableSupermarkets
                     .filter(s => !selectedSupermarketIds.includes(s.id))
                     .filter(s => !selectedGroupFilter || (s.group?.id === selectedGroupFilter))
@@ -422,11 +426,12 @@ const ClientsView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-center">
-                <div className="text-slate-400 font-bold text-sm">Selecionar &rarr;</div>
+              <div className="flex items-center justify-center py-4 lg:py-0">
+                <div className="text-slate-400 font-bold text-sm lg:rotate-0 rotate-90">&rarr;</div>
               </div>
-              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
-                <div className="mb-3">
+              
+              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col h-full">
+                <div className="mb-3 flex-shrink-0">
                   <input 
                     type="text"
                     value={rightSearch}
@@ -435,7 +440,7 @@ const ClientsView: React.FC = () => {
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm"
                   />
                 </div>
-                <div className="max-h-80 overflow-y-auto space-y-2">
+                <div className="flex-1 overflow-y-auto space-y-2 pr-1">
                   {availableSupermarkets
                     .filter(s => selectedSupermarketIds.includes(s.id))
                     .filter(s => (s.fantasyName || '').toLowerCase().includes(rightSearch.toLowerCase()))
@@ -457,7 +462,7 @@ const ClientsView: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="mt-6 flex justify-end gap-3 flex-shrink-0">
               <button 
                 onClick={() => setShowLinkModal(false)}
                 className="px-6 py-3 font-bold text-slate-600 hover:bg-slate-50 rounded-xl"
@@ -557,16 +562,16 @@ const ClientsView: React.FC = () => {
                 </div>
 
                 <div className="col-span-2 md:col-span-1">
-                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Status</label>
-                  <select 
+                  <SearchableSelect
+                    label="Status"
                     value={newClient.status}
-                    onChange={e => setNewClient({...newClient, status: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
-                  >
-                    <option value="ativo">Ativo</option>
-                    <option value="inativo">Inativo</option>
-                    <option value="suspenso">Suspenso</option>
-                  </select>
+                    onChange={(val) => setNewClient({...newClient, status: val})}
+                    options={[
+                      { value: 'ativo', label: 'Ativo' },
+                      { value: 'inativo', label: 'Inativo' },
+                      { value: 'suspenso', label: 'Suspenso' }
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -632,6 +637,7 @@ const ClientsView: React.FC = () => {
 
               <div className="border-t border-slate-100 pt-4">
                 <h3 className="text-sm font-black text-slate-900 mb-4 uppercase tracking-wide">Configuração de Fotos (Checklist)</h3>
+                <p className="text-xs text-slate-500 mb-4">Defina os rótulos das fotos que devem ser tiradas. Deixe em branco para desativar um tipo de foto.</p>
                 
                 {/* Default Config */}
                 <div className="mb-6">
@@ -821,39 +827,34 @@ const ClientsView: React.FC = () => {
             
             <form onSubmit={handleCreateContract} className="space-y-4">
               <div>
-                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Cliente</label>
-                <select 
+                <SearchableSelect
+                  label="Cliente"
                   required
+                  placeholder="Selecione um cliente..."
                   value={newContract.clientId}
-                  onChange={e => setNewContract({...newContract, clientId: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
-                >
-                  <option value="">Selecione um cliente...</option>
-                  {clients.map(c => (
-                    <option key={c.id} value={c.id}>{c.nome}</option>
-                  ))}
-                </select>
+                  onChange={(val) => setNewContract({...newContract, clientId: val})}
+                  options={clients.map(c => ({ value: c.id, label: c.nome }))}
+                />
               </div>
 
               <div>
-                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Modelo de Contrato</label>
-                <select 
+                <SearchableSelect
+                  label="Modelo de Contrato"
+                  placeholder="Sem modelo vinculado"
                   value={newContract.templateId}
-                  onChange={e => {
-                    const template = templates.find(t => t.id === e.target.value);
+                  onChange={(val) => {
+                    const template = templates.find(t => t.id === val);
                     setNewContract({
                       ...newContract, 
-                      templateId: e.target.value,
+                      templateId: val,
                       description: template ? `Contrato - ${template.name}` : newContract.description
                     });
                   }}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
-                >
-                  <option value="">Sem modelo vinculado</option>
-                  {templates.map(t => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
+                  options={[
+                    { value: '', label: 'Sem modelo vinculado' },
+                    ...templates.map(t => ({ value: t.id, label: t.name }))
+                  ]}
+                />
               </div>
               
               <div>

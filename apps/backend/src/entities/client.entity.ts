@@ -54,7 +54,14 @@ export class Client {
       before?: string;
       storage?: string;
       after?: string;
-    }
+    };
+    categories?: Record<string, {
+      labels?: {
+        before?: string;
+        storage?: string;
+        after?: string;
+      }
+    }>;
   };
 
   @Column({ nullable: true, select: false })

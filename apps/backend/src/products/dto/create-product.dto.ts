@@ -1,4 +1,5 @@
-import { IsString, IsOptional, IsUUID } from 'class-validator';
+import { IsString, IsOptional, IsUUID, IsArray } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateProductDto {
   @IsString()
@@ -51,5 +52,17 @@ export class CreateProductDto {
   checklistTemplateId?: string;
 
   @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return [];
+      }
+    }
+    return value;
+  })
+  @IsArray()
+  @IsString({ each: true })
   supermarketGroupIds?: string[];
 }

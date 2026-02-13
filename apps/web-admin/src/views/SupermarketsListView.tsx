@@ -7,6 +7,7 @@ import api from '../api/client';
 import { useBranding } from '../context/BrandingContext';
 import { ViewType, SupermarketGroup } from '../types';
 import MapModal from '../components/MapModal';
+import { SearchableSelect } from '../components/SearchableSelect';
 import { validateCNPJ } from '../utils/validators';
 import { formatCNPJ } from '../utils/formatters';
 
@@ -314,23 +315,29 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                     />
                  </div>
                  
-                 <select
-                    value={filterClient}
-                    onChange={(e) => setFilterClient(e.target.value)}
-                    className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium outline-none focus:ring-4 focus:ring-blue-100 transition-all min-w-[200px]"
-                 >
-                    <option value="">Todos os Clientes</option>
-                    {clients.map(c => <option key={c.id} value={c.id}>{c.nome || c.fantasyName || c.razaoSocial}</option>)}
-                 </select>
+                 <div className="min-w-[200px]">
+                    <SearchableSelect
+                        placeholder="Todos os Clientes"
+                        value={filterClient}
+                        onChange={(val) => setFilterClient(val)}
+                        options={[
+                            { value: '', label: 'Todos os Clientes' },
+                            ...clients.map(c => ({ value: c.id, label: c.nome || c.fantasyName || c.razaoSocial }))
+                        ]}
+                    />
+                 </div>
 
-                 <select
-                    value={filterProduct}
-                    onChange={(e) => setFilterProduct(e.target.value)}
-                    className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium outline-none focus:ring-4 focus:ring-blue-100 transition-all min-w-[200px]"
-                 >
-                    <option value="">Todos os Produtos</option>
-                    {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                 </select>
+                 <div className="min-w-[200px]">
+                    <SearchableSelect
+                        placeholder="Todos os Produtos"
+                        value={filterProduct}
+                        onChange={(val) => setFilterProduct(val)}
+                        options={[
+                            { value: '', label: 'Todos os Produtos' },
+                            ...products.map(p => ({ value: p.id, label: p.name }))
+                        ]}
+                    />
+                 </div>
             </div>
         </div>
         {viewMode === 'list' ? (
@@ -508,32 +515,29 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                     </div>
                     
                     <div>
-                       <label className="text-[11px] font-black text-slate-400 uppercase mb-3 block tracking-widest">Rede / Grupo</label>
-                       <select 
-                           name="groupId"
+                       <SearchableSelect 
+                           label="Rede / Grupo"
+                           placeholder="Selecione..."
                            value={formData.groupId}
-                           onChange={handleChange}
-                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-black text-slate-700"
-                       >
-                          <option value="">Selecione...</option>
-                          {groups.map(group => (
-                            <option key={group.id} value={group.id}>{group.name}</option>
-                          ))}
-                       </select>
+                           onChange={(val) => setFormData(prev => ({ ...prev, groupId: val }))}
+                           options={[
+                              { value: '', label: 'Selecione...' },
+                              ...groups.map(group => ({ value: group.id, label: group.name }))
+                           ]}
+                       />
                     </div>
     
                     <div>
-                       <label className="text-[11px] font-black text-slate-400 uppercase mb-3 block tracking-widest">Classificação</label>
-                       <select 
-                           name="classification"
+                       <SearchableSelect 
+                           label="Classificação"
                            value={formData.classification}
-                           onChange={handleChange}
-                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-black text-slate-700"
-                       >
-                          <option value="Ouro">Ouro</option>
-                          <option value="Prata">Prata</option>
-                          <option value="Bronze">Bronze</option>
-                       </select>
+                           onChange={(val) => setFormData(prev => ({ ...prev, classification: val }))}
+                           options={[
+                              { value: 'Ouro', label: 'Ouro' },
+                              { value: 'Prata', label: 'Prata' },
+                              { value: 'Bronze', label: 'Bronze' }
+                           ]}
+                       />
                     </div>
                 </div>
               )}

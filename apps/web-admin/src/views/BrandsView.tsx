@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, X, Search, Tag } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import api from '../api/client';
+import { SearchableSelect } from '../components/SearchableSelect';
 
 const BrandsView: React.FC = () => {
   const { settings } = useBranding();
@@ -231,18 +232,17 @@ const BrandsView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Cliente Associado</label>
-                <select
+                <SearchableSelect
+                  label="Cliente Associado"
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium bg-white"
+                  placeholder="Selecione um cliente..."
                   value={formData.clientId}
-                  onChange={e => setFormData({...formData, clientId: e.target.value})}
-                >
-                  <option value="">Selecione um cliente...</option>
-                  {clients.map(c => (
-                    <option key={c.id} value={c.id}>{c.nomeFantasia || c.razaoSocial}</option>
-                  ))}
-                </select>
+                  onChange={(val) => setFormData({...formData, clientId: val})}
+                  options={clients.map(c => ({
+                    value: c.id,
+                    label: c.nomeFantasia || c.razaoSocial
+                  }))}
+                />
                 <p className="text-[10px] text-slate-400 mt-1 ml-1">A marca deve estar vinculada a um cliente (indústria).</p>
               </div>
 
