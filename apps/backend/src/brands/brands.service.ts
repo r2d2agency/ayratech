@@ -59,6 +59,11 @@ export class BrandsService {
         }
         brand.client = client;
       }
+      
+      // If no data to update (brandData is empty and clientId is not provided), just return the existing brand
+      if (Object.keys(brandData).length === 0 && !clientId) {
+        return brand;
+      }
 
       return await this.brandsRepository.save(brand);
     } catch (err) {
