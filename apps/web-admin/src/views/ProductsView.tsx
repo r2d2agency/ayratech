@@ -174,7 +174,7 @@ const ProductsView: React.FC = () => {
         const value = productForm[key as keyof typeof productForm];
         
         // Skip empty optional fields
-        if ((key === 'brandId' || key === 'clientId' || key === 'categoryId' || key === 'checklistTemplateId') && !value) return;
+        if ((key === 'brandId' || key === 'clientId' || key === 'categoryId') && !value) return;
         
         // Skip image string if we are uploading a file (controller will handle it)
         // Or if it's just the placeholder/empty

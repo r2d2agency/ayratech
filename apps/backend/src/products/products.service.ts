@@ -67,20 +67,25 @@ export class ProductsService {
         throw new NotFoundException('Produto não encontrado');
       }
 
-      const { brandId, clientId, categoryId, supermarketGroupIds, ...rest } = updateProductDto;
+      const { brandId, clientId, categoryId, checklistTemplateId, supermarketGroupIds, ...rest } = updateProductDto;
       
       this.productsRepository.merge(product, rest);
       
-      if (brandId) {
-        product.brand = { id: brandId } as any;
+      if (brandId !== undefined) {
+        product.brand = brandId ? ({ id: brandId } as any) : null;
       }
       
-      if (clientId) {
-        product.client = { id: clientId } as any;
+      if (clientId !== undefined) {
+        product.client = clientId ? ({ id: clientId } as any) : null;
       }
 
-      if (categoryId) {
-        product.categoryRef = { id: categoryId } as any;
+      if (categoryId !== undefined) {
+        product.categoryRef = categoryId ? ({ id: categoryId } as any) : null;
+      }
+
+      if (checklistTemplateId !== undefined) {
+        product.checklistTemplate = checklistTemplateId ? ({ id: checklistTemplateId } as any) : null;
+        product.checklistTemplateId = checklistTemplateId || null;
       }
 
       if (supermarketGroupIds) {
