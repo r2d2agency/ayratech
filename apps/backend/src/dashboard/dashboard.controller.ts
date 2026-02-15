@@ -11,4 +11,10 @@ export class DashboardController {
   async getStats(@Query('period') period: string, @Request() req) {
     return this.dashboardService.getStats(period, req.user?.userId);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('aggregate')
+  async getAggregate(@Query('period') period: string, @Request() req) {
+    return this.dashboardService.getAggregate(period, req.user?.userId);
+  }
 }

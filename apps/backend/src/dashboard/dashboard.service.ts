@@ -162,6 +162,55 @@ export class DashboardService {
     };
   }
 
+  async getAggregate(period: string = 'today', userId?: string) {
+    const startDate = this.getStartDate(period);
+    let allowedClientIds: string[] | null = null;
+    if (userId) {
+      const user = await this.usersRepository.findOne({ where: { id: userId }, relations: ['clients', 'role'] });
+      if (user && user.role?.name?.toLowerCase() !== 'admin' && user.role?.name?.toLowerCase() !== 'administrador do sistema') {
+        if (user.clients && user.clients.length > 0) {
+          allowedClientIds = user.clients.map(c => c.id);
+        } else if (user.role?.name?.toLowerCase().includes('supervisor')) {
+          allowedClientIds = [];
+        }
+      }
+    }
+    const routes = await this.routesRepository.find({
+      where: {
+        date: MoreThanOrEqual(startDate.toISOString().split('T')[0]),
+      },
+      relations: ['items', 'items.products', 'items.products.product', 'items.products.product.brand', 'items.products.product.brand.client', 'items.products.product.categoryRef']
+    });
+    const aggMap = new Map<string, { clientId: string; clientName: string; category: string; gondola: number; inventory: number; total: number; validitySoon: number; ruptures: number }>();
+    const now = new Date();
+    const soonDays = 7;
+    for (const route of routes) {
+      for (const item of route.items) {
+        for (const p of item.products) {
+          const client = p.product?.brand?.client;
+          if (allowedClientIds && (!client || !allowedClientIds.includes(client.id))) continue;
+          const clientId = client?.id || 'unknown';
+          const clientName = client?.nomeFantasia || client?.razaoSocial || 'Cliente';
+          const category = p.product?.categoryRef?.name || p.product?.category || 'Sem Categoria';
+          const key = `${clientId}:${category}`;
+          if (!aggMap.has(key)) {
+            aggMap.set(key, { clientId, clientName, category, gondola: 0, inventory: 0, total: 0, validitySoon: 0, ruptures: 0 });
+          }
+          const entry = aggMap.get(key)!;
+          entry.gondola += p.gondolaCount || 0;
+          entry.inventory += p.inventoryCount || 0;
+          entry.total += p.stockCount || 0;
+          if (p.isStockout) entry.ruptures += 1;
+          if (p.validityDate) {
+            const valDate = new Date(p.validityDate);
+            const diff = (valDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+            if (diff >= 0 && diff <= soonDays) entry.validitySoon += 1;
+          }
+        }
+      }
+    }
+    return Array.from(aggMap.values()).sort((a, b) => a.clientName.localeCompare(b.clientName) || a.category.localeCompare(b.category));
+  }
   private getStartDate(period: string): Date {
     const now = new Date();
     if (period === 'today') {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { 
-  MapPinned, Camera, Activity, Target, TrendingUp, RefreshCw
+  MapPinned, Camera, Activity, Target, TrendingUp, RefreshCw, Package
 } from 'lucide-react';
 import SectionHeader from '../components/SectionHeader';
 import StatCard from '../components/StatCard';
@@ -31,6 +31,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<'today' | 'week'>('today');
+  const [aggregate, setAggregate] = useState<any[]>([]);
 
   useEffect(() => {
     fetchDashboardStats();
@@ -41,6 +42,8 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       setLoading(true);
       const res = await api.get(`/dashboard/stats?period=${period}`);
       setStats(res.data);
+      const agg = await api.get(`/dashboard/aggregate?period=${period}`);
+      setAggregate(agg.data || []);
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
     } finally {
@@ -86,6 +89,42 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           >
             ESTA SEMANA
           </button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+        <SectionHeader icon={<Package style={{ color: settings.primaryColor }} size={22} />} title="Resumo por Cliente/Categoria" />
+        <div className="mt-6 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50 text-slate-600">
+                <th className="p-3 text-left">Cliente</th>
+                <th className="p-3 text-left">Categoria</th>
+                <th className="p-3 text-right">Gôndola</th>
+                <th className="p-3 text-right">Estoque</th>
+                <th className="p-3 text-right">Total</th>
+                <th className="p-3 text-right">Validade Próxima</th>
+                <th className="p-3 text-right">Rupturas</th>
+              </tr>
+            </thead>
+            <tbody>
+              {aggregate.length === 0 ? (
+                <tr>
+                  <td className="p-4 text-slate-400 italic" colSpan={7}>Sem dados</td>
+                </tr>
+              ) : aggregate.map((row, idx) => (
+                <tr key={idx} className="border-t">
+                  <td className="p-3">{row.clientName}</td>
+                  <td className="p-3">{row.category}</td>
+                  <td className="p-3 text-right">{row.gondola}</td>
+                  <td className="p-3 text-right">{row.inventory}</td>
+                  <td className="p-3 text-right">{row.total}</td>
+                  <td className="p-3 text-right text-orange-600">{row.validitySoon}</td>
+                  <td className="p-3 text-right text-red-600">{row.ruptures}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

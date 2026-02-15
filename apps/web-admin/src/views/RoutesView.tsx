@@ -316,6 +316,9 @@ const RoutesView: React.FC = () => {
 
   // Duplicate State
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [calendarSelectedDates, setCalendarSelectedDates] = useState<string[]>([]);
   const [routeToDuplicate, setRouteToDuplicate] = useState<any>(null);
   const [duplicateTargetDates, setDuplicateTargetDates] = useState<string[]>([]);
   const [currentDateInput, setCurrentDateInput] = useState('');
@@ -738,6 +741,52 @@ const RoutesView: React.FC = () => {
     setDuplicateTargetDates(duplicateTargetDates.filter(d => d !== dateToRemove));
   };
 
+  const getMonthDays = (month: Date) => {
+    const start = new Date(month.getFullYear(), month.getMonth(), 1);
+    const end = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+    const days = [];
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      days.push(new Date(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return days;
+  };
+  const toggleSelectCalendarDate = (d: Date) => {
+    const iso = d.toISOString().split('T')[0];
+    setCalendarSelectedDates(prev => prev.includes(iso) ? prev.filter(x => x !== iso) : [...prev, iso]);
+  };
+  const handleCreateCalendarRoutes = async () => {
+    if (calendarSelectedDates.length === 0 || selectedPromoters.length === 0 || routeItems.length === 0) {
+      alert('Selecione promotor(es), itens e datas no calendário.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await api.post('/routes/batch', {
+        dates: calendarSelectedDates,
+        promoterIds: selectedPromoters,
+        items: routeItems.map((item, index) => ({
+          supermarketId: item.supermarketId,
+          order: index + 1,
+          startTime: item.startTime,
+          endTime: item.endTime,
+          estimatedDuration: item.estimatedDuration ? parseInt(item.estimatedDuration) : undefined,
+          productIds: item.productIds || [],
+          products: item.products || item.productIds?.map((id: string) => ({ productId: id })) || []
+        }))
+      });
+      alert('Rotas criadas com sucesso!');
+      setShowCalendarModal(false);
+      setCalendarSelectedDates([]);
+      fetchRoutesForWeek();
+    } catch (error) {
+      console.error('Error creating calendar routes:', error);
+      alert('Erro ao criar rotas.');
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleManagePromoters = (route: any) => {
     setManagingPromotersRoute(route);
     if (route.promoters && route.promoters.length > 0) {
@@ -1873,6 +1922,81 @@ const RoutesView: React.FC = () => {
                   Duplicar ({duplicateTargetDates.length})
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Calendar Create Routes Modal */}
+      {showCalendarModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-full max-w-2xl p-6 shadow-2xl">
+            <h3 className="text-xl font-bold text-slate-900 mb-4">Criar Rotas por Calendário</h3>
+            <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-6">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <button 
+                    onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}
+                    className="px-3 py-2 border rounded-lg text-sm"
+                  >
+                    ◀
+                  </button>
+                  <span className="font-bold">{calendarMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}</span>
+                  <button 
+                    onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}
+                    className="px-3 py-2 border rounded-lg text-sm"
+                  >
+                    ▶
+                  </button>
+                </div>
+                <div className="grid grid-cols-7 gap-2">
+                  {['Dom','Seg','Ter','Qua','Qui','Sex','Sab'].map(d => (
+                    <div key={d} className="text-xs text-slate-400 text-center">{d}</div>
+                  ))}
+                  {(() => {
+                    const days = getMonthDays(calendarMonth);
+                    const startWeekday = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1).getDay();
+                    const blanks = Array.from({ length: startWeekday }).map((_, i) => <div key={`b-${i}`} />);
+                    return [
+                      ...blanks,
+                      ...days.map(d => {
+                        const iso = d.toISOString().split('T')[0];
+                        const selected = calendarSelectedDates.includes(iso);
+                        return (
+                          <button
+                            key={iso}
+                            onClick={() => toggleSelectCalendarDate(d)}
+                            className={`aspect-square w-full rounded-lg border text-sm ${selected ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-white border-slate-200 text-slate-700'}`}
+                          >
+                            {d.getDate()}
+                          </button>
+                        );
+                      })
+                    ];
+                  })()}
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="text-xs font-bold text-slate-500">Promotores Selecionados</div>
+                <div className="text-sm">{selectedPromoters.length} promotor(es)</div>
+                <div className="text-xs font-bold text-slate-500">Itens do Editor</div>
+                <div className="text-sm">{routeItems.length} PDV(s)</div>
+                <div className="text-xs font-bold text-slate-500">Datas Selecionadas</div>
+                <div className="text-sm">{calendarSelectedDates.length} data(s)</div>
+                <button 
+                  onClick={handleCreateCalendarRoutes}
+                  className="w-full py-2 rounded-lg font-bold text-white"
+                  style={{ backgroundColor: settings.primaryColor }}
+                >
+                  Criar Rotas
+                </button>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end pt-4">
+              <button onClick={() => {
+                setShowCalendarModal(false);
+                setCalendarSelectedDates([]);
+              }} className="px-6 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100">Cancelar</button>
             </div>
           </div>
         </div>

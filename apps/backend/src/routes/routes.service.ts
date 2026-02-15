@@ -488,6 +488,25 @@ export class RoutesService {
     return this.create(newRouteData);
   }
 
+  async createBatch(body: { dates: string[]; promoterIds?: string[]; items: CreateRouteDto['items']; status?: string }) {
+    const { dates, promoterIds, items, status } = body;
+    if (!dates || dates.length === 0) {
+      throw new BadRequestException('Nenhuma data selecionada');
+    }
+    const results = [];
+    for (const date of dates) {
+      const dto: CreateRouteDto = {
+        date,
+        promoterIds,
+        status: status || 'DRAFT',
+        isTemplate: false,
+        items
+      };
+      const created = await this.create(dto);
+      results.push(created);
+    }
+    return results;
+  }
   findOne(id: string) {
     return this.routesRepository.findOne({
       where: { id },

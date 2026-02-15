@@ -25,6 +25,10 @@ export class RoutesController {
     return this.routesService.create(createRouteDto);
   }
 
+  @Post('batch')
+  createBatch(@Body() body: { dates: string[]; promoterIds?: string[]; items: CreateRouteDto['items']; status?: string }) {
+    return this.routesService.createBatch(body);
+  }
   @Get()
   findAll(@Req() req, @Query('date') date?: string) {
     return this.routesService.findAll(req.user?.userId, date);
