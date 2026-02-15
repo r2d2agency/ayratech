@@ -2170,20 +2170,147 @@ const RoutesView: React.FC = () => {
                   })()}
                 </div>
               </div>
-              <div className="space-y-3">
-                <div className="text-xs font-bold text-slate-500">Promotores Selecionados</div>
-                <div className="text-sm">{selectedPromoters.length} promotor(es)</div>
-                <div className="text-xs font-bold text-slate-500">Itens do Editor</div>
-                <div className="text-sm">{routeItems.length} PDV(s)</div>
-                <div className="text-xs font-bold text-slate-500">Datas Selecionadas</div>
-                <div className="text-sm">{calendarSelectedDates.length} data(s)</div>
-                <button 
-                  onClick={handleCreateCalendarRoutes}
-                  className="w-full py-2 rounded-lg font-bold text-white"
-                  style={{ backgroundColor: settings.primaryColor }}
-                >
-                  Criar Rotas
-                </button>
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Selecionar Promotores</label>
+                    <div className="mb-2">
+                      <input
+                        type="text"
+                        placeholder="Buscar promotor..."
+                        value={promoterSearch}
+                        onChange={(e) => setPromoterSearch(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div className="h-40 overflow-y-auto space-y-2 pr-2 border border-slate-100 rounded-xl p-2">
+                      {promoters
+                        .filter(p => p.name.toLowerCase().includes(promoterSearch.toLowerCase()))
+                        .map(promoter => {
+                          const isSelected = selectedPromoters.includes(promoter.id);
+                          return (
+                            <button 
+                              key={promoter.id}
+                              onClick={() => handleTogglePromoter(promoter.id)}
+                              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
+                                isSelected
+                                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
+                                  : 'bg-white border border-slate-100 hover:bg-slate-50 text-slate-600'
+                              }`}
+                            >
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                                isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                              }`}>
+                                {promoter.name.charAt(0)}
+                              </div>
+                              <div className="text-left">
+                                <p className="text-sm font-bold">{promoter.name}</p>
+                                <p className={`text-[10px] ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>{promoter.email}</p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      {promoters.filter(p => p.name.toLowerCase().includes(promoterSearch.toLowerCase())).length === 0 && (
+                        <div className="text-center py-4 text-slate-400 text-sm">Nenhum promotor encontrado</div>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Adicionar PDVs</label>
+                    <div className="mb-2">
+                      <input
+                        type="text"
+                        placeholder="Buscar supermercado..."
+                        value={supermarketSearch}
+                        onChange={(e) => setSupermarketSearch(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div className="h-40 overflow-y-auto space-y-2 pr-2 border border-slate-100 rounded-xl p-2">
+                      {supermarkets
+                        .filter(s => 
+                          (s.fantasyName || '').toLowerCase().includes(supermarketSearch.toLowerCase()) ||
+                          (s.city || '').toLowerCase().includes(supermarketSearch.toLowerCase())
+                        )
+                        .map(s => (
+                        <button 
+                          key={s.id}
+                          onClick={() => handleAddSupermarket(s.id)}
+                          disabled={!!routeItems.find(i => i.supermarketId === s.id)}
+                          className="w-full flex justify-between items-center p-3 rounded-xl hover:bg-slate-50 border border-slate-100 disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                        >
+                          <div>
+                            <p className="text-sm font-bold text-slate-800">{s.fantasyName}</p>
+                            <p className="text-[10px] text-slate-400">{s.city}</p>
+                          </div>
+                          <Plus size={16} className="text-slate-400" />
+                        </button>
+                      ))}
+                      {supermarkets.filter(s => 
+                          (s.fantasyName || '').toLowerCase().includes(supermarketSearch.toLowerCase()) ||
+                          (s.city || '').toLowerCase().includes(supermarketSearch.toLowerCase())
+                        ).length === 0 && (
+                        <div className="text-center py-4 text-slate-400 text-sm">Nenhum supermercado encontrado</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-bold text-slate-700">PDVs Selecionados</label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto border border-slate-100 rounded-xl p-2">
+                    {routeItems.length === 0 ? (
+                      <div className="text-center py-6 text-slate-400 text-sm">Nenhum PDV selecionado</div>
+                    ) : routeItems.map((item, index) => (
+                      <div key={item.supermarketId} className="border border-slate-100 rounded-xl p-3 bg-white">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-sm font-bold text-slate-800">{item.supermarket?.fantasyName || 'PDV'}</div>
+                            <div className="text-[10px] text-slate-400">{item.supermarket?.city}</div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => handleOpenProductModal(index)} className="px-3 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100">Produtos</button>
+                            <button onClick={() => handleRemoveItem(index)} className="px-3 py-1 rounded-lg text-xs font-bold bg-red-50 text-red-700 border border-red-100 hover:bg-red-100">Remover</button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-500 block mb-1">Início</label>
+                            <input 
+                              type="time" 
+                              value={item.startTime || ''} 
+                              onChange={(e) => handleUpdateItem(index, 'startTime', e.target.value)} 
+                              className="w-full px-2 py-1 rounded-lg border border-slate-200 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-500 block mb-1">Duração (min)</label>
+                            <input 
+                              type="number" 
+                              value={item.estimatedDuration || 30} 
+                              onChange={(e) => handleUpdateItem(index, 'estimatedDuration', e.target.value)} 
+                              className="w-full px-2 py-1 rounded-lg border border-slate-200 text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs font-bold text-slate-500">Promotores Selecionados</div>
+                  <div className="text-sm">{selectedPromoters.length} promotor(es)</div>
+                  <div className="text-xs font-bold text-slate-500">PDVs Selecionados</div>
+                  <div className="text-sm">{routeItems.length} PDV(s)</div>
+                  <div className="text-xs font-bold text-slate-500">Datas Selecionadas</div>
+                  <div className="text-sm">{calendarSelectedDates.length} data(s)</div>
+                  <button 
+                    onClick={handleCreateCalendarRoutes}
+                    className="w-full py-2 rounded-lg font-bold text-white"
+                    style={{ backgroundColor: settings.primaryColor }}
+                  >
+                    Criar Rotas
+                  </button>
+                </div>
               </div>
             </div>
             <div className="flex gap-3 justify-end pt-4">
