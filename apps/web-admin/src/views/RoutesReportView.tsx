@@ -1605,6 +1605,44 @@ const RoutesReportView: React.FC = () => {
                                 <span className="text-slate-300 text-xs">-</span>
                               )}
                             </td>
+                            <td className="p-3 text-slate-500 text-xs">
+                              <div className="grid grid-cols-3 gap-2">
+                                <div>
+                                  <span className="block text-[10px] text-slate-400">Gôndola</span>
+                                  <span className="font-bold">{(p as any).gondolaCount ?? '-'}</span>
+                                </div>
+                                <div>
+                                  <span className="block text-[10px] text-slate-400">Estoque</span>
+                                  <span className="font-bold">{(p as any).inventoryCount ?? '-'}</span>
+                                </div>
+                                <div>
+                                  <span className="block text-[10px] text-slate-400">Total</span>
+                                  <span className="font-bold">{p.stockCount ?? '-'}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-3 text-slate-500 text-xs">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="block text-[10px] text-slate-400">Validade</span>
+                                  <span className={`font-bold ${p.validityDate ? 'text-slate-700' : 'text-slate-300'}`}>
+                                    {p.validityDate || '-'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="block text-[10px] text-slate-400">Ativo</span>
+                                  <span className={`font-bold ${p.checked ? 'text-emerald-600' : 'text-slate-300'}`}>
+                                    {p.checked ? 'Sim' : 'Não'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="block text-[10px] text-slate-400">Ruptura</span>
+                                  <span className={`font-bold ${p.isStockout ? 'text-red-600' : 'text-slate-300'}`}>
+                                    {p.isStockout ? 'Sim' : 'Não'}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
                             <td className="p-3 text-slate-500 italic text-xs max-w-xs truncate">
                               {p.observation || '-'}
                             </td>

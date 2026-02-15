@@ -501,6 +501,34 @@ const RoutesView: React.FC = () => {
     setShowProductModal(true);
   };
 
+  // Seleciona cliente e pré-seleciona todos os produtos daquele cliente (respeitando o grupo do supermercado)
+  const handleSelectClientForModal = (clientId: string) => {
+    setSelectedClientForModal(clientId);
+    if (currentRouteItemIndex === null) return;
+    const currentSupermarket = routeItems[currentRouteItemIndex]?.supermarket || null;
+    if (!currentSupermarket) return;
+    const allowedProducts = products.filter(p => {
+      if (p.supermarketGroups && p.supermarketGroups.length > 0) {
+        if (!currentSupermarket?.group) return false;
+        return p.supermarketGroups.some((g: any) => g.id === currentSupermarket.group.id);
+      }
+      return true;
+    });
+    const clientProducts = allowedProducts.filter(p => p.client?.id === clientId);
+    const clientProductIds = clientProducts.map(p => p.id);
+    // União com os já selecionados
+    const union = Array.from(new Set([...(tempSelectedProducts || []), ...clientProductIds]));
+    setTempSelectedProducts(union);
+    // Pré-definir checklist template quando existir
+    const newChecklists = { ...tempProductChecklists };
+    clientProducts.forEach(p => {
+      if (p.checklistTemplate?.id && !newChecklists[p.id]) {
+        newChecklists[p.id] = p.checklistTemplate.id;
+      }
+    });
+    setTempProductChecklists(newChecklists);
+  };
+
   const handleToggleProductSelection = (productId: string) => {
     if (tempSelectedProducts.includes(productId)) {
       setTempSelectedProducts(tempSelectedProducts.filter(id => id !== productId));
@@ -667,6 +695,35 @@ const RoutesView: React.FC = () => {
     }
   };
 
+  // Recorrência: gerar datas por dias da semana e quantidade de meses
+  const [recurrenceWeekdays, setRecurrenceWeekdays] = useState<Record<number, boolean>>({
+    1: false, 2: false, 3: false, 4: false, 5: false, 6: false, 0: false
+  });
+  const [recurrenceMonths, setRecurrenceMonths] = useState<number>(1);
+  const handleToggleWeekday = (day: number) => {
+    setRecurrenceWeekdays(prev => ({ ...prev, [day]: !prev[day] }));
+  };
+  const handleGenerateRecurrence = () => {
+    if (!routeToDuplicate) return;
+    const start = new Date(routeToDuplicate.date + 'T00:00:00');
+    const months = Math.max(1, recurrenceMonths || 1);
+    const selectedDays = Object.entries(recurrenceWeekdays).filter(([d, v]) => v).map(([d]) => parseInt(d, 10));
+    if (selectedDays.length === 0) return;
+    const dates: string[] = [];
+    const end = new Date(start);
+    end.setMonth(end.getMonth() + months);
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      if (selectedDays.includes(cursor.getDay())) {
+        const iso = cursor.toISOString().split('T')[0];
+        if (!duplicateTargetDates.includes(iso)) dates.push(iso);
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    if (dates.length > 0) {
+      setDuplicateTargetDates([...duplicateTargetDates, ...dates]);
+    }
+  };
   const handleAddDate = () => {
     if (!currentDateInput) return;
     if (duplicateTargetDates.includes(currentDateInput)) {
@@ -1456,7 +1513,7 @@ const RoutesView: React.FC = () => {
                         return (
                           <button
                             key={clientId}
-                            onClick={() => setSelectedClientForModal(clientId)}
+                            onClick={() => handleSelectClientForModal(clientId)}
                             className="w-full p-3 rounded-xl border border-slate-100 hover:bg-slate-50 flex items-center justify-between group text-left transition-all"
                           >
                             <div>
@@ -1723,6 +1780,41 @@ const RoutesView: React.FC = () => {
                   >
                     <Plus size={20} />
                   </button>
+                </div>
+
+                <div className="mt-4 border-t pt-4">
+                  <label className="text-xs font-bold text-slate-500 block mb-2">Recorrência por Dias da Semana</label>
+                  <div className="grid grid-cols-4 gap-2 mb-3">
+                    {[
+                      { d:1, label:'Seg' }, { d:2, label:'Ter' }, { d:3, label:'Qua' }, { d:4, label:'Qui' },
+                      { d:5, label:'Sex' }, { d:6, label:'Sab' }, { d:0, label:'Dom' },
+                    ].map(({ d, label }) => (
+                      <button
+                        key={d}
+                        onClick={() => handleToggleWeekday(d)}
+                        className={`px-3 py-2 rounded-lg border text-sm ${recurrenceWeekdays[d] ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-white border-slate-200 text-slate-600'}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <label className="text-xs font-bold text-slate-500">Por quantos meses?</label>
+                    <input 
+                      type="number" 
+                      min={1}
+                      value={recurrenceMonths}
+                      onChange={e => setRecurrenceMonths(parseInt(e.target.value || '1', 10))}
+                      className="w-20 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none"
+                    />
+                    <button 
+                      onClick={handleGenerateRecurrence}
+                      className="flex-1 py-2 bg-emerald-50 text-emerald-600 rounded-xl font-bold hover:bg-emerald-100 flex items-center justify-center gap-2 border border-emerald-100"
+                    >
+                      <Copy size={16} />
+                      Gerar Datas
+                    </button>
+                  </div>
                 </div>
 
                 <button 

@@ -1301,48 +1301,68 @@ export class RoutesService {
         }
     }
     
-    // Check if we should close the RouteItem completely
-    // If photos are missing, revert to PENDING (handled in previous step, but let's re-verify)
-    // Actually, checkOut Logic was calling this.routeItemsRepository.save(item) with status CHECKOUT
-    
-    const missingPhotos = item.products.some(p => !p.photos || p.photos.length === 0);
-    if (missingPhotos) {
-         // If photos missing, we do NOT close the route item status.
-         // We just closed the user's session above.
-         // And return item (maybe with warning handled by frontend)
-         // But the frontend expects status update?
-         // User requirement: "se finalizar sem fotos ele fica pendente"
-         // If it was CHECKIN, it stays CHECKIN? Or goes back to PENDING?
-         // "revert to pending" logic was:
-         if (item.status === 'CHECKIN') {
-             // Keep it checkin if other people are there?
-             // Or force Pending?
-             // Let's force Pending to indicate "Not Done".
-             item.status = 'PENDING';
-         }
-         await this.routeItemsRepository.save(item);
-         // throw new BadRequestException('Fotos pendentes. Visita revertida para pendente.');
-         // Instead of throwing, we return success but item status is PENDING.
-         return item;
+    // Validações de conclusão (categoria e produto)
+    // 1) Fotos por categoria: cada categoria presente nos produtos do item deve possuir fotos de 'before' e 'after'
+    const categorySet = new Set<string>();
+    for (const ip of item.products || []) {
+      const cat = (ip.product?.categoryRef?.name) || (ip.product as any)?.category || 'Sem Categoria';
+      categorySet.add(cat);
+    }
+    const categoryPhotos: Record<string, any> = (item as any).categoryPhotos || {};
+    let categoryPhotoMissing = false;
+    for (const cat of categorySet) {
+      const photos = categoryPhotos[cat] || {};
+      if (!photos.before || !photos.after) {
+        categoryPhotoMissing = true;
+        break;
+      }
+    }
+    if (categoryPhotoMissing) {
+      if (item.status === 'CHECKIN') item.status = 'PENDING';
+      await this.routeItemsRepository.save(item);
+      return item;
     }
 
-    // If photos OK, update status to CHECKOUT
-    // BUT only if we want to close the whole visit.
-    // Assuming "Finalizar Visita" button means "I am done".
-    // Does it mean "Everybody is done"?
-    // "a conclusao da rota pode ser feito por ambos"
-    // If I am the last one?
-    
-    // Let's check if any other promoter is still checked in.
-    const activeCheckins = await this.dataSource.getRepository(RouteItemCheckin).count({
-        where: { routeItemId: itemId, checkOutTime: IsNull() }
+    // 2) Regras por produto: contagens, validade, checklist e ruptura
+    const hasProductValidationIssue = (item.products || []).some(ip => {
+      const isRupture = !!ip.isStockout;
+      const brandWaitForStockCount = !!(ip.product?.brand && (ip.product.brand as any).waitForStockCount);
+
+      // Ruptura exige motivo
+      if (isRupture) {
+        if (!ip.ruptureReason || ip.ruptureReason.trim().length === 0) return true;
+        return false;
+      }
+
+      // Contagens: requer gondolaCount e inventoryCount preenchidos; total é calculado
+      const hasGondola = ip.gondolaCount !== null && ip.gondolaCount !== undefined;
+      const hasInventory = ip.inventoryCount !== null && ip.inventoryCount !== undefined;
+      if (!hasGondola || !hasInventory) return true;
+
+      // Checklist: todos itens devem estar marcados
+      // Se a marca usa waitForStockCount, ignorar itens do tipo STOCK_COUNT (pois a contagem já é capturada nos campos dedicados)
+      const checklists = ip.checklists || [];
+      const requiredChecklists = checklists.filter(c => {
+        return c.type !== 'STOCK_COUNT' || !brandWaitForStockCount ? true : false;
+      });
+      const allChecked = requiredChecklists.every(c => !!c.isChecked);
+      if (!allChecked) return true;
+
+      // Validade: se algum item de tipo VALIDITY_CHECK estiver marcado, exigir validityDate
+      const hasValidityRequired = checklists.some(c => c.type === 'VALIDITY_CHECK' && !!c.isChecked);
+      if (hasValidityRequired && !ip.validityDate) return true;
+
+      return false;
     });
-
-    if (activeCheckins === 0) {
-        item.status = 'CHECKOUT';
-        item.checkOutTime = new Date(data.timestamp);
+    if (hasProductValidationIssue) {
+      if (item.status === 'CHECKIN') item.status = 'PENDING';
+      await this.routeItemsRepository.save(item);
+      return item;
     }
-    // If others are still there, status remains CHECKIN.
+
+    // Fotos e validações OK: qualquer promotor pode finalizar o item
+    item.status = 'CHECKOUT';
+    item.checkOutTime = new Date(data.timestamp);
 
     await this.routeItemsRepository.save(item);
 
