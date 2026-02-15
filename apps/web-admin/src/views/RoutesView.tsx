@@ -323,6 +323,7 @@ const RoutesView: React.FC = () => {
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [calendarSelectedDates, setCalendarSelectedDates] = useState<string[]>([]);
+  const [calendarSupervisorId, setCalendarSupervisorId] = useState<string>('');
   const [routeToDuplicate, setRouteToDuplicate] = useState<any>(null);
   const [duplicateTargetDates, setDuplicateTargetDates] = useState<string[]>([]);
   const [currentDateInput, setCurrentDateInput] = useState('');
@@ -2177,6 +2178,24 @@ const RoutesView: React.FC = () => {
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Selecionar Promotores</label>
                   <div className="mb-2">
+                    <select
+                      value={calendarSupervisorId}
+                      onChange={(e) => setCalendarSupervisorId(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="">Todos os Supervisores</option>
+                      {allEmployees
+                        .filter(e => e.role && (
+                          e.role.name.toLowerCase().includes('supervisor') ||
+                          e.role.name.toLowerCase().includes('gerente')
+                        ))
+                        .map(s => (
+                          <option key={s.id} value={s.id}>{s.fullName || s.name}</option>
+                        ))
+                      }
+                    </select>
+                  </div>
+                  <div className="mb-2">
                     <input
                       type="text"
                       placeholder="Buscar promotor..."
@@ -2187,7 +2206,13 @@ const RoutesView: React.FC = () => {
                   </div>
                   <div className="h-40 overflow-y-auto space-y-2 pr-2 border border-slate-100 rounded-xl p-2">
                     {promoters
-                      .filter(p => p.name.toLowerCase().includes(promoterSearch.toLowerCase()))
+                      .filter(p => {
+                        const matchesSearch = p.name.toLowerCase().includes(promoterSearch.toLowerCase());
+                        if (!matchesSearch) return false;
+                        if (!calendarSupervisorId) return true;
+                        const full = allEmployees.find(e => e.id === p.id);
+                        return full && (full.supervisorId === calendarSupervisorId || (full.supervisor && full.supervisor.id === calendarSupervisorId));
+                      })
                       .map(promoter => {
                         const isSelected = selectedPromoters.includes(promoter.id);
                         return (
