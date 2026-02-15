@@ -414,13 +414,22 @@ const RouteDetailsView = () => {
   };
 
   const handleCheckOut = async (itemId: string) => {
-    // Validate Photos before Checkout
+    // Validação: exigir fotos por categoria (antes e depois)
     const itemToCheck = route.items.find((i: any) => i.id === itemId);
     if (itemToCheck) {
-        const missingPhotos = itemToCheck.products.some((p: any) => !p.photos || p.photos.length === 0);
-        if (missingPhotos) {
-            toast.error('Todos os produtos precisam ter fotos para finalizar a visita.');
-            return;
+        const categorySet = new Set<string>();
+        (itemToCheck.products || []).forEach((p: any) => {
+          const cat = (p.product?.categoryRef?.name) || p.product?.category || 'Sem Categoria';
+          categorySet.add(cat);
+        });
+        const categoryPhotos = itemToCheck.categoryPhotos || {};
+        const missingCategoryPhoto = Array.from(categorySet).some((cat: string) => {
+          const photos = categoryPhotos[cat] || {};
+          return !photos.before || !photos.after;
+        });
+        if (missingCategoryPhoto) {
+          toast.error('Tire as fotos de ANTES e DEPOIS para cada categoria.');
+          return;
         }
     }
 

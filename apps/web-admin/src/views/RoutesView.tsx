@@ -307,6 +307,10 @@ const RoutesView: React.FC = () => {
   // Planner State
   const [weekRoutes, setWeekRoutes] = useState<any[]>([]);
   const [weekStart, setWeekStart] = useState<Date>(new Date());
+  const [plannerMonth, setPlannerMonth] = useState<Date>(new Date());
+  const [showDayModal, setShowDayModal] = useState(false);
+  const [dayModalDate, setDayModalDate] = useState<string>('');
+  const [dayModalEntries, setDayModalEntries] = useState<any[]>([]);
 
   // Templates State
   const [templates, setTemplates] = useState<any[]>([]);
@@ -878,6 +882,39 @@ const RoutesView: React.FC = () => {
     });
   };
 
+  const openDayModal = (dateStr: string) => {
+    const dayRoutes = getRoutesForDay(dateStr);
+    const entries: any[] = [];
+    dayRoutes.forEach((route: any) => {
+      const names: string[] = [];
+      if (route.promoter?.fullName || route.promoter?.name) {
+        names.push(route.promoter.fullName || route.promoter.name);
+      }
+      if (route.promoters && route.promoters.length > 0) {
+        route.promoters.forEach((p: any) => {
+          names.push(p.fullName || p.name);
+        });
+      }
+      route.items.forEach((item: any) => {
+        const clientsSet = new Set<string>();
+        item.products.forEach((p: any) => {
+          const cname = p.product?.brand?.client?.nomeFantasia || p.product?.brand?.client?.razaoSocial || '';
+          if (cname) clientsSet.add(cname);
+        });
+        entries.push({
+          route,
+          item,
+          pdvName: item.supermarket?.fantasyName || 'PDV',
+          clientsCount: clientsSet.size,
+          promoters: names
+        });
+      });
+    });
+    setDayModalEntries(entries);
+    setDayModalDate(dateStr);
+    setShowDayModal(true);
+  };
+
   const handleQuickDelete = async (e: React.MouseEvent, routeId: string) => {
     e.stopPropagation();
     if (!window.confirm('Tem certeza que deseja excluir esta rota?')) return;
@@ -1159,6 +1196,112 @@ const RoutesView: React.FC = () => {
                 </DroppableDayColumn>
               );
             })}
+          </div>
+
+          {/* Calendário Mensal */}
+          <div className="mt-10 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-black text-slate-900">Calendário Mensal</h3>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setPlannerMonth(new Date(plannerMonth.getFullYear(), plannerMonth.getMonth() - 1, 1))}
+                  className="px-3 py-2 border rounded-lg text-sm"
+                >
+                  ◀
+                </button>
+                <span className="font-bold">{plannerMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}</span>
+                <button 
+                  onClick={() => setPlannerMonth(new Date(plannerMonth.getFullYear(), plannerMonth.getMonth() + 1, 1))}
+                  className="px-3 py-2 border rounded-lg text-sm"
+                >
+                  ▶
+                </button>
+                <button 
+                  onClick={() => setShowCalendarModal(true)}
+                  className="px-4 py-2 rounded-lg font-bold text-white"
+                  style={{ backgroundColor: settings.primaryColor }}
+                >
+                  Criar por Calendário
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-7 gap-3">
+              {['Dom','Seg','Ter','Qua','Qui','Sex','Sab'].map(d => (
+                <div key={d} className="text-xs text-slate-400 text-center">{d}</div>
+              ))}
+              {(() => {
+                const days = getMonthDays(plannerMonth);
+                const startWeekday = new Date(plannerMonth.getFullYear(), plannerMonth.getMonth(), 1).getDay();
+                const blanks = Array.from({ length: startWeekday }).map((_, i) => <div key={`mb-${i}`} />);
+                return [
+                  ...blanks,
+                  ...days.map(day => {
+                    const dateStr = day.toISOString().split('T')[0];
+                    const dayRoutes = getRoutesForDay(dateStr);
+                    // Aggregate PDVs and Clients
+                    const pdvEntries = [];
+                    let totalPdvs = 0;
+                    let rupturas = 0;
+                    let validadeProx = 0;
+                    dayRoutes.forEach((route: any) => {
+                      route.items.forEach((item: any) => {
+                        totalPdvs += 1;
+                        const clientsSet = new Set<string>();
+                        item.products.forEach((p: any) => {
+                          const cname = p.product?.brand?.client?.nomeFantasia || p.product?.brand?.client?.razaoSocial || '';
+                          if (cname) clientsSet.add(cname);
+                          if (p.isStockout) rupturas += 1;
+                          if (p.validityDate) {
+                            const today = new Date();
+                            const valDate = new Date(String(p.validityDate) + 'T00:00:00');
+                            const diffDays = Math.ceil((valDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                            if (diffDays >= 0 && diffDays <= 7) validadeProx += 1;
+                          }
+                        });
+                        pdvEntries.push({
+                          name: item.supermarket?.fantasyName || 'PDV',
+                          clientsCount: clientsSet.size
+                        });
+                      });
+                    });
+                    const topEntries = pdvEntries.slice(0, 3);
+                    return (
+                      <button key={dateStr} onClick={() => openDayModal(dateStr)} className="border rounded-xl p-2 bg-white text-left hover:border-blue-300 transition">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-500">{day.toLocaleDateString('pt-BR', { day: '2-digit' })}</span>
+                          <span className="text-[10px] text-slate-400">{totalPdvs} PDV(s)</span>
+                        </div>
+                        <div className="mt-2 space-y-1">
+                          {topEntries.length === 0 ? (
+                            <div className="text-[11px] text-slate-300 italic">Sem agenda</div>
+                          ) : topEntries.map((e, idx) => (
+                            <div key={idx} className="flex items-center justify-between text-[11px]">
+                              <span className="font-medium text-slate-700 truncate">{e.name}</span>
+                              <span className="text-slate-500">{e.clientsCount} cliente(s)</span>
+                            </div>
+                          ))}
+                        </div>
+                        {(rupturas > 0 || validadeProx > 0) && (
+                          <div className="mt-2 flex items-center gap-2">
+                            {rupturas > 0 && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-100">
+                                Rupturas {rupturas}
+                              </span>
+                            )}
+                            {validadeProx > 0 && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-100">
+                                Validade próxima {validadeProx}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })
+                ];
+              })()}
+            </div>
           </div>
         </div>
         </DndContext>
@@ -1798,6 +1941,57 @@ const RoutesView: React.FC = () => {
                   Salvar
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDayModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-full max-w-2xl p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-slate-900">Agenda de {new Date(dayModalDate + 'T00:00:00').toLocaleDateString('pt-BR')}</h3>
+              <button onClick={() => setShowDayModal(false)} className="px-3 py-1 rounded-lg font-bold text-slate-500 hover:bg-slate-100">Fechar</button>
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto space-y-2 pr-2">
+              {dayModalEntries.length === 0 ? (
+                <div className="text-sm text-slate-400">Sem rotas para este dia.</div>
+              ) : dayModalEntries.map((entry, idx) => {
+                const promoterText = entry.promoters && entry.promoters.length > 0 ? entry.promoters.join(', ') : 'Sem promotor';
+                return (
+                  <div key={idx} className="border border-slate-200 rounded-xl p-3 bg-white">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm font-bold text-slate-800">{entry.pdvName}</div>
+                        <div className="text-xs text-slate-500">{entry.clientsCount} cliente(s) • {promoterText}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => { setShowDayModal(false); handleEditRoute(entry.route); }} 
+                          className="px-3 py-1 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100"
+                        >
+                          Editar
+                        </button>
+                        <button 
+                          onClick={() => { setShowDayModal(false); setRouteToDuplicate(entry.route); setShowDuplicateModal(true); }} 
+                          className="px-3 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100"
+                        >
+                          Duplicar
+                        </button>
+                        <button 
+                          onClick={() => { 
+                            setShowDayModal(false); 
+                            handleManagePromoters(entry.route); 
+                          }} 
+                          className="px-3 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100"
+                        >
+                          Transferir Promotor
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
