@@ -321,12 +321,81 @@ const RoutesView: React.FC = () => {
   // Duplicate State
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [showWeeklyModal, setShowWeeklyModal] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [calendarSelectedDates, setCalendarSelectedDates] = useState<string[]>([]);
   const [calendarSupervisorId, setCalendarSupervisorId] = useState<string>('');
   const [routeToDuplicate, setRouteToDuplicate] = useState<any>(null);
   const [duplicateTargetDates, setDuplicateTargetDates] = useState<string[]>([]);
   const [currentDateInput, setCurrentDateInput] = useState('');
+  const [weeklySupervisorId, setWeeklySupervisorId] = useState<string>('');
+  const [weeklyMonths, setWeeklyMonths] = useState<number>(1);
+  const [weeklyWeekdays, setWeeklyWeekdays] = useState<Record<number, boolean>>({
+    1: true, 2: false, 3: true, 4: false, 5: true, 6: false, 0: false
+  });
+  const toggleWeeklyDay = (day: number) => {
+    setWeeklyWeekdays(prev => ({ ...prev, [day]: !prev[day] }));
+  };
+  const getNextBusinessStart = () => {
+    const start = new Date();
+    start.setDate(start.getDate() + 1);
+    while (start.getDay() === 0 || start.getDay() === 6) {
+      start.setDate(start.getDate() + 1);
+    }
+    start.setHours(0, 0, 0, 0);
+    return start;
+  };
+  const generateWeeklyDates = () => {
+    const selectedDays = Object.entries(weeklyWeekdays).filter(([d, v]) => v).map(([d]) => parseInt(d, 10));
+    if (selectedDays.length === 0) return [];
+    const start = getNextBusinessStart();
+    const end = new Date(start);
+    end.setMonth(end.getMonth() + Math.max(1, weeklyMonths || 1));
+    const dates: string[] = [];
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      if (selectedDays.includes(cursor.getDay())) {
+        dates.push(cursor.toISOString().split('T')[0]);
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return dates;
+  };
+  const handleCreateWeeklyRoutes = async () => {
+    if (selectedPromoters.length === 0 || routeItems.length === 0) {
+      alert('Selecione promotor(es) e adicione pelo menos um PDV.');
+      return;
+    }
+    const dates = generateWeeklyDates();
+    if (dates.length === 0) {
+      alert('Selecione ao menos um dia da semana e um período válido.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await api.post('/routes/batch', {
+        dates,
+        promoterIds: selectedPromoters,
+        items: routeItems.map((item, index) => ({
+          supermarketId: item.supermarketId,
+          order: index + 1,
+          startTime: item.startTime,
+          endTime: item.endTime,
+          estimatedDuration: item.estimatedDuration ? parseInt(item.estimatedDuration) : undefined,
+          productIds: item.productIds || [],
+          products: item.products || item.productIds?.map((id: string) => ({ productId: id })) || []
+        }))
+      });
+      alert('Rotas criadas com sucesso!');
+      setShowWeeklyModal(false);
+      fetchRoutesForWeek();
+    } catch (error) {
+      console.error('Error creating weekly routes:', error);
+      alert('Erro ao criar rotas.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Promoter Management State
   const [managingPromotersRoute, setManagingPromotersRoute] = useState<any>(null);
@@ -1223,6 +1292,13 @@ const RoutesView: React.FC = () => {
                   style={{ backgroundColor: settings.primaryColor }}
                 >
                   Criar por Calendário
+                </button>
+                <button 
+                  onClick={() => setShowWeeklyModal(true)}
+                  className="px-4 py-2 rounded-lg font-bold text-white"
+                  style={{ backgroundColor: settings.primaryColor }}
+                >
+                  Criar por Semana
                 </button>
               </div>
             </div>
@@ -2336,6 +2412,202 @@ const RoutesView: React.FC = () => {
               <button onClick={() => { setShowCalendarModal(false); setCalendarSelectedDates([]); }} className="px-6 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100">Cancelar</button>
               <button 
                 onClick={handleCreateCalendarRoutes}
+                className="px-6 py-2 rounded-lg font-bold text-white"
+                style={{ backgroundColor: settings.primaryColor }}
+              >
+                Criar Rotas
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showWeeklyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+              <h3 className="text-xl font-bold text-slate-900">Criar Rotas por Semana</h3>
+              <button onClick={() => { setShowWeeklyModal(false); }} className="px-3 py-1 rounded-lg font-bold text-slate-500 hover:bg-slate-100">Fechar</button>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6 p-6 max-h-[75vh] overflow-y-auto">
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Dias da Semana</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[{d:1,t:'Seg'},{d:2,t:'Ter'},{d:3,t:'Qua'},{d:4,t:'Qui'},{d:5,t:'Sex'},{d:6,t:'Sáb'},{d:0,t:'Dom'}].map(({d,t}) => (
+                      <button
+                        key={d}
+                        onClick={() => toggleWeeklyDay(d)}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold ${weeklyWeekdays[d] ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 block mb-1">Meses de Recorrência</label>
+                    <input 
+                      type="number" 
+                      min={1}
+                      value={weeklyMonths}
+                      onChange={(e) => setWeeklyMonths(parseInt(e.target.value || '1'))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 block mb-1">Supervisor</label>
+                    <select
+                      value={weeklySupervisorId}
+                      onChange={(e) => setWeeklySupervisorId(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    >
+                      <option value="">Todos</option>
+                      {allEmployees
+                        .filter(e => e.role && (
+                          e.role.name.toLowerCase().includes('supervisor') ||
+                          e.role.name.toLowerCase().includes('gerente')
+                        ))
+                        .map(s => (
+                          <option key={s.id} value={s.id}>{s.fullName || s.name}</option>
+                        ))
+                      }
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Promotores</label>
+                  <div className="mb-2">
+                    <input
+                      type="text"
+                      placeholder="Buscar promotor..."
+                      value={promoterSearch}
+                      onChange={(e) => setPromoterSearch(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    />
+                  </div>
+                  <div className="h-40 overflow-y-auto space-y-2 pr-2 border border-slate-100 rounded-xl p-2">
+                    {promoters
+                      .filter(p => {
+                        const matchesSearch = p.name.toLowerCase().includes(promoterSearch.toLowerCase());
+                        if (!matchesSearch) return false;
+                        if (!weeklySupervisorId) return true;
+                        const full = allEmployees.find(e => e.id === p.id);
+                        return full && (full.supervisorId === weeklySupervisorId || (full.supervisor && full.supervisor.id === weeklySupervisorId));
+                      })
+                      .map(promoter => {
+                        const isSelected = selectedPromoters.includes(promoter.id);
+                        return (
+                          <button 
+                            key={promoter.id}
+                            onClick={() => handleTogglePromoter(promoter.id)}
+                            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${isSelected ? 'bg-blue-600 text-white' : 'bg-white border border-slate-100 text-slate-600'}`}
+                          >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                              {promoter.name.charAt(0)}
+                            </div>
+                            <div className="text-left">
+                              <p className="text-sm font-bold">{promoter.name}</p>
+                              <p className={`text-[10px] ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>{promoter.email}</p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Adicionar PDVs</label>
+                  <div className="mb-2">
+                    <input
+                      type="text"
+                      placeholder="Buscar supermercado..."
+                      value={supermarketSearch}
+                      onChange={(e) => setSupermarketSearch(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    />
+                  </div>
+                  <div className="h-40 overflow-y-auto space-y-2 pr-2 border border-slate-100 rounded-xl p-2">
+                    {supermarkets
+                      .filter(s => 
+                        (s.fantasyName || '').toLowerCase().includes(supermarketSearch.toLowerCase()) ||
+                        (s.city || '').toLowerCase().includes(supermarketSearch.toLowerCase())
+                      )
+                      .map(s => (
+                      <button 
+                        key={s.id}
+                        onClick={() => handleAddSupermarket(s.id)}
+                        disabled={!!routeItems.find(i => i.supermarketId === s.id)}
+                        className="w-full flex justify-between items-center p-3 rounded-xl hover:bg-slate-50 border border-slate-100 disabled:opacity-50 text-left"
+                      >
+                        <div>
+                          <p className="text-sm font-bold text-slate-800">{s.fantasyName}</p>
+                          <p className="text-[10px] text-slate-400">{s.city}</p>
+                        </div>
+                        <Plus size={16} className="text-slate-400" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700">PDVs Selecionados</label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto border border-slate-100 rounded-xl p-2">
+                    {routeItems.length === 0 ? (
+                      <div className="text-center py-6 text-slate-400 text-sm">Nenhum PDV selecionado</div>
+                    ) : routeItems.map((item, index) => (
+                      <div key={item.supermarketId} className="border border-slate-100 rounded-xl p-3 bg-white">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-sm font-bold text-slate-800">{item.supermarket?.fantasyName || 'PDV'}</div>
+                            <div className="text-[10px] text-slate-400">{item.supermarket?.city}</div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => handleOpenProductModal(index)} className="px-3 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100">Produtos</button>
+                            <button onClick={() => handleRemoveItem(index)} className="px-3 py-1 rounded-lg text-xs font-bold bg-red-50 text-red-700 border border-red-100 hover:bg-red-100">Remover</button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-500 block mb-1">Início</label>
+                            <input 
+                              type="time" 
+                              value={item.startTime || ''} 
+                              onChange={(e) => handleUpdateItem(index, 'startTime', e.target.value)} 
+                              className="w-full px-2 py-1 rounded-lg border border-slate-200 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-500 block mb-1">Fim</label>
+                            <input 
+                              type="time" 
+                              value={item.endTime || ''} 
+                              onChange={(e) => handleUpdateItem(index, 'endTime', e.target.value)} 
+                              className="w-full px-2 py-1 rounded-lg border border-slate-200 text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs font-bold text-slate-500">Promotores Selecionados</div>
+                  <div className="text-sm">{selectedPromoters.length} promotor(es)</div>
+                  <div className="text-xs font-bold text-slate-500">PDVs Selecionados</div>
+                  <div className="text-sm">{routeItems.length} PDV(s)</div>
+                  <div className="text-xs font-bold text-slate-500">Dias Selecionados</div>
+                  <div className="text-sm">
+                    {Object.entries(weeklyWeekdays).filter(([,v])=>v).map(([d]) => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][parseInt(d,10)]).join(', ') || 'Nenhum'}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end px-6 py-4 border-t border-slate-200">
+              <button onClick={() => { setShowWeeklyModal(false); }} className="px-6 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100">Cancelar</button>
+              <button 
+                onClick={handleCreateWeeklyRoutes}
                 className="px-6 py-2 rounded-lg font-bold text-white"
                 style={{ backgroundColor: settings.primaryColor }}
               >
