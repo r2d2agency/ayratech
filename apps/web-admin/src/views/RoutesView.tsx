@@ -2187,7 +2187,7 @@ const RoutesView: React.FC = () => {
       )}
 
 
-      {showWeeklyModal && (
+      {showWeeklyModal && !showProductModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
           <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
