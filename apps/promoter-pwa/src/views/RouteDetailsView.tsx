@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { offlineService } from '../services/offline.service';
 import { processImage } from '../utils/image-processor';
 import { MapPin, ArrowLeft, CheckCircle, Circle, Camera, Navigation, Wifi, WifiOff, RefreshCw, X, ChevronRight, Clock, ListTodo, AlertTriangle } from 'lucide-react';
+import { CategoryTaskFlow } from '../components/CategoryTaskFlow';
 import { format } from 'date-fns';
 import { toast, Toaster } from 'react-hot-toast';
 
@@ -208,19 +209,19 @@ const RouteDetailsView = () => {
              });
              toast.success('Foto enviada com sucesso!');
         } else {
-             // Convert Blob to Base64 for storage compatibility
              const reader = new FileReader();
              reader.readAsDataURL(currentPhoto.blob);
              reader.onloadend = async () => {
-                 const base64data = reader.result;
+                 const base64data = String(reader.result);
                  await offlineService.addPendingAction(
                      'PHOTO',
                      `/routes/items/${activeItem.id}/photos`,
                      'POST',
                      { 
-                         file: base64data,
-                         type: 'BEFORE',
-                         isBase64: true 
+                         fileBase64: base64data,
+                         filename: 'photo.jpg',
+                         photoType: 'BEFORE',
+                         category: null
                      }
                  );
                  toast.success('Foto salva (Offline). Será enviada quando houver conexão.');
@@ -237,15 +238,16 @@ const RouteDetailsView = () => {
         const reader = new FileReader();
         reader.readAsDataURL(currentPhoto.blob);
         reader.onloadend = async () => {
-             const base64data = reader.result;
+             const base64data = String(reader.result);
              await offlineService.addPendingAction(
                  'PHOTO',
                  `/routes/items/${activeItem.id}/photos`,
                  'POST',
                  { 
-                     file: base64data,
-                     type: 'BEFORE',
-                     isBase64: true 
+                     fileBase64: base64data,
+                     filename: 'photo.jpg',
+                     photoType: 'BEFORE',
+                     category: null
                  }
              );
              toast.success('Foto salva para envio posterior.');

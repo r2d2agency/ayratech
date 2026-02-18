@@ -106,6 +106,17 @@ class OfflineService {
              await client.post(action.url, formData, {
                  headers: { 'Content-Type': 'multipart/form-data' }
              });
+        } else if (action.type === 'PHOTO') {
+             const formData = new FormData();
+             const { fileBase64, filename, photoType, category } = action.payload;
+             const res = await fetch(fileBase64);
+             const blob = await res.blob();
+             formData.append('file', blob, filename || 'photo.jpg');
+             if (photoType) formData.append('type', photoType);
+             if (category !== undefined && category !== null) formData.append('category', category);
+             await client.post(action.url, formData, {
+                 headers: { 'Content-Type': 'multipart/form-data' }
+             });
         } else if (action.method === 'POST') {
           await client.post(action.url, action.payload);
         } else if (action.method === 'PUT') {

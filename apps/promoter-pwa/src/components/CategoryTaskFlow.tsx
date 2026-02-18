@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Camera, ChevronRight, Check, AlertTriangle, Layers, Package, Image as ImageIcon, ArrowLeft } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { ProductCountModal } from './ProductCountModal';
+import { offlineService } from '../services/offline.service';
 import client from '../api/client';
 
 interface CategoryTaskFlowProps {
@@ -107,8 +108,27 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
       toast.success('Foto salva!');
       
     } catch (error) {
-      console.error(error);
-      toast.error('Erro ao enviar foto.');
+      try {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onloadend = async () => {
+          const base64data = String(reader.result);
+          await offlineService.addPendingAction(
+            'PHOTO',
+            `/routes/items/${routeItem.id}/photos`,
+            'POST',
+            {
+              fileBase64: base64data,
+              filename: file.name || 'photo.jpg',
+              photoType: `CATEGORY_${type.toUpperCase()}`,
+              category
+            }
+          );
+          toast.success('Foto salva offline. Será enviada quando houver conexão.');
+        };
+      } catch (e2) {
+        toast.error('Erro ao enviar/salvar foto.');
+      }
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
