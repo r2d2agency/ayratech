@@ -250,7 +250,13 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     const total = products.length;
     const counted = products.filter(p => {
         if (mode === 'GONDOLA') return p.gondolaCount !== null && p.gondolaCount !== undefined;
-        if (mode === 'INVENTORY') return p.inventoryCount !== null && p.inventoryCount !== undefined;
+        if (mode === 'INVENTORY') {
+          const inv = p.inventoryCount;
+          const hasRupture = !!p.ruptureReason || !!p.isStockout;
+          if (inv === null || inv === undefined) return false;
+          if (inv === 0) return hasRupture;
+          return inv > 0;
+        }
         return false;
     }).length;
 
@@ -273,8 +279,14 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {products.map(p => {
             const isGondolaDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
-            const isInventoryDone = p.inventoryCount !== null && p.inventoryCount !== undefined;
-            const isRupture = !!p.ruptureReason;
+            const inv = p.inventoryCount;
+            const hasRupture = !!p.ruptureReason || !!p.isStockout;
+            const isInventoryDone = (() => {
+              if (inv === null || inv === undefined) return false;
+              if (inv === 0) return hasRupture;
+              return inv > 0;
+            })();
+            const isRupture = hasRupture;
             
             let progress = 0;
             if (isRupture) {
