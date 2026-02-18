@@ -164,17 +164,27 @@ const DashboardView = () => {
                   <div key={route.id} className="space-y-3">
                     {/* Route Header with Promoters */}
                     <div className="flex items-center justify-between px-2">
-                         <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-gray-500">Equipe:</span>
                             <div className="flex -space-x-2">
-                                {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => (
-                                    <div key={p.id} className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 border-2 border-white flex items-center justify-center text-[10px] font-bold" title={p.name}>
-                                        {(p.name || '?').charAt(0)}
-                                    </div>
-                                ))}
+                                {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => {
+                                    const displayName = (p.fullName || p.name || p.email || '').trim() || 'Promotor';
+                                    return (
+                                        <div
+                                          key={p.id}
+                                          className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 border-2 border-white flex items-center justify-center text-[10px] font-bold"
+                                          title={displayName}
+                                        >
+                                          {displayName.charAt(0).toUpperCase()}
+                                        </div>
+                                    );
+                                })}
                             </div>
                             <span className="text-xs text-gray-400 ml-1">
-                                {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => String(p?.name || '').split(' ')[0]).join(', ')}
+                                {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => {
+                                    const displayName = (p.fullName || p.name || p.email || '').trim() || 'Promotor';
+                                    return displayName.split(' ')[0];
+                                }).join(', ')}
                             </span>
                          </div>
                          <div className="flex items-center gap-2">

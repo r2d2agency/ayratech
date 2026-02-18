@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import client from '../api/client';
-import { Calendar as CalendarIcon, ChevronRight, MapPin, Filter, CheckCircle2 } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronRight, MapPin, Filter, CheckCircle2, UserCheck } from 'lucide-react';
 import { format, parseISO, isSameDay, isSameWeek, isSameMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useAuth } from '../context/AuthContext';
 
 type FilterType = 'day' | 'week' | 'month';
 
@@ -12,8 +13,10 @@ const CalendarView = () => {
   const [filteredRoutes, setFilteredRoutes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<FilterType>('day');
+  const [showOnlyMyCheckins, setShowOnlyMyCheckins] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchRoutes = async () => {
@@ -35,23 +38,40 @@ const CalendarView = () => {
 
   useEffect(() => {
     const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     
     const filtered = routes.filter(route => {
+      const dateStr = String(route.date).split('T')[0];
       const routeDate = parseISO(route.date);
-      
-      if (activeFilter === 'day') {
-        return isSameDay(routeDate, today);
-      } else if (activeFilter === 'week') {
-        return isSameWeek(routeDate, today, { locale: ptBR });
-      } else {
-        // Month (or all future if intended, but let's stick to current month view or just all)
-        // User said "filtro por mes". Let's show all grouped by month as before if filter is month
-        return true; 
+
+      // Filtro por período (dia / semana / mês)
+      const matchesPeriod =
+        activeFilter === 'day'
+          ? isSameDay(routeDate, today)
+          : activeFilter === 'week'
+          ? isSameWeek(routeDate, today, { locale: ptBR })
+          : true;
+
+      if (!matchesPeriod) return false;
+
+      // Filtro "apenas rotas em que tive check-in"
+      if (showOnlyMyCheckins && user?.employee?.id) {
+        const employeeId = user.employee.id;
+        const participated = (route.items || []).some((item: any) =>
+          (item.checkins || []).some(
+            (c: any) =>
+              (c.promoterId === employeeId || c.promoter?.id === employeeId) &&
+              !!c.checkInTime
+          )
+        );
+        if (!participated) return false;
       }
+
+      return true;
     });
 
     setFilteredRoutes(filtered);
-  }, [routes, activeFilter]);
+  }, [routes, activeFilter, showOnlyMyCheckins, user]);
 
   // Group routes by month (only for week/month views or all)
   const groupedRoutes = filteredRoutes.reduce((acc: any, route) => {
@@ -65,6 +85,18 @@ const CalendarView = () => {
     <div className="p-4 space-y-4 pb-24">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-gray-800">Minha Agenda</h1>
+        <button
+          type="button"
+          onClick={() => setShowOnlyMyCheckins(!showOnlyMyCheckins)}
+          className={`flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+            showOnlyMyCheckins
+              ? 'bg-blue-50 text-blue-700 border-blue-200'
+              : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+          }`}
+        >
+          <UserCheck size={14} />
+          {showOnlyMyCheckins ? 'Apenas rotas que participei' : 'Todas as rotas'}
+        </button>
       </div>
 
       {/* Filters */}
@@ -113,15 +145,36 @@ const CalendarView = () => {
                 const completedCount = route.items.filter((i: any) => ['CHECKOUT', 'COMPLETED', 'DONE'].includes(i.status)).length;
                 const totalCount = route.items.length;
                 const isFullyCompleted = completedCount === totalCount && totalCount > 0;
+                const today = new Date();
+                const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                const routeStr = String(route.date).split('T')[0];
+                const isToday = routeStr === todayStr;
+                const isPast = routeStr < todayStr;
+                const isFuture = routeStr > todayStr;
+
+                const cardBorder =
+                  isToday ? 'border-blue-500 ring-1 ring-blue-200' :
+                  isPast ? 'border-gray-200 opacity-80' :
+                  'border-purple-200';
+
+                const dayColor =
+                  isToday ? 'text-blue-600' :
+                  isPast ? 'text-gray-400' :
+                  'text-purple-600';
+
+                const badge =
+                  isToday ? 'Hoje' :
+                  isPast ? 'Passado' :
+                  'Futuro';
 
                 return (
                 <div 
                   key={route.id}
                   onClick={() => navigate(`/routes/${route.id}`)}
-                  className={`bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 active:scale-[0.98] transition-transform ${isFullyCompleted ? 'border-l-4 border-l-emerald-500' : ''}`}
+                  className={`bg-white p-4 rounded-xl shadow-sm border flex items-center gap-4 active:scale-[0.98] transition-transform ${cardBorder} ${isFullyCompleted ? 'border-l-4 border-l-emerald-500' : ''}`}
                 >
                   <div className="flex-col items-center justify-center text-center min-w-[3rem] border-r border-gray-100 pr-4">
-                    <span className={`block text-2xl font-bold ${isFullyCompleted ? 'text-emerald-600' : 'text-blue-600'}`}>
+                    <span className={`block text-2xl font-bold ${isFullyCompleted ? 'text-emerald-600' : dayColor}`}>
                       {format(parseISO(route.date), 'dd')}
                     </span>
                     <span className="block text-xs text-gray-400 uppercase">
@@ -146,7 +199,16 @@ const CalendarView = () => {
                     </p>
                   </div>
 
-                  <ChevronRight className="text-gray-300" size={20} />
+                  <div className="flex flex-col items-end gap-1">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                      isToday ? 'bg-blue-50 text-blue-700' :
+                      isPast ? 'bg-gray-100 text-gray-500' :
+                      'bg-purple-50 text-purple-700'
+                    }`}>
+                      {badge}
+                    </span>
+                    <ChevronRight className="text-gray-300" size={20} />
+                  </div>
                 </div>
               )})}
             </div>

@@ -1227,7 +1227,7 @@ export class RoutesService {
 
     const now = new Date();
     const dateVal: any = routeDate;
-    const dateStr = dateVal instanceof Date ? dateVal.toISOString().split('T')[0] : dateVal;
+    const dateStr = dateVal instanceof Date ? dateVal.toISOString().split('T')[0] : String(dateVal).split('T')[0];
     
     // Deadline is the next day at 20:00
     const cutoff20h = new Date(`${dateStr}T20:00:00`);
@@ -1240,6 +1240,17 @@ export class RoutesService {
     }
   }
 
+  private ensureRouteIsToday(routeDate: string | Date) {
+    if (!routeDate) return;
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const dateVal: any = routeDate;
+    const routeStr = dateVal instanceof Date ? dateVal.toISOString().split('T')[0] : String(dateVal).split('T')[0];
+    if (routeStr !== todayStr) {
+      throw new BadRequestException('Check-in só é permitido na data da rota.');
+    }
+  }
+
   async checkIn(itemId: string, data: { lat: number; lng: number; timestamp: string }, userId?: string) {
     const item = await this.routeItemsRepository.findOne({ 
       where: { id: itemId },
@@ -1248,6 +1259,7 @@ export class RoutesService {
     if (!item) throw new NotFoundException('Item not found');
     
     if (item.route) {
+        this.ensureRouteIsToday(item.route.date);
         this.validateSyncDeadline(item.route.date);
     }
     

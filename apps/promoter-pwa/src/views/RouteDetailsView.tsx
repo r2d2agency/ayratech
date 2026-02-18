@@ -4,7 +4,7 @@ import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { offlineService } from '../services/offline.service';
 import { processImage } from '../utils/image-processor';
-import { MapPin, ArrowLeft, CheckCircle, Circle, Camera, Navigation, Wifi, WifiOff, RefreshCw, X, ChevronRight, Clock, ListTodo } from 'lucide-react';
+import { MapPin, ArrowLeft, CheckCircle, Circle, Camera, Navigation, Wifi, WifiOff, RefreshCw, X, ChevronRight, Clock, ListTodo, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast, Toaster } from 'react-hot-toast';
 
@@ -55,6 +55,15 @@ const RouteDetailsView = () => {
   const [showPhotoPreview, setShowPhotoPreview] = useState(false);
   const [showTasksModal, setShowTasksModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const todayDate = new Date();
+  const todayStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`;
+  const routeDateStr = route?.date
+    ? (route.date instanceof Date ? route.date.toISOString().split('T')[0] : String(route.date).split('T')[0])
+    : null;
+  const isTodayRoute = routeDateStr === todayStr;
+  const isPastRoute = !!routeDateStr && routeDateStr < todayStr;
+  const isFutureRoute = !!routeDateStr && routeDateStr > todayStr;
   
   // Find item where CURRENT user is checked in (Independent of global status)
   const userActiveItem = route?.items?.find((item: any) => 
@@ -609,19 +618,28 @@ const RouteDetailsView = () => {
             </div>
         </div>
 
-        {/* Promoters List */}
         {((route.promoters && route.promoters.length > 0) || route.promoter) && (
             <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
                 <span className="text-xs font-bold text-gray-500">Equipe:</span>
                 <div className="flex -space-x-2">
-                    {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => (
-                        <div key={p.id} className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 border-2 border-white flex items-center justify-center text-[10px] font-bold" title={p.name}>
-                            {(p.name || '?').charAt(0)}
+                    {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => {
+                      const displayName = (p.fullName || p.name || p.email || '').trim() || 'Promotor';
+                      return (
+                        <div
+                          key={p.id}
+                          className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 border-2 border-white flex items-center justify-center text-[10px] font-bold"
+                          title={displayName}
+                        >
+                          {displayName.charAt(0).toUpperCase()}
                         </div>
-                    ))}
+                      );
+                    })}
                 </div>
                 <span className="text-xs text-gray-400 ml-1">
-                    {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => String(p?.name || '').split(' ')[0]).join(', ')}
+                    {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => {
+                      const displayName = (p.fullName || p.name || p.email || '').trim() || 'Promotor';
+                      return displayName.split(' ')[0];
+                    }).join(', ')}
                 </span>
             </div>
         )}
@@ -723,7 +741,6 @@ const RouteDetailsView = () => {
           </div>
         </div>
 
-        {/* Actions Area */}
         <div className="mt-4 pt-3 border-t border-gray-50">
           {showActions ? (
             <div className="space-y-3">
@@ -746,19 +763,37 @@ const RouteDetailsView = () => {
               </div>
             </div>
           ) : isCompleted ? (
-            <div className="flex items-center gap-2 text-green-700 text-sm">
-              <CheckCircle size={16} />
-              <span>Visita realizada</span>
-              {item.checkOutTime && (
-                <span className="text-xs text-gray-400">
-                  ({format(new Date(item.checkOutTime), 'HH:mm')})
-                </span>
+            <div className="flex flex-col items-start gap-1 text-sm">
+              <div className="flex items-center gap-2 text-green-700">
+                <CheckCircle size={16} />
+                <span>Visita realizada</span>
+                {item.checkOutTime && (
+                  <span className="text-xs text-gray-400">
+                    ({format(new Date(item.checkOutTime), 'HH:mm')})
+                  </span>
+                )}
+              </div>
+              {item.manualEntryBy && (
+                <div className="flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded-full">
+                  <AlertTriangle size={12} />
+                  <span>Fechamento manual</span>
+                </div>
               )}
             </div>
           ) : isRouteCompleted ? (
              <div className="flex items-center gap-2 text-gray-500 text-sm bg-gray-50 p-2 rounded">
                 <CheckCircle size={16} />
                 <span>Rota Finalizada</span>
+             </div>
+          ) : isFutureRoute ? (
+             <div className="flex items-center gap-2 text-gray-500 text-sm bg-gray-50 p-2 rounded">
+                <Clock size={16} />
+                <span>Rota futura. Check-in liberado apenas no dia da visita.</span>
+             </div>
+          ) : isPastRoute ? (
+             <div className="flex flex-col gap-1 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                <span>Rota de data anterior. Novo check-in não é permitido.</span>
+                <span>Use o painel web para ajustes ou lançamentos manuais.</span>
              </div>
           ) : (
             <button 
