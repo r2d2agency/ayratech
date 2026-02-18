@@ -206,10 +206,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
           <p className="text-gray-500">{description}</p>
         </div>
 
-        <div 
-          className="w-full aspect-video bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center relative overflow-hidden cursor-pointer"
-          onClick={() => fileInputRef.current?.click()}
-        >
+        <label htmlFor={`category-photo-${type}`} className="w-full aspect-video bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center relative overflow-hidden cursor-pointer">
           {currentUrl ? (
             <img src={currentUrl} alt={title} className="w-full h-full object-cover" />
           ) : (
@@ -224,13 +221,14 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
             </div>
           )}
-        </div>
+        </label>
 
         <input 
           type="file" 
           accept="image/*" 
           capture="environment"
-          className="hidden" 
+          className="hidden"
+          id={`category-photo-${type}`} 
           ref={fileInputRef}
           onChange={(e) => handlePhotoUpload(e, type)}
         />
