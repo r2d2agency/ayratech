@@ -865,13 +865,24 @@ const RouteDetailsView = () => {
                     </div>
                     
                     <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                         {Array.from(new Set(activeItem.products?.map((p: any) => p.product?.category || 'Geral') as string[])).sort().map((cat) => {
+                        {Array.from(new Set(activeItem.products?.map((p: any) => p.product?.category || 'Geral') as string[])).sort().map((cat) => {
                             const catProducts = activeItem.products.filter((p: any) => (p.product?.category || 'Geral') === cat);
                             const total = catProducts.length;
-                            const completed = catProducts.filter((p: any) => 
-                                (p.gondolaCount !== null && p.gondolaCount !== undefined) && 
-                                (p.inventoryCount !== null && p.inventoryCount !== undefined)
-                            ).length;
+                            const completed = catProducts.filter((p: any) => {
+                                const gDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
+                                const inv = p.inventoryCount;
+                                const hasRupture = !!p.ruptureReason || !!p.isStockout;
+                                const iDone = (() => {
+                                  if (inv === null || inv === undefined) return false;
+                                  if (inv === 0) return hasRupture;
+                                  return inv > 0;
+                                })();
+                                const checked = !!p.checked;
+                                return gDone && iDone && checked;
+                            }).length;
+                            const catPhotos = activeItem.categoryPhotos?.[cat] || {};
+                            const beforeOk = !!catPhotos.before;
+                            const afterOk = !!catPhotos.after;
                             
                             const isDone = completed === total && total > 0;
                             const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
@@ -887,6 +898,14 @@ const RouteDetailsView = () => {
                                         <div className="flex items-center gap-2 mt-1 mb-1">
                                             <span className="text-xs text-gray-500">{completed}/{total} itens</span>
                                             {isDone && <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Concluído</span>}
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full ${beforeOk ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                {beforeOk ? 'Foto Antes OK' : 'Foto Antes pendente'}
+                                            </span>
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full ${afterOk ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                {afterOk ? 'Foto Depois OK' : 'Foto Depois pendente'}
+                                            </span>
                                         </div>
                                         <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
                                             <div 

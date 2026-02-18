@@ -6,6 +6,7 @@ import { offlineService } from '../services/offline.service';
 import client from '../api/client';
 import { processImage } from '../utils/image-processor';
 import { useAuth } from '../context/AuthContext';
+import { getImageUrl } from '../utils/image';
 
 interface CategoryTaskFlowProps {
   routeItem: any;
@@ -58,6 +59,29 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const photos = getCategoryPhotos();
+    const catProducts = products || [];
+    const allProductsComplete = catProducts.length > 0 && catProducts.every(isProductCountComplete);
+
+    if (!photos.before) {
+      setStep(STEPS.BEFORE_PHOTO);
+      return;
+    }
+
+    if (!allProductsComplete) {
+      setStep(STEPS.GONDOLA_COUNT);
+      return;
+    }
+
+    if (!photos.after) {
+      setStep(STEPS.AFTER_PHOTO);
+      return;
+    }
+
+    setStep(STEPS.SUMMARY);
+  }, [category, routeItem.categoryPhotos, products]);
 
   const getLabel = (type: 'before' | 'after') => {
     const categoryConfig = photoConfig?.categories?.[category];
@@ -200,7 +224,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     const currentUrl = photos[type];
 
     return (
-      <div className="flex flex-col items-center justify-center h-full p-6 space-y-6">
+      <div className="flex flex-col items-center justify-center h-full p-6 space-y-6 pb-10">
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
           <p className="text-gray-500">{description}</p>
@@ -208,7 +232,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
         <label htmlFor={`category-photo-${type}`} className="w-full aspect-video bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center relative overflow-hidden cursor-pointer">
           {currentUrl ? (
-            <img src={currentUrl} alt={title} className="w-full h-full object-cover" />
+            <img src={getImageUrl(currentUrl)} alt={title} className="w-full h-full object-cover" />
           ) : (
             <div className="flex flex-col items-center text-gray-400">
               <Camera size={48} />
