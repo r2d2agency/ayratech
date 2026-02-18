@@ -837,7 +837,7 @@ const ProductCheckView: React.FC = () => {
                   ) : (
                     <>
                       <Camera size={20} />
-                      <span className="text-xs">Add</span>
+                      <span className="text-xs">Tirar foto</span>
                     </>
                   )}
                   <input 
