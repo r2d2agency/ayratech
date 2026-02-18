@@ -963,7 +963,8 @@ const RoutesView: React.FC = () => {
       route.items.forEach((item: any) => {
         const clientsSet = new Set<string>();
         item.products.forEach((p: any) => {
-          const cname = p.product?.brand?.client?.nomeFantasia || p.product?.brand?.client?.razaoSocial || '';
+          const client = p.product?.brand?.client || p.product?.client;
+          const cname = client?.nomeFantasia || client?.fantasyName || client?.razaoSocial || client?.nome || '';
           if (cname) clientsSet.add(cname);
         });
         entries.push({
@@ -1314,7 +1315,8 @@ const RoutesView: React.FC = () => {
                         totalPdvs += 1;
                         const clientsSet = new Set<string>();
                         item.products.forEach((p: any) => {
-                          const cname = p.product?.brand?.client?.nomeFantasia || p.product?.brand?.client?.razaoSocial || '';
+                          const client = p.product?.brand?.client || p.product?.client;
+                          const cname = client?.nomeFantasia || client?.fantasyName || client?.razaoSocial || client?.nome || '';
                           if (cname) clientsSet.add(cname);
                           if (p.isStockout) rupturas += 1;
                           if (p.validityDate) {

@@ -102,7 +102,33 @@ const ProductCheckView: React.FC = () => {
             await saveProductCheck(updated, true); // true = silent/partial
         }
     }
-    setSelectedProduct(prod);
+    const tpl: any = (prod.product as any)?.checklistTemplate;
+    if ((!prod.checklists || prod.checklists.length === 0) && tpl?.items?.length) {
+      const initialChecklists: Checklist[] = tpl.items.flatMap((tplItem: any) => {
+        if (tplItem.type === ChecklistItemType.PRICE_CHECK && tplItem.competitors?.length > 0) {
+          return tplItem.competitors.map((comp: any) => ({
+            id: `${prod.id}-${tplItem.description}-${comp.name}`,
+            description: tplItem.description,
+            type: tplItem.type,
+            isChecked: false,
+            value: '',
+            // competitorName captured for UI hints if needed
+            // Using 'any' typing to preserve flexibility
+            ...(comp?.name ? { competitorName: comp.name } as any : {})
+          }));
+        }
+        return [{
+          id: `${prod.id}-${tplItem.description}`,
+          description: tplItem.description,
+          type: tplItem.type,
+          isChecked: false,
+          value: ''
+        }];
+      });
+      setSelectedProduct({ ...prod, checklists: initialChecklists });
+    } else {
+      setSelectedProduct(prod);
+    }
   };
 
 
@@ -193,8 +219,6 @@ const ProductCheckView: React.FC = () => {
           setSupermarketName(item.supermarket?.fantasyName || item.supermarket?.name || 'PDV');
           setProducts(item.products);
           setFilteredProducts(item.products);
-          setLoading(false);
-          return;
         }
       }
 
@@ -625,7 +649,7 @@ const ProductCheckView: React.FC = () => {
       {selectedProduct && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-end sm:items-center justify-center p-4">
           <div className="bg-white w-full sm:w-96 rounded-xl p-6 flex flex-col gap-4 animate-in slide-in-from-bottom duration-200 max-h-[85vh] overflow-y-auto mb-16 sm:mb-0">
-            <div className="flex justify-between items-center sticky top-0 bg-white z-10 pb-2 border-b">
+            <div className="flex justify-between items-center sticky top-0 bg-white z-10 pb-2 border-b" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
               <h2 className="text-lg font-bold">Detalhes do Produto</h2>
               <button onClick={() => setSelectedProduct(null)} className="text-gray-400">
                 <X size={24} />

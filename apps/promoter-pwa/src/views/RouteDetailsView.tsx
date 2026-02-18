@@ -894,9 +894,9 @@ const RouteDetailsView = () => {
             }
           />
         ) : (
-            <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex flex-col justify-end sm:justify-center">
+            <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex flex-col justify-end sm:justify-center" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
                 <div className="bg-white rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col w-full sm:max-w-md mx-auto">
-                    <div className="p-4 border-b flex justify-between items-center">
+                    <div className="p-4 border-b flex justify-between items-center" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
                         <div>
                             <h3 className="font-bold text-lg text-gray-800">Tarefas da Visita</h3>
                             <p className="text-xs text-gray-500">{activeItem.supermarket.name}</p>
