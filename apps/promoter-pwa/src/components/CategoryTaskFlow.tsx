@@ -63,8 +63,8 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     if (defaultLabels?.[type]) return defaultLabels[type];
     
     switch(type) {
-      case 'before': return 'Foto Antes (Gôndola)';
-      case 'after': return 'Foto Depois (Gôndola)';
+      case 'before': return 'Foto Antes';
+      case 'after': return 'Foto Depois';
       default: return 'Foto';
     }
   };
