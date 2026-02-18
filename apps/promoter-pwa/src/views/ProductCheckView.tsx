@@ -73,6 +73,7 @@ const ProductCheckView: React.FC = () => {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [supermarketName, setSupermarketName] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
   const [verifyingCheckIn, setVerifyingCheckIn] = useState(true);
   const [isRouteCompleted, setIsRouteCompleted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -821,6 +822,7 @@ const ProductCheckView: React.FC = () => {
                       src={getImageUrl(photo)} 
                       alt={`Foto ${index + 1}`} 
                       className="w-full h-full object-cover"
+                      onClick={() => setPreviewPhoto(photo)}
                     />
                     <button 
                       onClick={() => handlePhotoRemove(index)}
@@ -932,6 +934,23 @@ const ProductCheckView: React.FC = () => {
               )}
             </button>
             </>
+          </div>
+        </div>
+      )}
+      {previewPhoto && (
+        <div className="fixed inset-0 z-[65] bg-black bg-opacity-90 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md">
+            <img
+              src={getImageUrl(previewPhoto)}
+              alt="Preview"
+              className="w-full max-h-[80vh] object-contain rounded-lg bg-black"
+            />
+            <button
+              onClick={() => setPreviewPhoto(null)}
+              className="absolute top-3 right-3 bg-black bg-opacity-60 text-white rounded-full p-2"
+            >
+              <X size={20} />
+            </button>
           </div>
         </div>
       )}

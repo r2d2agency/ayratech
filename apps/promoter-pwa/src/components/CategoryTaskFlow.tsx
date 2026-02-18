@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, ChevronRight, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { Camera, ChevronRight, AlertTriangle, ArrowLeft, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { ProductCountModal } from './ProductCountModal';
 import { offlineService } from '../services/offline.service';
@@ -63,6 +63,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const photos = getCategoryPhotos();
@@ -329,7 +330,12 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
           <div className="grid grid-cols-3 gap-3">
             {urls.map((u: string, i: number) => (
               <div key={i} className="relative w-full aspect-square rounded-lg overflow-hidden border border-gray-200">
-                <img src={getImageUrl(u)} alt={`${title} ${i + 1}`} className="w-full h-full object-cover" />
+                <img
+                  src={getImageUrl(u)}
+                  alt={`${title} ${i + 1}`}
+                  className="w-full h-full object-cover"
+                  onClick={() => setPreviewUrl(u)}
+                />
                 <button
                   onClick={() => handlePhotoRemove(type, i)}
                   className="absolute top-1 right-1 bg-red-500 text-white text-[10px] px-2 py-1 rounded"
@@ -370,6 +376,27 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
           >
             Próximo
             <ChevronRight className="ml-2" />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderPreviewModal = () => {
+    if (!previewUrl) return null;
+    return (
+      <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-4">
+        <div className="relative w-full max-w-md">
+          <img
+            src={getImageUrl(previewUrl)}
+            alt="Preview"
+            className="w-full max-h-[80vh] object-contain rounded-lg bg-black"
+          />
+          <button
+            onClick={() => setPreviewUrl(null)}
+            className="absolute top-3 right-3 bg-black bg-opacity-60 text-white rounded-full p-2"
+          >
+            <X size={20} />
           </button>
         </div>
       </div>
@@ -553,6 +580,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
           </div>
         </div>
       )}
+      {renderPreviewModal()}
     </div>
   );
 };
