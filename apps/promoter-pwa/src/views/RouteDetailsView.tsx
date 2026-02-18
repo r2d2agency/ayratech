@@ -431,7 +431,6 @@ const RouteDetailsView = () => {
   };
 
   const handleCheckOut = async (itemId: string) => {
-    // Validação: exigir fotos por categoria (antes e depois)
     const itemToCheck = route.items.find((i: any) => i.id === itemId);
     if (itemToCheck) {
         const categorySet = new Set<string>();
@@ -440,14 +439,30 @@ const RouteDetailsView = () => {
           categorySet.add(cat);
         });
         const categoryPhotos = itemToCheck.categoryPhotos || {};
-        const missingCategoryPhoto = Array.from(categorySet).some((cat: string) => {
+        const messages: string[] = [];
+        Array.from(categorySet).forEach((cat: string) => {
           const photos = categoryPhotos[cat] || {};
           const hasBefore = Array.isArray(photos.before) ? photos.before.length > 0 : !!photos.before;
           const hasAfter = Array.isArray(photos.after) ? photos.after.length > 0 : !!photos.after;
-          return !hasBefore || !hasAfter;
+          if (!hasBefore) messages.push(`Categoria ${cat}: Foto Antes pendente`);
+          if (!hasAfter) messages.push(`Categoria ${cat}: Foto Depois pendente`);
+          const productsInCat = (itemToCheck.products || []).filter((p: any) => ((p.product?.categoryRef?.name) || p.product?.category || 'Sem Categoria') === cat);
+          const incomplete = productsInCat.filter((p: any) => {
+            const gDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
+            const inv = p.inventoryCount;
+            const hasRupture = !!p.ruptureReason || !!p.isStockout;
+            const iDone = (() => {
+              if (inv === null || inv === undefined) return false;
+              if (inv === 0) return hasRupture;
+              return inv > 0;
+            })();
+            const checked = !!p.checked;
+            return !(gDone && iDone && checked);
+          });
+          if (incomplete.length > 0) messages.push(`Categoria ${cat}: ${incomplete.length} produto(s) pendente(s)`);
         });
-        if (missingCategoryPhoto) {
-          toast.error('Tire as fotos de ANTES e DEPOIS para cada categoria.');
+        if (messages.length > 0) {
+          toast.error(`Faltam itens:\n- ${messages.join('\n- ')}`);
           return;
         }
     }
@@ -855,7 +870,7 @@ const RouteDetailsView = () => {
             />
         ) : (
             <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex flex-col justify-end sm:justify-center">
-                <div className="bg-white rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col w-full sm:max-w-md mx-auto">
+                <div className="bg-white rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col w-full sm:max-w-md mx-auto">
                     <div className="p-4 border-b flex justify-between items-center">
                         <div>
                             <h3 className="font-bold text-lg text-gray-800">Tarefas da Visita</h3>
@@ -866,7 +881,7 @@ const RouteDetailsView = () => {
                         </button>
                     </div>
                     
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-24">
                         {Array.from(new Set(activeItem.products?.map((p: any) => p.product?.category || 'Geral') as string[])).sort().map((cat) => {
                             const catProducts = activeItem.products.filter((p: any) => (p.product?.category || 'Geral') === cat);
                             const total = catProducts.length;
@@ -926,6 +941,16 @@ const RouteDetailsView = () => {
                                 <p>Nenhuma tarefa listada.</p>
                             </div>
                         )}
+                    </div>
+                    
+                    <div className="sticky bottom-0 bg-white border-t p-4">
+                        <button
+                          onClick={() => handleCheckOut(activeItem.id)}
+                          className="w-full py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700"
+                          disabled={processing}
+                        >
+                          Finalizar Visita
+                        </button>
                     </div>
                 </div>
             </div>
