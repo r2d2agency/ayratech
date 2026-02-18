@@ -150,11 +150,12 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
         const photoUrl = res.data.url || res.data.path || previewUrl;
 
         const currentPhotos = getCategoryPhotos();
+        const currentList = Array.isArray(currentPhotos[type]) ? currentPhotos[type] : (currentPhotos[type] ? [currentPhotos[type]] : []);
         const updatedPhotos = {
           ...routeItem.categoryPhotos,
           [category]: {
             ...currentPhotos,
-            [type]: photoUrl
+            [type]: [...currentList, photoUrl]
           }
         };
 
@@ -165,6 +166,16 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
         reader.readAsDataURL(blob);
         reader.onloadend = async () => {
           const base64data = String(reader.result);
+          const currentPhotos = getCategoryPhotos();
+          const currentList = Array.isArray(currentPhotos[type]) ? currentPhotos[type] : (currentPhotos[type] ? [currentPhotos[type]] : []);
+          const updatedPhotos = {
+            ...routeItem.categoryPhotos,
+            [category]: {
+              ...currentPhotos,
+              [type]: [...currentList, base64data]
+            }
+          };
+          await onUpdateItem(routeItem.id, { categoryPhotos: updatedPhotos });
           await offlineService.addPendingAction(
             'PHOTO',
             `/routes/items/${routeItem.id}/photos`,
@@ -191,13 +202,29 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
+  
+  const handlePhotoRemove = async (type: 'before' | 'after', index: number) => {
+    const currentPhotos = getCategoryPhotos();
+    const currentList = Array.isArray(currentPhotos[type]) ? currentPhotos[type] : (currentPhotos[type] ? [currentPhotos[type]] : []);
+    const newList = currentList.filter((_: string, i: number) => i !== index);
+    const updatedPhotos = {
+      ...routeItem.categoryPhotos,
+      [category]: {
+        ...currentPhotos,
+        [type]: newList
+      }
+    };
+    await onUpdateItem(routeItem.id, { categoryPhotos: updatedPhotos });
+    toast.success('Foto removida.');
+  };
 
   const handleProductSave = async (_productId: string, _data: any) => {};
 
   const validateStep = () => {
     if (step === STEPS.BEFORE_PHOTO) {
       const photos = getCategoryPhotos();
-      if (!photos.before) {
+      const beforeCount = Array.isArray(photos.before) ? photos.before.length : (photos.before ? 1 : 0);
+      if (beforeCount === 0) {
         toast.error(`Tire a ${getLabel('before')} para continuar.`);
         return false;
       }
@@ -222,6 +249,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   const renderPhotoStep = (type: 'before' | 'after', title: string, description: string) => {
     const photos = getCategoryPhotos();
     const currentUrl = photos[type];
+    const urls = Array.isArray(currentUrl) ? currentUrl : (currentUrl ? [currentUrl] : []);
 
     return (
       <div className="flex flex-col items-center justify-center h-full p-6 space-y-6 pb-10">
@@ -230,22 +258,33 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
           <p className="text-gray-500">{description}</p>
         </div>
 
-        <label htmlFor={`category-photo-${type}`} className="w-full aspect-video bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center relative overflow-hidden cursor-pointer">
-          {currentUrl ? (
-            <img src={getImageUrl(currentUrl)} alt={title} className="w-full h-full object-cover" />
-          ) : (
-            <div className="flex flex-col items-center text-gray-400">
-              <Camera size={48} />
-              <span className="mt-2 text-sm font-medium">Tocar para fotografar</span>
-            </div>
-          )}
-          
-          {uploading && (
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-            </div>
-          )}
-        </label>
+        <div className="w-full">
+          <div className="grid grid-cols-3 gap-3">
+            {urls.map((u: string, i: number) => (
+              <div key={i} className="relative w-full aspect-square rounded-lg overflow-hidden border border-gray-200">
+                <img src={getImageUrl(u)} alt={`${title} ${i + 1}`} className="w-full h-full object-cover" />
+                <button
+                  onClick={() => handlePhotoRemove(type, i)}
+                  className="absolute top-1 right-1 bg-red-500 text-white text-[10px] px-2 py-1 rounded"
+                >
+                  Remover
+                </button>
+              </div>
+            ))}
+            <label
+              htmlFor={`category-photo-${type}`}
+              className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg aspect-square text-gray-400 cursor-pointer bg-gray-50 hover:bg-gray-100"
+            >
+              <Camera size={24} />
+              <span className="mt-1 text-xs font-medium">Tirar foto</span>
+              {uploading && (
+                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                </div>
+              )}
+            </label>
+          </div>
+        </div>
 
         <input 
           type="file" 
@@ -360,7 +399,9 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
   const renderSummary = () => {
     const photos = getCategoryPhotos();
-    const canFinish = !!photos.before && !!photos.after && areAllProductsComplete();
+    const beforeOk = Array.isArray(photos.before) ? photos.before.length > 0 : !!photos.before;
+    const afterOk = Array.isArray(photos.after) ? photos.after.length > 0 : !!photos.after;
+    const canFinish = beforeOk && afterOk && areAllProductsComplete();
     return (
       <div className="flex flex-col h-full p-6 space-y-6 items-center justify-center">
         <h2 className="text-2xl font-bold text-center">Categoria Concluída!</h2>
@@ -389,7 +430,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
           <ArrowLeft />
         </button>
         <h1 className="font-bold text-lg">{category}</h1>
-        <div className="w-10" /> {/* Spacer */}
+        <div className="w-10" />
       </div>
 
       <div className="flex-1 overflow-hidden relative">

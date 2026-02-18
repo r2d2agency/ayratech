@@ -442,7 +442,9 @@ const RouteDetailsView = () => {
         const categoryPhotos = itemToCheck.categoryPhotos || {};
         const missingCategoryPhoto = Array.from(categorySet).some((cat: string) => {
           const photos = categoryPhotos[cat] || {};
-          return !photos.before || !photos.after;
+          const hasBefore = Array.isArray(photos.before) ? photos.before.length > 0 : !!photos.before;
+          const hasAfter = Array.isArray(photos.after) ? photos.after.length > 0 : !!photos.after;
+          return !hasBefore || !hasAfter;
         });
         if (missingCategoryPhoto) {
           toast.error('Tire as fotos de ANTES e DEPOIS para cada categoria.');
@@ -900,11 +902,11 @@ const RouteDetailsView = () => {
                                             {isDone && <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Concluído</span>}
                                         </div>
                                         <div className="flex items-center gap-2 mt-1">
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full ${beforeOk ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                                {beforeOk ? 'Foto Antes OK' : 'Foto Antes pendente'}
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full ${ (Array.isArray(catPhotos.before) ? catPhotos.before.length > 0 : !!catPhotos.before) ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                { (Array.isArray(catPhotos.before) ? catPhotos.before.length > 0 : !!catPhotos.before) ? 'Foto Antes OK' : 'Foto Antes pendente' }
                                             </span>
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full ${afterOk ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                                {afterOk ? 'Foto Depois OK' : 'Foto Depois pendente'}
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full ${ (Array.isArray(catPhotos.after) ? catPhotos.after.length > 0 : !!catPhotos.after) ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                { (Array.isArray(catPhotos.after) ? catPhotos.after.length > 0 : !!catPhotos.after) ? 'Foto Depois OK' : 'Foto Depois pendente' }
                                             </span>
                                         </div>
                                         <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
