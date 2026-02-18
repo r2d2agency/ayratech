@@ -56,6 +56,7 @@ const RouteDetailsView = () => {
   const [showPhotoPreview, setShowPhotoPreview] = useState(false);
   const [showTasksModal, setShowTasksModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const todayDate = new Date();
   const todayStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`;
@@ -169,7 +170,12 @@ const RouteDetailsView = () => {
         setCurrentPhoto({ blob: result.blob, url: result.previewUrl });
         setShowPhotoPreview(true);
     } catch (error: any) {
-        toast.error(`Foto inválida: ${error.message}`);
+        const msg = error?.message || 'Erro ao processar foto.';
+        if (msg.includes('borrada') || msg.includes('escura') || msg.includes('clara')) {
+          setValidationError(msg);
+        } else {
+          toast.error('Erro ao processar foto: ' + msg);
+        }
     } finally {
         setProcessing(false);
         // Reset input
@@ -930,7 +936,6 @@ const RouteDetailsView = () => {
         </div>
       )}
 
-      {/* Hidden File Input */}
       <input 
         type="file" 
         ref={fileInputRef}
@@ -939,6 +944,39 @@ const RouteDetailsView = () => {
         className="hidden"
         onChange={handlePhotoCapture}
       />
+
+      {validationError && (
+        <div className="fixed inset-0 z-[60] bg-black bg-opacity-70 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-sm rounded-2xl p-6 flex flex-col items-center gap-4 animate-in zoom-in duration-200">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-red-600 mb-2">
+              <Camera size={32} />
+            </div>
+            
+            <h3 className="text-xl font-bold text-gray-900 text-center">Foto Recusada</h3>
+            
+            <p className="text-center text-gray-600">
+              {validationError}
+            </p>
+
+            <div className="bg-orange-50 p-3 rounded-lg border border-orange-100 w-full text-xs text-orange-800 mt-2">
+              <p className="font-bold mb-1">Dicas para uma boa foto:</p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Segure o celular com firmeza</li>
+                <li>Limpe a lente da câmera</li>
+                <li>Garanta boa iluminação</li>
+                <li>Evite tirar foto de telas</li>
+              </ul>
+            </div>
+
+            <button 
+              onClick={() => setValidationError(null)}
+              className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors mt-2"
+            >
+              Entendi, vou tentar novamente
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Actions Bar (Only if checked in) */}
       {activeItem && (activeItem.checkins?.some((c: any) => {

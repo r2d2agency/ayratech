@@ -4,6 +4,8 @@ import { toast } from 'react-hot-toast';
 import { ProductCountModal } from './ProductCountModal';
 import { offlineService } from '../services/offline.service';
 import client from '../api/client';
+import { processImage } from '../utils/image-processor';
+import { useAuth } from '../context/AuthContext';
 
 interface CategoryTaskFlowProps {
   routeItem: any;
@@ -55,6 +57,8 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   const [countMode, setCountMode] = useState<'GONDOLA' | 'INVENTORY'>('GONDOLA');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const getLabel = (type: 'before' | 'storage' | 'after') => {
     const categoryConfig = photoConfig?.categories?.[category];
@@ -81,36 +85,43 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     
     setUploading(true);
     const file = e.target.files[0];
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('type', `CATEGORY_${type.toUpperCase()}`);
-    formData.append('category', category);
 
     try {
-      // Upload photo
-      const res = await client.post(`/routes/items/${routeItem.id}/photos`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      const supermarketName = routeItem.supermarket?.name || 'PDV';
+      const promoterName = user?.name || 'Promotor';
+
+      const { blob, previewUrl } = await processImage(file, {
+        supermarketName,
+        promoterName,
+        timestamp: new Date()
       });
-      
-      const photoUrl = res.data.url; // Assumes backend returns { url: string }
 
-      // Update RouteItem categoryPhotos
-      const currentPhotos = getCategoryPhotos();
-      const updatedPhotos = {
-        ...routeItem.categoryPhotos,
-        [category]: {
-          ...currentPhotos,
-          [type]: photoUrl
-        }
-      };
+      const formData = new FormData();
+      formData.append('file', blob, 'photo.jpg');
+      formData.append('type', `CATEGORY_${type.toUpperCase()}`);
+      formData.append('category', category);
 
-      await onUpdateItem(routeItem.id, { categoryPhotos: updatedPhotos });
-      toast.success('Foto salva!');
-      
-    } catch (error) {
       try {
+        const res = await client.post(`/routes/items/${routeItem.id}/photos`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        
+        const photoUrl = res.data.url || res.data.path || previewUrl;
+
+        const currentPhotos = getCategoryPhotos();
+        const updatedPhotos = {
+          ...routeItem.categoryPhotos,
+          [category]: {
+            ...currentPhotos,
+            [type]: photoUrl
+          }
+        };
+
+        await onUpdateItem(routeItem.id, { categoryPhotos: updatedPhotos });
+        toast.success('Foto salva!');
+      } catch (uploadError: any) {
         const reader = new FileReader();
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(blob);
         reader.onloadend = async () => {
           const base64data = String(reader.result);
           await offlineService.addPendingAction(
@@ -119,15 +130,20 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
             'POST',
             {
               fileBase64: base64data,
-              filename: file.name || 'photo.jpg',
+              filename: 'photo.jpg',
               photoType: `CATEGORY_${type.toUpperCase()}`,
               category
             }
           );
           toast.success('Foto salva offline. Será enviada quando houver conexão.');
         };
-      } catch (e2) {
-        toast.error('Erro ao enviar/salvar foto.');
+      }
+    } catch (error: any) {
+      const message = error?.message || 'Erro ao processar foto.';
+      if (message.includes('borrada') || message.includes('escura') || message.includes('clara')) {
+        setValidationError(message);
+      } else {
+        toast.error(message);
       }
     } finally {
       setUploading(false);
@@ -376,10 +392,8 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     );
   };
 
-  // Main Render Switch
   return (
     <div className="fixed inset-0 bg-gray-50 z-40 flex flex-col animate-slideUp">
-      {/* Header */}
       <div className="bg-white border-b p-4 flex items-center justify-between shadow-sm">
         <button onClick={prevStep} className="text-gray-600 p-2">
           <ArrowLeft />
@@ -405,6 +419,39 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
           onSave={handleProductSave}
           mode={countMode}
         />
+      )}
+
+      {validationError && (
+        <div className="fixed inset-0 z-[60] bg-black bg-opacity-70 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-sm rounded-2xl p-6 flex flex-col items-center gap-4 animate-in zoom-in duration-200">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-red-600 mb-2">
+              <Camera size={32} />
+            </div>
+            
+            <h3 className="text-xl font-bold text-gray-900 text-center">Foto Recusada</h3>
+            
+            <p className="text-center text-gray-600">
+              {validationError}
+            </p>
+
+            <div className="bg-orange-50 p-3 rounded-lg border border-orange-100 w-full text-xs text-orange-800 mt-2">
+              <p className="font-bold mb-1">Dicas para uma boa foto:</p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Segure o celular com firmeza</li>
+                <li>Limpe a lente da câmera</li>
+                <li>Garanta boa iluminação</li>
+                <li>Evite tirar foto de telas</li>
+              </ul>
+            </div>
+
+            <button 
+              onClick={() => setValidationError(null)}
+              className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors mt-2"
+            >
+              Entendi, vou tentar novamente
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
