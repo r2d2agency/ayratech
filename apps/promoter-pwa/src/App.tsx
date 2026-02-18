@@ -31,7 +31,7 @@ const ProtectedLayout = () => {
   }
 
   return (
-    <div className="pb-20"> {/* Add padding bottom for bottom nav */}
+    <div className="pb-20" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       <LocationTracker />
       <TimeClockAlert />
       <Outlet />

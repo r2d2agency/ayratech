@@ -56,6 +56,7 @@ const RouteDetailsView = () => {
   const [showPhotoPreview, setShowPhotoPreview] = useState(false);
   const [showTasksModal, setShowTasksModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategoryMode, setSelectedCategoryMode] = useState<'ITEMS' | 'PHOTOS' | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const todayDate = new Date();
@@ -839,35 +840,59 @@ const RouteDetailsView = () => {
 
       {/* Tasks Modal */}
       {showTasksModal && activeItem && (
-        selectedCategory ? (
-            <CategoryTaskFlow
-                routeItem={activeItem}
-                category={selectedCategory}
-                products={activeItem.products.filter((p: any) => (p.product?.category || 'Geral') === selectedCategory)}
-                photoConfig={activeItem.products.find((p: any) => (p.product?.category || 'Geral') === selectedCategory)?.product?.client?.photoConfig}
-                onUpdateItem={async (itemId, data) => {
-                    // Optimistic update
-                    const updatedItems = route.items.map((i: any) => i.id === itemId ? { ...i, ...data } : i);
-                    setRoute({ ...route, items: updatedItems });
-                    await client.patch(`/routes/items/${itemId}`, data);
-                }}
-                onUpdateProduct={async (productId, data) => {
-                    // Optimistic update
-                    const updatedItems = route.items.map((i: any) => {
-                        if (i.id === activeItem.id) {
-                            return {
-                                ...i,
-                                products: i.products.map((p: any) => p.productId === productId ? { ...p, ...data } : p)
-                            };
-                        }
-                        return i;
-                    });
-                    setRoute({ ...route, items: updatedItems });
-                    await client.patch(`/routes/items/${activeItem.id}/products/${productId}/check`, data);
-                }}
-                onFinish={() => setSelectedCategory(null)}
-                onBack={() => setSelectedCategory(null)}
-            />
+        selectedCategory && selectedCategoryMode ? (
+          <CategoryTaskFlow
+            routeItem={activeItem}
+            category={selectedCategory}
+            products={activeItem.products.filter(
+              (p: any) => (p.product?.category || 'Geral') === selectedCategory
+            )}
+            photoConfig={
+              activeItem.products.find(
+                (p: any) => (p.product?.category || 'Geral') === selectedCategory
+              )?.product?.client?.photoConfig
+            }
+            onUpdateItem={async (itemId, data) => {
+              const updatedItems = route.items.map((i: any) =>
+                i.id === itemId ? { ...i, ...data } : i
+              );
+              setRoute({ ...route, items: updatedItems });
+              await client.patch(`/routes/items/${itemId}`, data);
+            }}
+            onUpdateProduct={async (productId, data) => {
+              const updatedItems = route.items.map((i: any) => {
+                if (i.id === activeItem.id) {
+                  return {
+                    ...i,
+                    products: i.products.map((p: any) =>
+                      p.productId === productId ? { ...p, ...data } : p
+                    ),
+                  };
+                }
+                return i;
+              });
+              setRoute({ ...route, items: updatedItems });
+              await client.patch(
+                `/routes/items/${activeItem.id}/products/${productId}/check`,
+                data
+              );
+            }}
+            onFinish={() => {
+              setSelectedCategory(null);
+              setSelectedCategoryMode(null);
+            }}
+            onBack={() => {
+              setSelectedCategory(null);
+              setSelectedCategoryMode(null);
+            }}
+            mode={
+              selectedCategoryMode === 'ITEMS'
+                ? 'ITEMS'
+                : selectedCategoryMode === 'PHOTOS'
+                ? 'PHOTOS'
+                : 'FULL'
+            }
+          />
         ) : (
             <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex flex-col justify-end sm:justify-center">
                 <div className="bg-white rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col w-full sm:max-w-md mx-auto">
@@ -905,34 +930,79 @@ const RouteDetailsView = () => {
                             const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
 
                             return (
-                                <div 
-                                    key={cat}
-                                    onClick={() => setSelectedCategory(cat as string)}
-                                    className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm active:bg-gray-50 transition-colors flex justify-between items-center"
-                                >
-                                    <div className="flex-1 mr-4">
-                                        <h4 className="font-bold text-gray-800">{cat}</h4>
-                                        <div className="flex items-center gap-2 mt-1 mb-1">
-                                            <span className="text-xs text-gray-500">{completed}/{total} itens</span>
-                                            {isDone && <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Concluído</span>}
-                                        </div>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full ${ (Array.isArray(catPhotos.before) ? catPhotos.before.length > 0 : !!catPhotos.before) ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                                { (Array.isArray(catPhotos.before) ? catPhotos.before.length > 0 : !!catPhotos.before) ? 'Foto Antes OK' : 'Foto Antes pendente' }
-                                            </span>
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full ${ (Array.isArray(catPhotos.after) ? catPhotos.after.length > 0 : !!catPhotos.after) ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                                { (Array.isArray(catPhotos.after) ? catPhotos.after.length > 0 : !!catPhotos.after) ? 'Foto Depois OK' : 'Foto Depois pendente' }
-                                            </span>
-                                        </div>
-                                        <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                                            <div 
-                                                className={`h-full rounded-full ${progress === 100 ? 'bg-green-500' : 'bg-blue-500'}`} 
-                                                style={{ width: `${progress}%` }} 
-                                            />
-                                        </div>
+                              <div 
+                                key={cat}
+                                className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm transition-colors"
+                              >
+                                <div className="flex justify-between items-start gap-3">
+                                  <div className="flex-1">
+                                    <h4 className="font-bold text-gray-800">{cat}</h4>
+                                    <div className="flex items-center gap-2 mt-1 mb-1">
+                                      <span className="text-xs text-gray-500">{completed}/{total} itens</span>
+                                      {isDone && (
+                                        <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                                          Concluído
+                                        </span>
+                                      )}
                                     </div>
-                                    <ChevronRight size={20} className="text-gray-400" />
+                                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                                      <span
+                                        className={`text-[10px] px-2 py-0.5 rounded-full ${
+                                          (Array.isArray(catPhotos.before) ? catPhotos.before.length > 0 : !!catPhotos.before)
+                                            ? 'bg-green-50 text-green-700'
+                                            : 'bg-gray-100 text-gray-500'
+                                        }`}
+                                      >
+                                        {(Array.isArray(catPhotos.before) ? catPhotos.before.length > 0 : !!catPhotos.before)
+                                          ? 'Foto Antes OK'
+                                          : 'Foto Antes pendente'}
+                                      </span>
+                                      <span
+                                        className={`text-[10px] px-2 py-0.5 rounded-full ${
+                                          (Array.isArray(catPhotos.after) ? catPhotos.after.length > 0 : !!catPhotos.after)
+                                            ? 'bg-green-50 text-green-700'
+                                            : 'bg-gray-100 text-gray-500'
+                                        }`}
+                                      >
+                                        {(Array.isArray(catPhotos.after) ? catPhotos.after.length > 0 : !!catPhotos.after)
+                                          ? 'Foto Depois OK'
+                                          : 'Foto Depois pendente'}
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden mt-2">
+                                      <div
+                                        className={`h-full rounded-full ${
+                                          progress === 100 ? 'bg-green-500' : 'bg-blue-500'
+                                        }`}
+                                        style={{ width: `${progress}%` }}
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
+
+                                <div className="mt-3 grid grid-cols-2 gap-2">
+                                  <button
+                                    onClick={() => {
+                                      setSelectedCategory(cat as string);
+                                      setSelectedCategoryMode('ITEMS');
+                                    }}
+                                    className="w-full py-2 px-3 rounded-lg border border-blue-500 text-blue-600 text-xs font-semibold flex items-center justify-center gap-1 active:scale-[0.98] transition-transform"
+                                  >
+                                    <ListTodo size={14} />
+                                    <span>Ver itens</span>
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedCategory(cat as string);
+                                      setSelectedCategoryMode('PHOTOS');
+                                    }}
+                                    className="w-full py-2 px-3 rounded-lg bg-blue-600 text-white text-xs font-semibold flex items-center justify-center gap-1 active:scale-[0.98] transition-transform"
+                                  >
+                                    <Camera size={14} />
+                                    <span>Fotos antes/depois</span>
+                                  </button>
+                                </div>
+                              </div>
                             );
                         })}
                         {(!activeItem.products || activeItem.products.length === 0) && (

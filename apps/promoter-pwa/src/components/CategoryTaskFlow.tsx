@@ -8,6 +8,8 @@ import { processImage } from '../utils/image-processor';
 import { useAuth } from '../context/AuthContext';
 import { getImageUrl } from '../utils/image';
 
+type CategoryFlowMode = 'FULL' | 'ITEMS' | 'PHOTOS';
+
 interface CategoryTaskFlowProps {
   routeItem: any;
   category: string;
@@ -32,6 +34,7 @@ interface CategoryTaskFlowProps {
   onUpdateProduct: (productId: string, data: any) => Promise<void>;
   onFinish: () => void;
   onBack: () => void;
+  mode?: CategoryFlowMode;
 }
 
 const STEPS = {
@@ -50,7 +53,8 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   onUpdateItem,
   onUpdateProduct,
   onFinish,
-  onBack
+  onBack,
+  mode = 'FULL'
 }) => {
   const [step, setStep] = useState(STEPS.BEFORE_PHOTO);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
@@ -64,6 +68,24 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     const photos = getCategoryPhotos();
     const catProducts = products || [];
     const allProductsComplete = catProducts.length > 0 && catProducts.every(isProductCountComplete);
+
+    if (mode === 'PHOTOS') {
+      if (!photos.before) {
+        setStep(STEPS.BEFORE_PHOTO);
+        return;
+      }
+      if (!photos.after) {
+        setStep(STEPS.AFTER_PHOTO);
+        return;
+      }
+      setStep(STEPS.SUMMARY);
+      return;
+    }
+
+    if (mode === 'ITEMS') {
+      setStep(STEPS.GONDOLA_COUNT);
+      return;
+    }
 
     if (!photos.before) {
       setStep(STEPS.BEFORE_PHOTO);
@@ -81,7 +103,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     }
 
     setStep(STEPS.SUMMARY);
-  }, [category, routeItem.categoryPhotos, products]);
+  }, [category, routeItem.categoryPhotos, products, mode]);
 
   const getLabel = (type: 'before' | 'after') => {
     const categoryConfig = photoConfig?.categories?.[category];
@@ -233,16 +255,61 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   };
 
   const nextStep = () => {
+    if (mode === 'ITEMS') {
+      if (step === STEPS.GONDOLA_COUNT) {
+        setStep(STEPS.INVENTORY_COUNT);
+      } else if (step === STEPS.INVENTORY_COUNT) {
+        onBack();
+      }
+      return;
+    }
+
+    if (mode === 'PHOTOS') {
+      if (!validateStep()) return;
+      if (step === STEPS.BEFORE_PHOTO) {
+        setStep(STEPS.AFTER_PHOTO);
+      } else if (step === STEPS.AFTER_PHOTO) {
+        setStep(STEPS.SUMMARY);
+      } else if (step === STEPS.SUMMARY) {
+        onBack();
+      }
+      return;
+    }
+
     if (validateStep()) {
       setStep(prev => prev + 1);
     }
   };
 
   const prevStep = () => {
-    if (step === STEPS.BEFORE_PHOTO) {
+    if (mode === 'ITEMS') {
+      if (step === STEPS.GONDOLA_COUNT) {
         onBack();
+      } else if (step === STEPS.INVENTORY_COUNT) {
+        setStep(STEPS.GONDOLA_COUNT);
+      }
+      return;
+    }
+
+    if (mode === 'PHOTOS') {
+      if (step === STEPS.BEFORE_PHOTO) {
+        onBack();
+        return;
+      }
+      if (step === STEPS.AFTER_PHOTO) {
+        setStep(STEPS.BEFORE_PHOTO);
+        return;
+      }
+      if (step === STEPS.SUMMARY) {
+        setStep(STEPS.AFTER_PHOTO);
+        return;
+      }
+    }
+
+    if (step === STEPS.BEFORE_PHOTO) {
+      onBack();
     } else {
-        setStep(prev => prev - 1);
+      setStep(prev => prev - 1);
     }
   };
 
