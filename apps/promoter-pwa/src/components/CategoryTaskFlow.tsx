@@ -171,23 +171,13 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   const handleProductSave = async (_productId: string, _data: any) => {};
 
   const validateStep = () => {
-    const photos = getCategoryPhotos();
-    
-    if (step === STEPS.BEFORE_PHOTO && !photos.before) {
-      toast.error(`Tire a ${getLabel('before')} para continuar.`);
-      return false;
-    }
-
-    if (step === STEPS.INVENTORY_COUNT && !areAllProductsComplete()) {
-      toast.error('Finalize as contagens e demais itens dos produtos antes de seguir.');
-      return false;
-    }
-
-    if (step === STEPS.AFTER_PHOTO && !photos.after) {
-        toast.error(`Tire a ${getLabel('after')} para finalizar.`);
+    if (step === STEPS.BEFORE_PHOTO) {
+      const photos = getCategoryPhotos();
+      if (!photos.before) {
+        toast.error(`Tire a ${getLabel('before')} para continuar.`);
         return false;
+      }
     }
-
     return true;
   };
 
