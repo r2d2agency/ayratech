@@ -35,8 +35,10 @@ interface CategoryTaskFlowProps {
 
 const STEPS = {
   BEFORE_PHOTO: 0,
-  AFTER_PHOTO: 1,
-  SUMMARY: 2
+  GONDOLA_COUNT: 1,
+  INVENTORY_COUNT: 2,
+  AFTER_PHOTO: 3,
+  SUMMARY: 4
 };
 
 export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
@@ -50,6 +52,8 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   onBack
 }) => {
   const [step, setStep] = useState(STEPS.BEFORE_PHOTO);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [countMode, setCountMode] = useState<'GONDOLA' | 'INVENTORY'>('GONDOLA');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
@@ -72,6 +76,25 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   // Helper to get current photos for this category
   const getCategoryPhotos = () => {
     return routeItem.categoryPhotos?.[category] || {};
+  };
+
+  const isProductCountComplete = (p: any) => {
+    const gDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
+    const inv = p.inventoryCount;
+    const hasRupture = !!p.ruptureReason || !!p.isStockout;
+    const iDone = (() => {
+      if (inv === null || inv === undefined) return false;
+      if (inv === 0) return hasRupture;
+      return inv > 0;
+    })();
+    const checked = !!p.checked;
+    return gDone && iDone && checked;
+  };
+
+  const areAllProductsComplete = () => {
+    const catProducts = products || [];
+    if (!catProducts.length) return false;
+    return catProducts.every(isProductCountComplete);
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'before' | 'after') => {
@@ -154,7 +177,12 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
       toast.error(`Tire a ${getLabel('before')} para continuar.`);
       return false;
     }
-    
+
+    if (step === STEPS.INVENTORY_COUNT && !areAllProductsComplete()) {
+      toast.error('Finalize as contagens e demais itens dos produtos antes de seguir.');
+      return false;
+    }
+
     if (step === STEPS.AFTER_PHOTO && !photos.after) {
         toast.error(`Tire a ${getLabel('after')} para finalizar.`);
         return false;
@@ -230,21 +258,105 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     );
   };
 
-  const renderCountStep = (_mode: 'GONDOLA' | 'INVENTORY', _title: string) => null;
+  const renderCountStep = (mode: 'GONDOLA' | 'INVENTORY', title: string) => {
+    const total = products.length;
+    const counted = products.filter(p => {
+      if (mode === 'GONDOLA') return p.gondolaCount !== null && p.gondolaCount !== undefined;
+      if (mode === 'INVENTORY') {
+        const inv = p.inventoryCount;
+        const hasRupture = !!p.ruptureReason || !!p.isStockout;
+        if (inv === null || inv === undefined) return false;
+        if (inv === 0) return hasRupture;
+        return inv > 0;
+      }
+      return false;
+    }).length;
+
+    return (
+      <div className="flex flex-col h-full">
+        <div className="p-4 bg-white shadow-sm z-10">
+          <h2 className="text-xl font-bold text-gray-800 mb-1">{title}</h2>
+          <div className="flex items-center justify-between text-sm text-gray-500">
+            <span>{category}</span>
+            <span>{counted} / {total} Concluídos</span>
+          </div>
+          <div className="w-full bg-gray-200 h-2 rounded-full mt-2">
+            <div 
+              className="bg-green-500 h-2 rounded-full transition-all duration-300" 
+              style={{ width: `${(counted / Math.max(1,total)) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {products.map(p => {
+            const gDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
+            const inv = p.inventoryCount;
+            const hasRupture = !!p.ruptureReason || !!p.isStockout;
+            const iDone = (() => {
+              if (inv === null || inv === undefined) return false;
+              if (inv === 0) return hasRupture;
+              return inv > 0;
+            })();
+            const checked = !!p.checked;
+
+            let progress = 0;
+            if (gDone) progress += 40;
+            if (iDone) progress += 40;
+            if (checked) progress += 20;
+
+            return (
+              <div 
+                key={p.productId}
+                onClick={() => { setCountMode(mode); setSelectedProduct(p); }}
+                className="bg-white p-4 rounded-lg shadow border border-gray-100 flex flex-col gap-2 active:scale-[0.98] transition-transform"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-900">{p.product.name}</h3>
+                    <p className="text-xs text-gray-500">{p.product.ean || 'Sem EAN'}</p>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {checked ? <span className="text-green-600">Checklist ok</span> : <span className="text-orange-600">Checklist pendente</span>}
+                  </div>
+                </div>
+                <div className="w-full flex items-center gap-2">
+                  <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full ${progress === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] font-medium text-gray-400">{progress}%</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="p-4 bg-white border-t">
+          <button 
+            onClick={nextStep}
+            className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700"
+          >
+            Próxima Etapa
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const renderSummary = () => {
     const photos = getCategoryPhotos();
-    const canFinish = !!photos.before && !!photos.after;
+    const canFinish = !!photos.before && !!photos.after && areAllProductsComplete();
     return (
       <div className="flex flex-col h-full p-6 space-y-6 items-center justify-center">
         <h2 className="text-2xl font-bold text-center">Categoria Concluída!</h2>
-        <p className="text-center text-gray-500">
-          Você finalizou as fotos de <strong>{category}</strong>.
-        </p>
+        <p className="text-center text-gray-500">Você finalizou as fotos e contagens de <strong>{category}</strong>.</p>
         {!canFinish && (
           <div className="bg-yellow-50 p-4 rounded-lg text-yellow-800 text-sm w-full">
             <AlertTriangle size={16} className="inline mr-2" />
-            É necessário tirar as fotos de Antes e Depois.
+            É necessário tirar as fotos de Antes e Depois e concluir as contagens.
           </div>
         )}
         <button 
@@ -270,17 +382,22 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
       <div className="flex-1 overflow-hidden relative">
         {step === STEPS.BEFORE_PHOTO && renderPhotoStep('before', getLabel('before'), 'Registre o estado inicial.')}
+        {step === STEPS.GONDOLA_COUNT && renderCountStep('GONDOLA', 'Contagem: Gôndola (Frente)')}
+        {step === STEPS.INVENTORY_COUNT && renderCountStep('INVENTORY', 'Contagem: Estoque')}
         {step === STEPS.AFTER_PHOTO && renderPhotoStep('after', getLabel('after'), 'Registre o resultado final.')}
         {step === STEPS.SUMMARY && renderSummary()}
       </div>
 
-      {false && (
+      {selectedProduct && (
         <ProductCountModal 
-          isOpen={false}
-          onClose={() => {}}
-          product={{}}
-          onSave={() => {}}
-          mode={'GONDOLA'}
+          isOpen={true}
+          onClose={() => setSelectedProduct(null)}
+          product={selectedProduct}
+          onSave={async (productId, data) => {
+            await onUpdateProduct(productId, data);
+            setSelectedProduct(null);
+          }}
+          mode={countMode}
         />
       )}
 
