@@ -58,6 +58,9 @@ export class RouteItemProduct {
   validityDate: string;
 
   @Column({ nullable: true, type: 'int' })
+  validityQuantity: number;
+
+  @Column({ nullable: true, type: 'int' })
   stockCount: number;
 
   @Column({ nullable: true, type: 'int' })

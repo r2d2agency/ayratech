@@ -174,6 +174,7 @@ const RoutesReportView: React.FC = () => {
       photos: string[];
       productName: string;
       validityDate?: string;
+      validityQuantity?: number;
       stockCount?: number;
       checklists?: Array<{
         description: string;
@@ -604,6 +605,7 @@ const RoutesReportView: React.FC = () => {
             photos: p.photos || [],
             productName: p.product.name,
             validityDate: p.validityDate || '',
+            validityQuantity: (p as any).validityQuantity || undefined,
             stockCount: p.stockCount || '',
             checklistTemplate: p.product.checklistTemplate,
             checklists: initialChecklists
@@ -1727,6 +1729,19 @@ const RoutesReportView: React.FC = () => {
                                setManualForm({...manualForm, products: newProds});
                              }}
                              className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 w-32"
+                           />
+                           <span className="text-xs font-bold text-slate-500 ml-2">Qtd:</span>
+                           <input
+                              type="number"
+                              min={0}
+                              value={prod.validityQuantity ?? ''}
+                              onChange={e => {
+                                const newProds = [...manualForm.products];
+                                const val = parseInt(e.target.value || '0') || 0;
+                                newProds[idx].validityQuantity = val;
+                                setManualForm({...manualForm, products: newProds});
+                              }}
+                              className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 w-20"
                            />
                          </div>
                          <div className="flex items-center gap-2">

@@ -51,6 +51,7 @@ interface RouteItemProduct {
   checkInTime?: string;
   checkOutTime?: string;
   validityDate?: string;
+  validityQuantity?: number;
   checklists?: Checklist[];
   completedBy?: {
     id: string;
@@ -295,6 +296,7 @@ const ProductCheckView: React.FC = () => {
           checkInTime: productData.checkInTime,
           checkOutTime: productData.checkOutTime,
           validityDate: productData.validityDate,
+          validityQuantity: productData.validityQuantity,
           checklists: productData.checklists,
           completedBy: productData.completedBy
         });
@@ -313,6 +315,7 @@ const ProductCheckView: React.FC = () => {
              checkInTime: productData.checkInTime,
              checkOutTime: productData.checkOutTime,
              validityDate: productData.validityDate,
+             validityQuantity: productData.validityQuantity,
              checklists: productData.checklists,
              completedBy: productData.completedBy
           }
@@ -344,21 +347,22 @@ const ProductCheckView: React.FC = () => {
       }
 
       // If API fails (network or server error), fallback to offline queue
-      await offlineService.addPendingAction(
-        'PRODUCT_CHECK',
-        `/routes/items/${itemId}/products/${productData.productId}/check`,
-        'PATCH',
-        {
-           checked: productData.checked,
-           isStockout: productData.isStockout,
-           stockoutType: productData.stockoutType,
-           observation: productData.observation,
-           photos: productData.photos,
-           validityDate: productData.validityDate,
-           checklists: productData.checklists,
-           completedBy: productData.completedBy
-        }
-      );
+        await offlineService.addPendingAction(
+          'PRODUCT_CHECK',
+          `/routes/items/${itemId}/products/${productData.productId}/check`,
+          'PATCH',
+          {
+             checked: productData.checked,
+             isStockout: productData.isStockout,
+             stockoutType: productData.stockoutType,
+             observation: productData.observation,
+             photos: productData.photos,
+             validityDate: productData.validityDate,
+             validityQuantity: productData.validityQuantity,
+             checklists: productData.checklists,
+             completedBy: productData.completedBy
+          }
+        );
     }
   };
 
@@ -404,6 +408,18 @@ const ProductCheckView: React.FC = () => {
         );
         if (incompleteItems.length > 0) {
           toast.error('Complete todos os itens do checklist para concluir.');
+          return;
+        }
+      }
+      // Validation: Validity requires date and quantity
+      const validityRequired = selectedProduct.checklists?.some(c => c.type === ChecklistItemType.VALIDITY_CHECK && c.isChecked);
+      if (validityRequired) {
+        if (!selectedProduct.validityDate) {
+          toast.error('Informe a data de validade.');
+          return;
+        }
+        if (!selectedProduct.validityQuantity || selectedProduct.validityQuantity <= 0) {
+          toast.error('Informe a quantidade de itens com esta validade.');
           return;
         }
       }
@@ -891,6 +907,15 @@ const ProductCheckView: React.FC = () => {
                   className="w-full border rounded-lg p-2 text-sm focus:border-blue-500 outline-none"
                   value={selectedProduct.validityDate || ''}
                   onChange={(e) => setSelectedProduct({...selectedProduct, validityDate: e.target.value})}
+                  disabled={!selectedProduct.checklists?.some(c => c.type === ChecklistItemType.VALIDITY_CHECK && c.isChecked)}
+                />
+                <label className="text-sm font-medium text-gray-700">Quantidade de Itens com esta validade</label>
+                <input
+                  type="number"
+                  min={0}
+                  className="w-full border rounded-lg p-2 text-sm focus:border-blue-500 outline-none"
+                  value={selectedProduct.validityQuantity ?? ''}
+                  onChange={(e) => setSelectedProduct({...selectedProduct, validityQuantity: parseInt(e.target.value || '0') || 0})}
                   disabled={!selectedProduct.checklists?.some(c => c.type === ChecklistItemType.VALIDITY_CHECK && c.isChecked)}
                 />
                 {selectedProduct.validityDate && (

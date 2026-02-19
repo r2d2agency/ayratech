@@ -961,7 +961,7 @@ export class RoutesService {
     return { url };
   }
 
-  async checkProduct(routeItemId: string, productId: string, data: { checked?: boolean, observation?: string, isStockout?: boolean, stockoutType?: string, photos?: string[], checkInTime?: string, checkOutTime?: string, validityDate?: string, stockCount?: number, gondolaCount?: number, inventoryCount?: number, ruptureReason?: string, checklists?: { id: string, isChecked: boolean, value?: string }[] }, userId?: string) {
+  async checkProduct(routeItemId: string, productId: string, data: { checked?: boolean, observation?: string, isStockout?: boolean, stockoutType?: string, photos?: string[], checkInTime?: string, checkOutTime?: string, validityDate?: string, validityQuantity?: number, stockCount?: number, gondolaCount?: number, inventoryCount?: number, ruptureReason?: string, checklists?: { id: string, isChecked: boolean, value?: string }[] }, userId?: string) {
     console.log(`RoutesService.checkProduct: Item ${routeItemId}, Product ${productId}`);
     console.log('Payload:', JSON.stringify(data));
 
@@ -995,6 +995,7 @@ export class RoutesService {
       if (data.checkInTime !== undefined) itemProduct.checkInTime = new Date(data.checkInTime);
       if (data.checkOutTime !== undefined) itemProduct.checkOutTime = new Date(data.checkOutTime);
       if (data.validityDate !== undefined) itemProduct.validityDate = data.validityDate;
+      if (data.validityQuantity !== undefined) itemProduct.validityQuantity = data.validityQuantity;
       if (data.ruptureReason !== undefined) itemProduct.ruptureReason = data.ruptureReason;
       
       // Handle Counts
@@ -1100,6 +1101,7 @@ export class RoutesService {
       observation?: string; 
       photos?: string[];
       validityDate?: string;
+      validityQuantity?: number;
       stockCount?: number;
       checklists?: Array<{
         description: string;
@@ -1154,6 +1156,7 @@ export class RoutesService {
         productRel.observation = p.observation;
         productRel.photos = p.photos;
         if ((p as any).validityDate) productRel.validityDate = (p as any).validityDate;
+        if ((p as any).validityQuantity !== undefined) productRel.validityQuantity = (p as any).validityQuantity;
         if ((p as any).stockCount) productRel.stockCount = (p as any).stockCount;
         
         // Checklist Handling
@@ -1390,9 +1393,12 @@ export class RoutesService {
       const allChecked = requiredChecklists.every(c => !!c.isChecked);
       if (!allChecked) return true;
 
-      // Validade: se algum item de tipo VALIDITY_CHECK estiver marcado, exigir validityDate
+      // Validade: se algum item de tipo VALIDITY_CHECK estiver marcado, exigir validityDate e quantidade
       const hasValidityRequired = checklists.some(c => c.type === 'VALIDITY_CHECK' && !!c.isChecked);
-      if (hasValidityRequired && !ip.validityDate) return true;
+      if (hasValidityRequired) {
+        if (!ip.validityDate) return true;
+        if (ip.validityQuantity === null || ip.validityQuantity === undefined || ip.validityQuantity <= 0) return true;
+      }
 
       return false;
     });

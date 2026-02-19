@@ -132,6 +132,7 @@ export class RoutesController {
       checkInTime?: string; 
       checkOutTime?: string; 
       validityDate?: string; 
+      validityQuantity?: number;
       stockCount?: number; 
       gondolaCount?: number;
       inventoryCount?: number;
@@ -168,6 +169,7 @@ export class RoutesController {
         observation?: string; 
         photos?: string[];
         validityDate?: string;
+        validityQuantity?: number;
         stockCount?: number;
       }[] 
     },
