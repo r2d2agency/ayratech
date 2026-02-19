@@ -110,7 +110,13 @@ const ProductCheckView: React.FC = () => {
             await saveProductCheck(updated, true); // true = silent/partial
         }
     }
-    const tpl: any = (prod.product as any)?.checklistTemplate;
+    let tpl: any = (prod.product as any)?.checklistTemplate;
+    if ((!prod.checklists || prod.checklists.length === 0) && !(tpl?.items?.length)) {
+      try {
+        const resp = await api.get(`/products/${prod.productId}`);
+        tpl = resp.data?.checklistTemplate;
+      } catch {}
+    }
     if ((!prod.checklists || prod.checklists.length === 0) && tpl?.items?.length) {
       const initialChecklists: Checklist[] = tpl.items.flatMap((tplItem: any) => {
         if (tplItem.type === ChecklistItemType.PRICE_CHECK && tplItem.competitors?.length > 0) {
