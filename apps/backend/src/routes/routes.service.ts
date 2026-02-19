@@ -1242,10 +1242,21 @@ export class RoutesService {
 
   private ensureRouteIsToday(routeDate: string | Date) {
     if (!routeDate) return;
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    // Usar fuso horário do Brasil (UTC-3) para determinar o "hoje"
+    const nowUtc = new Date();
+    const brazilOffsetMs = 3 * 60 * 60 * 1000; // UTC-3
+    const brazilNow = new Date(nowUtc.getTime() - brazilOffsetMs);
+    const todayStr = `${brazilNow.getUTCFullYear()}-${String(brazilNow.getUTCMonth() + 1).padStart(2, '0')}-${String(brazilNow.getUTCDate()).padStart(2, '0')}`;
     const dateVal: any = routeDate;
-    const routeStr = dateVal instanceof Date ? dateVal.toISOString().split('T')[0] : String(dateVal).split('T')[0];
+    let routeStr: string;
+    if (dateVal instanceof Date) {
+      // Converter a data da rota para o mesmo fuso (UTC-3) antes de comparar
+      const brazilRoute = new Date(dateVal.getTime() - brazilOffsetMs);
+      routeStr = `${brazilRoute.getUTCFullYear()}-${String(brazilRoute.getUTCMonth() + 1).padStart(2, '0')}-${String(brazilRoute.getUTCDate()).padStart(2, '0')}`;
+    } else {
+      // Se vier como string (YYYY-MM-DD), comparar diretamente
+      routeStr = String(dateVal).split('T')[0];
+    }
     if (routeStr !== todayStr) {
       throw new BadRequestException('Check-in só é permitido na data da rota.');
     }
