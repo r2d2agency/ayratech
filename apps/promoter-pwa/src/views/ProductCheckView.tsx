@@ -88,6 +88,13 @@ const ProductCheckView: React.FC = () => {
   // Selected product for detailed editing (stockout type, observation)
   const [selectedProduct, setSelectedProduct] = useState<RouteItemProduct | null>(null);
 
+  const isValidityChecklistItem = (item: Checklist) => {
+    const desc = (item.description || '').toLowerCase();
+    if (item.type === ChecklistItemType.VALIDITY_CHECK) return true;
+    if (desc.includes('vencimento') || desc.includes('venci') || desc.includes('validade')) return true;
+    return false;
+  };
+
   const openProductModal = async (prod: RouteItemProduct) => {
     // Only set start time if we are opening a new product, not updating existing selection
     if (!selectedProduct || selectedProduct.id !== prod.id) {
@@ -412,7 +419,7 @@ const ProductCheckView: React.FC = () => {
         }
       }
       // Validation: Validity requires date and quantity
-      const validityRequired = selectedProduct.checklists?.some(c => c.type === ChecklistItemType.VALIDITY_CHECK && c.isChecked);
+      const validityRequired = selectedProduct.checklists?.some(c => isValidityChecklistItem(c) && c.isChecked);
       if (validityRequired) {
         if (!selectedProduct.validityDate) {
           toast.error('Informe a data de validade.');
@@ -807,7 +814,7 @@ const ProductCheckView: React.FC = () => {
                             <span className="text-xs text-blue-600 ml-2">({(item.completedBy.name || '').split(' ')[0]})</span>
                         )}
                       </span>
-                      {item.type === ChecklistItemType.VALIDITY_CHECK && (
+                      {isValidityChecklistItem(item) && (
                         <span className="block text-xs text-orange-600 mt-0.5">Habilita campo de validade</span>
                       )}
                       {item.type === ChecklistItemType.PHOTO && (
@@ -895,9 +902,9 @@ const ProductCheckView: React.FC = () => {
               </div>
             </div>
 
-            {selectedProduct.checklists?.some(c => c.type === ChecklistItemType.VALIDITY_CHECK) && (
+            {selectedProduct.checklists?.some(c => isValidityChecklistItem(c)) && (
               <div className={`flex flex-col gap-2 ${
-                !selectedProduct.checklists?.some(c => c.type === ChecklistItemType.VALIDITY_CHECK && c.isChecked)
+                !selectedProduct.checklists?.some(c => isValidityChecklistItem(c) && c.isChecked)
                   ? 'opacity-50 pointer-events-none' 
                   : ''
               }`}>
@@ -907,7 +914,7 @@ const ProductCheckView: React.FC = () => {
                   className="w-full border rounded-lg p-2 text-sm focus:border-blue-500 outline-none"
                   value={selectedProduct.validityDate || ''}
                   onChange={(e) => setSelectedProduct({...selectedProduct, validityDate: e.target.value})}
-                  disabled={!selectedProduct.checklists?.some(c => c.type === ChecklistItemType.VALIDITY_CHECK && c.isChecked)}
+                  disabled={!selectedProduct.checklists?.some(c => isValidityChecklistItem(c) && c.isChecked)}
                 />
                 <label className="text-sm font-medium text-gray-700">Quantidade de Itens com esta validade</label>
                 <input
@@ -916,7 +923,7 @@ const ProductCheckView: React.FC = () => {
                   className="w-full border rounded-lg p-2 text-sm focus:border-blue-500 outline-none"
                   value={selectedProduct.validityQuantity ?? ''}
                   onChange={(e) => setSelectedProduct({...selectedProduct, validityQuantity: parseInt(e.target.value || '0') || 0})}
-                  disabled={!selectedProduct.checklists?.some(c => c.type === ChecklistItemType.VALIDITY_CHECK && c.isChecked)}
+                  disabled={!selectedProduct.checklists?.some(c => isValidityChecklistItem(c) && c.isChecked)}
                 />
                 {selectedProduct.validityDate && (
                   (() => {
