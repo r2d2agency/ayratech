@@ -23,12 +23,28 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
   const [isStockout, setIsStockout] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const [validityDate, setValidityDate] = useState('');
+  const [validityQuantity, setValidityQuantity] = useState<number | ''>('');
+
+  const isValidityChecklistItem = (item: any) => {
+    const desc = (item?.description || '').toLowerCase();
+    if (item?.type === 'VALIDITY_CHECK') return true;
+    if (desc.includes('vencimento') || desc.includes('venci') || desc.includes('validade')) return true;
+    return false;
+  };
+
   useEffect(() => {
     if (product) {
       setGondolaCount(product.gondolaCount ?? '');
       setInventoryCount(product.inventoryCount ?? '');
       setRuptureReason(product.ruptureReason || '');
       setIsStockout(product.isStockout || false);
+      setValidityDate(product.validityDate || '');
+      setValidityQuantity(
+        product.validityQuantity !== null && product.validityQuantity !== undefined
+          ? product.validityQuantity
+          : ''
+      );
     }
   }, [product]);
 
@@ -40,6 +56,23 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
   const handleSave = async () => {
     setSaving(true);
     try {
+      const hasValidityChecklist =
+        Array.isArray(product.checklists) &&
+        product.checklists.some((c: any) => isValidityChecklistItem(c));
+
+      if (hasValidityChecklist) {
+        if (!validityDate) {
+          toast.error('Informe a data de validade.');
+          setSaving(false);
+          return;
+        }
+        if (!validityQuantity || validityQuantity <= 0) {
+          toast.error('Informe a quantidade de itens com esta validade.');
+          setSaving(false);
+          return;
+        }
+      }
+
       // Validation
       if (total === 0 && !ruptureReason && !isStockout) {
         // If total is 0, we require a reason or mark as stockout
@@ -57,6 +90,8 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
         ruptureReason: total === 0 ? ruptureReason : null, // Clear reason if stock > 0
         isStockout: total === 0,
         stockCount: total,
+        validityDate: validityDate || null,
+        validityQuantity: validityQuantity === '' ? null : validityQuantity,
         checked: true // Mark as checked/counted
       };
 
@@ -123,6 +158,40 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
               />
             </div>
           </div>
+
+          {/* Validity Fields (if there is a validity-related checklist) */}
+          {Array.isArray(product.checklists) &&
+           product.checklists.some((c: any) => isValidityChecklistItem(c)) && (
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">
+                  Data de Validade
+                </label>
+                <input
+                  type="date"
+                  value={validityDate}
+                  onChange={(e) => setValidityDate(e.target.value)}
+                  className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">
+                  Quantidade de itens com esta validade
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={validityQuantity}
+                  onChange={(e) =>
+                    setValidityQuantity(
+                      e.target.value === '' ? '' : parseInt(e.target.value) || 0
+                    )
+                  }
+                  className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Rupture Reason - Only if Total is 0 */}
           {total === 0 && (

@@ -118,7 +118,7 @@ const ProductCheckView: React.FC = () => {
       } catch {}
     }
     if ((!prod.checklists || prod.checklists.length === 0) && tpl?.items?.length) {
-      const initialChecklists: Checklist[] = tpl.items.flatMap((tplItem: any) => {
+      const initialChecklists: any[] = tpl.items.flatMap((tplItem: any) => {
         if (tplItem.type === ChecklistItemType.PRICE_CHECK && tplItem.competitors?.length > 0) {
           return tplItem.competitors.map((comp: any) => ({
             id: `${prod.id}-${tplItem.description}-${comp.name}`,
@@ -829,7 +829,7 @@ const ProductCheckView: React.FC = () => {
                       {item.type === ChecklistItemType.PRICE_CHECK && (
                         <div className="mt-2" onClick={(e) => e.stopPropagation()}>
                           <span className="block text-xs text-blue-600 mb-1">
-                              Preço {item.competitorName ? `(${item.competitorName})` : ''}
+                              Preço
                           </span>
                           <div className="relative">
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">R$</span>

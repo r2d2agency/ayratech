@@ -99,7 +99,7 @@ interface RouteReportItem {
         };
       };
       validityDate?: string;
-      stockCount?: number;
+      stockCount?: number | '';
       checklists?: Array<{
           id: string;
           type: string;
@@ -1749,7 +1749,7 @@ const RoutesReportView: React.FC = () => {
                            <input 
                              type="number" 
                              placeholder="Qtd"
-                             value={prod.stockCount}
+                             value={prod.stockCount ?? ''}
                              onChange={e => {
                                const newProds = [...manualForm.products];
                                newProds[idx].stockCount = e.target.value ? parseInt(e.target.value) : '';

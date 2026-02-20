@@ -1,0 +1,15 @@
+warning: in the working copy of 'apps/backend/src/routes/entities/route-item-product.entity.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/routes/routes.controller.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/routes/routes.service.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/promoter-pwa/src/utils/image-processor.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/promoter-pwa/src/views/ProductCheckView.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/web-admin/src/utils/image-processor.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/web-admin/src/views/RoutesReportView.tsx', LF will be replaced by CRLF the next time Git touches it
+ .../routes/entities/route-item-product.entity.ts   |  3 [32m++[m
+ apps/backend/src/routes/routes.controller.ts       |  2 [32m+[m
+ apps/backend/src/routes/routes.service.ts          | 12 [32m+++[m[31m--[m
+ apps/promoter-pwa/src/utils/image-processor.ts     |  3 [32m+[m[31m-[m
+ apps/promoter-pwa/src/views/ProductCheckView.tsx   | 55 [32m++++++++++++++++[m[31m------[m
+ apps/web-admin/src/utils/image-processor.ts        |  4 [32m+[m[31m-[m
+ apps/web-admin/src/views/RoutesReportView.tsx      | 15 [32m++++++[m
+ 7 files changed, 72 insertions(+), 22 deletions(-)
