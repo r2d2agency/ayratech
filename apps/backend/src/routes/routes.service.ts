@@ -52,8 +52,8 @@ export class RoutesService {
       .leftJoinAndSelect('rip.completedBy', 'u')
       .where("rip.photos IS NOT NULL")
       .andWhere("jsonb_array_length(rip.photos) > 0")
-      .andWhere('rip.updatedAt >= :timeThreshold', { timeThreshold })
-      .orderBy('rip.updatedAt', 'DESC')
+      .andWhere('rip.checkOutTime >= :timeThreshold', { timeThreshold })
+      .orderBy('rip.checkOutTime', 'DESC')
       .take(20);
 
     if (clientId) {
@@ -73,8 +73,8 @@ export class RoutesService {
                     productName: rip.product.name,
                     brandName: rip.product.brand?.name || '',
                     supermarketName: rip.routeItem.supermarket.fantasyName,
-                    promoterName: rip.completedBy ? rip.completedBy.name : 'Promotor',
-                    timestamp: rip.updatedAt
+                    promoterName: rip.completedBy ? rip.completedBy.fullName : 'Promotor',
+                    timestamp: rip.checkOutTime
                 });
             }
         }
