@@ -205,7 +205,7 @@ export class RoutesService {
                      if (product.checklistTemplate) {
                        checklistTemplate = product.checklistTemplate as any;
                      } else {
-                       const client: any = (product as any).client;
+                       const client: any = (product as any).client || (product as any).brand?.client;
                        const routeType = savedRoute.type || 'VISIT';
                        const clientTemplateId =
                          routeType === 'INVENTORY'
@@ -346,6 +346,8 @@ export class RoutesService {
                 if (user.employee && !isSupervisor && !isClient) {
                     restrictToPromoterId = user.employee.id;
                     console.log('RoutesService.findAll: Restricting to Promoter:', restrictToPromoterId);
+                    // If restricting to specific promoter, ignore client restrictions to ensure they see all assigned routes
+                    allowedClientIds = null;
                 }
 
                 // 3. Fallback: If no filters set, show nothing
@@ -1430,7 +1432,7 @@ export class RoutesService {
       const clientRanges = item.products?.map(p => (p.product?.client as any)?.locationRange).filter((r: any) => r !== undefined && r !== null) || [];
       const maxRange = clientRanges.length > 0 ? Math.max(...clientRanges) : 500; // Default 500m
 
-      const dist = this.calculateDistance(data.lat, data.lng, parseFloat(item.supermarket.latitude), parseFloat(item.supermarket.longitude));
+      const dist = this.calculateDistance(data.lat, data.lng, Number(item.supermarket.latitude), Number(item.supermarket.longitude));
       
       if (dist > maxRange) {
          throw new BadRequestException(`Você está a ${Math.round(dist)}m do local. O raio permitido é de ${maxRange}m. Aproxime-se do PDV para finalizar.`);
@@ -1535,6 +1537,10 @@ export class RoutesService {
       });
       const allChecked = requiredChecklists.every(c => !!c.isChecked);
       if (!allChecked) return true;
+
+      // Fotos: Pelo menos uma foto por produto é obrigatória (exceto se for ruptura, talvez? Mas geralmente precisa provar a ruptura também).
+      // Assumindo rigoroso: sem foto = pendência.
+      if (!ip.photos || ip.photos.length === 0) return true;
 
       // Validade: se algum item de tipo VALIDITY_CHECK estiver marcado, exigir validityDate e quantidade
       const hasValidityRequired = checklists.some(c => c.type === 'VALIDITY_CHECK' && !!c.isChecked);

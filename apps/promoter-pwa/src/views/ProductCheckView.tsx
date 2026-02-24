@@ -111,14 +111,19 @@ const ProductCheckView: React.FC = () => {
         }
     }
     let tpl: any = (prod.product as any)?.checklistTemplate;
-    if ((!prod.checklists || prod.checklists.length === 0) && !(tpl?.items?.length)) {
+    
+    // Always try to fetch template if not present, to support updates
+    if (!tpl?.items?.length) {
       try {
         const resp = await api.get(`/products/${prod.productId}`);
         tpl = resp.data?.checklistTemplate;
       } catch {}
     }
-    if ((!prod.checklists || prod.checklists.length === 0) && tpl?.items?.length) {
-      const initialChecklists: any[] = tpl.items.flatMap((tplItem: any) => {
+
+    let currentChecklists = prod.checklists ? [...prod.checklists] : [];
+
+    if (tpl?.items?.length) {
+      const templateItems: any[] = tpl.items.flatMap((tplItem: any) => {
         if (tplItem.type === ChecklistItemType.PRICE_CHECK && tplItem.competitors?.length > 0) {
           return tplItem.competitors.map((comp: any) => ({
             id: `${prod.id}-${tplItem.description}-${comp.name}`,
@@ -126,8 +131,6 @@ const ProductCheckView: React.FC = () => {
             type: tplItem.type,
             isChecked: false,
             value: '',
-            // competitorName captured for UI hints if needed
-            // Using 'any' typing to preserve flexibility
             ...(comp?.name ? { competitorName: comp.name } as any : {})
           }));
         }
@@ -139,10 +142,20 @@ const ProductCheckView: React.FC = () => {
           value: ''
         }];
       });
-      setSelectedProduct({ ...prod, checklists: initialChecklists });
-    } else {
-      setSelectedProduct(prod);
+
+      // Merge: Add items from template that are NOT in currentChecklists (by description/type)
+      const newItems = templateItems.filter((newItem: any) => 
+        !currentChecklists.some(existing => 
+            existing.description === newItem.description && existing.type === newItem.type
+        )
+      );
+
+      if (newItems.length > 0) {
+          currentChecklists = [...currentChecklists, ...newItems];
+      }
     }
+
+    setSelectedProduct({ ...prod, checklists: currentChecklists });
   };
 
 
