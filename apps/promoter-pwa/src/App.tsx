@@ -14,6 +14,7 @@ import SettingsView from './views/SettingsView';
 import BottomNav from './components/BottomNav';
 import LocationTracker from './components/LocationTracker';
 import TimeClockAlert from './components/TimeClockAlert';
+import SyncStatus from './components/SyncStatus';
 
 const ProtectedLayout = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -34,6 +35,7 @@ const ProtectedLayout = () => {
     <div className="pb-20" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       <LocationTracker />
       <TimeClockAlert />
+      <SyncStatus />
       <Outlet />
       <BottomNav />
     </div>
