@@ -9,6 +9,7 @@ import { ViewType } from '../types';
 import api from '../api/client';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import { LivePhotosFeed } from '../components/LivePhotosFeed';
 
 let DefaultIcon = L.icon({
     iconUrl: icon,
@@ -293,11 +294,20 @@ const LiveMapView: React.FC<LiveMapViewProps> = ({ onNavigate }) => {
         </div>
         
         {/* Sidebar List */}
-        <div className="w-full lg:w-[350px] flex flex-col gap-4 overflow-hidden">
+        <div className="w-full lg:w-[450px] flex flex-col gap-4 overflow-hidden h-[calc(100vh-140px)]">
           <div className="bg-white rounded-[2rem] border border-slate-200 p-6 flex-1 overflow-y-auto shadow-sm">
             <SectionHeader icon={<Activity style={{ color: settings.primaryColor }} size={20} />} title="Rastreamento em Tempo Real" />
             
-            <div className="mt-6 space-y-4">
+            <div className="mt-6 mb-8 border-b border-slate-100 pb-8">
+               <LivePhotosFeed clientId={filterClientId} />
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <Users size={18} className="text-slate-400" />
+              Equipe em Campo
+            </h3>
+
+            <div className="space-y-4">
               {filteredPromoters.length === 0 && filteredSupervisors.length === 0 ? (
                   <p className="text-sm text-slate-400 text-center py-4">Nenhum funcionário encontrado.</p>
               ) : (
