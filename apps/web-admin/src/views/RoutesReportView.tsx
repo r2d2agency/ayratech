@@ -3,6 +3,7 @@ import { useBranding } from '../context/BrandingContext';
 import SectionHeader from '../components/SectionHeader';
 import StatCard from '../components/StatCard';
 import { 
+  RefreshCw,
   BarChart2, 
   CheckCircle2, 
   XCircle, 
@@ -1394,13 +1395,40 @@ const RoutesReportView: React.FC = () => {
                   </span>
                 )}
               </div>
-            </div>
-              <button 
-                onClick={() => setSelectedRoute(null)}
-                className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-red-500 transition-all flex-shrink-0"
-              >
-                <X size={20} />
-              </button>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => {
+                      setLoading(true);
+                      fetchRoutes().then(() => {
+                        // The routes state will be updated by fetchRoutes
+                        // We need to update selectedRoute with the new data
+                        // But since fetchRoutes is async and sets state, we might need a way to get the fresh data.
+                        // Actually, let's just re-fetch everything and rely on the user clicking refresh, 
+                        // but we need to ensure the modal doesn't close or show stale data.
+                        // Better approach: find the route in the NEW routes list.
+                        // But React state updates are batched. 
+                        // Let's implement a specific refresh for the modal.
+                        api.get(`/routes/${selectedRoute.id}/report`).then(res => {
+                             setSelectedRoute(res.data);
+                             setLoading(false);
+                        }).catch(err => {
+                            console.error(err);
+                            setLoading(false);
+                        });
+                      });
+                    }}
+                    className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-blue-500 transition-all flex-shrink-0"
+                    title="Atualizar dados da rota"
+                  >
+                    <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                  </button>
+                  <button 
+                    onClick={() => setSelectedRoute(null)}
+                    className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-red-500 transition-all flex-shrink-0"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
             </div>
 
             {/* Content */}

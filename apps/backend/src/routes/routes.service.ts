@@ -998,6 +998,7 @@ export class RoutesService {
             totalCount: gondola + inventory,
             ruptureReason: p.ruptureReason,
             isCompleted: (p.gondolaCount !== null && p.inventoryCount !== null) || !!p.ruptureReason,
+            photos: p.photos || []
           };
         }),
       })),

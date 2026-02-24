@@ -45,7 +45,7 @@ export class RouteItemProduct {
   @Column({ nullable: true, type: 'timestamp' })
   checkOutTime: Date;
 
-  @Column('simple-array', { nullable: true })
+  @Column('text', { array: true, nullable: true })
   photos: string[];
 
   @Column({ default: 'UNCHECKED' })
