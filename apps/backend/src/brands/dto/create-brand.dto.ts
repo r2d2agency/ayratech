@@ -17,4 +17,8 @@ export class CreateBrandDto {
   @IsString()
   @IsOptional()
   stockNotificationContact?: string;
+
+  @IsString()
+  @IsOptional()
+  inventoryFrequency?: string;
 }

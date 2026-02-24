@@ -1376,8 +1376,8 @@ export class RoutesService {
     });
   }
 
-  private async checkRecentInventory(clientId: string, supermarketId: string, frequency: string): Promise<boolean> {
-    if (!clientId || !supermarketId || !frequency || frequency === 'daily') return false;
+  private async checkRecentInventory(scopeType: 'client' | 'brand', scopeId: string, supermarketId: string, frequency: string): Promise<boolean> {
+    if (!scopeId || !supermarketId || !frequency || frequency === 'daily') return false;
     
     const now = new Date();
     const startDate = new Date();
@@ -1389,20 +1389,27 @@ export class RoutesService {
     } else if (frequency === 'monthly') {
       startDate.setMonth(now.getMonth() - 1);
     } else {
-      return false; // unknown -> assume required
+      return false; // unknown -> assume required (no recent found)
     }
     
-    // Check if any inventory count exists for this client at this supermarket since startDate
-    const count = await this.routeItemProductsRepository.createQueryBuilder('rip')
+    // Check if any inventory count exists for this scope at this supermarket since startDate
+    const qb = this.routeItemProductsRepository.createQueryBuilder('rip')
       .innerJoin('rip.product', 'product')
-      .innerJoin('product.client', 'client')
       .innerJoin('rip.routeItem', 'ri')
       .innerJoin('ri.supermarket', 'sm')
-      .where('client.id = :clientId', { clientId })
-      .andWhere('sm.id = :supermarketId', { supermarketId })
+      .where('sm.id = :supermarketId', { supermarketId })
       .andWhere('ri.checkOutTime >= :startDate', { startDate })
-      .andWhere('rip.inventoryCount IS NOT NULL')
-      .getCount();
+      .andWhere('rip.inventoryCount IS NOT NULL');
+
+    if (scopeType === 'client') {
+        qb.innerJoin('product.client', 'client')
+          .andWhere('client.id = :scopeId', { scopeId });
+    } else {
+         qb.innerJoin('product.brand', 'brand')
+           .andWhere('brand.id = :scopeId', { scopeId });
+    }
+
+    const count = await qb.getCount();
       
     return count > 0;
   }
@@ -1485,31 +1492,45 @@ export class RoutesService {
     }
 
     // Pre-calculate inventory requirements
-    const clientInventoryRequirement = new Map<string, boolean>();
+    const inventoryRequirements = new Map<string, boolean>();
+    const uniqueBrandIds = new Set<string>();
     const uniqueClientIds = new Set<string>();
+
     item.products?.forEach(p => {
+        if (p.product?.brand?.id) uniqueBrandIds.add(p.product.brand.id);
         if (p.product?.client?.id) uniqueClientIds.add(p.product.client.id);
     });
 
+    // Check Brands
+    for (const bid of uniqueBrandIds) {
+         const prod = item.products.find(p => p.product.brand?.id === bid);
+         const brand = prod?.product.brand as any;
+         if (brand?.inventoryFrequency && brand.inventoryFrequency !== 'daily') {
+              const hasRecent = await this.checkRecentInventory('brand', bid, item.supermarket.id, brand.inventoryFrequency);
+              inventoryRequirements.set(`brand:${bid}`, !hasRecent);
+         } else {
+              inventoryRequirements.set(`brand:${bid}`, true);
+         }
+    }
+
+    // Check Clients
     for (const cid of uniqueClientIds) {
-        const prod = item.products.find(p => p.product.client.id === cid);
-        if (!prod) continue;
-        const client = prod.product.client as any;
-        const frequency = client.inventoryFrequency;
-        
-        if (!frequency || frequency === 'daily') {
-             clientInventoryRequirement.set(cid, true);
-        } else {
-             const hasRecent = await this.checkRecentInventory(cid, item.supermarket.id, frequency);
-             clientInventoryRequirement.set(cid, !hasRecent);
-        }
+         const prod = item.products.find(p => p.product.client?.id === cid);
+         const client = prod?.product.client as any;
+         if (client?.inventoryFrequency && client.inventoryFrequency !== 'daily') {
+              const hasRecent = await this.checkRecentInventory('client', cid, item.supermarket.id, client.inventoryFrequency);
+              inventoryRequirements.set(`client:${cid}`, !hasRecent);
+         } else {
+              inventoryRequirements.set(`client:${cid}`, true);
+         }
     }
 
     // 2) Regras por produto: contagens, validade, checklist e ruptura
     const hasProductValidationIssue = (item.products || []).some(ip => {
       const isRupture = !!ip.isStockout;
       const brandWaitForStockCount = !!(ip.product?.brand && (ip.product.brand as any).waitForStockCount);
-      const client = (ip.product as any)?.client as Client | undefined;
+      const client = (ip.product as any)?.client as any;
+      const brand = (ip.product as any)?.brand as any;
       const routeType = item.route?.type || 'VISIT';
 
       // Ruptura exige motivo
@@ -1521,7 +1542,14 @@ export class RoutesService {
       // Contagens: gondolaCount é sempre obrigatória.
       // inventoryCount é obrigatória apenas se o cliente exigir OU se a rota for de INVENTÁRIO.
       const hasGondola = ip.gondolaCount !== null && ip.gondolaCount !== undefined;
-      const isRequiredByFrequency = client && clientInventoryRequirement.has(client.id) ? clientInventoryRequirement.get(client.id) : true;
+      
+      let isRequiredByFrequency = true;
+      if (brand && brand.inventoryFrequency) {
+           isRequiredByFrequency = inventoryRequirements.get(`brand:${brand.id}`) ?? true;
+      } else if (client && client.inventoryFrequency) {
+           isRequiredByFrequency = inventoryRequirements.get(`client:${client.id}`) ?? true;
+      }
+
       const inventoryRequired = routeType === 'INVENTORY' || (!!client?.requiresInventoryCount && isRequiredByFrequency);
       if (!hasGondola) return true;
       if (inventoryRequired) {

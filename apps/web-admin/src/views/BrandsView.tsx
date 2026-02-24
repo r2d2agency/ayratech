@@ -17,7 +17,8 @@ const BrandsView: React.FC = () => {
     name: '',
     clientId: '',
     waitForStockCount: false,
-    stockNotificationContact: ''
+    stockNotificationContact: '',
+    inventoryFrequency: ''
   });
 
   useEffect(() => {
@@ -118,7 +119,8 @@ const BrandsView: React.FC = () => {
       name: '', 
       clientId: '',
       waitForStockCount: false,
-      stockNotificationContact: ''
+      stockNotificationContact: '',
+      inventoryFrequency: ''
     });
     setEditingBrand(null);
   };
@@ -133,7 +135,8 @@ const BrandsView: React.FC = () => {
       name: brand.name,
       clientId: brand.clientId || brand.client?.id || '',
       waitForStockCount: brand.waitForStockCount || false,
-      stockNotificationContact: brand.stockNotificationContact || ''
+      stockNotificationContact: brand.stockNotificationContact || '',
+      inventoryFrequency: brand.inventoryFrequency || ''
     });
     setShowModal(true);
   };
@@ -288,6 +291,26 @@ const BrandsView: React.FC = () => {
                   <label htmlFor="waitForStockCount" className="text-sm font-bold text-slate-700 cursor-pointer">
                     Aguardar contagem de estoque
                   </label>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+                    Frequência de Inventário
+                  </label>
+                  <select
+                    value={formData.inventoryFrequency || ''}
+                    onChange={e => setFormData({...formData, inventoryFrequency: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium bg-white"
+                  >
+                    <option value="">Sempre (Padrão)</option>
+                    <option value="daily">Diário (1x por dia)</option>
+                    <option value="weekly">Semanal (1x por semana)</option>
+                    <option value="biweekly">Quinzenal (1x a cada 15 dias)</option>
+                    <option value="monthly">Mensal (1x por mês)</option>
+                  </select>
+                  <p className="text-[10px] text-slate-400 mt-1 ml-1">
+                    Define com que frequência o inventário deve ser preenchido obrigatoriamente.
+                  </p>
                 </div>
                 
                 {formData.waitForStockCount && (

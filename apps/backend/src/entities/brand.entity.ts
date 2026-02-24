@@ -23,6 +23,9 @@ export class Brand {
   @Column({ nullable: true })
   stockNotificationContact: string;
 
+  @Column({ nullable: true })
+  inventoryFrequency: string; // 'daily', 'weekly', 'biweekly', 'monthly'
+
   @OneToMany(() => Product, product => product.brand)
   products: Product[];
 
