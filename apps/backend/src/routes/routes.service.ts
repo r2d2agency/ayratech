@@ -39,6 +39,49 @@ export class RoutesService {
     private configService: ConfigService,
   ) {}
 
+  async findRecentPhotos(minutes: number = 30, clientId?: string) {
+    const timeThreshold = new Date();
+    timeThreshold.setMinutes(timeThreshold.getMinutes() - minutes);
+
+    const qb = this.routeItemProductsRepository
+      .createQueryBuilder('rip')
+      .innerJoinAndSelect('rip.routeItem', 'ri')
+      .innerJoinAndSelect('ri.supermarket', 'sm')
+      .innerJoinAndSelect('rip.product', 'p')
+      .leftJoinAndSelect('p.brand', 'b')
+      .leftJoinAndSelect('rip.completedBy', 'u')
+      .where("rip.photos IS NOT NULL")
+      .andWhere("jsonb_array_length(rip.photos) > 0")
+      .andWhere('rip.updatedAt >= :timeThreshold', { timeThreshold })
+      .orderBy('rip.updatedAt', 'DESC')
+      .take(20);
+
+    if (clientId) {
+        qb.innerJoin('p.client', 'c')
+          .andWhere('c.id = :clientId', { clientId });
+    }
+
+    const items = await qb.getMany();
+
+    const result = [];
+    for (const rip of items) {
+        if (rip.photos && rip.photos.length > 0) {
+            for (const photoUrl of rip.photos) {
+                result.push({
+                    id: rip.id,
+                    photoUrl,
+                    productName: rip.product.name,
+                    brandName: rip.product.brand?.name || '',
+                    supermarketName: rip.routeItem.supermarket.fantasyName,
+                    promoterName: rip.completedBy ? rip.completedBy.name : 'Promotor',
+                    timestamp: rip.updatedAt
+                });
+            }
+        }
+    }
+    return result;
+  }
+
   async create(createRouteDto: CreateRouteDto) {
     console.log('RoutesService.create input:', JSON.stringify(createRouteDto));
 

@@ -101,6 +101,16 @@ export class RoutesController {
     return this.routesService.getEvidenceReport(startDate, endDate, clientId);
   }
 
+  @Get('photos/recent')
+  findRecentPhotos(
+    @Query('minutes') minutes?: string,
+    @Query('clientId') clientId?: string,
+  ) {
+    const mins = minutes ? parseInt(minutes, 10) : 30;
+    return this.routesService.findRecentPhotos(mins, clientId);
+  }
+
+
   @Get('rules/all')
   findAllRules() {
     return this.routesService.findAllRules();

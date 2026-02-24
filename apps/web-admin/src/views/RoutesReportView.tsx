@@ -1367,10 +1367,10 @@ const RoutesReportView: React.FC = () => {
         <div className="fixed inset-0 bg-slate-900/50 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-5xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-start bg-slate-50/50 sticky top-0 z-10">
               <div>
                 <h2 className="text-xl font-black text-slate-900">Detalhes da Rota</h2>
-                <div className="flex items-center gap-4 mt-2 text-sm text-slate-500">
+                <div className="flex items-center gap-4 mt-2 text-sm text-slate-500 flex-wrap">
                   <span className="flex items-center gap-1.5">
                     <Calendar size={14} />
                     {formatRouteDate(selectedRoute.date)}
@@ -1397,14 +1397,14 @@ const RoutesReportView: React.FC = () => {
             </div>
               <button 
                 onClick={() => setSelectedRoute(null)}
-                className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-red-500 transition-all"
+                className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-red-500 transition-all flex-shrink-0"
               >
                 <X size={20} />
               </button>
             </div>
 
             {/* Content */}
-            <div className="p-6 overflow-y-auto space-y-8 bg-slate-50/30">
+            <div className="p-6 overflow-y-auto space-y-8 bg-slate-50/30 flex-1">
               {selectedRoute.items.map((item, index) => (
                 <div key={item.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${
                   item.products.some(p => p.isStockout) 
@@ -1468,60 +1468,73 @@ const RoutesReportView: React.FC = () => {
 
                   {/* Products Table */}
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
+                    <table className="w-full text-left text-sm min-w-[1200px]">
                       <thead className="bg-slate-50 text-slate-500 font-bold text-xs uppercase border-b border-slate-100">
                         <tr>
                           <th className="p-3 w-10">#</th>
-                          <th className="p-3">Produto</th>
-                          <th className="p-3">Marca</th>
-                          <th className="p-3">Quem</th>
-                          <th className="p-3">Estoque</th>
-                          <th className="p-3">Checklist / Detalhes</th>
-                          <th className="p-3">Validade</th>
-                          <th className="p-3">Status</th>
-                          <th className="p-3">Fotos</th>
-                          <th className="p-3">Observação</th>
+                          <th className="p-3 w-[200px]">Produto</th>
+                          <th className="p-3 w-[120px]">Marca</th>
+                          <th className="p-3 w-[100px]">Quem</th>
+                          <th className="p-3 w-[120px]">Estoque</th>
+                          <th className="p-3 w-[180px]">Checklist</th>
+                          <th className="p-3 w-[120px]">Validade</th>
+                          <th className="p-3 w-[120px]">Status</th>
+                          <th className="p-3 w-[150px]">Fotos</th>
+                          <th className="p-3 min-w-[200px]">Observação</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">
                         {item.products.map((p, pIndex) => (
                           <tr key={p.id} className={p.isStockout ? 'bg-red-50/30' : ''}>
                             <td className="p-3 text-slate-400 text-xs">{pIndex + 1}</td>
-                            <td className="p-3 font-medium text-slate-700">{p.product.name}</td>
-                            <td className="p-3 text-slate-500">{p.product.brand?.name || '-'}</td>
+                            <td className="p-3 font-medium text-slate-700">
+                                <div className="line-clamp-2" title={p.product.name}>{p.product.name}</div>
+                            </td>
+                            <td className="p-3 text-slate-500">
+                                <div className="truncate max-w-[120px]" title={p.product.brand?.name}>{p.product.brand?.name || '-'}</div>
+                            </td>
                             <td className="p-3 text-xs font-bold text-slate-500">
                                 {p.completedBy ? (
-                                    <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded-md border border-blue-100">
+                                    <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded-md border border-blue-100 whitespace-nowrap">
                                         {(p.completedBy?.name || '').split(' ')[0]}
                                     </span>
                                 ) : '-'}
                             </td>
-                            <td className="p-3 text-xs text-slate-700 font-bold">
-                                {p.stockCount !== null && p.stockCount !== undefined ? p.stockCount : '-'}
+                            <td className="p-3 text-xs">
+                              <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                                <div>
+                                  <span className="block text-[10px] text-slate-400">Gôndola</span>
+                                  <span className="font-bold">{(p as any).gondolaCount ?? '-'}</span>
+                                </div>
+                                <div>
+                                  <span className="block text-[10px] text-slate-400">Estoque</span>
+                                  <span className="font-bold">{(p as any).inventoryCount ?? '-'}</span>
+                                </div>
+                              </div>
                             </td>
                             <td className="p-3 text-xs text-slate-700">
                                 {p.product.checklistTemplate?.title && (
                                     <div className="mb-1 pb-1 border-b border-slate-100">
-                                        <span className="text-[10px] font-bold text-slate-700 bg-slate-200 px-1 rounded block w-fit">
+                                        <span className="text-[10px] font-bold text-slate-700 bg-slate-200 px-1 rounded block w-fit truncate max-w-full">
                                             {p.product.checklistTemplate.title}
                                         </span>
                                     </div>
                                 )}
                                 {p.checklists && p.checklists.length > 0 ? (
-                                    <div className="flex flex-col gap-1">
+                                    <div className="flex flex-col gap-1 max-h-[100px] overflow-y-auto">
                                         {p.checklists.map((c: any, cIdx: number) => (
                                             <div key={c.id || cIdx} className="flex flex-col border-b last:border-0 border-slate-100 pb-1 last:pb-0">
-                                                <span className="font-semibold text-[10px] text-slate-500">{c.description}</span>
+                                                <span className="font-semibold text-[10px] text-slate-500 truncate" title={c.description}>{c.description}</span>
                                                 {c.competitorName && (
-                                                    <span className="text-[10px] text-orange-600 font-bold">{c.competitorName}</span>
+                                                    <span className="text-[10px] text-orange-600 font-bold truncate">{c.competitorName}</span>
                                                 )}
                                                 <div className="flex items-center gap-1">
                                                     {c.type === 'BINARY' ? (
                                                         c.isChecked ? 
-                                                            <span className="text-emerald-600 font-bold flex items-center gap-1"><CheckCircle2 size={10}/> Sim</span> : 
-                                                            <span className="text-red-500 font-bold flex items-center gap-1"><XCircle size={10}/> Não</span>
+                                                            <span className="text-emerald-600 font-bold flex items-center gap-1 text-[10px]"><CheckCircle2 size={10}/> Sim</span> : 
+                                                            <span className="text-red-500 font-bold flex items-center gap-1 text-[10px]"><XCircle size={10}/> Não</span>
                                                     ) : (
-                                                        <span className="font-mono bg-slate-100 px-1 rounded text-slate-700">
+                                                        <span className="font-mono bg-slate-100 px-1 rounded text-slate-700 text-[10px]">
                                                             {c.type === 'PRICE_CHECK' ? 'R$ ' : ''}{c.value || '-'}
                                                         </span>
                                                     )}
@@ -1538,7 +1551,6 @@ const RoutesReportView: React.FC = () => {
                                 const today = new Date();
                                 today.setHours(0, 0, 0, 0);
                                 const valDate = new Date(p.validityDate);
-                                // Fix timezone offset issue for display
                                 const userTimezoneOffset = valDate.getTimezoneOffset() * 60000;
                                 const adjustedDate = new Date(valDate.getTime() + userTimezoneOffset);
                                 
@@ -1566,31 +1578,29 @@ const RoutesReportView: React.FC = () => {
                                 <span className="text-slate-300">-</span>
                               )}
                             </td>
-                            <td className="p-3 text-xs font-bold text-slate-500">
-                              {p.checkInTime && p.checkOutTime ? (
-                                <span className="text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
-                                  {formatDuration(p.checkInTime, p.checkOutTime)}
-                                </span>
-                              ) : (
-                                <span className="text-slate-300">-</span>
-                              )}
-                            </td>
-                            <td className="p-3">
-                              {p.isStockout ? (
-                                <span className="inline-flex items-center gap-1 text-red-600 text-xs font-bold">
-                                  <AlertTriangle size={12} /> Ruptura
-                                </span>
-                              ) : p.checked ? (
-                                <span className="inline-flex items-center gap-1 text-emerald-600 text-xs font-bold">
-                                  <CheckCircle2 size={12} /> Verificado
-                                </span>
-                              ) : (
-                                <span className="text-slate-400 text-xs">-</span>
-                              )}
+                            <td className="p-3 text-xs">
+                              <div className="space-y-1.5">
+                                {p.checkInTime && p.checkOutTime && (
+                                    <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-[10px] font-bold block w-fit">
+                                      {formatDuration(p.checkInTime, p.checkOutTime)}
+                                    </span>
+                                )}
+                                {p.isStockout ? (
+                                    <span className="inline-flex items-center gap-1 text-red-600 font-bold">
+                                      <AlertTriangle size={12} /> Ruptura
+                                    </span>
+                                ) : p.checked ? (
+                                    <span className="inline-flex items-center gap-1 text-emerald-600 font-bold">
+                                      <CheckCircle2 size={12} /> Verificado
+                                    </span>
+                                ) : (
+                                    <span className="text-slate-400">-</span>
+                                )}
+                              </div>
                             </td>
                             <td className="p-3">
                               {p.photos && p.photos.length > 0 ? (
-                                <div className="flex gap-1 overflow-x-auto max-w-[200px] py-1">
+                                <div className="flex gap-1 overflow-x-auto max-w-[150px] py-1 scrollbar-thin">
                                   {p.photos.map((photo, i) => (
                                     <a 
                                       key={i} 
@@ -1598,6 +1608,7 @@ const RoutesReportView: React.FC = () => {
                                       target="_blank" 
                                       rel="noopener noreferrer"
                                       className="block w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden border border-slate-200 shadow-sm hover:ring-2 ring-blue-500 transition-all"
+                                      onClick={(e) => e.stopPropagation()} // Prevent row click if any
                                     >
                                       <img src={getImageUrl(photo)} alt="Produto" className="w-full h-full object-cover" />
                                     </a>
@@ -1607,46 +1618,10 @@ const RoutesReportView: React.FC = () => {
                                 <span className="text-slate-300 text-xs">-</span>
                               )}
                             </td>
-                            <td className="p-3 text-slate-500 text-xs">
-                              <div className="grid grid-cols-3 gap-2">
-                                <div>
-                                  <span className="block text-[10px] text-slate-400">Gôndola</span>
-                                  <span className="font-bold">{(p as any).gondolaCount ?? '-'}</span>
-                                </div>
-                                <div>
-                                  <span className="block text-[10px] text-slate-400">Estoque</span>
-                                  <span className="font-bold">{(p as any).inventoryCount ?? '-'}</span>
-                                </div>
-                                <div>
-                                  <span className="block text-[10px] text-slate-400">Total</span>
-                                  <span className="font-bold">{p.stockCount ?? '-'}</span>
-                                </div>
+                            <td className="p-3 text-slate-500 italic text-xs">
+                              <div className="max-w-[200px] truncate" title={p.observation || ''}>
+                                {p.observation || '-'}
                               </div>
-                            </td>
-                            <td className="p-3 text-slate-500 text-xs">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="block text-[10px] text-slate-400">Validade</span>
-                                  <span className={`font-bold ${p.validityDate ? 'text-slate-700' : 'text-slate-300'}`}>
-                                    {p.validityDate || '-'}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="block text-[10px] text-slate-400">Ativo</span>
-                                  <span className={`font-bold ${p.checked ? 'text-emerald-600' : 'text-slate-300'}`}>
-                                    {p.checked ? 'Sim' : 'Não'}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="block text-[10px] text-slate-400">Ruptura</span>
-                                  <span className={`font-bold ${p.isStockout ? 'text-red-600' : 'text-slate-300'}`}>
-                                    {p.isStockout ? 'Sim' : 'Não'}
-                                  </span>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="p-3 text-slate-500 italic text-xs max-w-xs truncate">
-                              {p.observation || '-'}
                             </td>
                           </tr>
                         ))}
