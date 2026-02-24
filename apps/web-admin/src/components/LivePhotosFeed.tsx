@@ -43,7 +43,7 @@ export const LivePhotosFeed: React.FC<LivePhotosFeedProps> = ({ clientId }) => {
         <span className="text-xs text-slate-400 font-medium">Atualizando em tempo real</span>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         {photos.map((photo) => (
           <div key={photo.id + photo.photoUrl} className="group relative bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-all animate-in fade-in zoom-in-95 duration-300">
             {/* Image */}
@@ -58,26 +58,26 @@ export const LivePhotosFeed: React.FC<LivePhotosFeedProps> = ({ clientId }) => {
             </div>
 
             {/* Info Overlay (Hover) */}
-            <div className="absolute inset-0 p-4 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-white">
-               <p className="font-bold text-sm truncate">{photo.productName}</p>
-               <p className="text-xs text-white/80 truncate">{photo.brandName}</p>
+            <div className="absolute inset-0 p-3 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-white">
+               <p className="font-bold text-xs truncate">{photo.productName}</p>
+               <p className="text-[10px] text-white/80 truncate">{photo.brandName}</p>
             </div>
 
             {/* Always Visible Info */}
-            <div className="p-3 space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                 <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600 truncate">
-                    <User size={12} className="text-blue-500" />
-                    <span className="truncate max-w-[100px]" title={photo.promoterName}>{photo.promoterName.split(' ')[0]}</span>
+            <div className="p-2 space-y-1.5">
+              <div className="flex items-start justify-between gap-1">
+                 <div className="flex items-center gap-1 text-[10px] font-medium text-slate-600 truncate">
+                    <User size={10} className="text-blue-500" />
+                    <span className="truncate max-w-[80px]" title={photo.promoterName}>{photo.promoterName.split(' ')[0]}</span>
                  </div>
-                 <span className="text-[10px] text-slate-400 whitespace-nowrap flex items-center gap-1 bg-slate-50 px-1.5 py-0.5 rounded-full border border-slate-100">
-                    <Clock size={10} />
+                 <span className="text-[9px] text-slate-400 whitespace-nowrap flex items-center gap-0.5 bg-slate-50 px-1 py-0.5 rounded-full border border-slate-100">
+                    <Clock size={8} />
                     {formatDistanceToNow(new Date(photo.timestamp), { addSuffix: true, locale: ptBR }).replace('cerca de ', '')}
                  </span>
               </div>
               
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 truncate border-t border-slate-50 pt-2 mt-1">
-                <MapPin size={12} className="text-orange-500 flex-shrink-0" />
+              <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate border-t border-slate-50 pt-1.5 mt-0.5">
+                <MapPin size={10} className="text-orange-500 flex-shrink-0" />
                 <span className="truncate" title={photo.supermarketName}>{photo.supermarketName}</span>
               </div>
             </div>
