@@ -53,7 +53,12 @@ const ClientsView: React.FC = () => {
     photoConfig: {
       labels: { before: '', storage: '', after: '' },
       categories: {} as Record<string, any>
-    }
+    },
+    defaultVisitChecklistTemplateId: '',
+    defaultInventoryChecklistTemplateId: '',
+    requiresInventoryCount: true,
+    locationRange: 500,
+    inventoryFrequency: ''
   });
 
   // Contract Form State
@@ -220,6 +225,9 @@ const ClientsView: React.FC = () => {
       cep: '',
       logo: '',
       password: '',
+      defaultVisitChecklistTemplateId: '',
+      defaultInventoryChecklistTemplateId: '',
+      requiresInventoryCount: false,
       photoConfig: {
         labels: { before: '', storage: '', after: '' },
         categories: {}
@@ -287,6 +295,11 @@ const ClientsView: React.FC = () => {
       if (newClient.estado) formData.append('estado', newClient.estado);
       if (newClient.cep) formData.append('cep', newClient.cep);
       if (newClient.password) formData.append('password', newClient.password);
+      if (newClient.defaultVisitChecklistTemplateId) formData.append('defaultVisitChecklistTemplateId', newClient.defaultVisitChecklistTemplateId);
+      if (newClient.defaultInventoryChecklistTemplateId) formData.append('defaultInventoryChecklistTemplateId', newClient.defaultInventoryChecklistTemplateId);
+      formData.append('requiresInventoryCount', String(newClient.requiresInventoryCount));
+      if (newClient.locationRange) formData.append('locationRange', String(newClient.locationRange));
+      if (newClient.inventoryFrequency) formData.append('inventoryFrequency', newClient.inventoryFrequency);
       
       // Append photoConfig as JSON string
       if (newClient.photoConfig) {
@@ -341,7 +354,12 @@ const ClientsView: React.FC = () => {
       cep: client.cep || '',
       logo: client.logo || '',
       password: '',
-      photoConfig
+      photoConfig,
+      defaultVisitChecklistTemplateId: client.defaultVisitChecklistTemplateId || '',
+      defaultInventoryChecklistTemplateId: client.defaultInventoryChecklistTemplateId || '',
+      requiresInventoryCount: client.requiresInventoryCount !== undefined ? client.requiresInventoryCount : true,
+      locationRange: client.locationRange || 500,
+      inventoryFrequency: client.inventoryFrequency || ''
     });
     setShowClientModal(true);
   };
@@ -572,6 +590,72 @@ const ClientsView: React.FC = () => {
                       { value: 'suspenso', label: 'Suspenso' }
                     ]}
                   />
+                </div>
+              </div>
+
+              <div className="border-t border-slate-100 pt-4">
+                <h3 className="text-sm font-black text-slate-900 mb-4 uppercase tracking-wide">Padrões de Checklist</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="col-span-2 md:col-span-1">
+                    <SearchableSelect
+                      label="Checklist de Visita Padrão"
+                      placeholder="Selecione um checklist..."
+                      value={newClient.defaultVisitChecklistTemplateId}
+                      onChange={(val) => setNewClient({...newClient, defaultVisitChecklistTemplateId: val})}
+                      options={[
+                        { value: '', label: 'Nenhum' },
+                        ...checklistTemplates.map(t => ({ value: t.id, label: t.name }))
+                      ]}
+                    />
+                  </div>
+                  <div className="col-span-2 md:col-span-1">
+                    <SearchableSelect
+                      label="Checklist de Inventário Padrão"
+                      placeholder="Selecione um checklist..."
+                      value={newClient.defaultInventoryChecklistTemplateId}
+                      onChange={(val) => setNewClient({...newClient, defaultInventoryChecklistTemplateId: val})}
+                      options={[
+                        { value: '', label: 'Nenhum' },
+                        ...checklistTemplates.map(t => ({ value: t.id, label: t.name }))
+                      ]}
+                    />
+                  </div>
+                  <div className="col-span-2 flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <input
+                      type="checkbox"
+                      id="requiresInventoryCount"
+                      checked={newClient.requiresInventoryCount}
+                      onChange={e => setNewClient({...newClient, requiresInventoryCount: e.target.checked})}
+                      className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="requiresInventoryCount" className="text-sm font-bold text-slate-700 cursor-pointer select-none">
+                      Exigir Contagem de Estoque (Inventário)
+                    </label>
+                  </div>
+                  
+                  <div className="col-span-2 md:col-span-1">
+                     <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Frequência de Inventário</label>
+                     <select
+                       value={newClient.inventoryFrequency || ''}
+                       onChange={e => setNewClient({...newClient, inventoryFrequency: e.target.value})}
+                       className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                     >
+                       <option value="">Sempre (Padrão)</option>
+                       <option value="daily">Diário (1x por dia)</option>
+                       <option value="weekly">Semanal (1x por semana)</option>
+                       <option value="biweekly">Quinzenal (1x a cada 15 dias)</option>
+                       <option value="monthly">Mensal (1x por mês)</option>
+                     </select>
+                  </div>
+                  <div className="col-span-2 md:col-span-1">
+                    <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Raio de Localização (m)</label>
+                    <input 
+                      type="number" 
+                      value={newClient.locationRange || 500}
+                      onChange={e => setNewClient({...newClient, locationRange: parseInt(e.target.value) || 500})}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                    />
+                  </div>
                 </div>
               </div>
 

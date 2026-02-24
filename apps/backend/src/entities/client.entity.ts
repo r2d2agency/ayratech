@@ -25,7 +25,7 @@ export class Client {
   telefonePrincipal: string;
 
   @Column({ default: 'ativo' })
-  status: string; // ativo | inativo | suspenso
+  status: string;
 
   @Column({ nullable: true })
   logradouro: string;
@@ -63,6 +63,21 @@ export class Client {
       }
     }>;
   };
+
+  @Column({ nullable: true })
+  defaultVisitChecklistTemplateId: string;
+
+  @Column({ nullable: true })
+  defaultInventoryChecklistTemplateId: string;
+
+  @Column({ default: true })
+  requiresInventoryCount: boolean;
+
+  @Column({ default: 500 })
+  locationRange: number;
+
+  @Column({ nullable: true })
+  inventoryFrequency: string; // 'daily', 'weekly', 'biweekly', 'monthly'
 
   @Column({ nullable: true, select: false })
   password: string;

@@ -113,9 +113,25 @@ export class RoutesService {
         if (allProductIds.size > 0) {
           const products = await queryRunner.manager.find(Product, {
               where: { id: In(Array.from(allProductIds)) },
-              relations: ['checklistTemplate', 'checklistTemplate.items', 'checklistTemplate.items.competitor', 'checklistTemplate.items.competitors', 'supermarketGroups']
+              relations: [
+                'checklistTemplate',
+                'checklistTemplate.items',
+                'checklistTemplate.items.competitor',
+                'checklistTemplate.items.competitors',
+                'supermarketGroups',
+                'client'
+              ]
           });
-          products.forEach(p => productsMap.set(p.id, p));
+          products.forEach(p => {
+            productsMap.set(p.id, p);
+            const client: any = (p as any).client;
+            if (client?.defaultVisitChecklistTemplateId) {
+              allChecklistTemplateIds.add(client.defaultVisitChecklistTemplateId);
+            }
+            if (client?.defaultInventoryChecklistTemplateId) {
+              allChecklistTemplateIds.add(client.defaultInventoryChecklistTemplateId);
+            }
+          });
         }
 
         const checklistTemplatesMap = new Map<string, ChecklistTemplate>();
@@ -180,12 +196,26 @@ export class RoutesService {
                });
                const savedRip = await queryRunner.manager.save(RouteItemProduct, rip);
                
-               let checklistTemplate = null;
+               let checklistTemplate: ChecklistTemplate | null = null;
                if (prodData.checklistTemplateId) {
-                   checklistTemplate = checklistTemplatesMap.get(prodData.checklistTemplateId);
+                   checklistTemplate = checklistTemplatesMap.get(prodData.checklistTemplateId) || null;
                } else {
                    const product = productsMap.get(prodData.productId);
-                   checklistTemplate = product?.checklistTemplate;
+                   if (product) {
+                     if (product.checklistTemplate) {
+                       checklistTemplate = product.checklistTemplate as any;
+                     } else {
+                       const client: any = (product as any).client;
+                       const routeType = savedRoute.type || 'VISIT';
+                       const clientTemplateId =
+                         routeType === 'INVENTORY'
+                           ? client?.defaultInventoryChecklistTemplateId || client?.defaultVisitChecklistTemplateId
+                           : client?.defaultVisitChecklistTemplateId || client?.defaultInventoryChecklistTemplateId;
+                       if (clientTemplateId) {
+                         checklistTemplate = checklistTemplatesMap.get(clientTemplateId) || null;
+                       }
+                     }
+                   }
                }
                
                if (checklistTemplate?.items?.length) {
@@ -344,6 +374,7 @@ export class RoutesService {
       .leftJoinAndSelect('templateItems.competitors', 'templateCompetitors')
       .leftJoinAndSelect('items.checkins', 'checkins')
       .leftJoinAndSelect('checkins.promoter', 'checkinPromoter')
+      .where('route.isTemplate IS NOT TRUE')
       .orderBy('route.date', 'DESC');
 
     if (date) {
@@ -488,8 +519,8 @@ export class RoutesService {
     return this.create(newRouteData);
   }
 
-  async createBatch(body: { dates: string[]; promoterIds?: string[]; items: CreateRouteDto['items']; status?: string }) {
-    const { dates, promoterIds, items, status } = body;
+  async createBatch(body: { dates: string[]; promoterIds?: string[]; items: CreateRouteDto['items']; status?: string; type?: string }) {
+    const { dates, promoterIds, items, status, type } = body;
     if (!dates || dates.length === 0) {
       throw new BadRequestException('Nenhuma data selecionada');
     }
@@ -500,7 +531,8 @@ export class RoutesService {
         promoterIds,
         status: status || 'DRAFT',
         isTemplate: false,
-        items
+        items,
+        type: type || 'VISIT'
       };
       const created = await this.create(dto);
       results.push(created);
@@ -668,9 +700,25 @@ export class RoutesService {
           if (allProductIds.size > 0) {
             const products = await queryRunner.manager.find(Product, {
                 where: { id: In(Array.from(allProductIds)) },
-                relations: ['checklistTemplate', 'checklistTemplate.items', 'checklistTemplate.items.competitor', 'checklistTemplate.items.competitors', 'supermarketGroups']
+                relations: [
+                  'checklistTemplate',
+                  'checklistTemplate.items',
+                  'checklistTemplate.items.competitor',
+                  'checklistTemplate.items.competitors',
+                  'supermarketGroups',
+                  'client'
+                ]
             });
-            products.forEach(p => productsMap.set(p.id, p));
+            products.forEach(p => {
+              productsMap.set(p.id, p);
+              const client: any = (p as any).client;
+              if (client?.defaultVisitChecklistTemplateId) {
+                allChecklistTemplateIds.add(client.defaultVisitChecklistTemplateId);
+              }
+              if (client?.defaultInventoryChecklistTemplateId) {
+                allChecklistTemplateIds.add(client.defaultInventoryChecklistTemplateId);
+              }
+            });
           }
 
           const supermarketsMap = new Map<string, any>();
@@ -749,7 +797,7 @@ export class RoutesService {
                        }
                    }
 
-                   const rip = queryRunner.manager.create(RouteItemProduct, {
+                     const rip = queryRunner.manager.create(RouteItemProduct, {
                          routeItem: savedItem,
                          routeItemId: savedItem.id,
                          product: { id: prodData.productId },
@@ -759,12 +807,26 @@ export class RoutesService {
                      });
                      const savedRip = await queryRunner.manager.save(RouteItemProduct, rip);
                      
-                     let checklistTemplate = null;
+                     let checklistTemplate: ChecklistTemplate | null = null;
                      if (prodData.checklistTemplateId) {
-                         checklistTemplate = checklistTemplatesMap.get(prodData.checklistTemplateId);
+                         checklistTemplate = checklistTemplatesMap.get(prodData.checklistTemplateId) || null;
                      } else {
                          const product = productsMap.get(prodData.productId);
-                         checklistTemplate = product?.checklistTemplate;
+                         if (product) {
+                           if (product.checklistTemplate) {
+                             checklistTemplate = product.checklistTemplate as any;
+                           } else {
+                             const client: any = (product as any).client;
+                             const routeType = (route as any).type || 'VISIT';
+                             const clientTemplateId =
+                               routeType === 'INVENTORY'
+                                 ? client?.defaultInventoryChecklistTemplateId || client?.defaultVisitChecklistTemplateId
+                                 : client?.defaultVisitChecklistTemplateId || client?.defaultInventoryChecklistTemplateId;
+                             if (clientTemplateId) {
+                               checklistTemplate = checklistTemplatesMap.get(clientTemplateId) || null;
+                             }
+                           }
+                         }
                      }
                      
                      if (checklistTemplate?.items?.length) {
@@ -1312,15 +1374,67 @@ export class RoutesService {
     });
   }
 
+  private async checkRecentInventory(clientId: string, supermarketId: string, frequency: string): Promise<boolean> {
+    if (!clientId || !supermarketId || !frequency || frequency === 'daily') return false;
+    
+    const now = new Date();
+    const startDate = new Date();
+    
+    if (frequency === 'weekly') {
+      startDate.setDate(now.getDate() - 7);
+    } else if (frequency === 'biweekly') {
+      startDate.setDate(now.getDate() - 15);
+    } else if (frequency === 'monthly') {
+      startDate.setMonth(now.getMonth() - 1);
+    } else {
+      return false; // unknown -> assume required
+    }
+    
+    // Check if any inventory count exists for this client at this supermarket since startDate
+    const count = await this.routeItemProductsRepository.createQueryBuilder('rip')
+      .innerJoin('rip.product', 'product')
+      .innerJoin('product.client', 'client')
+      .innerJoin('rip.routeItem', 'ri')
+      .innerJoin('ri.supermarket', 'sm')
+      .where('client.id = :clientId', { clientId })
+      .andWhere('sm.id = :supermarketId', { supermarketId })
+      .andWhere('ri.checkOutTime >= :startDate', { startDate })
+      .andWhere('rip.inventoryCount IS NOT NULL')
+      .getCount();
+      
+    return count > 0;
+  }
+
   async checkOut(itemId: string, data: { lat: number; lng: number; timestamp: string }, userId?: string) {
     const item = await this.routeItemsRepository.findOne({ 
       where: { id: itemId },
-      relations: ['route', 'products', 'checkins'] // Removed invalid 'items' relation
+      relations: [
+        'route',
+        'supermarket',
+        'products',
+        'products.product',
+        'products.product.client',
+        'products.product.brand',
+        'products.checklists',
+        'checkins'
+      ]
     });
     if (!item) throw new NotFoundException('Item not found');
 
     if (item.route) {
         this.validateSyncDeadline(item.route.date);
+    }
+
+    // Geolocation Validation
+    if (item.supermarket && item.supermarket.latitude && item.supermarket.longitude) {
+      const clientRanges = item.products?.map(p => (p.product?.client as any)?.locationRange).filter((r: any) => r !== undefined && r !== null) || [];
+      const maxRange = clientRanges.length > 0 ? Math.max(...clientRanges) : 500; // Default 500m
+
+      const dist = this.calculateDistance(data.lat, data.lng, parseFloat(item.supermarket.latitude), parseFloat(item.supermarket.longitude));
+      
+      if (dist > maxRange) {
+         throw new BadRequestException(`Você está a ${Math.round(dist)}m do local. O raio permitido é de ${maxRange}m. Aproxime-se do PDV para finalizar.`);
+      }
     }
 
     // Close individual promoter checkin
@@ -1365,13 +1479,36 @@ export class RoutesService {
     if (categoryPhotoMissing) {
       if (item.status === 'CHECKIN') item.status = 'PENDING';
       await this.routeItemsRepository.save(item);
-      return item;
+      throw new BadRequestException('Faltam fotos obrigatórias por categoria (Antes/Depois). Verifique todas as categorias.');
+    }
+
+    // Pre-calculate inventory requirements
+    const clientInventoryRequirement = new Map<string, boolean>();
+    const uniqueClientIds = new Set<string>();
+    item.products?.forEach(p => {
+        if (p.product?.client?.id) uniqueClientIds.add(p.product.client.id);
+    });
+
+    for (const cid of uniqueClientIds) {
+        const prod = item.products.find(p => p.product.client.id === cid);
+        if (!prod) continue;
+        const client = prod.product.client as any;
+        const frequency = client.inventoryFrequency;
+        
+        if (!frequency || frequency === 'daily') {
+             clientInventoryRequirement.set(cid, true);
+        } else {
+             const hasRecent = await this.checkRecentInventory(cid, item.supermarket.id, frequency);
+             clientInventoryRequirement.set(cid, !hasRecent);
+        }
     }
 
     // 2) Regras por produto: contagens, validade, checklist e ruptura
     const hasProductValidationIssue = (item.products || []).some(ip => {
       const isRupture = !!ip.isStockout;
       const brandWaitForStockCount = !!(ip.product?.brand && (ip.product.brand as any).waitForStockCount);
+      const client = (ip.product as any)?.client as Client | undefined;
+      const routeType = item.route?.type || 'VISIT';
 
       // Ruptura exige motivo
       if (isRupture) {
@@ -1379,10 +1516,16 @@ export class RoutesService {
         return false;
       }
 
-      // Contagens: requer gondolaCount e inventoryCount preenchidos; total é calculado
+      // Contagens: gondolaCount é sempre obrigatória.
+      // inventoryCount é obrigatória apenas se o cliente exigir OU se a rota for de INVENTÁRIO.
       const hasGondola = ip.gondolaCount !== null && ip.gondolaCount !== undefined;
-      const hasInventory = ip.inventoryCount !== null && ip.inventoryCount !== undefined;
-      if (!hasGondola || !hasInventory) return true;
+      const isRequiredByFrequency = client && clientInventoryRequirement.has(client.id) ? clientInventoryRequirement.get(client.id) : true;
+      const inventoryRequired = routeType === 'INVENTORY' || (!!client?.requiresInventoryCount && isRequiredByFrequency);
+      if (!hasGondola) return true;
+      if (inventoryRequired) {
+        const hasInventory = ip.inventoryCount !== null && ip.inventoryCount !== undefined;
+        if (!hasInventory) return true;
+      }
 
       // Checklist: todos itens devem estar marcados
       // Se a marca usa waitForStockCount, ignorar itens do tipo STOCK_COUNT (pois a contagem já é capturada nos campos dedicados)
@@ -1405,7 +1548,7 @@ export class RoutesService {
     if (hasProductValidationIssue) {
       if (item.status === 'CHECKIN') item.status = 'PENDING';
       await this.routeItemsRepository.save(item);
-      return item;
+      throw new BadRequestException('Existem pendências nos produtos (Estoque, Validade, Checklist ou Fotos). Verifique os itens marcados.');
     }
 
     // Fotos e validações OK: qualquer promotor pode finalizar o item
@@ -1572,5 +1715,20 @@ export class RoutesService {
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  }
+
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371e3; // Earth radius in meters
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // Distance in meters
   }
 }

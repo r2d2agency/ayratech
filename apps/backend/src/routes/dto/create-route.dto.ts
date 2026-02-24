@@ -59,6 +59,10 @@ export class CreateRouteDto {
   status?: string;
 
   @IsOptional()
+  @IsString()
+  type?: string;
+
+  @IsOptional()
   isTemplate?: boolean;
 
   @IsOptional()

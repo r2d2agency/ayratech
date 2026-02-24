@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEmail, IsEnum, IsObject } from 'class-validator';
+import { IsString, IsOptional, IsEmail, IsEnum, IsObject, IsBoolean, IsNumber } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateClientDto {
@@ -84,4 +84,36 @@ export class CreateClientDto {
   @IsOptional()
   @IsString()
   password?: string;
+
+  @IsOptional()
+  @IsString()
+  defaultVisitChecklistTemplateId?: string;
+
+  @IsOptional()
+  @IsString()
+  defaultInventoryChecklistTemplateId?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value === 'true' || value === '1';
+    }
+    return value;
+  })
+  @IsBoolean()
+  requiresInventoryCount?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return parseInt(value, 10);
+    }
+    return value;
+  })
+  @IsNumber()
+  locationRange?: number;
+
+  @IsOptional()
+  @IsString()
+  inventoryFrequency?: string;
 }

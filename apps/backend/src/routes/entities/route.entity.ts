@@ -25,8 +25,11 @@ export class Route {
   })
   promoters: Employee[];
 
-  @Column({ default: 'DRAFT' }) // DRAFT, CONFIRMED, COMPLETED
+  @Column({ default: 'DRAFT' })
   status: string;
+
+  @Column({ default: 'VISIT' })
+  type: string;
 
   @Column({ default: false })
   isTemplate: boolean;

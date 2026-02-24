@@ -432,42 +432,14 @@ const RouteDetailsView = () => {
   };
 
   const handleCheckOut = async (itemId: string) => {
-    const itemToCheck = route.items.find((i: any) => i.id === itemId);
-    if (itemToCheck) {
-        const categorySet = new Set<string>();
-        (itemToCheck.products || []).forEach((p: any) => {
-          const cat = (p.product?.categoryRef?.name) || p.product?.category || 'Sem Categoria';
-          categorySet.add(cat);
-        });
-        const categoryPhotos = itemToCheck.categoryPhotos || {};
-        const messages: string[] = [];
-        Array.from(categorySet).forEach((cat: string) => {
-          const photos = categoryPhotos[cat] || {};
-          const hasBefore = Array.isArray(photos.before) ? photos.before.length > 0 : !!photos.before;
-          const hasAfter = Array.isArray(photos.after) ? photos.after.length > 0 : !!photos.after;
-          if (!hasBefore) messages.push(`Categoria ${cat}: Foto Antes pendente`);
-          if (!hasAfter) messages.push(`Categoria ${cat}: Foto Depois pendente`);
-          const productsInCat = (itemToCheck.products || []).filter((p: any) => ((p.product?.categoryRef?.name) || p.product?.category || 'Sem Categoria') === cat);
-          const incomplete = productsInCat.filter((p: any) => {
-            const gDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
-            const inv = p.inventoryCount;
-            const hasRupture = !!p.ruptureReason || !!p.isStockout;
-            const iDone = (() => {
-              if (inv === null || inv === undefined) return false;
-              if (inv === 0) return hasRupture;
-              return inv > 0;
-            })();
-            const checked = !!p.checked;
-            return !(gDone && iDone && checked);
-          });
-          if (incomplete.length > 0) messages.push(`Categoria ${cat}: ${incomplete.length} produto(s) pendente(s)`);
-        });
-        if (messages.length > 0) {
-          toast.error(`Faltam itens:\n- ${messages.join('\n- ')}`);
-          return;
-        }
-    }
-
+    // REMOVED: Frontend validation for photos/inventory.
+    // We now rely on Backend validation (RoutesService.checkOut) which checks:
+    // 1. Geolocation (500m radius)
+    // 2. Required photos (before/after/categories)
+    // 3. Inventory count (based on client frequency)
+    // 4. Validity checklists
+    // The backend returns 400 BadRequest with specific messages if any requirement is unmet.
+    
     setProcessing(true);
     
     const proceedWithCheckOut = async (lat: number, lng: number) => {
@@ -504,6 +476,7 @@ const RouteDetailsView = () => {
           // Fix: If it's a 4xx error (Client Error), do NOT queue for offline. Show error and stop.
           if (err.response && err.response.status >= 400 && err.response.status < 500) {
                console.error('Checkout failed with 4xx:', err.response.data);
+               // Display the specific error message from backend
                toast.error(`Erro: ${err.response.data?.message || 'Erro ao finalizar visita'}`);
                setProcessing(false);
                return;
@@ -542,14 +515,21 @@ const RouteDetailsView = () => {
         }
     };
 
-    navigator.geolocation.getCurrentPosition(
-        (position) => proceedWithCheckOut(position.coords.latitude, position.coords.longitude),
-        (error) => {
-            console.error('Geolocation error on checkout, proceeding anyway', error);
-            proceedWithCheckOut(0, 0); // Allow checkout even if geo fails? Or force it?
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
+    if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => proceedWithCheckOut(position.coords.latitude, position.coords.longitude),
+            (error) => {
+                console.error('Geolocation error on checkout', error);
+                toast.error('Erro de geolocalização: ' + (error.message || 'Não foi possível obter sua localização.'));
+                setProcessing(false);
+                // Strict mode: Do not proceed if geo fails
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    } else {
+        toast.error('Geolocalização não suportada neste dispositivo.');
+        setProcessing(false);
+    }
   };
 
   const handleProductCheck = async (itemId: string, productId: string, checked: boolean) => {
