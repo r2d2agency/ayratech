@@ -32,26 +32,22 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = options.find(opt => opt.value === value);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        // Also check if click is inside the portal content (which is not in containerRef)
-        // We can't easily check that without a ref to portal content, but typical behavior
-        // is to close on click outside.
-        // However, since portal is in body, we need a way to detect clicks inside it.
-        // A simple way is to handle click inside portal to stop propagation.
-        // But the event listener is on document.
-        // Let's rely on the portal overlay or click handling within portal.
-        // Actually, for this simple implementation, let's close if click is NOT in container
-        // AND NOT in the portal.
-        // To make it robust, we can use a ref for the dropdown content too.
+        // Handled by backdrop
       }
     };
 
-    const handleScroll = () => {
+    const handleScroll = (event: Event) => {
+      // Don't close if scrolling inside the dropdown
+      if (dropdownRef.current && dropdownRef.current.contains(event.target as Node)) {
+        return;
+      }
       if (isOpen) setIsOpen(false); // Close on scroll to avoid position issues
     };
 
@@ -85,6 +81,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
   const dropdownContent = (
     <div 
+      ref={dropdownRef}
       className="fixed z-[9999] bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100"
       style={{ 
         top: coords.top + 4, 

@@ -571,7 +571,10 @@ const ProductsView: React.FC = () => {
                     value={selectedSubId}
                     onChange={(val) => setSelectedSubId(val)}
                     disabled={!selectedParentId}
-                    options={selectedParentId ? categories.filter(c => c.parent?.id === selectedParentId).map(c => ({ value: c.id, label: c.name })) : []}
+                    options={selectedParentId ? [
+                      { value: '', label: 'Nenhuma' },
+                      ...categories.filter(c => c.parent?.id === selectedParentId).map(c => ({ value: c.id, label: c.name }))
+                    ] : []}
                   />
                 </div>
 
