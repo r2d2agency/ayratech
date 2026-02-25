@@ -167,37 +167,40 @@ const CalendarView = () => {
                   isPast ? 'Passado' :
                   'Futuro';
 
-                return (
-                <div 
-                  key={route.id}
-                  onClick={() => navigate(`/routes/${route.id}`)}
-                  className={`bg-white p-4 rounded-xl shadow-sm border flex items-center gap-4 active:scale-[0.98] transition-transform ${cardBorder} ${isFullyCompleted ? 'border-l-4 border-l-emerald-500' : ''}`}
-                >
-                  <div className="flex-col items-center justify-center text-center min-w-[3rem] border-r border-gray-100 pr-4">
-                    <span className={`block text-2xl font-bold ${isFullyCompleted ? 'text-emerald-600' : dayColor}`}>
-                      {format(parseISO(route.date), 'dd')}
-                    </span>
-                    <span className="block text-xs text-gray-400 uppercase">
-                      {format(parseISO(route.date), 'EEE', { locale: ptBR })}
-                    </span>
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-medium truncate flex items-center gap-2 ${isFullyCompleted ? 'text-emerald-700' : 'text-gray-800'}`}>
-                      {isFullyCompleted ? (
-                        <>
-                          <CheckCircle2 size={16} className="text-emerald-600" />
-                          <span>Rota Concluída</span>
-                        </>
-                      ) : (
-                        <span>{completedCount}/{totalCount} visitas realizadas</span>
-                      )}
-                    </p>
-                    <p className="text-xs text-gray-500 truncate flex items-center gap-1">
-                      <MapPin size={10} />
-                      {route.items.map((i: any) => i.supermarket.name).join(', ').slice(0, 30)}...
-                    </p>
-                  </div>
+                const supermarketNames = route.items.map((i: any) => i.supermarket.name).join(', ');
+  return (
+    <div 
+      key={route.id}
+      onClick={() => navigate(`/routes/${route.id}`)}
+      className={`bg-white p-4 rounded-xl shadow-sm border flex items-center gap-4 active:scale-[0.98] transition-transform ${cardBorder} ${isFullyCompleted ? 'border-l-4 border-l-emerald-500' : ''}`}
+    >
+      <div className="flex flex-col items-center justify-center text-center min-w-[3rem] border-r border-gray-100 pr-4">
+        <span className={`block text-2xl font-bold ${isFullyCompleted ? 'text-emerald-600' : 'text-blue-600'}`}>
+          {format(parseISO(route.date), 'dd')}
+        </span>
+        <span className="block text-xs text-gray-400 uppercase">
+          {format(parseISO(route.date), 'EEE', { locale: ptBR })}
+        </span>
+      </div>
+      
+      <div className="flex-1 min-w-0">
+        <h3 className="font-bold text-gray-900 truncate text-sm mb-1">
+          {supermarketNames || 'Sem PDV definido'}
+        </h3>
+        <p className={`text-xs font-medium truncate flex items-center gap-1.5 ${isFullyCompleted ? 'text-emerald-600' : 'text-gray-500'}`}>
+          {isFullyCompleted ? (
+            <>
+              <CheckCircle2 size={14} className="text-emerald-500" />
+              <span>Concluída</span>
+            </>
+          ) : (
+            <>
+              <MapPin size={14} className="text-gray-400" />
+              <span>{completedCount}/{totalCount} visitas</span>
+            </>
+          )}
+        </p>
+      </div>
 
                   <div className="flex flex-col items-end gap-1">
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
