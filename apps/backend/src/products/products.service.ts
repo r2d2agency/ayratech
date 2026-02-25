@@ -113,7 +113,19 @@ export class ProductsService {
     }
   }
 
-  remove(id: string) {
-    return this.productsRepository.delete(id);
+  async remove(id: string) {
+    try {
+      const result = await this.productsRepository.delete(id);
+      if (result.affected === 0) {
+        throw new NotFoundException('Produto não encontrado');
+      }
+      return result;
+    } catch (error) {
+      if (error.code === '23503') {
+        throw new BadRequestException('Este produto não pode ser excluído pois está vinculado a rotas, checklists ou outros registros. Tente inativá-lo.');
+      }
+      console.error('Error deleting product:', error);
+      throw new InternalServerErrorException('Erro ao excluir produto.');
+    }
   }
 }

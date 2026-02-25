@@ -615,12 +615,17 @@ const ProductsView: React.FC = () => {
 
                 <div>
                   <SearchableMultiSelect
-                    label="Redes (Opcional)"
+                    label="Grupos de Supermercado (Redes)"
                     placeholder="Selecione as redes..."
                     value={productForm.supermarketGroupIds}
                     onChange={(vals) => setProductForm({...productForm, supermarketGroupIds: vals})}
                     options={supermarketGroups.map(g => ({ value: g.id, label: g.name }))}
                   />
+                  {supermarketGroups.length === 0 && (
+                    <p className="text-[10px] text-amber-600 mt-1 font-medium">
+                      Nenhum grupo cadastrado. O produto estará disponível em todos os PDVs.
+                    </p>
+                  )}
                 </div>
 
                 <div>

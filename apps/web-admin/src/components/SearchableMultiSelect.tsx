@@ -72,6 +72,7 @@ export const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
 
   const dropdownContent = (
     <div 
+      ref={dropdownRef}
       className="fixed z-[9999] bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100"
       style={{ 
         top: coords.top + 4, 
