@@ -30,9 +30,14 @@ export const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleScroll = () => {
+    const handleScroll = (event: Event) => {
+      // Don't close if scrolling inside the dropdown
+      if (dropdownRef.current && dropdownRef.current.contains(event.target as Node)) {
+        return;
+      }
       if (isOpen) setIsOpen(false);
     };
 
