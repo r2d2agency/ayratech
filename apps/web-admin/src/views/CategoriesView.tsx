@@ -59,9 +59,10 @@ const CategoriesView: React.FC = () => {
     try {
       await api.delete(`/categories/${id}`);
       fetchCategories();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting category:", error);
-      alert('Erro ao excluir categoria.');
+      const message = error.response?.data?.message || 'Erro ao excluir categoria.';
+      alert(message);
     }
   };
 
@@ -80,9 +81,24 @@ const CategoriesView: React.FC = () => {
     setShowModal(true);
   };
 
+  // Helper to find all descendant IDs recursively
+  const getDescendantIds = (categoryId: string, allCategories: any[]): string[] => {
+    const category = allCategories.find(c => c.id === categoryId);
+    if (!category || !category.children) return [];
+    
+    let ids: string[] = [];
+    for (const child of category.children) {
+      ids.push(child.id);
+      ids = [...ids, ...getDescendantIds(child.id, allCategories)];
+    }
+    return ids;
+  };
+
   // Helper to flatten categories for select dropdown (excluding self and children to avoid cycles)
   const getAvailableParents = () => {
-    return categories.filter(c => c.id !== editingCategory?.id);
+    if (!editingCategory) return categories;
+    const descendantIds = getDescendantIds(editingCategory.id, categories);
+    return categories.filter(c => c.id !== editingCategory.id && !descendantIds.includes(c.id));
   };
 
   const filteredCategories = categories.filter(c => 

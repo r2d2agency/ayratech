@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Category } from './entities/category.entity';
+import { Product } from '../entities/product.entity';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
@@ -10,6 +11,8 @@ export class CategoriesService {
   constructor(
     @InjectRepository(Category)
     private categoriesRepository: Repository<Category>,
+    @InjectRepository(Product)
+    private productsRepository: Repository<Product>,
   ) {}
 
   create(createCategoryDto: CreateCategoryDto) {
@@ -49,7 +52,25 @@ export class CategoriesService {
     return this.findOne(id);
   }
 
-  remove(id: string) {
+  async remove(id: string) {
+    // Check for subcategories
+    const subcategoriesCount = await this.categoriesRepository.count({
+      where: { parent: { id } }
+    });
+
+    if (subcategoriesCount > 0) {
+      throw new BadRequestException('Não é possível excluir esta categoria pois ela possui subcategorias.');
+    }
+
+    // Check for products
+    const productsCount = await this.productsRepository.count({
+      where: { categoryRef: { id } }
+    });
+
+    if (productsCount > 0) {
+      throw new BadRequestException('Não é possível excluir esta categoria pois existem produtos associados a ela.');
+    }
+
     return this.categoriesRepository.delete(id);
   }
 }
