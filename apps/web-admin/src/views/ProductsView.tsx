@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, X, Edit, Trash, ChevronDown, Check, Wand2, Image as ImageIcon } from 'lucide-react';
+import { Search, Plus, X, Edit, Trash, ChevronDown, Check, Wand2, Image as ImageIcon, ArrowRightLeft } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import { SearchableSelect } from '../components/SearchableSelect';
 import { SearchableMultiSelect } from '../components/SearchableMultiSelect';
@@ -46,7 +46,10 @@ const ProductsView: React.FC = () => {
   const [referenceImageFile, setReferenceImageFile] = useState<File | null>(null);
   const [referenceImagePreview, setReferenceImagePreview] = useState<string>('');
   const [generatingPrompt, setGeneratingPrompt] = useState(false);
-  const [activeTab, setActiveTab] = useState<'geral' | 'ia'>('geral');
+  const [activeTab, setActiveTab] = useState<'geral' | 'ia' | 'pdvs'>('geral');
+  const [leftSearch, setLeftSearch] = useState('');
+  const [rightSearch, setRightSearch] = useState('');
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState('');
 
   const [productForm, setProductForm] = useState({
     name: '',
@@ -75,14 +78,15 @@ const ProductsView: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const [productsRes, clientsRes, brandsRes, categoriesRes, checklistsRes, promptsRes, groupsRes] = await Promise.all([
+      const [productsRes, clientsRes, brandsRes, categoriesRes, checklistsRes, promptsRes, groupsRes, supermarketsRes] = await Promise.all([
         api.get('/products'),
         api.get('/clients'),
         api.get('/brands'),
         api.get('/categories'),
         api.get('/checklists'),
         api.get('/ai/prompts'),
-        api.get('/supermarket-groups')
+        api.get('/supermarket-groups'),
+        api.get('/supermarkets')
       ]);
 
       const mappedClients = clientsRes.data.map((c: any) => ({
@@ -376,8 +380,8 @@ const ProductsView: React.FC = () => {
       checklistTemplateId: product.checklistTemplateId || '',
       referenceImageUrl: product.referenceImageUrl || '',
       analysisPrompt: product.analysisPrompt || '',
-      supermarketGroupIds: product.supermarketGroupIds || [],
-      supermarketIds: product.supermarketIds || []
+      supermarketGroupIds: product.supermarketGroups ? product.supermarketGroups.map((g: any) => g.id) : [],
+      supermarketIds: product.supermarkets ? product.supermarkets.map((s: any) => s.id) : []
     });
     
     setImagePreview(product.imagem === 'https://via.placeholder.com/150' ? '' : product.imagem);
@@ -411,6 +415,39 @@ const ProductsView: React.FC = () => {
     setImageFile(null);
     setReferenceImagePreview('');
     setReferenceImageFile(null);
+    setLeftSearch('');
+    setRightSearch('');
+    setSelectedGroupFilter('');
+    setActiveTab('geral');
+  };
+
+  const addToSelected = (id: string) => {
+    setProductForm(prev => ({
+      ...prev,
+      supermarketIds: [...prev.supermarketIds, id]
+    }));
+  };
+
+  const removeFromSelected = (id: string) => {
+    setProductForm(prev => ({
+      ...prev,
+      supermarketIds: prev.supermarketIds.filter(sid => sid !== id)
+    }));
+  };
+
+  const handleAddAllFiltered = () => {
+    const filteredToAdd = supermarkets
+      .filter(s => !productForm.supermarketIds.includes(s.id))
+      .filter(s => !selectedGroupFilter || (s.group?.id === selectedGroupFilter))
+      .filter(s => (s.fantasyName || '').toLowerCase().includes(leftSearch.toLowerCase()))
+      .map(s => s.id);
+      
+    if (filteredToAdd.length > 0) {
+      setProductForm(prev => ({
+        ...prev,
+        supermarketIds: [...prev.supermarketIds, ...filteredToAdd]
+      }));
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -530,24 +567,46 @@ const ProductsView: React.FC = () => {
             </div>
             
             <form onSubmit={handleSaveProduct} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-              <div className="flex gap-2 mb-4">
-                <button
+              {/* Tabs */}
+              <div className="flex gap-6 border-b border-slate-200 mb-6">
+                <button 
                   type="button"
                   onClick={() => setActiveTab('geral')}
-                  className={`px-4 py-2 rounded-xl font-bold ${activeTab === 'geral' ? 'text-white' : 'text-slate-700'} border border-slate-200`}
-                  style={{ backgroundColor: activeTab === 'geral' ? settings.primaryColor : 'transparent' }}
+                  className={`pb-4 text-sm font-black uppercase tracking-widest transition-all ${
+                    activeTab === 'geral' 
+                      ? 'border-b-4 text-slate-900' 
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                  style={{ borderColor: activeTab === 'geral' ? settings.primaryColor : 'transparent' }}
                 >
                   Geral
                 </button>
-                <button
+                <button 
+                  type="button"
+                  onClick={() => setActiveTab('pdvs')}
+                  className={`pb-4 text-sm font-black uppercase tracking-widest transition-all ${
+                    activeTab === 'pdvs' 
+                      ? 'border-b-4 text-slate-900' 
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                  style={{ borderColor: activeTab === 'pdvs' ? settings.primaryColor : 'transparent' }}
+                >
+                  Disponibilidade (PDVs)
+                </button>
+                <button 
                   type="button"
                   onClick={() => setActiveTab('ia')}
-                  className={`px-4 py-2 rounded-xl font-bold ${activeTab === 'ia' ? 'text-white' : 'text-slate-700'} border border-slate-200`}
-                  style={{ backgroundColor: activeTab === 'ia' ? settings.primaryColor : 'transparent' }}
+                  className={`pb-4 text-sm font-black uppercase tracking-widest transition-all ${
+                    activeTab === 'ia' 
+                      ? 'border-b-4 text-slate-900' 
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                  style={{ borderColor: activeTab === 'ia' ? settings.primaryColor : 'transparent' }}
                 >
-                  IA
+                  IA & Imagens
                 </button>
               </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ display: activeTab === 'geral' ? 'grid' : 'none' }}>
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Nome do Produto</label>
@@ -627,9 +686,7 @@ const ProductsView: React.FC = () => {
                         clientId: newClientId
                       }));
                     }}
-                    options={brands
-                      .filter(b => !productForm.clientId || !b.client || b.client.id === productForm.clientId)
-                      .map(b => ({ value: b.id, label: b.name }))}
+                    options={brands.map(b => ({ value: b.id, label: b.name }))}
                   />
                 </div>
 
@@ -655,21 +712,6 @@ const ProductsView: React.FC = () => {
                   {supermarketGroups.length === 0 && (
                     <p className="text-[10px] text-amber-600 mt-1 font-medium">
                       Nenhum grupo cadastrado.
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <SearchableMultiSelect
-                    label="PDVs Específicos (Lojas)"
-                    placeholder="Selecione as lojas..."
-                    value={productForm.supermarketIds}
-                    onChange={(vals) => setProductForm({...productForm, supermarketIds: vals})}
-                    options={supermarkets.map(s => ({ value: s.id, label: `${s.fantasyName} - ${s.city}` }))}
-                  />
-                  {(productForm.supermarketGroupIds.length === 0 && productForm.supermarketIds.length === 0) && (
-                    <p className="text-[10px] text-blue-600 mt-1 font-medium">
-                      Nenhuma restrição selecionada. O produto estará disponível em todos os PDVs.
                     </p>
                   )}
                 </div>
@@ -740,6 +782,136 @@ const ProductsView: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {/* PDVs Tab */}
+              <div style={{ display: activeTab === 'pdvs' ? 'block' : 'none' }}>
+                  <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col h-[500px]">
+                      <div className="mb-4">
+                          <h3 className="text-sm font-black text-slate-900 mb-1">Disponibilidade nos PDVs</h3>
+                          <p className="text-xs text-slate-500">Selecione os PDVs onde este produto deve estar disponível (Mix).</p>
+                      </div>
+                      
+                      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-4">
+                          {/* Left Column: Available */}
+                          <div className="bg-white rounded-xl border border-slate-200 flex flex-col h-full overflow-hidden">
+                              <div className="p-3 border-b border-slate-100 bg-slate-50 space-y-2">
+                                  <div className="flex gap-2">
+                                       <div className="flex-1">
+                                          <SearchableSelect
+                                              placeholder="Todas as Redes"
+                                              value={selectedGroupFilter}
+                                              onChange={(val) => setSelectedGroupFilter(val)}
+                                              options={[
+                                                  { value: '', label: 'Todas as Redes' },
+                                                  ...supermarketGroups.map(g => ({ value: g.id, label: g.name }))
+                                              ]}
+                                              className="w-full"
+                                          />
+                                       </div>
+                                       <button
+                                          type="button"
+                                          onClick={handleAddAllFiltered}
+                                          className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200 whitespace-nowrap"
+                                       >
+                                          Add Todos
+                                       </button>
+                                  </div>
+                                  <input 
+                                      type="text"
+                                      value={leftSearch}
+                                      onChange={e => setLeftSearch(e.target.value)}
+                                      placeholder="Buscar PDVs disponíveis..."
+                                      className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs"
+                                  />
+                              </div>
+                              <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                                  {supermarkets
+                                      .filter(s => !productForm.supermarketIds.includes(s.id))
+                                      .filter(s => !selectedGroupFilter || (s.group?.id === selectedGroupFilter))
+                                      .filter(s => (s.fantasyName || '').toLowerCase().includes(leftSearch.toLowerCase()))
+                                      .map(s => (
+                                          <div key={s.id} className="flex items-center justify-between bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-lg px-3 py-2 transition-colors">
+                                              <div className="min-w-0">
+                                                  <p className="text-xs font-bold text-slate-700 truncate">{s.fantasyName}</p>
+                                                  <p className="text-[10px] text-slate-400">{s.city} - {s.state}</p>
+                                              </div>
+                                              <button 
+                                                  type="button"
+                                                  onClick={() => addToSelected(s.id)}
+                                                  className="text-[10px] font-black text-blue-600 hover:bg-blue-50 px-2 py-1 rounded"
+                                              >
+                                                  Incluir →
+                                              </button>
+                                          </div>
+                                      ))
+                                  }
+                                  {supermarkets.filter(s => !productForm.supermarketIds.includes(s.id)).length === 0 && (
+                                      <div className="text-center py-8 text-slate-400 text-xs">
+                                          Nenhum PDV disponível
+                                      </div>
+                                  )}
+                              </div>
+                          </div>
+
+                          {/* Middle Arrow */}
+                          <div className="flex items-center justify-center">
+                              <div className="text-slate-300 lg:rotate-0 rotate-90">
+                                  <ArrowRightLeft size={20} />
+                              </div>
+                          </div>
+
+                          {/* Right Column: Selected */}
+                          <div className="bg-white rounded-xl border border-slate-200 flex flex-col h-full overflow-hidden">
+                              <div className="p-3 border-b border-slate-100 bg-slate-50">
+                                  <div className="flex justify-between items-center mb-2">
+                                      <span className="text-xs font-bold text-slate-700">Selecionados ({productForm.supermarketIds.length})</span>
+                                      <button
+                                          type="button"
+                                          onClick={() => setProductForm(prev => ({ ...prev, supermarketIds: [] }))}
+                                          className="text-[10px] text-red-500 font-bold hover:underline"
+                                      >
+                                          Limpar Tudo
+                                      </button>
+                                  </div>
+                                  <input 
+                                      type="text"
+                                      value={rightSearch}
+                                      onChange={e => setRightSearch(e.target.value)}
+                                      placeholder="Buscar nos selecionados..."
+                                      className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs"
+                                  />
+                              </div>
+                              <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                                  {supermarkets
+                                      .filter(s => productForm.supermarketIds.includes(s.id))
+                                      .filter(s => (s.fantasyName || '').toLowerCase().includes(rightSearch.toLowerCase()))
+                                      .map(s => (
+                                          <div key={s.id} className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+                                              <div className="min-w-0">
+                                                  <p className="text-xs font-bold text-blue-900 truncate">{s.fantasyName}</p>
+                                                  <p className="text-[10px] text-blue-400">{s.city} - {s.state}</p>
+                                              </div>
+                                              <button 
+                                                  type="button"
+                                                  onClick={() => removeFromSelected(s.id)}
+                                                  className="text-[10px] font-black text-red-500 hover:bg-red-50 px-2 py-1 rounded"
+                                              >
+                                                  ✕
+                                              </button>
+                                          </div>
+                                      ))
+                                  }
+                                  {productForm.supermarketIds.length === 0 && (
+                                      <div className="text-center py-8 text-slate-400 text-xs">
+                                          Nenhum PDV selecionado
+                                      </div>
+                                  )}
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
               <div className="space-y-4" style={{ display: activeTab === 'ia' ? 'block' : 'none' }}>
                 <div className="border border-slate-200 rounded-xl p-4">
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Imagem de Referência (IA)</label>

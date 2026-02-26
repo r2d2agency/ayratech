@@ -119,7 +119,7 @@ const ProductCheckView: React.FC = () => {
         tpl = resp.data?.checklistTemplate;
       } catch {}
     }
-
+ 
     let currentChecklists = prod.checklists ? [...prod.checklists] : [];
 
     if (tpl?.items?.length) {

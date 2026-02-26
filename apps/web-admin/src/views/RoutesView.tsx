@@ -580,11 +580,15 @@ const RoutesView: React.FC = () => {
     const currentSupermarket = routeItems[currentRouteItemIndex]?.supermarket || null;
     if (!currentSupermarket) return;
     const allowedProducts = products.filter(p => {
-      if (p.supermarketGroups && p.supermarketGroups.length > 0) {
-        if (!currentSupermarket?.group) return false;
-        return p.supermarketGroups.some((g: any) => g.id === currentSupermarket.group.id);
-      }
-      return true;
+      const hasGroups = p.supermarketGroups && p.supermarketGroups.length > 0;
+      const hasSupermarkets = p.supermarkets && p.supermarkets.length > 0;
+
+      if (!hasGroups && !hasSupermarkets) return true;
+
+      const matchesGroup = hasGroups && currentSupermarket?.group && p.supermarketGroups.some((g: any) => g.id === currentSupermarket.group.id);
+      const matchesSupermarket = hasSupermarkets && p.supermarkets.some((s: any) => s.id === currentSupermarket.id);
+
+      return matchesGroup || matchesSupermarket;
     });
     const clientProducts = allowedProducts.filter(p => p.client?.id === clientId);
     const clientProductIds = clientProducts.map(p => p.id);
@@ -1832,23 +1836,22 @@ const RoutesView: React.FC = () => {
                         const matchesSearch = p.name.toLowerCase().includes(search) || (p.sku && p.sku.toLowerCase().includes(search));
                         if (!matchesSearch) return false;
 
-                        // Supermarket Group Filter
+                        // Supermarket/Group Filter
                         const currentSupermarket = currentRouteItemIndex !== null && routeItems[currentRouteItemIndex] 
                             ? routeItems[currentRouteItemIndex].supermarket 
                             : null;
 
-                        if (p.supermarketGroups && p.supermarketGroups.length > 0) {
-                            // If product has restrictions, supermarket MUST belong to one of the groups
-                            if (!currentSupermarket || !currentSupermarket.group) {
-                                return false; // Supermarket has no group -> Restricted product hidden
-                            }
-                            const isAllowed = p.supermarketGroups.some((g: any) => g.id === currentSupermarket.group.id);
-                            if (!isAllowed) {
-                                return false; // Product group doesn't match supermarket group -> Hidden
-                            }
-                        }
-                        
-                        return true;
+                        if (!currentSupermarket) return true;
+
+                        const hasGroups = p.supermarketGroups && p.supermarketGroups.length > 0;
+                        const hasSupermarkets = p.supermarkets && p.supermarkets.length > 0;
+
+                        if (!hasGroups && !hasSupermarkets) return true;
+
+                        const matchesGroup = hasGroups && currentSupermarket.group && p.supermarketGroups.some((g: any) => g.id === currentSupermarket.group.id);
+                        const matchesSupermarket = hasSupermarkets && p.supermarkets.some((s: any) => s.id === currentSupermarket.id);
+
+                        return matchesGroup || matchesSupermarket;
                      })
                      .reduce((acc, product) => {
                         const categoryName = product.categoryRef?.name || product.category || 'Sem Categoria';

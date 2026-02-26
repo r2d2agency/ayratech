@@ -31,6 +31,15 @@ export class ProductsController {
         }
       }
 
+      // Parse supermarketIds if it is a string (multipart/form-data)
+      if (typeof createProductDto.supermarketIds === 'string') {
+        try {
+          createProductDto.supermarketIds = JSON.parse(createProductDto.supermarketIds);
+        } catch (e) {
+          // ignore error
+        }
+      }
+
       if (files?.image?.[0]) {
         const file = files.image[0];
         const filename = `product-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
@@ -128,6 +137,15 @@ export class ProductsController {
       if (typeof updateProductDto.supermarketGroupIds === 'string') {
         try {
           updateProductDto.supermarketGroupIds = JSON.parse(updateProductDto.supermarketGroupIds);
+        } catch (e) {
+          // ignore error
+        }
+      }
+
+      // Parse supermarketIds if it is a string (multipart/form-data)
+      if (typeof updateProductDto.supermarketIds === 'string') {
+        try {
+          updateProductDto.supermarketIds = JSON.parse(updateProductDto.supermarketIds);
         } catch (e) {
           // ignore error
         }
