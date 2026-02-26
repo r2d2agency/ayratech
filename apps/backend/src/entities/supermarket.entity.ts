@@ -1,6 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, ManyToMany } from 'typeorm';
 import { SupermarketGroup } from '../supermarket-groups/entities/supermarket-group.entity';
 import { Client } from './client.entity';
+import { Product } from './product.entity';
 
 @Entity()
 export class Supermarket {
