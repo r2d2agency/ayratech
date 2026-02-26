@@ -1,10 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, X, Edit, Trash, ChevronDown, Check, Wand2 } from 'lucide-react';
+import { Search, Plus, X, Edit, Trash, ChevronDown, Check, Wand2, Image as ImageIcon } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import { SearchableSelect } from '../components/SearchableSelect';
 import { SearchableMultiSelect } from '../components/SearchableMultiSelect';
 import api, { API_URL } from '../api/client';
 import { getImageUrl } from '../utils/image';
+
+const ProductImage = ({ src, alt }: { src: string, alt: string }) => {
+  const [error, setError] = useState(false);
+  
+  if (!src || error) {
+    return <ImageIcon className="text-slate-300" size={48} />;
+  }
+  
+  return (
+    <img 
+      src={src} 
+      className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110" 
+      alt={alt} 
+      onError={() => setError(true)}
+    />
+  );
+};
 
 const ProductsView: React.FC = () => {
   const { settings } = useBranding();
@@ -16,6 +33,7 @@ const ProductsView: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [checklists, setChecklists] = useState<any[]>([]);
   const [supermarketGroups, setSupermarketGroups] = useState<any[]>([]);
+  const [supermarkets, setSupermarkets] = useState<any[]>([]);
   const [aiPrompts, setAiPrompts] = useState<any[]>([]);
   const [selectedPromptId, setSelectedPromptId] = useState('');
   const [loading, setLoading] = useState(true);
@@ -44,7 +62,8 @@ const ProductsView: React.FC = () => {
     checklistTemplateId: '',
     referenceImageUrl: '',
     analysisPrompt: '',
-    supermarketGroupIds: [] as string[]
+    supermarketGroupIds: [] as string[],
+    supermarketIds: [] as string[]
   });
 
   const [selectedParentId, setSelectedParentId] = useState('');
@@ -77,6 +96,7 @@ const ProductsView: React.FC = () => {
       setChecklists(checklistsRes.data.filter((c: any) => c.active));
       setAiPrompts(promptsRes.data);
       setSupermarketGroups(groupsRes.data);
+      setSupermarkets(supermarketsRes.data);
 
       const mappedProducts = productsRes.data.map((p: any) => {
         const imgUrl = getImageUrl(p.image);
@@ -184,11 +204,20 @@ const ProductsView: React.FC = () => {
         if (key === 'supermarketGroupIds') {
            const val = productForm.supermarketGroupIds;
            if (Array.isArray(val)) {
-             console.log('Appending supermarketGroupIds:', JSON.stringify(val));
              formData.append('supermarketGroupIds', JSON.stringify(val));
            } else {
-             console.log('supermarketGroupIds is not an array:', val);
              formData.append('supermarketGroupIds', '[]');
+           }
+           return;
+        }
+
+        // Handle supermarketIds specifically
+        if (key === 'supermarketIds') {
+           const val = productForm.supermarketIds;
+           if (Array.isArray(val)) {
+             formData.append('supermarketIds', JSON.stringify(val));
+           } else {
+             formData.append('supermarketIds', '[]');
            }
            return;
         }
@@ -347,7 +376,8 @@ const ProductsView: React.FC = () => {
       checklistTemplateId: product.checklistTemplateId || '',
       referenceImageUrl: product.referenceImageUrl || '',
       analysisPrompt: product.analysisPrompt || '',
-      supermarketGroupIds: product.supermarketGroupIds || []
+      supermarketGroupIds: product.supermarketGroupIds || [],
+      supermarketIds: product.supermarketIds || []
     });
     
     setImagePreview(product.imagem === 'https://via.placeholder.com/150' ? '' : product.imagem);
@@ -372,7 +402,8 @@ const ProductsView: React.FC = () => {
       checklistTemplateId: '',
       referenceImageUrl: '',
       analysisPrompt: '',
-      supermarketGroupIds: []
+      supermarketGroupIds: [],
+      supermarketIds: []
     });
     setSelectedParentId('');
     setSelectedSubId('');
@@ -466,8 +497,8 @@ const ProductsView: React.FC = () => {
                 </button>
               </div>
               
-              <div className="relative aspect-square overflow-hidden rounded-xl mb-5">
-                <img src={p.imagem} className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110" alt={p.nome} />
+              <div className="relative aspect-square overflow-hidden rounded-xl mb-5 bg-slate-50 flex items-center justify-center">
+                <ProductImage src={getImageUrl(p.imagem)} alt={p.nome} />
                 <div className="absolute top-2 left-2 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-lg text-[9px] font-black text-slate-700 border border-slate-100 shadow-sm">
                   {p.sku}
                 </div>
@@ -623,7 +654,22 @@ const ProductsView: React.FC = () => {
                   />
                   {supermarketGroups.length === 0 && (
                     <p className="text-[10px] text-amber-600 mt-1 font-medium">
-                      Nenhum grupo cadastrado. O produto estará disponível em todos os PDVs.
+                      Nenhum grupo cadastrado.
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <SearchableMultiSelect
+                    label="PDVs Específicos (Lojas)"
+                    placeholder="Selecione as lojas..."
+                    value={productForm.supermarketIds}
+                    onChange={(vals) => setProductForm({...productForm, supermarketIds: vals})}
+                    options={supermarkets.map(s => ({ value: s.id, label: `${s.fantasyName} - ${s.city}` }))}
+                  />
+                  {(productForm.supermarketGroupIds.length === 0 && productForm.supermarketIds.length === 0) && (
+                    <p className="text-[10px] text-blue-600 mt-1 font-medium">
+                      Nenhuma restrição selecionada. O produto estará disponível em todos os PDVs.
                     </p>
                   )}
                 </div>

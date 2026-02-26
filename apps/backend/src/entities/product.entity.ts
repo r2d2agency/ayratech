@@ -4,6 +4,7 @@ import { Brand } from './brand.entity';
 import { Category } from '../categories/entities/category.entity';
 import { ChecklistTemplate } from '../checklists/entities/checklist-template.entity';
 import { SupermarketGroup } from '../supermarket-groups/entities/supermarket-group.entity';
+import { Supermarket } from './supermarket.entity';
 
 @Entity()
 export class Product {
@@ -58,4 +59,8 @@ export class Product {
   @ManyToMany(() => SupermarketGroup, (group) => group.products)
   @JoinTable({ name: 'product_supermarket_groups' })
   supermarketGroups: SupermarketGroup[];
+
+  @ManyToMany(() => Supermarket, (supermarket) => supermarket.products)
+  @JoinTable({ name: 'product_supermarkets' })
+  supermarkets: Supermarket[];
 }

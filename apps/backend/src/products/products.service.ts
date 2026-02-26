@@ -14,7 +14,7 @@ export class ProductsService {
 
   async create(createProductDto: CreateProductDto) {
     try {
-      const { brandId, clientId, categoryId, supermarketGroupIds, ...productData } = createProductDto;
+      const { brandId, clientId, categoryId, supermarketGroupIds, supermarketIds, ...productData } = createProductDto;
       
       // Basic validation
       if (!clientId) {
@@ -26,7 +26,8 @@ export class ProductsService {
         brand: brandId ? { id: brandId } : null,
         client: clientId ? { id: clientId } : null,
         categoryRef: categoryId ? { id: categoryId } : null,
-        supermarketGroups: supermarketGroupIds ? supermarketGroupIds.map(id => ({ id })) : []
+        supermarketGroups: supermarketGroupIds ? supermarketGroupIds.map(id => ({ id })) : [],
+        supermarkets: supermarketIds ? supermarketIds.map(id => ({ id })) : []
       });
       return await this.productsRepository.save(product);
     } catch (error) {
@@ -50,13 +51,13 @@ export class ProductsService {
   }
 
   findAll() {
-    return this.productsRepository.find({ relations: ['brand', 'brand.client', 'client', 'categoryRef', 'categoryRef.parent', 'checklistTemplate', 'supermarketGroups'] });
+    return this.productsRepository.find({ relations: ['brand', 'brand.client', 'client', 'categoryRef', 'categoryRef.parent', 'checklistTemplate', 'supermarketGroups', 'supermarkets'] });
   }
 
   findOne(id: string) {
     return this.productsRepository.findOne({ 
       where: { id },
-      relations: ['brand', 'brand.client', 'client', 'categoryRef', 'categoryRef.parent', 'checklistTemplate', 'supermarketGroups']
+      relations: ['brand', 'brand.client', 'client', 'categoryRef', 'categoryRef.parent', 'checklistTemplate', 'supermarketGroups', 'supermarkets']
     });
   }
 
@@ -67,7 +68,7 @@ export class ProductsService {
         throw new NotFoundException('Produto não encontrado');
       }
 
-      const { brandId, clientId, categoryId, checklistTemplateId, supermarketGroupIds, ...rest } = updateProductDto;
+      const { brandId, clientId, categoryId, checklistTemplateId, supermarketGroupIds, supermarketIds, ...rest } = updateProductDto;
       
       this.productsRepository.merge(product, rest);
       
@@ -90,6 +91,10 @@ export class ProductsService {
 
       if (supermarketGroupIds) {
         product.supermarketGroups = supermarketGroupIds.map(id => ({ id } as any));
+      }
+
+      if (supermarketIds) {
+        product.supermarkets = supermarketIds.map(id => ({ id } as any));
       }
       
       return await this.productsRepository.save(product);

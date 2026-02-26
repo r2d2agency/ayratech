@@ -56,4 +56,7 @@ export class Supermarket {
 
   @ManyToMany(() => Client, (client) => client.supermarkets)
   clients: Client[];
+
+  @ManyToMany(() => Product, (product) => product.supermarkets)
+  products: Product[];
 }

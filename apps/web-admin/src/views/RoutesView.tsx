@@ -1726,13 +1726,26 @@ const RoutesView: React.FC = () => {
                    {(() => {
                       const currentSupermarket = currentRouteItemIndex !== null ? routeItems[currentRouteItemIndex].supermarket : null;
                       
-                      // Filter products based on group restrictions
+                      // Filter products based on group restrictions and PDV restrictions
                       const allowedProducts = products.filter(p => {
-                          if (p.supermarketGroups && p.supermarketGroups.length > 0) {
-                              if (!currentSupermarket?.group) return false;
-                              return p.supermarketGroups.some((g: any) => g.id === currentSupermarket.group.id);
+                          const hasGroupRestriction = p.supermarketGroups && p.supermarketGroups.length > 0;
+                          const hasPdvRestriction = p.supermarkets && p.supermarkets.length > 0;
+
+                          // If no restrictions at all, allow everywhere
+                          if (!hasGroupRestriction && !hasPdvRestriction) return true;
+
+                          let allowedByGroup = false;
+                          if (hasGroupRestriction && currentSupermarket?.group) {
+                              allowedByGroup = p.supermarketGroups.some((g: any) => g.id === currentSupermarket.group.id);
                           }
-                          return true;
+
+                          let allowedByPdv = false;
+                          if (hasPdvRestriction && currentSupermarket) {
+                              allowedByPdv = p.supermarkets.some((s: any) => s.id === currentSupermarket.id);
+                          }
+
+                          // Allow if either condition is met (Union/OR logic)
+                          return allowedByGroup || allowedByPdv;
                       });
 
                       // Use supermarket clients if available, otherwise fallback to all clients from ALLOWED products

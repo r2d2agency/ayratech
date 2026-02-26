@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useBranding } from '../context/BrandingContext';
+import { getImageUrl } from '../utils/image';
 import SectionHeader from '../components/SectionHeader';
 import StatCard from '../components/StatCard';
 import { 
@@ -30,7 +31,6 @@ import {
 } from 'lucide-react';
 import { jwtDecode } from "jwt-decode";
 import api from '../api/client';
-import { getImageUrl } from '../utils/image';
 import { processImage } from '../utils/image-processor';
 import { 
   BarChart, 
@@ -42,6 +42,27 @@ import {
   Legend, 
   ResponsiveContainer
 } from 'recharts';
+
+const ProductImage = ({ src, alt }: { src: string, alt?: string }) => {
+  const [error, setError] = useState(false);
+  
+  if (!src || error) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-300">
+        <ImageIcon size={14} />
+      </div>
+    );
+  }
+  
+  return (
+    <img 
+      src={src} 
+      alt={alt || ""} 
+      className="w-full h-full object-cover"
+      onError={() => setError(true)}
+    />
+  );
+};
 
 interface RouteReportItem {
   id: string;
@@ -81,9 +102,15 @@ interface RouteReportItem {
       photos?: string[];
       checkInTime?: string;
       checkOutTime?: string;
+      validityDate?: string;
+      validityQuantity?: number;
+      stockCount?: number;
+      gondolaCount?: number;
+      inventoryCount?: number;
       product: {
         id: string;
         name: string;
+        image?: string;
         sku?: string;
         brand?: {
           name: string;
@@ -100,7 +127,10 @@ interface RouteReportItem {
         };
       };
       validityDate?: string;
+      validityQuantity?: number;
       stockCount?: number | '';
+      gondolaCount?: number | '';
+      inventoryCount?: number | '';
       checklists?: Array<{
           id: string;
           type: string;
@@ -382,8 +412,10 @@ const RoutesReportView: React.FC = () => {
       name: string;
       items: {
         productName: string;
+        productImage?: string;
         brandName: string;
         validityDate?: string;
+        validityQuantity?: number;
         checked: boolean;
         checkInTime?: string;
         promoterName: string;
@@ -421,8 +453,10 @@ const RoutesReportView: React.FC = () => {
             
             pdvMap.get(key)!.items.push({
                 productName: p.product.name,
+                productImage: p.product.image,
                 brandName: p.product.brand?.name || '-',
                 validityDate: p.validityDate,
+                validityQuantity: p.validityQuantity,
                 checked: p.checked,
                 checkInTime: p.checkInTime,
                 promoterName: p.completedBy?.name || r.promoter.fullName || 'N/A',
@@ -836,7 +870,10 @@ const RoutesReportView: React.FC = () => {
       'Ruptura',
       'Verificado',
       'Validade',
+      'Qtd. Validade',
+      'Gôndola',
       'Estoque',
+      'Total Estoque',
       'Observação'
     ];
     csvContent.push(headers.join(';'));
@@ -883,7 +920,10 @@ const RoutesReportView: React.FC = () => {
             p.isStockout ? 'Sim' : 'Não',
             p.checked ? 'Sim' : 'Não',
             p.validityDate ? formatRouteDate(p.validityDate) : '-',
-            p.stockCount || '-',
+            p.validityQuantity || '-',
+            p.gondolaCount || '-',
+            p.inventoryCount || p.stockCount || '-',
+            ((Number(p.gondolaCount || 0) + Number(p.inventoryCount || p.stockCount || 0))) || '-',
             p.observation || ''
           ];
           
@@ -1283,6 +1323,7 @@ const RoutesReportView: React.FC = () => {
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/50">
                       <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">PDV</th>
+                      <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Imagem</th>
                       <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Produto</th>
                       <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Marca</th>
                       <th className="p-4 font-black text-xs text-slate-400 uppercase tracking-wider">Validade</th>
@@ -1293,7 +1334,7 @@ const RoutesReportView: React.FC = () => {
                     {validityReport.map((pdv) => (
                       <React.Fragment key={pdv.id}>
                         <tr className="bg-slate-50/50">
-                          <td colSpan={5} className="p-3 font-bold text-slate-700 border-y border-slate-100">
+                          <td colSpan={6} className="p-3 font-bold text-slate-700 border-y border-slate-100">
                              <div className="flex items-center gap-2">
                                <Store size={14} className="text-blue-500" />
                                {pdv.name}
@@ -1305,6 +1346,11 @@ const RoutesReportView: React.FC = () => {
                              <td className="p-3 pl-8 text-slate-400 text-xs">
                                -
                              </td>
+                             <td className="p-3">
+                                <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-100 bg-white">
+                                  <ProductImage src={getImageUrl(item.productImage)} alt="" />
+                                </div>
+                              </td>
                              <td className="p-3 font-medium text-slate-700 text-sm">
                                {item.productName}
                              </td>
@@ -1322,23 +1368,46 @@ const RoutesReportView: React.FC = () => {
                                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                                      
                                      if (diffDays < 0) {
-                                       return (
-                                         <span className="flex items-center gap-2 text-red-600 font-bold">
-                                           <AlertTriangle size={14}/> 
-                                           VENCIDO ({adjustedDate.toLocaleDateString('pt-BR')})
-                                         </span>
-                                       );
-                                     }
-                                     if (diffDays <= 30) {
-                                       return (
-                                         <span className="flex items-center gap-2 text-amber-600 font-bold">
-                                           <AlertTriangle size={14}/> 
-                                           Vence em {diffDays}d ({adjustedDate.toLocaleDateString('pt-BR')})
-                                         </span>
-                                       );
-                                     }
-                                     return <span className="text-slate-600">{adjustedDate.toLocaleDateString('pt-BR')}</span>;
-                                   })() : <span className="text-slate-300">-</span>}
+                                      return (
+                                        <span className="flex flex-col gap-1">
+                                          <span className="flex items-center gap-2 text-red-600 font-bold">
+                                            <AlertTriangle size={14}/> 
+                                            VENCIDO ({adjustedDate.toLocaleDateString('pt-BR')})
+                                          </span>
+                                          {item.validityQuantity && (
+                                            <span className="text-xs text-slate-500 pl-6">
+                                              Qtd: {item.validityQuantity}
+                                            </span>
+                                          )}
+                                        </span>
+                                      );
+                                    }
+                                    if (diffDays <= 30) {
+                                      return (
+                                        <span className="flex flex-col gap-1">
+                                          <span className="flex items-center gap-2 text-amber-600 font-bold">
+                                            <AlertTriangle size={14}/> 
+                                            Vence em {diffDays}d ({adjustedDate.toLocaleDateString('pt-BR')})
+                                          </span>
+                                          {item.validityQuantity && (
+                                            <span className="text-xs text-slate-500 pl-6">
+                                              Qtd: {item.validityQuantity}
+                                            </span>
+                                          )}
+                                        </span>
+                                      );
+                                    }
+                                    return (
+                                      <span className="flex flex-col gap-1">
+                                        <span className="text-slate-600">{adjustedDate.toLocaleDateString('pt-BR')}</span>
+                                        {item.validityQuantity && (
+                                            <span className="text-xs text-slate-500">
+                                              Qtd: {item.validityQuantity}
+                                            </span>
+                                        )}
+                                      </span>
+                                    );
+                                  })() : <span className="text-slate-300">-</span>}
                              </td>
                              <td className="p-3 text-sm text-slate-500">
                                {item.promoterName}
@@ -1505,6 +1574,7 @@ const RoutesReportView: React.FC = () => {
                           <th className="p-3 w-[120px]">Marca</th>
                           <th className="p-3 w-[100px]">Quem</th>
                           <th className="p-3 w-[120px]">Estoque</th>
+                          <th className="p-3 w-[80px]">Total</th>
                           <th className="p-3 w-[180px]">Checklist</th>
                           <th className="p-3 w-[120px]">Validade</th>
                           <th className="p-3 w-[120px]">Status</th>
@@ -1533,13 +1603,18 @@ const RoutesReportView: React.FC = () => {
                               <div className="grid grid-cols-2 gap-x-2 gap-y-1">
                                 <div>
                                   <span className="block text-[10px] text-slate-400">Gôndola</span>
-                                  <span className="font-bold">{(p as any).gondolaCount ?? '-'}</span>
+                                  <span className="font-bold">{p.gondolaCount ?? '-'}</span>
                                 </div>
                                 <div>
                                   <span className="block text-[10px] text-slate-400">Estoque</span>
-                                  <span className="font-bold">{(p as any).inventoryCount ?? '-'}</span>
+                                  <span className="font-bold">{p.inventoryCount ?? '-'}</span>
                                 </div>
                               </div>
+                            </td>
+                            <td className="p-3 text-xs font-bold text-slate-700">
+                                {((p.gondolaCount !== undefined && p.gondolaCount !== null) || (p.inventoryCount !== undefined && p.inventoryCount !== null)) ? 
+                                  ((Number(p.gondolaCount) || 0) + (Number(p.inventoryCount) || 0)) 
+                                  : '-'}
                             </td>
                             <td className="p-3 text-xs text-slate-700">
                                 {p.product.checklistTemplate?.title && (
@@ -1591,6 +1666,11 @@ const RoutesReportView: React.FC = () => {
                                     <span className="flex flex-col text-red-600 font-bold">
                                       <span className="flex items-center gap-1"><AlertTriangle size={12}/> VENCIDO</span>
                                       <span>{adjustedDate.toLocaleDateString('pt-BR')}</span>
+                                      {(p as any).validityQuantity && (
+                                        <span className="text-[10px] text-slate-500 font-normal mt-0.5">
+                                          Qtd: {(p as any).validityQuantity}
+                                        </span>
+                                      )}
                                     </span>
                                   );
                                 }
@@ -1599,10 +1679,24 @@ const RoutesReportView: React.FC = () => {
                                     <span className="flex flex-col text-amber-600 font-bold">
                                       <span className="flex items-center gap-1"><AlertTriangle size={12}/> Vence em {diffDays}d</span>
                                       <span>{adjustedDate.toLocaleDateString('pt-BR')}</span>
+                                      {(p as any).validityQuantity && (
+                                        <span className="text-[10px] text-slate-500 font-normal mt-0.5">
+                                          Qtd: {(p as any).validityQuantity}
+                                        </span>
+                                      )}
                                     </span>
                                   );
                                 }
-                                return <span className="text-slate-600 font-medium">{adjustedDate.toLocaleDateString('pt-BR')}</span>;
+                                return (
+                                  <span className="flex flex-col">
+                                    <span className="text-slate-600 font-medium">{adjustedDate.toLocaleDateString('pt-BR')}</span>
+                                    {(p as any).validityQuantity && (
+                                        <span className="text-[10px] text-slate-500 font-normal mt-0.5">
+                                          Qtd: {(p as any).validityQuantity}
+                                        </span>
+                                    )}
+                                  </span>
+                                );
                               })() : (
                                 <span className="text-slate-300">-</span>
                               )}

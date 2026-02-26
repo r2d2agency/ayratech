@@ -3,6 +3,11 @@ import { API_URL } from '../api/client';
 export const getImageUrl = (url: string) => {
   if (!url) return '';
   if (url.startsWith('data:')) return url;
+
+  // Handle full URLs FIRST to avoid mangling external URLs that happen to contain /uploads/
+  if (url.startsWith('http')) {
+      return url;
+  }
   
   // Robustly handle any URL containing /uploads/
   // This fixes issues where the URL might be:

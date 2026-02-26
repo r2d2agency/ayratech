@@ -11,6 +11,11 @@ interface LivePhotosFeedProps {
 
 export const LivePhotosFeed: React.FC<LivePhotosFeedProps> = ({ clientId }) => {
   const { photos, loading } = useLivePhotos(60, 10000, clientId); // Last 60 mins, refresh every 10s
+  const [imageErrors, setImageErrors] = React.useState<Record<string, boolean>>({});
+
+  const handleImageError = (id: string) => {
+    setImageErrors(prev => ({ ...prev, [id]: true }));
+  };
 
   if (loading && photos.length === 0) {
     return (
@@ -47,13 +52,21 @@ export const LivePhotosFeed: React.FC<LivePhotosFeedProps> = ({ clientId }) => {
         {photos.map((photo) => (
           <div key={photo.id + photo.photoUrl} className="group relative bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-all animate-in fade-in zoom-in-95 duration-300">
             {/* Image */}
-            <div className="aspect-square relative overflow-hidden bg-slate-100">
-              <img 
-                src={getImageUrl(photo.photoUrl)} 
-                alt={photo.productName} 
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                loading="lazy"
-              />
+            <div className="aspect-square relative overflow-hidden bg-slate-100 flex items-center justify-center">
+              {!imageErrors[photo.id] ? (
+                <img 
+                  src={getImageUrl(photo.photoUrl)} 
+                  alt={photo.productName} 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                  onError={() => handleImageError(photo.id)}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-slate-300 p-4 text-center">
+                  <ImageIcon size={24} className="mb-1" />
+                  <span className="text-[10px]">Sem imagem</span>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
 

@@ -72,7 +72,10 @@ interface RouteItem {
       observation?: string;
       photos?: string[];
       validityDate?: string;
+      validityQuantity?: number;
       stockCount?: number;
+      gondolaCount?: number;
+      inventoryCount?: number;
       product: {
         id: string;
         name: string;
@@ -109,6 +112,11 @@ const ClientDashboardView: React.FC = () => {
   const [filteredRoutes, setFilteredRoutes] = useState<RouteItem[]>([]);
   const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'visits' | 'stockouts' | 'expiry' | 'stock' | 'brands' | 'pdvs'>('overview');
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+
+  const handleImageError = (url: string) => {
+    setImageErrors(prev => ({ ...prev, [url]: true }));
+  };
   
   // Filters
   const [selectedPdv, setSelectedPdv] = useState<string>('');
@@ -660,12 +668,20 @@ const ClientDashboardView: React.FC = () => {
                      })))
                      .slice(0, 6)
                      .map((photo, idx) => (
-                       <div key={idx} className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer">
-                         <img 
-                           src={getImageUrl(photo?.url || '')} 
-                           alt={photo?.productName}
-                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                         />
+                       <div key={idx} className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer bg-slate-100 flex items-center justify-center">
+                         {!imageErrors[photo.url] ? (
+                           <img 
+                             src={getImageUrl(photo.url || '')} 
+                             alt={photo.productName}
+                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                             onError={() => handleImageError(photo.url)}
+                           />
+                         ) : (
+                           <div className="flex flex-col items-center justify-center text-slate-300">
+                             <Camera size={24} className="mb-1" />
+                             <span className="text-[10px]">Sem imagem</span>
+                           </div>
+                         )}
                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
                            <p className="text-white text-xs font-medium truncate w-full">{photo?.productName}</p>
                          </div>
@@ -803,16 +819,37 @@ const ClientDashboardView: React.FC = () => {
                       <td className="px-4 py-3">{new Date(product.validityDate!).toLocaleDateString()}</td>
                       <td className="px-4 py-3">
                          {diffDays < 0 ? (
-                           <span className="inline-flex items-center gap-1 text-red-600 bg-red-50 px-2 py-1 rounded-full text-xs font-bold">
-                             Vencido
+                           <span className="flex flex-col gap-1">
+                             <span className="inline-flex items-center gap-1 text-red-600 bg-red-50 px-2 py-1 rounded-full text-xs font-bold w-fit">
+                               Vencido
+                             </span>
+                             {product.validityQuantity && (
+                               <span className="text-[10px] text-slate-500 font-normal pl-1">
+                                 Qtd: {product.validityQuantity}
+                               </span>
+                             )}
                            </span>
                          ) : diffDays <= 30 ? (
-                           <span className="inline-flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-1 rounded-full text-xs font-bold">
-                             Próx. Vencimento
+                           <span className="flex flex-col gap-1">
+                             <span className="inline-flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-1 rounded-full text-xs font-bold w-fit">
+                               Próx. Vencimento
+                             </span>
+                             {product.validityQuantity && (
+                               <span className="text-[10px] text-slate-500 font-normal pl-1">
+                                 Qtd: {product.validityQuantity}
+                               </span>
+                             )}
                            </span>
                          ) : (
-                           <span className="inline-flex items-center gap-1 text-green-600 bg-green-50 px-2 py-1 rounded-full text-xs font-medium">
-                             Em Dia
+                           <span className="flex flex-col gap-1">
+                             <span className="inline-flex items-center gap-1 text-green-600 bg-green-50 px-2 py-1 rounded-full text-xs font-medium w-fit">
+                               Em Dia
+                             </span>
+                             {product.validityQuantity && (
+                               <span className="text-[10px] text-slate-500 font-normal pl-1">
+                                 Qtd: {product.validityQuantity}
+                               </span>
+                             )}
                            </span>
                          )}
                       </td>
@@ -841,14 +878,14 @@ const ClientDashboardView: React.FC = () => {
                     <th className="px-4 py-3">Produto</th>
                     <th className="px-4 py-3">Marca</th>
                     <th className="px-4 py-3">Supermercado</th>
-                    <th className="px-4 py-3">Data</th>
-                    <th className="px-4 py-3">Promotor</th>
-                    <th className="px-4 py-3">Quantidade em Estoque</th>
+                    <th className="px-4 py-3">Gôndola</th>
+                    <th className="px-4 py-3">Estoque</th>
+                    <th className="px-4 py-3">Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredRoutes.flatMap(r => r.items.flatMap(item => 
-                    item.products.filter(p => p.stockCount !== undefined && p.stockCount !== null).map(p => ({ route: r, item, product: p }))
+                    item.products.filter(p => (p.stockCount !== undefined && p.stockCount !== null) || (p.gondolaCount !== undefined && p.gondolaCount !== null) || (p.inventoryCount !== undefined && p.inventoryCount !== null)).map(p => ({ route: r, item, product: p }))
                   ))
                   .sort((a, b) => new Date(b.route.date).getTime() - new Date(a.route.date).getTime())
                   .map(({ route, item, product }, idx) => (
@@ -856,14 +893,20 @@ const ClientDashboardView: React.FC = () => {
                       <td className="px-4 py-3 font-medium text-slate-700">{product.product.name}</td>
                       <td className="px-4 py-3 text-slate-500">{product.product.brand?.name || '-'}</td>
                       <td className="px-4 py-3">{item.supermarket.fantasyName}</td>
-                      <td className="px-4 py-3">{new Date(route.date).toLocaleDateString()}</td>
-                      <td className="px-4 py-3 text-slate-500">{route.promoter?.fullName}</td>
+                      <td className="px-4 py-3 font-medium text-slate-600">
+                        {product.gondolaCount ?? '-'}
+                      </td>
+                      <td className="px-4 py-3 font-medium text-slate-600">
+                        {product.inventoryCount ?? product.stockCount ?? '-'}
+                      </td>
                       <td className="px-4 py-3 font-bold text-blue-600">
-                        {product.stockCount}
+                        {((product.gondolaCount !== undefined && product.gondolaCount !== null) || (product.inventoryCount !== undefined && product.inventoryCount !== null) || (product.stockCount !== undefined && product.stockCount !== null)) ? 
+                          ((Number(product.gondolaCount) || 0) + (Number(product.inventoryCount ?? product.stockCount) || 0)) 
+                          : '-'}
                       </td>
                     </tr>
                   ))}
-                   {filteredRoutes.every(r => r.items.every(i => i.products.every(p => p.stockCount === undefined || p.stockCount === null))) && (
+                   {filteredRoutes.every(r => r.items.every(i => i.products.every(p => (p.stockCount === undefined || p.stockCount === null) && (p.gondolaCount === undefined || p.gondolaCount === null) && (p.inventoryCount === undefined || p.inventoryCount === null)))) && (
                      <tr>
                        <td colSpan={6} className="px-4 py-10 text-center text-slate-400">Nenhuma contagem de estoque registrada.</td>
                      </tr>
