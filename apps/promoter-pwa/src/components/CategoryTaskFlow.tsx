@@ -64,8 +64,16 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   const { user } = useAuth();
   const [validationError, setValidationError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const initializedRef = useRef<string | null>(null);
 
   useEffect(() => {
+    const key = `${category}-${mode}`;
+    // If already initialized for this category/mode, don't auto-update step on data changes (e.g. adding photos)
+    if (initializedRef.current === key) {
+      return;
+    }
+    initializedRef.current = key;
+
     const photos = getCategoryPhotos();
     const catProducts = products || [];
     const allProductsComplete = catProducts.length > 0 && catProducts.every(isProductCountComplete);
