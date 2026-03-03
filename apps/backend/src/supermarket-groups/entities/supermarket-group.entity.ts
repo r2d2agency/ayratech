@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToMany, JoinTable } from 'typeorm';
 import { Supermarket } from '../../entities/supermarket.entity';
 import { Product } from '../../entities/product.entity';
 
@@ -17,5 +17,6 @@ export class SupermarketGroup {
   supermarkets: Supermarket[];
 
   @ManyToMany(() => Product, (product) => product.supermarketGroups)
+  @JoinTable({ name: 'supermarket_group_products' })
   products: Product[];
 }

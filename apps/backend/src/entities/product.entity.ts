@@ -57,7 +57,6 @@ export class Product {
   checklistTemplateId: string;
 
   @ManyToMany(() => SupermarketGroup, (group) => group.products)
-  @JoinTable({ name: 'product_supermarket_groups' })
   supermarketGroups: SupermarketGroup[];
 
   @ManyToMany(() => Supermarket, (supermarket) => supermarket.products)

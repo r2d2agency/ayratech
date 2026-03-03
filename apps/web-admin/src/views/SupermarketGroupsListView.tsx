@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash, X } from 'lucide-react';
+import { Plus, Search, Edit, Trash, X, Filter, CheckSquare, Square, Save } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import { ViewType, SupermarketGroup } from '../types';
 import api from '../api/client';
@@ -12,15 +12,23 @@ interface SupermarketGroupsListViewProps {
 const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ onNavigate }) => {
   const { settings } = useBranding();
   const [groups, setGroups] = useState<SupermarketGroup[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [brands, setBrands] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'details' | 'mix'>('details');
   const [editingGroup, setEditingGroup] = useState<SupermarketGroup | null>(null);
+  
+  // Mix Filter State
+  const [selectedBrandId, setSelectedBrandId] = useState<string>('');
+  
   const [formData, setFormData] = useState({
     name: '',
-    status: true
+    status: true,
+    productIds: [] as string[]
   });
 
   const fetchGroups = async () => {
@@ -29,18 +37,36 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
       setGroups(response.data);
     } catch (error) {
       console.error('Error fetching groups:', error);
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const fetchDependencies = async () => {
+    try {
+      const [productsRes, brandsRes] = await Promise.all([
+        api.get('/products'),
+        api.get('/brands')
+      ]);
+      setProducts(productsRes.data);
+      setBrands(brandsRes.data);
+    } catch (error) {
+      console.error('Error fetching dependencies:', error);
     }
   };
 
   useEffect(() => {
-    fetchGroups();
+    const init = async () => {
+      setLoading(true);
+      await Promise.all([fetchGroups(), fetchDependencies()]);
+      setLoading(false);
+    };
+    init();
   }, []);
 
   const resetForm = () => {
-    setFormData({ name: '', status: true });
+    setFormData({ name: '', status: true, productIds: [] });
     setEditingGroup(null);
+    setActiveTab('details');
+    setSelectedBrandId('');
   };
 
   const handleAddNew = () => {
@@ -48,13 +74,44 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
     setShowModal(true);
   };
 
-  const handleEdit = (group: SupermarketGroup) => {
+  const handleEdit = (group: any) => {
     setEditingGroup(group);
     setFormData({
       name: group.name,
-      status: group.status !== undefined ? group.status : true
+      status: group.status !== undefined ? group.status : true,
+      productIds: group.products ? group.products.map((p: any) => p.id) : []
     });
     setShowModal(true);
+  };
+
+  const toggleProduct = (productId: string) => {
+    setFormData(prev => {
+      const exists = prev.productIds.includes(productId);
+      if (exists) {
+        return { ...prev, productIds: prev.productIds.filter(id => id !== productId) };
+      } else {
+        return { ...prev, productIds: [...prev.productIds, productId] };
+      }
+    });
+  };
+
+  const toggleAllVisibleProducts = () => {
+    const visibleProducts = filteredProducts.map(p => p.id);
+    const allSelected = visibleProducts.every(id => formData.productIds.includes(id));
+    
+    setFormData(prev => {
+      if (allSelected) {
+        // Deselect all visible
+        return { ...prev, productIds: prev.productIds.filter(id => !visibleProducts.includes(id)) };
+      } else {
+        // Select all visible (add missing)
+        const newIds = [...prev.productIds];
+        visibleProducts.forEach(id => {
+          if (!newIds.includes(id)) newIds.push(id);
+        });
+        return { ...prev, productIds: newIds };
+      }
+    });
   };
 
   const handleDelete = async (id: string) => {
@@ -99,6 +156,13 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
   const filteredGroups = groups.filter(group => 
     group.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const filteredProducts = products.filter(p => {
+    if (selectedBrandId && p.brand?.id !== selectedBrandId) return false;
+    return true;
+  });
+
+  const isAllVisibleSelected = filteredProducts.length > 0 && filteredProducts.every(p => formData.productIds.includes(p.id));
 
   return (
     <div className="animate-in fade-in duration-500 relative">
@@ -195,32 +259,144 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
               </button>
             </div>
             
-            <form onSubmit={handleSave} className="p-8 space-y-8">
-              <div>
-                 <label className="text-[11px] font-black text-slate-400 uppercase mb-3 block tracking-widest">Nome da Rede *</label>
-                 <input 
-                     type="text" 
-                     value={formData.name}
-                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                     className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
-                     placeholder="Ex: Grupo Pão de Açúcar"
-                     required
-                 />
+            <form onSubmit={handleSave} className="flex flex-col h-full">
+              {/* Tabs */}
+              <div className="px-8 border-b border-slate-100 flex gap-6">
+                 <button
+                   type="button"
+                   onClick={() => setActiveTab('details')}
+                   className={`py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${
+                     activeTab === 'details' 
+                       ? 'text-blue-600 border-blue-600' 
+                       : 'text-slate-400 border-transparent hover:text-slate-600'
+                   }`}
+                 >
+                   Dados Gerais
+                 </button>
+                 <button
+                   type="button"
+                   onClick={() => setActiveTab('mix')}
+                   className={`py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${
+                     activeTab === 'mix' 
+                       ? 'text-blue-600 border-blue-600' 
+                       : 'text-slate-400 border-transparent hover:text-slate-600'
+                   }`}
+                 >
+                   Mix de Produtos
+                 </button>
               </div>
 
-              <div>
-                 <SearchableSelect
-                   label="Status"
-                   value={formData.status ? 'true' : 'false'}
-                   onChange={(val) => setFormData({...formData, status: val === 'true'})}
-                   options={[
-                     { value: 'true', label: 'Ativo' },
-                     { value: 'false', label: 'Inativo' }
-                   ]}
-                 />
+              <div className="flex-1 overflow-y-auto p-8">
+                {activeTab === 'details' ? (
+                  <div className="space-y-8">
+                    <div>
+                       <label className="text-[11px] font-black text-slate-400 uppercase mb-3 block tracking-widest">Nome da Rede *</label>
+                       <input 
+                           type="text" 
+                           value={formData.name}
+                           onChange={(e) => setFormData({...formData, name: e.target.value})}
+                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                           placeholder="Ex: Grupo Pão de Açúcar"
+                           required
+                       />
+                    </div>
+
+                    <div>
+                       <SearchableSelect
+                         label="Status"
+                         value={formData.status ? 'true' : 'false'}
+                         onChange={(val) => setFormData({...formData, status: val === 'true'})}
+                         options={[
+                           { value: 'true', label: 'Ativo' },
+                           { value: 'false', label: 'Inativo' }
+                         ]}
+                       />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-6 h-full flex flex-col">
+                    <div className="flex items-end gap-4">
+                      <div className="flex-1">
+                        <SearchableSelect
+                          label="Filtrar por Marca"
+                          value={selectedBrandId}
+                          onChange={setSelectedBrandId}
+                          options={[
+                            { value: '', label: 'Todas as Marcas' },
+                            ...brands.map(b => ({ value: b.id, label: b.name }))
+                          ]}
+                          placeholder="Selecione uma marca..."
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={toggleAllVisibleProducts}
+                        className="h-14 px-6 rounded-2xl border-2 border-slate-200 hover:border-blue-200 hover:bg-blue-50 text-slate-600 font-bold flex items-center gap-2 transition-all"
+                      >
+                        {isAllVisibleSelected ? (
+                          <>
+                            <CheckSquare className="text-blue-600" size={20} />
+                            Desmarcar Todos ({filteredProducts.length})
+                          </>
+                        ) : (
+                          <>
+                            <Square className="text-slate-400" size={20} />
+                            Marcar Todos ({filteredProducts.length})
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto border border-slate-200 rounded-2xl">
+                      {filteredProducts.length === 0 ? (
+                        <div className="p-8 text-center text-slate-400 font-medium">
+                          Nenhum produto encontrado com os filtros atuais.
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-slate-100">
+                          {filteredProducts.map(product => {
+                            const isSelected = formData.productIds.includes(product.id);
+                            return (
+                              <div 
+                                key={product.id}
+                                onClick={() => toggleProduct(product.id)}
+                                className={`p-4 flex items-center gap-4 cursor-pointer transition-colors ${
+                                  isSelected ? 'bg-blue-50/50 hover:bg-blue-50' : 'hover:bg-slate-50'
+                                }`}
+                              >
+                                <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                                  isSelected ? 'bg-blue-500 border-blue-500' : 'border-slate-300 bg-white'
+                                }`}>
+                                  {isSelected && <CheckSquare size={16} className="text-white" />}
+                                </div>
+                                
+                                {product.image ? (
+                                  <img src={product.image} alt="" className="w-10 h-10 rounded-lg object-cover bg-slate-100" />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 text-xs font-bold">IMG</div>
+                                )}
+                                
+                                <div>
+                                  <div className="font-bold text-slate-800 text-sm">{product.name}</div>
+                                  <div className="text-xs font-medium text-slate-500">
+                                    {product.brand?.name || 'Sem Marca'} • {product.sku || 'S/ SKU'}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="text-xs text-slate-400 font-bold text-right">
+                      {formData.productIds.length} produtos selecionados no total
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="pt-6 border-t border-slate-100 flex justify-end gap-4">
+              <div className="p-8 pt-6 border-t border-slate-100 flex justify-end gap-4 bg-white rounded-b-[2rem]">
                  <button 
                    type="button"
                    onClick={() => setShowModal(false)} 
@@ -230,9 +406,10 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
                  </button>
                  <button 
                    type="submit"
-                   className="px-8 py-3 text-white font-black rounded-xl shadow-lg shadow-blue-200 hover:scale-105 transition-all"
+                   className="px-8 py-3 text-white font-black rounded-xl shadow-lg shadow-blue-200 hover:scale-105 transition-all flex items-center gap-2"
                    style={{ backgroundColor: settings.primaryColor }}
                  >
+                   <Save size={20} />
                    {editingGroup ? 'Salvar Alterações' : 'Criar Rede'}
                  </button>
               </div>
