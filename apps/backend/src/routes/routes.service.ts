@@ -1127,6 +1127,7 @@ export class RoutesService {
         supermarketName: item.supermarket?.fantasyName || 'N/A',
         checkInTime: item.checkInTime,
         checkOutTime: item.checkOutTime,
+        categoryPhotos: item.categoryPhotos || {},
         products: item.products.map((p) => {
           const gondola = p.gondolaCount || 0;
           const inventory = p.inventoryCount || 0;
@@ -1339,6 +1340,30 @@ export class RoutesService {
         if (validityChecklist) {
             itemProduct.validityDate = validityChecklist.value;
         }
+      } else if (data.checked && itemProduct.checklists?.length > 0) {
+        // Auto-complete checklists if product is checked but no specific checklist data provided
+        // This handles cases where frontend only sends checked=true (e.g. from summary view)
+        itemProduct.checklists.forEach(c => {
+            // For VALIDITY_CHECK, only auto-check if data is present
+            if (c.type === ChecklistItemType.VALIDITY_CHECK) {
+                 if (itemProduct.validityDate && (itemProduct.validityQuantity !== null && itemProduct.validityQuantity !== undefined)) {
+                     c.isChecked = true;
+                     if (employee) c.completedBy = employee;
+                 }
+            } 
+            // For STOCK_COUNT, only auto-check if stock count is present
+            else if (c.type === ChecklistItemType.STOCK_COUNT) {
+                 if (itemProduct.stockCount !== null && itemProduct.stockCount !== undefined) {
+                     c.isChecked = true;
+                     if (employee) c.completedBy = employee;
+                 }
+            }
+            // For standard checklists, mark as done
+            else {
+                 c.isChecked = true;
+                 if (employee) c.completedBy = employee;
+            }
+        });
       }
 
       const saved = await this.routeItemProductsRepository.save(itemProduct);
@@ -1771,7 +1796,8 @@ export class RoutesService {
 
       // Fotos: Pelo menos uma foto por produto é obrigatória (exceto se for ruptura, talvez? Mas geralmente precisa provar a ruptura também).
       // Assumindo rigoroso: sem foto = pendência.
-      if (!ip.photos || ip.photos.length === 0) return true;
+      // REMOVIDO: A validação de fotos agora é feita por categoria (categoryPhotos).
+      // if (!ip.photos || ip.photos.length === 0) return true;
 
       // Validade: se algum item de tipo VALIDITY_CHECK estiver marcado, exigir validityDate e quantidade
       const hasValidityRequired = checklists.some(c => c.type === 'VALIDITY_CHECK' && !!c.isChecked);
