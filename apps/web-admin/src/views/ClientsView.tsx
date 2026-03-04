@@ -380,18 +380,18 @@ const ClientsView: React.FC = () => {
   return (
     <div className="space-y-8 animate-in fade-in duration-500 relative">
       {showLinkModal && linkClient && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-6xl w-full shadow-2xl relative flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-5xl w-full shadow-2xl relative flex flex-col max-h-[90vh]">
             <button 
               onClick={() => setShowLinkModal(false)}
               className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full transition-colors"
             >
               <X size={20} className="text-slate-400" />
             </button>
-            <h2 className="text-2xl font-black text-slate-900 mb-6">Vincular PDVs - {linkClient.nome}</h2>
-            <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-6">
-              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col h-full">
-                <div className="mb-3 space-y-2 flex-shrink-0">
+            <h2 className="text-xl font-black text-slate-900 mb-4">Vincular PDVs - {linkClient.nome}</h2>
+            <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-4">
+              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 flex flex-col h-full overflow-hidden">
+                <div className="mb-2 space-y-2 flex-shrink-0">
                   <div className="flex gap-2">
                     <div className="flex-1 relative z-20">
                       <SearchableSelect
@@ -407,7 +407,7 @@ const ClientsView: React.FC = () => {
                     </div>
                     <button
                       onClick={handleAddAllFiltered}
-                      className="px-3 py-2 bg-blue-100 text-blue-700 rounded-xl text-xs font-bold hover:bg-blue-200 whitespace-nowrap"
+                      className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200 whitespace-nowrap"
                       title="Adicionar todos os PDVs filtrados"
                     >
                       Add Todos
@@ -418,25 +418,25 @@ const ClientsView: React.FC = () => {
                     value={leftSearch}
                     onChange={e => setLeftSearch(e.target.value)}
                     placeholder="Filtrar PDVs disponíveis..."
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs"
                   />
                 </div>
-                <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+                <div className="flex-1 overflow-y-auto space-y-1 pr-1">
                   {availableSupermarkets
                     .filter(s => !selectedSupermarketIds.includes(s.id))
                     .filter(s => !selectedGroupFilter || (s.group?.id === selectedGroupFilter))
                     .filter(s => (s.fantasyName || '').toLowerCase().includes(leftSearch.toLowerCase()))
                     .map(s => (
-                      <div key={s.id} className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-3 py-2">
+                      <div key={s.id} className="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-3 py-2 hover:border-blue-300 transition-colors group cursor-pointer" onClick={() => addToSelected(s.id)}>
                         <div className="min-w-0">
-                          <p className="text-sm font-bold text-slate-800 truncate">{s.fantasyName}</p>
-                          <p className="text-xs text-slate-500">{s.city} - {s.state}</p>
+                          <p className="text-xs font-bold text-slate-800 truncate group-hover:text-blue-700">{s.fantasyName}</p>
+                          <p className="text-[10px] text-slate-500">{s.city} - {s.state}</p>
                         </div>
                         <button 
-                          onClick={() => addToSelected(s.id)}
-                          className="text-xs font-black text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-lg"
+                          onClick={(e) => { e.stopPropagation(); addToSelected(s.id); }}
+                          className="text-[10px] font-black text-blue-600 hover:bg-blue-50 px-2 py-1 rounded"
                         >
-                          Incluir →
+                          Incluir
                         </button>
                       </div>
                     ))
@@ -444,33 +444,39 @@ const ClientsView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-center py-4 lg:py-0">
-                <div className="text-slate-400 font-bold text-sm lg:rotate-0 rotate-90">&rarr;</div>
+              <div className="flex items-center justify-center py-2 lg:py-0">
+                <div className="text-slate-300 font-bold text-xs lg:rotate-0 rotate-90 hidden lg:block">&rarr;</div>
               </div>
               
-              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col h-full">
-                <div className="mb-3 flex-shrink-0">
+              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 flex flex-col h-full overflow-hidden">
+                <div className="mb-2 flex-shrink-0 flex justify-between items-center gap-2">
                   <input 
                     type="text"
                     value={rightSearch}
                     onChange={e => setRightSearch(e.target.value)}
                     placeholder="Filtrar PDVs vinculados..."
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs"
                   />
+                  <button 
+                    onClick={() => setSelectedSupermarketIds([])}
+                    className="text-xs font-bold text-red-500 hover:text-red-600 whitespace-nowrap"
+                  >
+                    Remover Todos
+                  </button>
                 </div>
-                <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+                <div className="flex-1 overflow-y-auto space-y-1 pr-1">
                   {availableSupermarkets
                     .filter(s => selectedSupermarketIds.includes(s.id))
                     .filter(s => (s.fantasyName || '').toLowerCase().includes(rightSearch.toLowerCase()))
                     .map(s => (
-                      <div key={s.id} className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-3 py-2">
+                      <div key={s.id} className="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-3 py-2 hover:border-red-300 transition-colors group cursor-pointer" onClick={() => removeFromSelected(s.id)}>
                         <div className="min-w-0">
-                          <p className="text-sm font-bold text-slate-800 truncate">{s.fantasyName}</p>
-                          <p className="text-xs text-slate-500">{s.city} - {s.state}</p>
+                          <p className="text-xs font-bold text-slate-800 truncate group-hover:text-red-700">{s.fantasyName}</p>
+                          <p className="text-[10px] text-slate-500">{s.city} - {s.state}</p>
                         </div>
                         <button 
-                          onClick={() => removeFromSelected(s.id)}
-                          className="text-xs font-black text-red-600 hover:bg-red-50 px-3 py-1 rounded-lg"
+                          onClick={(e) => { e.stopPropagation(); removeFromSelected(s.id); }}
+                          className="text-[10px] font-black text-red-600 hover:bg-red-50 px-2 py-1 rounded"
                         >
                           Remover
                         </button>
@@ -480,19 +486,19 @@ const ClientsView: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="mt-6 flex justify-end gap-3 flex-shrink-0">
+            <div className="mt-4 flex justify-end gap-3 flex-shrink-0">
               <button 
                 onClick={() => setShowLinkModal(false)}
-                className="px-6 py-3 font-bold text-slate-600 hover:bg-slate-50 rounded-xl"
+                className="px-4 py-2 font-bold text-slate-600 hover:bg-slate-50 rounded-lg text-sm"
               >
                 Cancelar
               </button>
               <button 
                 onClick={saveLinks}
-                className="px-8 py-3 text-white font-black rounded-xl shadow-lg hover:scale-105 transition-all"
+                className="px-6 py-2 text-white font-black rounded-lg shadow-lg hover:scale-105 transition-all text-sm"
                 style={{ backgroundColor: settings.primaryColor }}
               >
-                Salvar Vínculos
+                Salvar Vínculos ({selectedSupermarketIds.length})
               </button>
             </div>
           </div>
