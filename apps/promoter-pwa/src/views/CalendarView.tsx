@@ -167,7 +167,7 @@ const CalendarView = () => {
                   isPast ? 'Passado' :
                   'Futuro';
 
-                const supermarketNames = route.items.map((i: any) => i.supermarket.name).join(', ');
+                const supermarketNames = route.items.map((i: any) => i.supermarket?.fantasyName || i.supermarket?.name || 'PDV sem nome').join(', ');
   return (
     <div 
       key={route.id}
