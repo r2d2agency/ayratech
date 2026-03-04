@@ -35,6 +35,7 @@ interface CategoryTaskFlowProps {
   onFinish: () => void;
   onBack: () => void;
   mode?: CategoryFlowMode;
+  readOnly?: boolean;
 }
 
 const STEPS = {
@@ -54,7 +55,8 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   onUpdateProduct,
   onFinish,
   onBack,
-  mode = 'FULL'
+  mode = 'FULL',
+  readOnly = false
 }) => {
   const [step, setStep] = useState(STEPS.BEFORE_PHOTO);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
@@ -153,6 +155,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'before' | 'after') => {
+    if (readOnly) return;
     if (!e.target.files || !e.target.files[0]) return;
     
     setUploading(true);
@@ -610,15 +613,13 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
       </div>
 
       {selectedProduct && (
-        <ProductCountModal 
-          isOpen={true}
+        <ProductCountModal
+          isOpen={!!selectedProduct}
           onClose={() => setSelectedProduct(null)}
           product={selectedProduct}
-          onSave={async (productId, data) => {
-            await onUpdateProduct(productId, data);
-            setSelectedProduct(null);
-          }}
+          onSave={handleProductSave}
           mode={countMode}
+          readOnly={readOnly}
         />
       )}
 

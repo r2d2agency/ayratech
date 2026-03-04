@@ -609,9 +609,9 @@ const RouteDetailsView = () => {
             <div className="flex items-center gap-2">
                 {pendingCount > 0 && (
                     <button 
-                        onClick={() => offlineService.syncPendingActions()}
+                        onClick={() => offlineService.syncPendingActions(true)}
                         className="p-2 bg-orange-100 text-orange-600 rounded-full animate-pulse"
-                        title={`${pendingCount} ações pendentes. Clique para sincronizar.`}
+                        title={`${pendingCount} ações pendentes. Clique para forçar sincronização.`}
                     >
                         <RefreshCw size={20} />
                     </button>
@@ -874,6 +874,7 @@ const RouteDetailsView = () => {
                 ? 'PHOTOS'
                 : 'FULL'
             }
+            readOnly={isPastRoute || activeItem.status === 'CHECKOUT' || activeItem.status === 'COMPLETED'}
           />
         ) : (
             <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex flex-col justify-end sm:justify-center" style={{ paddingTop: 'env(safe-area-inset-top)' }}>

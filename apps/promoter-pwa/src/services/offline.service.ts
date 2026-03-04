@@ -64,8 +64,8 @@ class OfflineService {
     }
   }
 
-  async syncPendingActions() {
-    if (!navigator.onLine) return;
+  async syncPendingActions(force: boolean = false) {
+    if (!navigator.onLine && !force) return;
 
     // Fetch both PENDING and ERROR status to retry failed attempts
     const pendingActions = await db.pendingActions
@@ -103,9 +103,8 @@ class OfflineService {
              formData.append('type', type || 'Outros');
              formData.append('description', description || '');
              
-             await client.post(action.url, formData, {
-                 headers: { 'Content-Type': 'multipart/form-data' }
-             });
+             await client.post(action.url, formData);
+
         } else if (action.type === 'PHOTO') {
              const formData = new FormData();
              const { fileBase64, filename, photoType, category } = action.payload;
@@ -114,9 +113,8 @@ class OfflineService {
              formData.append('file', blob, filename || 'photo.jpg');
              if (photoType) formData.append('type', photoType);
              if (category !== undefined && category !== null) formData.append('category', category);
-             await client.post(action.url, formData, {
-                 headers: { 'Content-Type': 'multipart/form-data' }
-             });
+             await client.post(action.url, formData);
+
         } else if (action.method === 'POST') {
           await client.post(action.url, action.payload);
         } else if (action.method === 'PUT') {

@@ -24,17 +24,17 @@ const SyncStatus = () => {
 
   // Function to perform sync
   const performSync = useCallback(async () => {
-    if (!navigator.onLine) {
-      toast.error('Sem conexão com a internet.');
-      return;
-    }
-
+    // Allow manual sync attempt even if navigator says offline
+    // because navigator.onLine can be unreliable
+    
     setIsSyncing(true);
     try {
-      await offlineService.syncPendingActions();
+      // Force sync attempt
+      await offlineService.syncPendingActions(true);
       await checkPending(); // Update count after sync
     } catch (error) {
       console.error('Sync error:', error);
+      toast.error('Erro ao sincronizar. Tente novamente.');
     } finally {
       setIsSyncing(false);
     }
@@ -80,7 +80,7 @@ const SyncStatus = () => {
              ? 'bg-blue-600 text-white cursor-wait pr-5'
              : isOnline 
                ? 'bg-amber-500 text-white hover:bg-amber-600 active:scale-95' 
-               : 'bg-slate-700 text-slate-300 cursor-not-allowed'
+               : 'bg-slate-700 text-slate-300 hover:bg-slate-600 active:scale-95'
         }`}
       >
         {isSyncing ? (
@@ -97,7 +97,7 @@ const SyncStatus = () => {
            </span>
            {!isSyncing && (
              <span className="text-[10px] opacity-80 font-medium">
-               {isOnline ? 'Toque para enviar' : 'Aguardando conexão'}
+               {isOnline ? 'Toque para enviar' : 'Toque para forçar envio'}
              </span>
            )}
         </div>

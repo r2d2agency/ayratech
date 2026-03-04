@@ -8,6 +8,7 @@ interface ProductCountModalProps {
   product: any;
   onSave: (productId: string, data: any) => Promise<void>;
   mode: 'GONDOLA' | 'INVENTORY' | 'BOTH'; // Context of where we are opening it from
+  readOnly?: boolean;
 }
 
 export const ProductCountModal: React.FC<ProductCountModalProps> = ({
@@ -15,7 +16,8 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
   onClose,
   product,
   onSave,
-  mode
+  mode,
+  readOnly = false
 }) => {
   const [gondolaCount, setGondolaCount] = useState<number | ''>('');
   const [inventoryCount, setInventoryCount] = useState<number | ''>('');
@@ -136,9 +138,10 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
                 type="number"
                 value={gondolaCount}
                 onChange={(e) => setGondolaCount(e.target.value === '' ? '' : parseInt(e.target.value))}
-                className="w-full border rounded-lg p-3 text-lg text-center focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full border rounded-lg p-3 text-lg text-center focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100 disabled:text-gray-500"
                 placeholder="0"
-                autoFocus={mode === 'GONDOLA'}
+                autoFocus={mode === 'GONDOLA' && !readOnly}
+                disabled={readOnly}
               />
             </div>
 
@@ -152,9 +155,10 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
                 type="number"
                 value={inventoryCount}
                 onChange={(e) => setInventoryCount(e.target.value === '' ? '' : parseInt(e.target.value))}
-                className="w-full border rounded-lg p-3 text-lg text-center focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full border rounded-lg p-3 text-lg text-center focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100 disabled:text-gray-500"
                 placeholder="0"
-                autoFocus={mode === 'INVENTORY'}
+                autoFocus={mode === 'INVENTORY' && !readOnly}
+                disabled={readOnly}
               />
             </div>
           </div>
@@ -171,7 +175,8 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
                   type="date"
                   value={validityDate}
                   onChange={(e) => setValidityDate(e.target.value)}
-                  className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                  disabled={readOnly}
                 />
               </div>
               <div className="space-y-1">
@@ -187,7 +192,8 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
                       e.target.value === '' ? '' : parseInt(e.target.value) || 0
                     )
                   }
-                  className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                  disabled={readOnly}
                 />
               </div>
             </div>
@@ -198,19 +204,16 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
             <div className="space-y-2 animate-fadeIn">
               <label className="flex items-center text-sm font-medium text-red-600">
                 <AlertTriangle size={16} className="mr-1" />
-                Motivo da Ruptura (Estoque Zerado)
+                Motivo da Ruptura
               </label>
-              <select
+              <textarea
                 value={ruptureReason}
                 onChange={(e) => setRuptureReason(e.target.value)}
-                className="w-full border border-red-200 rounded-lg p-3 bg-red-50 text-red-800 focus:ring-2 focus:ring-red-500 outline-none"
-              >
-                <option value="">Selecione um motivo...</option>
-                <option value="Sem Estoque Virtual">Sem Estoque Virtual</option>
-                <option value="Produto não encontrado">Produto não encontrado</option>
-                <option value="Avaria">Avaria</option>
-                <option value="Outro">Outro</option>
-              </select>
+                className="w-full border border-red-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-red-500 outline-none bg-red-50 disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-500"
+                placeholder="Descreva o motivo..."
+                rows={3}
+                disabled={readOnly}
+              />
             </div>
           )}
 
@@ -227,20 +230,22 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
             onClick={onClose}
             className="flex-1 py-3 px-4 border rounded-lg text-gray-600 font-medium hover:bg-gray-50"
           >
-            Cancelar
+            {readOnly ? 'Fechar' : 'Cancelar'}
           </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex-1 py-3 px-4 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 flex items-center justify-center disabled:opacity-50"
-          >
-            {saving ? 'Salvando...' : (
-                <>
-                    <Save size={18} className="mr-2" />
-                    Salvar
-                </>
-            )}
-          </button>
+          {!readOnly && (
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 py-3 px-4 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 flex items-center justify-center disabled:opacity-50"
+            >
+              {saving ? 'Salvando...' : (
+                  <>
+                      <Save size={18} className="mr-2" />
+                      Salvar
+                  </>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>

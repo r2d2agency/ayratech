@@ -324,6 +324,7 @@ const RoutesReportView: React.FC = () => {
       id: string;
       name: string;
       city: string;
+      address: string;
       visits: number;
       productsChecked: number;
       ruptures: number;
@@ -356,6 +357,7 @@ const RoutesReportView: React.FC = () => {
             id: i.supermarket.id,
             name: i.supermarket.fantasyName,
             city: `${i.supermarket.city || ''} - ${i.supermarket.state || ''}`,
+            address: `${i.supermarket.street || ''}, ${i.supermarket.number || ''} - ${i.supermarket.neighborhood || ''}`,
             visits: 0,
             productsChecked: 0,
             ruptures: 0,
@@ -1271,7 +1273,10 @@ const RoutesReportView: React.FC = () => {
                             <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xs">
                               <Store size={14} />
                             </div>
-                            <span className="font-bold text-slate-700 text-sm">{pdv.name}</span>
+                            <div className="flex flex-col">
+                                <span className="font-bold text-slate-700 text-sm">{pdv.name}</span>
+                                <span className="text-[10px] text-slate-400">{pdv.address}</span>
+                            </div>
                           </div>
                         </td>
                         <td className="p-4">
@@ -1526,7 +1531,17 @@ const RoutesReportView: React.FC = () => {
                       <h3 className="font-bold text-slate-900">{item.supermarket.fantasyName}</h3>
                       <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
                         <MapPin size={12} />
-                        {item.supermarket.city || 'Cidade não inf.'} - {item.supermarket.state || 'UF'}
+                        {(() => {
+                           const s = item.supermarket;
+                           const parts = [
+                             s.street, 
+                             s.number, 
+                             s.neighborhood,
+                             s.city,
+                             s.state
+                           ].filter(Boolean);
+                           return parts.length > 0 ? parts.join(', ') : `${s.city || 'Cidade não inf.'} - ${s.state || 'UF'}`;
+                        })()}
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
@@ -1593,12 +1608,12 @@ const RoutesReportView: React.FC = () => {
                                 <div className="truncate max-w-[120px]" title={p.product.brand?.name}>{p.product.brand?.name || '-'}</div>
                             </td>
                             <td className="p-3 text-xs font-bold text-slate-500">
-                                {p.completedBy ? (
-                                    <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded-md border border-blue-100 whitespace-nowrap">
-                                        {(p.completedBy?.name || '').split(' ')[0]}
-                                    </span>
-                                ) : '-'}
-                            </td>
+            {p.completedBy ? (
+                <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded-md border border-blue-100 whitespace-nowrap">
+                    {p.completedBy.name}
+                </span>
+            ) : '-'}
+        </td>
                             <td className="p-3 text-xs">
                               <div className="grid grid-cols-2 gap-x-2 gap-y-1">
                                 <div>

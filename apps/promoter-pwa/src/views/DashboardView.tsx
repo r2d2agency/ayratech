@@ -4,8 +4,8 @@ import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useBranding } from '../context/BrandingContext';
 import { offlineService } from '../services/offline.service';
-import { MapPin, ArrowRight, CheckCircle, WifiOff, Settings, ListTodo } from 'lucide-react';
-import { format } from 'date-fns';
+import { MapPin, ArrowRight, CheckCircle, WifiOff, Settings, ListTodo, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, addDays, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import SupervisorDashboardView from './SupervisorDashboardView';
 import toast from 'react-hot-toast';
@@ -17,28 +17,29 @@ const DashboardView = () => {
   const [todaysRoutes, setTodaysRoutes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   // Check if user is a manager (admin, supervisor, etc.)
   const userRole = user?.role?.toLowerCase() || '';
   const isManager = ['admin', 'superadmin', 'supervisor', 'gerente', 'coordenador'].some(role => userRole.includes(role));
 
   useEffect(() => {
-    fetchTodaysRoutes();
-  }, []);
+    fetchRoutes(selectedDate);
+  }, [selectedDate]);
 
-  const fetchTodaysRoutes = async () => {
+  const fetchRoutes = async (dateObj: Date) => {
+    setLoading(true);
     // Use local date to avoid UTC issues (e.g. previous/next day in evening)
-    const date = new Date();
-    const today = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
     
     try {
-      // Fetch routes for today
+      // Fetch routes for selected date
       // Ideally backend should support ?date=today&promoterId=me
       // Now fetching filtered by date to improve performance
-      const response = await client.get('/routes', { params: { date: today } });
+      const response = await client.get('/routes', { params: { date: dateStr } });
       
       const filtered = response.data.filter((r: any) => {
-        return r.date.startsWith(today) && (
+        return r.date.startsWith(dateStr) && (
           isManager || // Managers see all routes
           r.promoter?.id === user.employee.id || // Legacy single promoter check
           (r.promoters && r.promoters.some((p: any) => p.id === user.employee.id)) // Multi-promoter check
@@ -48,10 +49,8 @@ const DashboardView = () => {
       setTodaysRoutes(filtered);
       setIsOffline(false);
 
-      // Cache routes offline
+      // Cache routes offline (only for today or future? Maybe all accessed?)
       if (filtered.length > 0) {
-        // Clear old routes for this date to avoid duplicates/stale data? 
-        // Dexie put overwrites by ID, so it's fine.
         filtered.forEach((route: any) => {
           offlineService.saveRoute(route);
         });
@@ -63,24 +62,26 @@ const DashboardView = () => {
       setIsOffline(true);
       
       try {
-        let cachedRoutes = await offlineService.getRoutesByDate(today);
+        let cachedRoutes = await offlineService.getRoutesByDate(dateStr);
         
         // Fallback: If strict date match fails, get all and filter (robustness)
         if (!cachedRoutes || cachedRoutes.length === 0) {
             console.log('No routes found by exact date index, scanning all...');
             const allRoutes = await offlineService.getAllRoutes();
-            cachedRoutes = allRoutes.filter(r => r.date && r.date.startsWith(today));
+            cachedRoutes = allRoutes.filter(r => r.date && r.date.startsWith(dateStr));
         }
 
-        console.log(`Loaded ${cachedRoutes?.length} routes from offline cache for ${today}`);
+        console.log(`Loaded ${cachedRoutes?.length} routes from offline cache for ${dateStr}`);
         
         if (cachedRoutes && cachedRoutes.length > 0) {
           setTodaysRoutes(cachedRoutes);
           toast('Modo Offline: Exibindo rotas salvas localmente.', { icon: '📡' });
         } else {
-          // Try previous day or next day just in case of timezone confusion?
-          // For now just show error
-          toast.error('Sem conexão e sem rotas salvas para hoje.');
+          // Only show error if it's today, otherwise it might just be empty history
+          const todayStr = new Date().toISOString().split('T')[0];
+          if (dateStr === todayStr) {
+             toast.error('Sem conexão e sem rotas salvas para esta data.');
+          }
         }
       } catch (cacheError) {
         console.error('Error fetching from offline cache:', cacheError);
@@ -89,6 +90,9 @@ const DashboardView = () => {
       setLoading(false);
     }
   };
+
+  const handlePrevDay = () => setSelectedDate(prev => subDays(prev, 1));
+  const handleNextDay = () => setSelectedDate(prev => addDays(prev, 1));
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -117,8 +121,26 @@ const DashboardView = () => {
           >
             <Settings size={20} />
           </button>
-          <div style={{ backgroundColor: `${settings.primaryColor}20`, color: settings.primaryColor }} className="px-3 py-1 rounded-full text-xs font-bold">
-            {format(new Date(), 'dd/MM', { locale: ptBR })}
+          
+          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-full p-1 shadow-sm">
+            <button 
+              onClick={handlePrevDay}
+              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <div 
+              style={{ color: settings.primaryColor }} 
+              className="px-2 text-xs font-bold min-w-[3rem] text-center"
+            >
+              {format(selectedDate, 'dd/MM', { locale: ptBR })}
+            </div>
+            <button 
+              onClick={handleNextDay}
+              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+            >
+              <ChevronRight size={14} />
+            </button>
           </div>
         </div>
       </header>
@@ -152,7 +174,11 @@ const DashboardView = () => {
 
           {/* Current/Next Route */}
           <section>
-            <h2 className="text-lg font-bold text-gray-800 mb-3">Agenda do Dia</h2>
+            <h2 className="text-lg font-bold text-gray-800 mb-3">
+              {format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') 
+                ? 'Agenda do Dia' 
+                : `Agenda de ${format(selectedDate, 'dd/MM', { locale: ptBR })}`}
+            </h2>
             
             {todaysRoutes.length === 0 ? (
               <div className="bg-white rounded-xl p-8 text-center border border-dashed border-gray-300">
@@ -229,7 +255,19 @@ const DashboardView = () => {
                               {item.supermarket?.fantasyName || item.supermarket?.name || 'PDV Sem Nome'}
                             </h3>
                             <p className="text-xs text-gray-500 truncate flex items-center gap-1">
-                              <MapPin size={10} /> {item.supermarket?.address || 'Endereço não disponível'}
+                              <MapPin size={10} /> 
+                              {(() => {
+                                const s = item.supermarket;
+                                if (!s) return 'Endereço não disponível';
+                                const parts = [
+                                  s.street, 
+                                  s.number, 
+                                  s.neighborhood,
+                                  s.city,
+                                  s.state
+                                ].filter(Boolean);
+                                return parts.length > 0 ? parts.join(', ') : (s.address || 'Endereço não disponível');
+                              })()}
                             </p>
                             <button
                                 onClick={(e) => {
