@@ -81,9 +81,14 @@ export class RoutesController {
     return this.routesService.update(id, updateRouteDto, req.user);
   }
 
+  @Delete('batch')
+  removeBatch(@Query() query: { startDate: string; endDate: string; promoterId?: string }, @Req() req: any) {
+    return this.routesService.removeBatch(query, req.user);
+  }
+
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
-    return this.routesService.remove(id, req.user);
+  remove(@Param('id') id: string, @Query('recurrence') recurrence: string, @Req() req: any) {
+    return this.routesService.remove(id, req.user, recurrence === 'true');
   }
 
   // Rules Endpoints

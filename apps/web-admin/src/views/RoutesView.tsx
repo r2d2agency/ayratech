@@ -408,9 +408,9 @@ const RoutesView: React.FC = () => {
         items: routeItems.map((item, index) => ({
           supermarketId: item.supermarketId,
           order: index + 1,
-          startTime: item.startTime,
-          endTime: item.endTime,
-          estimatedDuration: item.estimatedDuration ? parseInt(item.estimatedDuration) : undefined,
+          startTime: item.startTime || undefined,
+          endTime: item.endTime || undefined,
+          estimatedDuration: item.estimatedDuration ? parseInt(String(item.estimatedDuration)) : undefined,
           productIds: item.productIds || [],
           products: item.products || item.productIds?.map((id: string) => ({ productId: id })) || []
         })),
@@ -422,9 +422,10 @@ const RoutesView: React.FC = () => {
       setEditingRecurrenceGroup(null);
       setRecurrenceReplaceFrom(null);
       fetchRoutesForWeek();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating weekly routes:', error);
-      alert('Erro ao criar rotas.');
+      const msg = error.response?.data?.message || error.message || 'Erro desconhecido';
+      alert(`Erro ao criar rotas: ${Array.isArray(msg) ? msg.join(', ') : msg}`);
     } finally {
       setLoading(false);
     }
@@ -712,9 +713,9 @@ const RoutesView: React.FC = () => {
         items: routeItems.map((item, index) => ({
           supermarketId: item.supermarketId,
           order: index + 1,
-          startTime: item.startTime,
-          endTime: item.endTime,
-          estimatedDuration: item.estimatedDuration ? parseInt(item.estimatedDuration) : undefined,
+          startTime: item.startTime || undefined,
+          endTime: item.endTime || undefined,
+          estimatedDuration: item.estimatedDuration ? parseInt(String(item.estimatedDuration)) : undefined,
           productIds: item.productIds || [],
           products: item.products || item.productIds?.map((id: string) => ({ productId: id })) || []
         }))
@@ -1023,11 +1024,44 @@ const RoutesView: React.FC = () => {
     setShowDayModal(true);
   };
 
+  const handleClearRoutes = async () => {
+    if (!window.confirm('ATENÇÃO: Deseja apagar TODAS as rotas futuras (incluindo hoje)?\n\nEsta ação removerá todas as rotas DRAFT e CONFIRMED a partir da data de hoje.\nRotas já iniciadas ou concluídas serão mantidas.')) return;
+    
+    setLoading(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      await api.delete(`/routes/batch?startDate=${today}`);
+      alert('Rotas futuras apagadas com sucesso!');
+      fetchRoutesForWeek();
+    } catch (error: any) {
+      console.error('Error clearing routes:', error);
+      alert('Erro ao apagar rotas: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleQuickDelete = async (e: React.MouseEvent, routeId: string) => {
     e.stopPropagation();
-    if (!window.confirm('Tem certeza que deseja excluir esta rota?')) return;
+    
+    // Check for recurrence
+    const route = weekRoutes.find(r => r.id === routeId);
+    let deleteSeries = false;
+
+    if (route?.recurrenceGroup) {
+       // Simple interaction: Ask if user wants to delete series
+       // If Cancel, ask if wants to delete single
+       if (window.confirm('Esta rota faz parte de uma série recorrente.\n\nDeseja apagar TODAS as rotas futuras desta série?')) {
+           deleteSeries = true;
+       } else {
+           if (!window.confirm('Deseja apagar APENAS esta rota específica?')) return;
+       }
+    } else {
+       if (!window.confirm('Tem certeza que deseja excluir esta rota?')) return;
+    }
+
     try {
-      await api.delete(`/routes/${routeId}`);
+      await api.delete(`/routes/${routeId}${deleteSeries ? '?recurrence=true' : ''}`);
       fetchRoutesForWeek();
     } catch (error) {
       console.error('Error deleting route:', error);
@@ -1338,6 +1372,12 @@ const RoutesView: React.FC = () => {
                   style={{ backgroundColor: settings.primaryColor }}
                 >
                   Criar por Semana
+                </button>
+                <button 
+                  onClick={handleClearRoutes}
+                  className="px-4 py-2 rounded-lg font-bold text-red-600 bg-red-100 hover:bg-red-200 border border-red-200"
+                >
+                  Limpar Rotas
                 </button>
               </div>
             </div>

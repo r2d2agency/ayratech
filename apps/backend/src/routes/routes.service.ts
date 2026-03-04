@@ -961,27 +961,96 @@ export class RoutesService {
     }
   }
 
-  async remove(id: string, user?: any) {
+  async remove(id: string, user?: any, recurrence: boolean = false) {
     const route = await this.findOne(id);
     if (!route) {
       throw new BadRequestException('Route not found');
     }
 
-    // Check if route has started execution
     const isAdmin = user && ['admin', 'manager', 'superadmin'].includes(user.role);
 
-    if (!isAdmin) {
-      const hasStarted = route.items?.some(item => 
+    // Helper to check if route can be deleted
+    const canDelete = (r: Route) => {
+      if (isAdmin) return true;
+      const hasStarted = r.items?.some(item => 
           item.checkInTime || 
           (item.status !== 'PENDING' && item.status !== 'SKIPPED')
       );
+      return !(hasStarted || r.status === 'COMPLETED' || r.status === 'IN_PROGRESS');
+    };
 
-      if (hasStarted || route.status === 'COMPLETED' || route.status === 'IN_PROGRESS') {
-          throw new BadRequestException('Cannot delete a route that has already started execution or is completed');
+    if (!canDelete(route)) {
+      throw new BadRequestException('Cannot delete a route that has already started execution or is completed');
+    }
+
+    if (recurrence && route.recurrenceGroup) {
+      // Delete series from this date onwards
+      const futureRoutes = await this.routesRepository.find({
+        where: {
+          recurrenceGroup: route.recurrenceGroup,
+          date: MoreThanOrEqual(route.date)
+        },
+        relations: ['items']
+      });
+
+      // Validate all future routes
+      for (const r of futureRoutes) {
+        if (!canDelete(r)) {
+             throw new BadRequestException(`Cannot delete series because route on ${r.date} has already started or is completed`);
+        }
       }
+
+      const ids = futureRoutes.map(r => r.id);
+      if (ids.length > 0) {
+        return this.routesRepository.delete(ids);
+      }
+      return { affected: 0 };
     }
 
     return this.routesRepository.delete(id);
+  }
+
+  async removeBatch(query: { startDate: string; endDate?: string; promoterId?: string }, user?: any) {
+    const isAdmin = user && ['admin', 'manager', 'superadmin'].includes(user.role);
+    if (!isAdmin) {
+      throw new UnauthorizedException('Only admins can perform batch deletion');
+    }
+
+    const { startDate, endDate, promoterId } = query;
+    
+    const whereClause: any = {
+      date: endDate ? Between(startDate, endDate) : MoreThanOrEqual(startDate),
+      status: In(['DRAFT', 'CONFIRMED']) // Only delete non-started routes by default for safety
+    };
+
+    if (promoterId) {
+      // Handle both legacy and new relation
+      // This is tricky with OR logic in TypeORM simple find
+      // Let's use QueryBuilder for robustness
+      const qb = this.routesRepository.createQueryBuilder('route')
+        .leftJoin('route.promoters', 'promoter')
+        .where('route.date >= :startDate', { startDate });
+      
+      if (endDate) {
+        qb.andWhere('route.date <= :endDate', { endDate });
+      }
+
+      qb.andWhere('route.status IN (:...statuses)', { statuses: ['DRAFT', 'CONFIRMED'] });
+
+      if (promoterId) {
+        qb.andWhere(new Brackets(qb2 => {
+          qb2.where('route.promoterId = :pid', { pid: promoterId })
+             .orWhere('promoter.id = :pid', { pid: promoterId });
+        }));
+      }
+
+      const routes = await qb.getMany();
+      if (routes.length === 0) return { affected: 0 };
+      
+      return this.routesRepository.delete(routes.map(r => r.id));
+    }
+
+    return this.routesRepository.delete(whereClause);
   }
 
   async getRouteReport(id: string) {
