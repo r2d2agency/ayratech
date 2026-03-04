@@ -116,7 +116,7 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
           {activeView === 'stock_approvals' && <StockApprovalsView />}
           {activeView === 'supermarkets_list' && <SupermarketsListView onNavigate={handleNavigate} />}
           {activeView === 'supermarket_form' && <SupermarketFormView onNavigate={handleNavigate} />}
-          {activeView === 'supermarket_groups_list' && <SupermarketGroupsListView onNavigate={handleNavigate} />}
+          {activeView === 'supermarket_groups_list' && <SupermarketGroupsView onNavigate={handleNavigate} />}
           {activeView === 'supermarket_group_form' && <SupermarketGroupFormView onNavigate={handleNavigate} />}
           {activeView === 'employees' && (
             <div className="animate-in fade-in duration-500">
