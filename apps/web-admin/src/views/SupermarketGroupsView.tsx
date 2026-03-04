@@ -143,7 +143,7 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
     
     // Apply filters
     if (selectedBrandId && p.brand?.id !== selectedBrandId) return false;
-    if (selectedCategoryId && p.category?.id !== selectedCategoryId) return false;
+    if (selectedCategoryId && p.categoryRef?.id !== selectedCategoryId) return false;
     if (productSearchTerm) {
       const term = productSearchTerm.toLowerCase();
       const matchesName = p.name?.toLowerCase().includes(term);
@@ -273,7 +273,7 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
       {/* Modal de Cadastro/Edição */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[2rem] w-full max-w-5xl shadow-2xl animate-in zoom-in-95 duration-200 h-[80vh] flex flex-col relative">
+          <div className="bg-white rounded-[2rem] w-full max-w-5xl shadow-2xl animate-in zoom-in-95 duration-200 h-[90vh] flex flex-col relative">
             <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center rounded-t-[2rem] shrink-0">
               <div>
                 <h2 className="text-2xl font-black text-slate-900">
@@ -344,27 +344,28 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col h-full p-8 space-y-6">
+                  <div className="flex flex-col h-full p-4 space-y-4">
                     {/* Transfer List Layout */}
                     <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-4 h-full min-h-0">
                       
                       {/* Left: Available */}
                       <div className="flex flex-col h-full bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
-                        <div className="p-4 border-b border-slate-100 bg-white space-y-3 shrink-0">
-                          <div className="flex justify-between items-center">
-                             <h3 className="font-bold text-slate-700">Disponíveis</h3>
-                             <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full">{availableProducts.length}</span>
-                          </div>
-                          
-                          <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                            <input 
-                              type="text"
-                              placeholder="Buscar produto..."
-                              className="w-full h-10 pl-9 pr-3 rounded-lg bg-slate-50 border border-slate-200 text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400"
-                              value={productSearchTerm}
-                              onChange={(e) => setProductSearchTerm(e.target.value)}
-                            />
+                        <div className="p-2 border-b border-slate-100 bg-white space-y-2 shrink-0">
+                          <div className="flex justify-between items-center gap-2">
+                             <div className="flex items-center gap-2">
+                               <h3 className="font-bold text-slate-700 text-sm">Disponíveis</h3>
+                               <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{availableProducts.length}</span>
+                             </div>
+                             <div className="relative w-40">
+                                <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
+                                <input 
+                                  type="text"
+                                  placeholder="Buscar..."
+                                  className="w-full h-8 pl-7 pr-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400"
+                                  value={productSearchTerm}
+                                  onChange={(e) => setProductSearchTerm(e.target.value)}
+                                />
+                             </div>
                           </div>
                           
                           <div className="flex gap-2">
@@ -376,7 +377,7 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
                                   { value: '', label: 'Todas as Marcas' },
                                   ...brands.map(b => ({ value: b.id, label: b.name }))
                                 ]}
-                                placeholder="Filtrar Marca"
+                                placeholder="Marca"
                               />
                             </div>
                             <div className="flex-1 min-w-0">
@@ -387,7 +388,7 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
                                   { value: '', label: 'Todas as Categorias' },
                                   ...categories.map(c => ({ value: c.id, label: c.name }))
                                 ]}
-                                placeholder="Filtrar Categoria"
+                                placeholder="Categoria"
                               />
                             </div>
                           </div>
@@ -397,9 +398,9 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
                               type="button"
                               onClick={addAllVisible}
                               disabled={availableProducts.length === 0}
-                              className="flex-1 py-2 rounded-lg bg-blue-50 text-blue-600 text-[11px] font-black hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                              className="flex-1 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-[10px] font-black hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                              <Plus size={14} />
+                              <Plus size={12} />
                               Adicionar Todos
                             </button>
                             <button
@@ -412,15 +413,15 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
                                 }));
                               }}
                               disabled={availableProducts.length === 0}
-                              className="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                              className="px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                               title="Adicionar filtrados"
                             >
-                              <ArrowRight size={14} />
+                              <ArrowRight size={12} />
                             </button>
                           </div>
                         </div>
                         
-                        <div className="flex-1 overflow-y-auto p-2 space-y-2 bg-slate-50">
+                        <div className="flex-1 overflow-y-auto p-2 space-y-1 bg-slate-50">
                           {availableProducts.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-2">
                               <Search size={24} className="opacity-20" />
@@ -430,26 +431,26 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
                             availableProducts.map(product => (
                               <div 
                                 key={product.id}
-                                className="bg-white p-3 rounded-xl border border-slate-100 flex items-center gap-3 hover:border-blue-200 transition-colors group relative"
+                                className="bg-white p-2 rounded-lg border border-slate-100 flex items-center gap-2 hover:border-blue-200 transition-colors group relative"
                               >
                                 {product.image ? (
-                                  <img src={product.image} alt="" className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0" />
+                                  <img src={product.image} alt="" className="w-8 h-8 rounded-md object-cover bg-slate-100 shrink-0" />
                                 ) : (
-                                  <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 text-[10px] font-bold shrink-0">IMG</div>
+                                  <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-400 text-[9px] font-bold shrink-0">IMG</div>
                                 )}
                                 <div className="flex-1 min-w-0">
                                   <div className="font-bold text-slate-700 text-xs truncate" title={product.name}>{product.name}</div>
-                                  <div className="text-[10px] font-medium text-slate-400 truncate">
+                                  <div className="text-[9px] font-medium text-slate-400 truncate">
                                     {product.brand?.name || 'Sem Marca'} • {product.sku || 'S/ SKU'}
                                   </div>
                                 </div>
                                 <button
                                   type="button"
                                   onClick={() => toggleProduct(product.id)}
-                                  className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all shrink-0 shadow-sm"
+                                  className="w-6 h-6 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all shrink-0 shadow-sm"
                                   title="Adicionar"
                                 >
-                                  <Plus size={16} />
+                                  <Plus size={14} />
                                 </button>
                               </div>
                             ))
@@ -466,23 +467,24 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
 
                       {/* Right: Selected */}
                       <div className="flex flex-col h-full bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
-                        <div className="p-4 border-b border-slate-100 bg-white space-y-3 shrink-0">
-                          <div className="flex justify-between items-center">
-                             <h3 className="font-bold text-slate-700">Selecionados</h3>
-                             <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full">{formData.productIds.length}</span>
+                        <div className="p-2 border-b border-slate-100 bg-white space-y-2 shrink-0">
+                          <div className="flex justify-between items-center gap-2">
+                             <div className="flex items-center gap-2">
+                               <h3 className="font-bold text-slate-700 text-sm">Selecionados</h3>
+                               <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{formData.productIds.length}</span>
+                             </div>
+                             <div className="relative w-40">
+                                <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
+                                <input 
+                                  type="text"
+                                  placeholder="Buscar..."
+                                  className="w-full h-8 pl-7 pr-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-red-100 transition-all placeholder:text-slate-400"
+                                  value={selectedSearchTerm}
+                                  onChange={(e) => setSelectedSearchTerm(e.target.value)}
+                                />
+                             </div>
                           </div>
                           
-                          <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                            <input 
-                              type="text"
-                              placeholder="Buscar selecionados..."
-                              className="w-full h-10 pl-9 pr-3 rounded-lg bg-slate-50 border border-slate-200 text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-red-100 transition-all placeholder:text-slate-400"
-                              value={selectedSearchTerm}
-                              onChange={(e) => setSelectedSearchTerm(e.target.value)}
-                            />
-                          </div>
-
                           <div className="h-10"></div> {/* Spacer to align with left column brand select height */}
                           
                           <div className="flex gap-2">
@@ -490,9 +492,9 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
                               type="button"
                               onClick={removeAllVisible}
                               disabled={selectedProductsList.length === 0}
-                              className="flex-1 py-2 rounded-lg bg-red-50 text-red-600 text-[11px] font-black hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                              className="flex-1 py-1.5 rounded-lg bg-red-50 text-red-600 text-[10px] font-black hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                              <Trash size={14} />
+                              <Trash size={12} />
                               Remover Todos
                             </button>
                             <button
@@ -505,15 +507,15 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
                                 }));
                               }}
                               disabled={selectedProductsList.length === 0}
-                              className="px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                              className="px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                               title="Remover filtrados"
                             >
-                              <ArrowLeft size={14} />
+                              <ArrowLeft size={12} />
                             </button>
                           </div>
                         </div>
                         
-                        <div className="flex-1 overflow-y-auto p-2 space-y-2 bg-slate-50">
+                        <div className="flex-1 overflow-y-auto p-2 space-y-1 bg-slate-50">
                           {selectedProductsList.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-2">
                               <CheckSquare size={24} className="opacity-20" />
@@ -523,26 +525,26 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
                             selectedProductsList.map(product => (
                               <div 
                                 key={product.id}
-                                className="bg-white p-3 rounded-xl border border-slate-100 flex items-center gap-3 hover:border-red-200 transition-colors group relative"
+                                className="bg-white p-2 rounded-lg border border-slate-100 flex items-center gap-2 hover:border-red-200 transition-colors group relative"
                               >
                                 {product.image ? (
-                                  <img src={product.image} alt="" className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0" />
+                                  <img src={product.image} alt="" className="w-8 h-8 rounded-md object-cover bg-slate-100 shrink-0" />
                                 ) : (
-                                  <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 text-[10px] font-bold shrink-0">IMG</div>
+                                  <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-400 text-[9px] font-bold shrink-0">IMG</div>
                                 )}
                                 <div className="flex-1 min-w-0">
                                   <div className="font-bold text-slate-700 text-xs truncate" title={product.name}>{product.name}</div>
-                                  <div className="text-[10px] font-medium text-slate-400 truncate">
+                                  <div className="text-[9px] font-medium text-slate-400 truncate">
                                     {product.brand?.name || 'Sem Marca'} • {product.sku || 'S/ SKU'}
                                   </div>
                                 </div>
                                 <button
                                   type="button"
                                   onClick={() => toggleProduct(product.id)}
-                                  className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shrink-0 shadow-sm"
+                                  className="w-6 h-6 rounded-md bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shrink-0 shadow-sm"
                                   title="Remover"
                                 >
-                                  <Trash size={16} />
+                                  <Trash size={14} />
                                 </button>
                               </div>
                             ))
