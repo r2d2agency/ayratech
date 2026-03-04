@@ -148,12 +148,30 @@ class OfflineService {
              await db.pendingActions.delete(action.id!);
              successCount++;
         } 
-        // Fatal Client Errors (4xx) except 408 (Timeout) and 429 (Too Many Requests)
+        // Auth Errors (401/403) -> Fatal, requires login
+        else if (statusCode === 401 || statusCode === 403) {
+             console.error(`Auth error ${statusCode} for action ${action.id}.`);
+             toast.error('Sessão expirada. Faça login novamente.');
+             // Don't delete, let user retry after login? Or delete?
+             // Usually retry after login works.
+             await db.pendingActions.update(action.id!, { 
+               status: 'ERROR', 
+               error: 'Sessão expirada. Faça login novamente.',
+               retryCount: (action.retryCount || 0) + 1 
+             });
+             failCount++;
+        }
+        // Client Errors (4xx) -> Log but DO NOT DELETE automatically to prevent data loss
+        // Unless it's clearly invalid data that will never succeed
         else if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 408 && statusCode !== 429) {
-             console.error(`Fatal error ${statusCode} for action ${action.id}. Removing from queue.`);
-             await db.pendingActions.delete(action.id!);
-             toast.error(`Ação cancelada: ${errorMessage}`);
-             // Don't count as success, but don't block queue
+             console.error(`Client error ${statusCode} for action ${action.id}. Keeping in queue as ERROR.`);
+             // Previously we deleted it, but that caused data loss for photos if backend rejected type
+             await db.pendingActions.update(action.id!, { 
+               status: 'ERROR', 
+               error: `${errorMessage} (${statusCode})`,
+               retryCount: (action.retryCount || 0) + 1 
+             });
+             failCount++;
         }
         else {
              // Server Errors (5xx) or Network Errors -> Retry later

@@ -1210,7 +1210,8 @@ export class RoutesService {
     const url = `/uploads/${fileName}`;
 
     // If category and type are provided, update the route item categoryPhotos
-    if (category && (type === 'before' || type === 'after')) {
+    const normalizedType = type.replace('CATEGORY_', '').toLowerCase();
+    if (category && (normalizedType === 'before' || normalizedType === 'after')) {
         if (!item.categoryPhotos) {
             item.categoryPhotos = {};
         }
@@ -1219,7 +1220,7 @@ export class RoutesService {
             item.categoryPhotos[category] = {};
         }
 
-        item.categoryPhotos[category][type as 'before' | 'after'] = url;
+        item.categoryPhotos[category][normalizedType as 'before' | 'after'] = url;
         await this.routeItemsRepository.save(item);
     }
 

@@ -878,7 +878,7 @@ const ClientDashboardView: React.FC = () => {
                     <th className="px-4 py-3">Produto</th>
                     <th className="px-4 py-3">Marca</th>
                     <th className="px-4 py-3">Supermercado</th>
-                    <th className="px-4 py-3">Gôndola</th>
+                    <th className="px-4 py-3">Loja</th>
                     <th className="px-4 py-3">Estoque</th>
                     <th className="px-4 py-3">Total</th>
                   </tr>

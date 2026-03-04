@@ -100,7 +100,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               <tr className="bg-slate-50 text-slate-600">
                 <th className="p-3 text-left">Cliente</th>
                 <th className="p-3 text-left">Categoria</th>
-                <th className="p-3 text-right">Gôndola</th>
+                <th className="p-3 text-right">Loja</th>
                 <th className="p-3 text-right">Estoque</th>
                 <th className="p-3 text-right">Total</th>
                 <th className="p-3 text-right">Validade Próxima</th>

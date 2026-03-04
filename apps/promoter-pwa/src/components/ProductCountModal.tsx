@@ -130,7 +130,7 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
             <div className={`space-y-2 ${(mode === 'INVENTORY' && !mode.includes('BOTH')) ? 'opacity-50' : ''}`}>
               <label className="flex items-center text-sm font-medium text-gray-700">
                 <Package size={16} className="mr-1" />
-                Gôndola
+                Loja
               </label>
               <input
                 type="number"

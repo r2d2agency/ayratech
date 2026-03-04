@@ -20,5 +20,5 @@ export const mockSupermarkets: SupermarketData[] = [
 
 export const mockPromoters: Promoter[] = [
   { id: 'pr1', nome: 'Ricardo Silva', status: 'Em Rota', ultimaVisita: '10:45', totalVisitasHoje: 3, foto: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ricardo', atividadeAtual: 'Reposição Nestlé' },
-  { id: 'pr2', nome: 'Ana Oliveira', status: 'Em Rota', ultimaVisita: '11:02', totalVisitasHoje: 2, foto: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana', atividadeAtual: 'Foto de Gôndola Coca-Cola' },
+  { id: 'pr2', nome: 'Ana Oliveira', status: 'Em Rota', ultimaVisita: '11:02', totalVisitasHoje: 2, foto: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana', atividadeAtual: 'Foto de Loja Coca-Cola' },
 ];

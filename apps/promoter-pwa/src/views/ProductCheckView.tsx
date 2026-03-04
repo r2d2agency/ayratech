@@ -809,7 +809,7 @@ const ProductCheckView: React.FC = () => {
                     className={`flex-1 py-2 px-3 rounded-lg border text-sm ${selectedProduct.stockoutType === 'PHYSICAL' ? 'bg-red-50 border-red-200 text-red-700 font-medium' : 'bg-white border-gray-300'}`}
                     onClick={() => setSelectedProduct({...selectedProduct, stockoutType: 'PHYSICAL'})}
                   >
-                    Física (Gôndola)
+                    Física (Loja)
                   </button>
                 </div>
               </div>

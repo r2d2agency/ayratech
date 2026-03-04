@@ -871,7 +871,7 @@ const RoutesReportView: React.FC = () => {
       'Verificado',
       'Validade',
       'Qtd. Validade',
-      'Gôndola',
+      'Loja',
       'Estoque',
       'Total Estoque',
       'Observação'
@@ -1602,7 +1602,7 @@ const RoutesReportView: React.FC = () => {
                             <td className="p-3 text-xs">
                               <div className="grid grid-cols-2 gap-x-2 gap-y-1">
                                 <div>
-                                  <span className="block text-[10px] text-slate-400">Gôndola</span>
+                                  <span className="block text-[10px] text-slate-400">Loja</span>
                                   <span className="font-bold">{p.gondolaCount ?? '-'}</span>
                                 </div>
                                 <div>

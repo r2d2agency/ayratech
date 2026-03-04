@@ -30,7 +30,7 @@ interface CategoryTaskFlowProps {
       };
     };
   };
-  onUpdateItem: (itemId: string, data: any) => Promise<void>;
+  onUpdateItem: (itemId: string, data: any, skipSync?: boolean) => Promise<void>;
   onUpdateProduct: (productId: string, data: any) => Promise<void>;
   onFinish: () => void;
   onBack: () => void;
@@ -170,7 +170,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
       const formData = new FormData();
       formData.append('file', blob, 'photo.jpg');
-      formData.append('type', `CATEGORY_${type.toUpperCase()}`);
+      formData.append('type', type);
       formData.append('category', category);
 
       try {
@@ -206,7 +206,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
               [type]: [...currentList, base64data]
             }
           };
-          await onUpdateItem(routeItem.id, { categoryPhotos: updatedPhotos });
+          await onUpdateItem(routeItem.id, { categoryPhotos: updatedPhotos }, true);
           await offlineService.addPendingAction(
             'PHOTO',
             `/routes/items/${routeItem.id}/photos`,
@@ -214,7 +214,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
             {
               fileBase64: base64data,
               filename: 'photo.jpg',
-              photoType: `CATEGORY_${type.toUpperCase()}`,
+              photoType: type,
               category
             }
           );
@@ -603,7 +603,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
       <div className="flex-1 overflow-hidden relative">
         {step === STEPS.BEFORE_PHOTO && renderPhotoStep('before', getLabel('before'), 'Registre o estado inicial.')}
-        {step === STEPS.GONDOLA_COUNT && renderCountStep('GONDOLA', 'Contagem: Gôndola (Frente)')}
+        {step === STEPS.GONDOLA_COUNT && renderCountStep('GONDOLA', 'Contagem: Loja (Frente)')}
         {step === STEPS.INVENTORY_COUNT && renderCountStep('INVENTORY', 'Contagem: Estoque')}
         {step === STEPS.AFTER_PHOTO && renderPhotoStep('after', getLabel('after'), 'Registre o resultado final.')}
         {step === STEPS.SUMMARY && renderSummary()}

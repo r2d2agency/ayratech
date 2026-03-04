@@ -744,7 +744,7 @@ const ClientsView: React.FC = () => {
                           photoConfig: { ...prev.photoConfig, labels: { ...prev.photoConfig?.labels, before: e.target.value } }
                         }))}
                         className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm"
-                        placeholder="Ex: Foto Gôndola"
+                        placeholder="Ex: Foto Loja"
                       />
                     </div>
                     <div>
@@ -770,7 +770,7 @@ const ClientsView: React.FC = () => {
                           photoConfig: { ...prev.photoConfig, labels: { ...prev.photoConfig?.labels, after: e.target.value } }
                         }))}
                         className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm"
-                        placeholder="Ex: Foto Gôndola Arrumada"
+                        placeholder="Ex: Foto Loja Arrumada"
                       />
                     </div>
                   </div>

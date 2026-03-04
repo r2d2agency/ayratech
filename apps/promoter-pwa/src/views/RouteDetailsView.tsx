@@ -832,12 +832,14 @@ const RouteDetailsView = () => {
                 (p: any) => (p.product?.category || 'Geral') === selectedCategory
               )?.product?.client?.photoConfig
             }
-            onUpdateItem={async (itemId, data) => {
+            onUpdateItem={async (itemId, data, skipSync) => {
               const updatedItems = route.items.map((i: any) =>
                 i.id === itemId ? { ...i, ...data } : i
               );
               setRoute({ ...route, items: updatedItems });
-              await client.patch(`/routes/items/${itemId}`, data);
+              if (!skipSync) {
+                  await client.patch(`/routes/items/${itemId}`, data);
+              }
             }}
             onUpdateProduct={async (productId, data) => {
               const updatedItems = route.items.map((i: any) => {
