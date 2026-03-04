@@ -754,10 +754,10 @@ export class RoutesService {
           // Pre-fetch products and checklists
           const allProductIds = new Set<string>();
           const allChecklistTemplateIds = new Set<string>();
-          const allSupermarketIds = new Set<string>(); // Add this
+          const allSupermarketIds = new Set<string>();
 
           items.forEach(item => {
-            allSupermarketIds.add(item.supermarketId); // Add this
+            allSupermarketIds.add(item.supermarketId);
             if (item.productIds) item.productIds.forEach(id => allProductIds.add(id));
             if (item.products) {
                 item.products.forEach(p => {
@@ -810,123 +810,170 @@ export class RoutesService {
               templates.forEach(t => checklistTemplatesMap.set(t.id, t));
           }
 
-          // Robust deletion: Find and remove items to handle cascades/constraints safely
-          const existingItems = await queryRunner.manager.find(RouteItem, { 
-              where: { route: { id } },
-              relations: ['products'] 
-          });
-          
-          if (existingItems.length > 0) {
-              await queryRunner.manager.remove(existingItems);
-          }
-          
-          // Clear items in the local route object to avoid confusion and ensure clean relation
-          route.items = [];
-
-          for (const item of items) {
-              const routeItem = queryRunner.manager.create(RouteItem, {
-                route: { id: id } as Route,
-                routeId: id, // Explicitly set foreign key
-                supermarket: { id: item.supermarketId },
-                supermarketId: item.supermarketId, // Explicitly set foreign key
-                order: item.order,
-                  startTime: item.startTime,
-                  endTime: item.endTime,
-                  estimatedDuration: item.estimatedDuration,
-                  status: 'PENDING'
-              });
-              
-              const savedItem = await queryRunner.manager.save(RouteItem, routeItem);
-
-              const itemProductsToProcess: { productId: string, checklistTemplateId?: string }[] = [];
-              if (item.products) itemProductsToProcess.push(...item.products);
-              if (item.productIds) {
-                 item.productIds.forEach(pid => {
-                     if (!itemProductsToProcess.find(p => p.productId === pid)) {
-                         itemProductsToProcess.push({ productId: pid });
-                     }
-                 });
-              }
-
-              if (itemProductsToProcess.length > 0) {
-                const currentSupermarket = supermarketsMap.get(item.supermarketId);
-
-                for (const prodData of itemProductsToProcess) {
-                   const product = productsMap.get(prodData.productId);
+          // Helper function to add product to item
+          const addProductToItem = async (savedItem: RouteItem, prodData: { productId: string, checklistTemplateId?: string }) => {
+                const currentSupermarket = supermarketsMap.get(savedItem.supermarketId);
+                const product = productsMap.get(prodData.productId);
                    
-                   // FILTERING LOGIC: Check Assortment (SupermarketGroup)
-                   // If product has restricted groups, supermarket MUST belong to one of them.
-                   if (product && product.supermarketGroups && product.supermarketGroups.length > 0) {
-                       if (!currentSupermarket || !currentSupermarket.group) {
-                           // Supermarket has no group, but product is restricted -> SKIP
-                           continue;
-                       }
-                       const isAllowed = product.supermarketGroups.some(g => g.id === currentSupermarket.group.id);
-                       if (!isAllowed) {
-                           // Product is restricted to groups A, B, but Supermarket is in group C (or A != C) -> SKIP
-                           continue;
-                       }
-                   }
+                // FILTERING LOGIC: Check Assortment (SupermarketGroup)
+                if (product && product.supermarketGroups && product.supermarketGroups.length > 0) {
+                    if (!currentSupermarket || !currentSupermarket.group) return;
+                    const isAllowed = product.supermarketGroups.some(g => g.id === currentSupermarket.group.id);
+                    if (!isAllowed) return;
+                }
 
-                     const rip = queryRunner.manager.create(RouteItemProduct, {
-                         routeItem: savedItem,
-                         routeItemId: savedItem.id,
-                         product: { id: prodData.productId },
-                         productId: prodData.productId,
-                         checked: false,
-                         checklistTemplateId: prodData.checklistTemplateId
-                     });
-                     const savedRip = await queryRunner.manager.save(RouteItemProduct, rip);
-                     
-                     let checklistTemplate: ChecklistTemplate | null = null;
-                     if (prodData.checklistTemplateId) {
-                         checklistTemplate = checklistTemplatesMap.get(prodData.checklistTemplateId) || null;
-                     } else {
-                         const product = productsMap.get(prodData.productId);
-                         if (product) {
-                           if (product.checklistTemplate) {
-                             checklistTemplate = product.checklistTemplate as any;
-                           } else {
-                             const client: any = (product as any).client;
-                             const routeType = (route as any).type || 'VISIT';
-                             const clientTemplateId =
-                               routeType === 'INVENTORY'
-                                 ? client?.defaultInventoryChecklistTemplateId || client?.defaultVisitChecklistTemplateId
-                                 : client?.defaultVisitChecklistTemplateId || client?.defaultInventoryChecklistTemplateId;
-                             if (clientTemplateId) {
-                               checklistTemplate = checklistTemplatesMap.get(clientTemplateId) || null;
-                             }
-                           }
+                 const rip = queryRunner.manager.create(RouteItemProduct, {
+                     routeItem: savedItem,
+                     routeItemId: savedItem.id,
+                     product: { id: prodData.productId },
+                     productId: prodData.productId,
+                     checked: false,
+                     checklistTemplateId: prodData.checklistTemplateId
+                 });
+                 const savedRip = await queryRunner.manager.save(RouteItemProduct, rip);
+                 
+                 let checklistTemplate: ChecklistTemplate | null = null;
+                 if (prodData.checklistTemplateId) {
+                     checklistTemplate = checklistTemplatesMap.get(prodData.checklistTemplateId) || null;
+                 } else {
+                     if (product) {
+                       if (product.checklistTemplate) {
+                         checklistTemplate = product.checklistTemplate as any;
+                       } else {
+                         const client: any = (product as any).client;
+                         const routeType = (route as any).type || 'VISIT';
+                         const clientTemplateId =
+                           routeType === 'INVENTORY'
+                             ? client?.defaultInventoryChecklistTemplateId || client?.defaultVisitChecklistTemplateId
+                             : client?.defaultVisitChecklistTemplateId || client?.defaultInventoryChecklistTemplateId;
+                         if (clientTemplateId) {
+                           checklistTemplate = checklistTemplatesMap.get(clientTemplateId) || null;
                          }
+                       }
                      }
-                     
-                     if (checklistTemplate?.items?.length) {
-                         const checklists = [];
-                         for (const tplItem of checklistTemplate.items) {
-                            if (tplItem.type === ChecklistItemType.PRICE_CHECK && tplItem.competitors?.length > 0) {
-                                for (const comp of tplItem.competitors) {
-                                    checklists.push(queryRunner.manager.create(RouteItemProductChecklist, {
-                                        routeItemProduct: savedRip,
-                                        description: tplItem.description,
-                                        type: tplItem.type,
-                                        isChecked: false,
-                                        competitorName: comp.name
-                                    }));
-                                }
-                            } else {
+                 }
+                 
+                 if (checklistTemplate?.items?.length) {
+                     const checklists = [];
+                     for (const tplItem of checklistTemplate.items) {
+                        if (tplItem.type === ChecklistItemType.PRICE_CHECK && tplItem.competitors?.length > 0) {
+                            for (const comp of tplItem.competitors) {
                                 checklists.push(queryRunner.manager.create(RouteItemProductChecklist, {
                                     routeItemProduct: savedRip,
                                     description: tplItem.description,
                                     type: tplItem.type,
                                     isChecked: false,
-                                    competitorName: tplItem.competitor?.name || null
+                                    competitorName: comp.name
                                 }));
                             }
-                         }
-                         await queryRunner.manager.save(RouteItemProductChecklist, checklists);
+                        } else {
+                            checklists.push(queryRunner.manager.create(RouteItemProductChecklist, {
+                                routeItemProduct: savedRip,
+                                description: tplItem.description,
+                                type: tplItem.type,
+                                isChecked: false,
+                                competitorName: tplItem.competitor?.name || null
+                            }));
+                        }
                      }
+                     await queryRunner.manager.save(RouteItemProductChecklist, checklists);
+                 }
+          };
+
+          // RECONCILIATION LOGIC START
+          const existingItems = await queryRunner.manager.find(RouteItem, { 
+              where: { route: { id } },
+              relations: ['products'] 
+          });
+          
+          const existingItemsMap = new Map(existingItems.map(i => [i.id, i]));
+          const processedItemIds = new Set<string>();
+
+          for (const item of items) {
+              let savedItem: RouteItem;
+
+              if (item.id && existingItemsMap.has(item.id)) {
+                  // UPDATE existing item
+                  const existingItem = existingItemsMap.get(item.id);
+                  processedItemIds.add(item.id);
+
+                  // Update allowed fields
+                  existingItem.order = item.order;
+                  existingItem.startTime = item.startTime;
+                  existingItem.endTime = item.endTime;
+                  existingItem.estimatedDuration = item.estimatedDuration;
+                  
+                  if (existingItem.supermarketId !== item.supermarketId) {
+                      existingItem.supermarket = { id: item.supermarketId } as any;
+                      existingItem.supermarketId = item.supermarketId;
+                  }
+
+                  savedItem = await queryRunner.manager.save(RouteItem, existingItem);
+
+                  // Reconcile Products
+                  const currentProductsMap = new Map(existingItem.products.map(p => [p.productId, p]));
+                  const newProductIds = new Set<string>();
+                  
+                  const itemProductsToProcess: { productId: string, checklistTemplateId?: string }[] = [];
+                  if (item.products) itemProductsToProcess.push(...item.products);
+                  if (item.productIds) {
+                     item.productIds.forEach(pid => {
+                         if (!itemProductsToProcess.find(p => p.productId === pid)) {
+                             itemProductsToProcess.push({ productId: pid });
+                         }
+                     });
+                  }
+
+                  for (const prodData of itemProductsToProcess) {
+                      newProductIds.add(prodData.productId);
+                      if (!currentProductsMap.has(prodData.productId)) {
+                          await addProductToItem(savedItem, prodData);
+                      }
+                  }
+
+                  const productsToRemove = existingItem.products.filter(p => !newProductIds.has(p.productId));
+                  if (productsToRemove.length > 0) {
+                      await queryRunner.manager.remove(productsToRemove);
+                  }
+
+              } else {
+                  // CREATE new item
+                  const routeItem = queryRunner.manager.create(RouteItem, {
+                    route: { id: id } as Route,
+                    routeId: id,
+                    supermarket: { id: item.supermarketId },
+                    supermarketId: item.supermarketId,
+                    order: item.order,
+                      startTime: item.startTime,
+                      endTime: item.endTime,
+                      estimatedDuration: item.estimatedDuration,
+                      status: 'PENDING'
+                  });
+                  
+                  savedItem = await queryRunner.manager.save(RouteItem, routeItem);
+
+                  const itemProductsToProcess: { productId: string, checklistTemplateId?: string }[] = [];
+                  if (item.products) itemProductsToProcess.push(...item.products);
+                  if (item.productIds) {
+                     item.productIds.forEach(pid => {
+                         if (!itemProductsToProcess.find(p => p.productId === pid)) {
+                             itemProductsToProcess.push({ productId: pid });
+                         }
+                     });
+                  }
+
+                  if (itemProductsToProcess.length > 0) {
+                      for (const prodData of itemProductsToProcess) {
+                          await addProductToItem(savedItem, prodData);
+                      }
                   }
               }
+          }
+
+          // Delete items removed from route
+          const itemsToDelete = existingItems.filter(i => !processedItemIds.has(i.id));
+          if (itemsToDelete.length > 0) {
+              await queryRunner.manager.remove(itemsToDelete);
           }
       } else if (addedPromoters.length > 0) {
           const targetDate = routeData.date || route.date;

@@ -11,6 +11,10 @@ class RouteItemProductDto {
 }
 
 class RouteItemDto {
+  @IsOptional()
+  @IsString()
+  id?: string;
+
   @IsString()
   supermarketId: string;
 
