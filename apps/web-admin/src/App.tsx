@@ -11,7 +11,7 @@ import RoutesView from './views/RoutesView';
 import ChecklistTemplatesView from './views/ChecklistTemplatesView';
 import SupermarketsListView from './views/SupermarketsListView';
 import SupermarketFormView from './views/SupermarketFormView';
-import SupermarketGroupsListView from './views/SupermarketGroupsListView';
+import SupermarketGroupsView from './views/SupermarketGroupsView';
 import SupermarketGroupFormView from './views/SupermarketGroupFormView';
 import AdminView from './views/AdminView';
 import CategoriesView from './views/CategoriesView';

@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash, X, Filter, CheckSquare, Square, Save, ArrowRight, ArrowLeft, ArrowRightLeft } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import { ViewType, SupermarketGroup } from '../types';
+// Verified Mix Implementation
 import api from '../api/client';
 import { SearchableSelect } from '../components/SearchableSelect';
 
-interface SupermarketGroupsListViewProps {
+interface SupermarketGroupsViewProps {
   onNavigate: (view: ViewType) => void;
 }
 
-const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ onNavigate }) => {
+const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigate }) => {
   const { settings } = useBranding();
   const [groups, setGroups] = useState<SupermarketGroup[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -192,6 +193,8 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
       productIds: prev.productIds.filter(id => !visibleIds.includes(id)) 
     }));
   };
+
+  return (
     <div className="animate-in fade-in duration-500 relative">
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -389,15 +392,32 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
                             </div>
                           </div>
                           
-                          <button
-                            type="button"
-                            onClick={addAllVisible}
-                            disabled={availableProducts.length === 0}
-                            className="w-full py-2 rounded-lg bg-blue-50 text-blue-600 text-xs font-black hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                          >
-                            <Plus size={14} />
-                            Adicionar Todos
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={addAllVisible}
+                              disabled={availableProducts.length === 0}
+                              className="flex-1 py-2 rounded-lg bg-blue-50 text-blue-600 text-[11px] font-black hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                              <Plus size={14} />
+                              Adicionar Todos
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const visibleIds = availableProducts.map(p => p.id);
+                                setFormData(prev => ({
+                                  ...prev,
+                                  productIds: [...new Set([...prev.productIds, ...visibleIds])]
+                                }));
+                              }}
+                              disabled={availableProducts.length === 0}
+                              className="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                              title="Adicionar filtrados"
+                            >
+                              <ArrowRight size={14} />
+                            </button>
+                          </div>
                         </div>
                         
                         <div className="flex-1 overflow-y-auto p-2 space-y-2 bg-slate-50">
@@ -465,15 +485,32 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
 
                           <div className="h-10"></div> {/* Spacer to align with left column brand select height */}
                           
-                           <button
-                            type="button"
-                            onClick={removeAllVisible}
-                            disabled={selectedProductsList.length === 0}
-                            className="w-full py-2 rounded-lg bg-red-50 text-red-600 text-xs font-black hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                          >
-                            <Trash size={14} />
-                            Remover Todos
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={removeAllVisible}
+                              disabled={selectedProductsList.length === 0}
+                              className="flex-1 py-2 rounded-lg bg-red-50 text-red-600 text-[11px] font-black hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                              <Trash size={14} />
+                              Remover Todos
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const visibleIds = selectedProductsList.map(p => p.id);
+                                setFormData(prev => ({
+                                  ...prev,
+                                  productIds: prev.productIds.filter(id => !visibleIds.includes(id))
+                                }));
+                              }}
+                              disabled={selectedProductsList.length === 0}
+                              className="px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                              title="Remover filtrados"
+                            >
+                              <ArrowLeft size={14} />
+                            </button>
+                          </div>
                         </div>
                         
                         <div className="flex-1 overflow-y-auto p-2 space-y-2 bg-slate-50">
@@ -542,4 +579,4 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
   );
 };
 
-export default SupermarketGroupsListView;
+export default SupermarketGroupsView;

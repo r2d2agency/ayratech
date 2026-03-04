@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, MapPinned, Plus, Trash2, CheckCircle, Save, Settings, List, Clock, MoveUp, MoveDown, Copy, FileText, Check, Search, GripVertical, XCircle, UserPlus, Users } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
+// Verified Route Logic
 import api from '../api/client';
 import { jwtDecode } from "jwt-decode";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, useDraggable, useDroppable } from '@dnd-kit/core';
@@ -302,6 +303,7 @@ const RoutesView: React.FC = () => {
   const [supermarketSearch, setSupermarketSearch] = useState('');
   const [clientSearch, setClientSearch] = useState('');
   const [productSearch, setProductSearch] = useState('');
+  const [selectedProductSearch, setSelectedProductSearch] = useState('');
 
   // Product Selection Modal State
   const [showProductModal, setShowProductModal] = useState(false);
@@ -1967,18 +1969,34 @@ const RoutesView: React.FC = () => {
 
                       {/* Right: Selected */}
                       <div className="flex flex-col border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
-                        <div className="p-3 bg-white border-b border-slate-200 flex justify-between items-center">
-                            <span className="text-xs font-black text-slate-500 uppercase">Selecionados ({tempSelectedProducts.length})</span>
-                            <button 
-                                onClick={() => setTempSelectedProducts([])}
-                                className="text-xs font-bold text-red-500 hover:text-red-600"
-                            >
-                                Remover Todos
-                            </button>
+                        <div className="p-3 bg-white border-b border-slate-200 flex flex-col gap-2">
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs font-black text-slate-500 uppercase">Selecionados ({tempSelectedProducts.length})</span>
+                                <button 
+                                    onClick={() => setTempSelectedProducts([])}
+                                    className="text-xs font-bold text-red-500 hover:text-red-600"
+                                >
+                                    Remover Todos
+                                </button>
+                            </div>
+                            <div className="relative w-full">
+                               <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                               <input
+                                 type="text"
+                                 placeholder="Buscar selecionados..."
+                                 value={selectedProductSearch}
+                                 onChange={(e) => setSelectedProductSearch(e.target.value)}
+                                 className="w-full pl-7 pr-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:border-blue-500 bg-slate-50"
+                               />
+                             </div>
                         </div>
                         <div className="flex-1 overflow-y-auto p-2 space-y-2">
                            {products
                              .filter(p => tempSelectedProducts.includes(p.id))
+                             .filter(p => {
+                                const search = selectedProductSearch.toLowerCase();
+                                return !search || p.name.toLowerCase().includes(search) || (p.sku && p.sku.toLowerCase().includes(search));
+                             })
                              .map(product => (
                                 <div 
                                     key={product.id}

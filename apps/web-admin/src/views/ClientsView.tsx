@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Trash2, Edit, Eye, Store, Package } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
+// Verified Modal Fix
 import api from '../api/client';
 import { getImageUrl } from '../utils/image';
 import { SearchableSelect } from '../components/SearchableSelect';

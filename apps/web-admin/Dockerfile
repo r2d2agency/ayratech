@@ -10,6 +10,7 @@ COPY package*.json ./
 RUN npm install
 
 # Copy source code
+ARG CACHEBUST=1
 COPY . .
 
 # Build arguments

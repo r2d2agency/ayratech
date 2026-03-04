@@ -13,3 +13,106 @@ warning: in the working copy of 'apps/web-admin/src/views/RoutesReportView.tsx',
  apps/web-admin/src/utils/image-processor.ts        |  4 [32m+[m[31m-[m
  apps/web-admin/src/views/RoutesReportView.tsx      | 15 [32m++++++[m
  7 files changed, 72 insertions(+), 22 deletions(-)
+[33mcommit 93accd56720f060da944eedc039df9df96517918[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: tnicodemos <tnicodemos@gmail.com>
+Date:   Tue Mar 3 23:11:13 2026 -0300
+
+    feat: padronizacao de listas de transferencia e melhorias na edicao de rotas
+
+ apps/web-admin/src/views/RoutesView.tsx            | 241 [32m++++++++++[m[31m------[m
+ .../src/views/SupermarketGroupsListView.tsx        | 317 [32m++++++++++++++[m[31m-------[m
+ 2 files changed, 375 insertions(+), 183 deletions(-)
+
+[33mcommit 69cd1d8d743ef6f11a4cc5944f9c7100e8a4c6b9[m
+Author: tnicodemos <tnicodemos@gmail.com>
+Date:   Tue Mar 3 22:32:18 2026 -0300
+
+    feat:_ajuste_layout_mix_produtos_e_edicao_rotas_recorrentes
+
+ apps/backend/src/routes/dto/create-route.dto.ts    |  4 [32m+[m
+ apps/backend/src/routes/entities/route.entity.ts   |  3 [32m+[m
+ apps/backend/src/routes/routes.controller.ts       |  2 [32m+[m[31m-[m
+ apps/backend/src/routes/routes.service.ts          | 34 [32m+++++++[m[31m-[m
+ apps/web-admin/src/views/RoutesView.tsx            | 94 [32m++++++++++++++++++++[m[31m--[m
+ .../src/views/SupermarketGroupsListView.tsx        | 34 [32m++++[m[31m----[m
+ 6 files changed, 144 insertions(+), 27 deletions(-)
+[33mcommit 69cd1d8d743ef6f11a4cc5944f9c7100e8a4c6b9[m
+Author: tnicodemos <tnicodemos@gmail.com>
+Date:   Tue Mar 3 22:32:18 2026 -0300
+
+    feat:_ajuste_layout_mix_produtos_e_edicao_rotas_recorrentes
+
+ apps/backend/src/routes/dto/create-route.dto.ts    |  4 [32m+[m
+ apps/backend/src/routes/entities/route.entity.ts   |  3 [32m+[m
+ apps/backend/src/routes/routes.controller.ts       |  2 [32m+[m[31m-[m
+ apps/backend/src/routes/routes.service.ts          | 34 [32m+++++++[m[31m-[m
+ apps/web-admin/src/views/RoutesView.tsx            | 94 [32m++++++++++++++++++++[m[31m--[m
+ .../src/views/SupermarketGroupsListView.tsx        | 34 [32m++++[m[31m----[m
+ 6 files changed, 144 insertions(+), 27 deletions(-)
+[33mcommit 93accd56720f060da944eedc039df9df96517918[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: tnicodemos <tnicodemos@gmail.com>
+Date:   Tue Mar 3 23:11:13 2026 -0300
+
+    feat: padronizacao de listas de transferencia e melhorias na edicao de rotas
+
+apps/web-admin/src/views/RoutesView.tsx
+apps/web-admin/src/views/SupermarketGroupsListView.tsx
+
+[33mcommit 69cd1d8d743ef6f11a4cc5944f9c7100e8a4c6b9[m
+Author: tnicodemos <tnicodemos@gmail.com>
+Date:   Tue Mar 3 22:32:18 2026 -0300
+
+    feat:_ajuste_layout_mix_produtos_e_edicao_rotas_recorrentes
+
+apps/backend/src/routes/dto/create-route.dto.ts
+apps/backend/src/routes/entities/route.entity.ts
+apps/backend/src/routes/routes.controller.ts
+apps/backend/src/routes/routes.service.ts
+apps/web-admin/src/views/RoutesView.tsx
+apps/web-admin/src/views/SupermarketGroupsListView.tsx
+[33mcommit 93accd56720f060da944eedc039df9df96517918[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: tnicodemos <tnicodemos@gmail.com>
+Date:   Tue Mar 3 23:11:13 2026 -0300
+
+    feat: padronizacao de listas de transferencia e melhorias na edicao de rotas
+
+[33mcommit 69cd1d8d743ef6f11a4cc5944f9c7100e8a4c6b9[m
+Author: tnicodemos <tnicodemos@gmail.com>
+Date:   Tue Mar 3 22:32:18 2026 -0300
+
+    feat:_ajuste_layout_mix_produtos_e_edicao_rotas_recorrentes
+
+[33mcommit e1519e3d38317565fcc482392cecd97eedeacd14[m
+Author: tnicodemos <tnicodemos@gmail.com>
+Date:   Tue Mar 3 20:27:07 2026 -0300
+
+    feat:_Implement_product_mix_by_brand_for_supermarket_groups_and_update_route_filtering_logic
+[33mcommit 93accd56720f060da944eedc039df9df96517918[m
+Author: tnicodemos <tnicodemos@gmail.com>
+Date:   Tue Mar 3 23:11:13 2026 -0300
+
+    feat: padronizacao de listas de transferencia e melhorias na edicao de rotas
+
+[33mcommit 69cd1d8d743ef6f11a4cc5944f9c7100e8a4c6b9[m
+Author: tnicodemos <tnicodemos@gmail.com>
+Date:   Tue Mar 3 22:32:18 2026 -0300
+
+    feat:_ajuste_layout_mix_produtos_e_edicao_rotas_recorrentes
+
+[33mcommit e1519e3d38317565fcc482392cecd97eedeacd14[m
+Author: tnicodemos <tnicodemos@gmail.com>
+Date:   Tue Mar 3 20:27:07 2026 -0300
+
+    feat:_Implement_product_mix_by_brand_for_supermarket_groups_and_update_route_filtering_logic
+
+[33mcommit 764bc49fef4ab59fa9d24a343979407018937783[m
+Author: tnicodemos <tnicodemos@gmail.com>
+Date:   Thu Feb 12 22:01:24 2026 -0300
+
+    Fix layout, dropdowns, and photo config
+
+[33mcommit 6e0e6d4e68876a2de32b4bb70b293e8c5f3518d0[m
+Author: tnicodemos <tnicodemos@gmail.com>
+Date:   Wed Jan 7 01:05:46 2026 -0300
+
+    fix: resolve issues with products, supermarkets, and networks creation/editing
