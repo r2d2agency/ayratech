@@ -1161,6 +1161,20 @@ export class RoutesService {
     fs.writeFileSync(filePath, file.buffer);
     const url = `/uploads/${fileName}`;
 
+    // If category and type are provided, update the route item categoryPhotos
+    if (category && (type === 'before' || type === 'after')) {
+        if (!item.categoryPhotos) {
+            item.categoryPhotos = {};
+        }
+        
+        if (!item.categoryPhotos[category]) {
+            item.categoryPhotos[category] = {};
+        }
+
+        item.categoryPhotos[category][type as 'before' | 'after'] = url;
+        await this.routeItemsRepository.save(item);
+    }
+
     return { url };
   }
 
@@ -1617,17 +1631,20 @@ export class RoutesService {
     }
     const categoryPhotos: Record<string, any> = (item as any).categoryPhotos || {};
     let categoryPhotoMissing = false;
+    let missingCategory = '';
     for (const cat of categorySet) {
       const photos = categoryPhotos[cat] || {};
       if (!photos.before || !photos.after) {
         categoryPhotoMissing = true;
+        missingCategory = cat;
+        console.warn(`Missing photos for category: ${cat}. Photos:`, JSON.stringify(photos));
         break;
       }
     }
     if (categoryPhotoMissing) {
       if (item.status === 'CHECKIN') item.status = 'PENDING';
       await this.routeItemsRepository.save(item);
-      throw new BadRequestException('Faltam fotos obrigatórias por categoria (Antes/Depois). Verifique todas as categorias.');
+      throw new BadRequestException(`Faltam fotos obrigatórias por categoria (Antes/Depois) na categoria "${missingCategory}". Verifique todas as categorias.`);
     }
 
     // Pre-calculate inventory requirements
