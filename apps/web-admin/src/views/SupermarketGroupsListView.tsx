@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash, X, Filter, CheckSquare, Square, Save } from 'lucide-react';
+import { Plus, Search, Edit, Trash, X, Filter, CheckSquare, Square, Save, ArrowRight, ArrowLeft, ArrowRightLeft } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import { ViewType, SupermarketGroup } from '../types';
 import api from '../api/client';
@@ -14,6 +14,7 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
   const [groups, setGroups] = useState<SupermarketGroup[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -24,6 +25,9 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
   
   // Mix Filter State
   const [selectedBrandId, setSelectedBrandId] = useState<string>('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [productSearchTerm, setProductSearchTerm] = useState('');
+  const [selectedSearchTerm, setSelectedSearchTerm] = useState('');
   
   const [formData, setFormData] = useState({
     name: '',
@@ -42,12 +46,14 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
 
   const fetchDependencies = async () => {
     try {
-      const [productsRes, brandsRes] = await Promise.all([
+      const [productsRes, brandsRes, categoriesRes] = await Promise.all([
         api.get('/products'),
-        api.get('/brands')
+        api.get('/brands'),
+        api.get('/categories')
       ]);
       setProducts(productsRes.data);
       setBrands(brandsRes.data);
+      setCategories(categoriesRes.data);
     } catch (error) {
       console.error('Error fetching dependencies:', error);
     }
@@ -67,6 +73,9 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
     setEditingGroup(null);
     setActiveTab('details');
     setSelectedBrandId('');
+    setSelectedCategoryId('');
+    setProductSearchTerm('');
+    setSelectedSearchTerm('');
   };
 
   const handleAddNew = () => {
@@ -82,36 +91,6 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
       productIds: group.products ? group.products.map((p: any) => p.id) : []
     });
     setShowModal(true);
-  };
-
-  const toggleProduct = (productId: string) => {
-    setFormData(prev => {
-      const exists = prev.productIds.includes(productId);
-      if (exists) {
-        return { ...prev, productIds: prev.productIds.filter(id => id !== productId) };
-      } else {
-        return { ...prev, productIds: [...prev.productIds, productId] };
-      }
-    });
-  };
-
-  const toggleAllVisibleProducts = () => {
-    const visibleProducts = filteredProducts.map(p => p.id);
-    const allSelected = visibleProducts.every(id => formData.productIds.includes(id));
-    
-    setFormData(prev => {
-      if (allSelected) {
-        // Deselect all visible
-        return { ...prev, productIds: prev.productIds.filter(id => !visibleProducts.includes(id)) };
-      } else {
-        // Select all visible (add missing)
-        const newIds = [...prev.productIds];
-        visibleProducts.forEach(id => {
-          if (!newIds.includes(id)) newIds.push(id);
-        });
-        return { ...prev, productIds: newIds };
-      }
-    });
   };
 
   const handleDelete = async (id: string) => {
@@ -157,14 +136,62 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
     group.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredProducts = products.filter(p => {
+  const availableProducts = products.filter(p => {
+    // Must NOT be selected
+    if (formData.productIds.includes(p.id)) return false;
+    
+    // Apply filters
     if (selectedBrandId && p.brand?.id !== selectedBrandId) return false;
+    if (selectedCategoryId && p.category?.id !== selectedCategoryId) return false;
+    if (productSearchTerm) {
+      const term = productSearchTerm.toLowerCase();
+      const matchesName = p.name?.toLowerCase().includes(term);
+      const matchesSku = p.sku?.toLowerCase().includes(term);
+      if (!matchesName && !matchesSku) return false;
+    }
     return true;
   });
 
-  const isAllVisibleSelected = filteredProducts.length > 0 && filteredProducts.every(p => formData.productIds.includes(p.id));
+  const selectedProductsList = products.filter(p => {
+    // Must be selected
+    if (!formData.productIds.includes(p.id)) return false;
 
-  return (
+    // Apply search filter (optional)
+    if (selectedSearchTerm) {
+      const term = selectedSearchTerm.toLowerCase();
+      const matchesName = p.name?.toLowerCase().includes(term);
+      const matchesSku = p.sku?.toLowerCase().includes(term);
+      if (!matchesName && !matchesSku) return false;
+    }
+    return true;
+  });
+
+  const toggleProduct = (productId: string) => {
+    setFormData(prev => {
+      const exists = prev.productIds.includes(productId);
+      if (exists) {
+        return { ...prev, productIds: prev.productIds.filter(id => id !== productId) };
+      } else {
+        return { ...prev, productIds: [...prev.productIds, productId] };
+      }
+    });
+  };
+
+  const addAllVisible = () => {
+    const newIds = [...formData.productIds];
+    availableProducts.forEach(p => {
+      if (!newIds.includes(p.id)) newIds.push(p.id);
+    });
+    setFormData(prev => ({ ...prev, productIds: newIds }));
+  };
+
+  const removeAllVisible = () => {
+    const visibleIds = selectedProductsList.map(p => p.id);
+    setFormData(prev => ({ 
+      ...prev, 
+      productIds: prev.productIds.filter(id => !visibleIds.includes(id)) 
+    }));
+  };
     <div className="animate-in fade-in duration-500 relative">
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -243,7 +270,7 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
       {/* Modal de Cadastro/Edição */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[2rem] w-full max-w-xl shadow-2xl animate-in zoom-in-95 duration-200 h-[80vh] flex flex-col relative">
+          <div className="bg-white rounded-[2rem] w-full max-w-5xl shadow-2xl animate-in zoom-in-95 duration-200 h-[80vh] flex flex-col relative">
             <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center rounded-t-[2rem] shrink-0">
               <div>
                 <h2 className="text-2xl font-black text-slate-900">
@@ -315,82 +342,176 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
                   </div>
                 ) : (
                   <div className="flex flex-col h-full p-8 space-y-6">
-                    <div className="flex items-end gap-4 shrink-0">
-                      <div className="flex-1">
-                        <SearchableSelect
-                          label="Filtrar por Marca"
-                          value={selectedBrandId}
-                          onChange={setSelectedBrandId}
-                          options={[
-                            { value: '', label: 'Todas as Marcas' },
-                            ...brands.map(b => ({ value: b.id, label: b.name }))
-                          ]}
-                          placeholder="Selecione uma marca..."
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={toggleAllVisibleProducts}
-                        className="h-14 px-6 rounded-2xl border-2 border-slate-200 hover:border-blue-200 hover:bg-blue-50 text-slate-600 font-bold flex items-center gap-2 transition-all shrink-0"
-                      >
-                        {isAllVisibleSelected ? (
-                          <>
-                            <CheckSquare className="text-blue-600" size={20} />
-                            Desmarcar ({filteredProducts.length})
-                          </>
-                        ) : (
-                          <>
-                            <Square className="text-slate-400" size={20} />
-                            Marcar ({filteredProducts.length})
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    <div className="flex-1 min-h-0 overflow-y-auto border border-slate-200 rounded-2xl relative">
-                      {filteredProducts.length === 0 ? (
-                        <div className="p-8 text-center text-slate-400 font-medium">
-                          Nenhum produto encontrado com os filtros atuais.
+                    {/* Transfer List Layout */}
+                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-4 h-full min-h-0">
+                      
+                      {/* Left: Available */}
+                      <div className="flex flex-col h-full bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 bg-white space-y-3 shrink-0">
+                          <div className="flex justify-between items-center">
+                             <h3 className="font-bold text-slate-700">Disponíveis</h3>
+                             <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full">{availableProducts.length}</span>
+                          </div>
+                          
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                            <input 
+                              type="text"
+                              placeholder="Buscar produto..."
+                              className="w-full h-10 pl-9 pr-3 rounded-lg bg-slate-50 border border-slate-200 text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400"
+                              value={productSearchTerm}
+                              onChange={(e) => setProductSearchTerm(e.target.value)}
+                            />
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <div className="flex-1 min-w-0">
+                              <SearchableSelect
+                                value={selectedBrandId}
+                                onChange={setSelectedBrandId}
+                                options={[
+                                  { value: '', label: 'Todas as Marcas' },
+                                  ...brands.map(b => ({ value: b.id, label: b.name }))
+                                ]}
+                                placeholder="Filtrar Marca"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <SearchableSelect
+                                value={selectedCategoryId}
+                                onChange={setSelectedCategoryId}
+                                options={[
+                                  { value: '', label: 'Todas as Categorias' },
+                                  ...categories.map(c => ({ value: c.id, label: c.name }))
+                                ]}
+                                placeholder="Filtrar Categoria"
+                              />
+                            </div>
+                          </div>
+                          
+                          <button
+                            type="button"
+                            onClick={addAllVisible}
+                            disabled={availableProducts.length === 0}
+                            className="w-full py-2 rounded-lg bg-blue-50 text-blue-600 text-xs font-black hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                          >
+                            <Plus size={14} />
+                            Adicionar Todos
+                          </button>
                         </div>
-                      ) : (
-                        <div className="divide-y divide-slate-100">
-                          {filteredProducts.map(product => {
-                            const isSelected = formData.productIds.includes(product.id);
-                            return (
+                        
+                        <div className="flex-1 overflow-y-auto p-2 space-y-2 bg-slate-50">
+                          {availableProducts.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-2">
+                              <Search size={24} className="opacity-20" />
+                              <p className="text-xs font-medium">Nenhum produto disponível</p>
+                            </div>
+                          ) : (
+                            availableProducts.map(product => (
                               <div 
                                 key={product.id}
-                                onClick={() => toggleProduct(product.id)}
-                                className={`p-4 flex items-center gap-4 cursor-pointer transition-colors ${
-                                  isSelected ? 'bg-blue-50/50 hover:bg-blue-50' : 'hover:bg-slate-50'
-                                }`}
+                                className="bg-white p-3 rounded-xl border border-slate-100 flex items-center gap-3 hover:border-blue-200 transition-colors group relative"
                               >
-                                <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0 ${
-                                  isSelected ? 'bg-blue-500 border-blue-500' : 'border-slate-300 bg-white'
-                                }`}>
-                                  {isSelected && <CheckSquare size={16} className="text-white" />}
-                                </div>
-                                
                                 {product.image ? (
                                   <img src={product.image} alt="" className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0" />
                                 ) : (
-                                  <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 text-xs font-bold shrink-0">IMG</div>
+                                  <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 text-[10px] font-bold shrink-0">IMG</div>
                                 )}
-                                
-                                <div>
-                                  <div className="font-bold text-slate-800 text-sm">{product.name}</div>
-                                  <div className="text-xs font-medium text-slate-500">
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-bold text-slate-700 text-xs truncate" title={product.name}>{product.name}</div>
+                                  <div className="text-[10px] font-medium text-slate-400 truncate">
                                     {product.brand?.name || 'Sem Marca'} • {product.sku || 'S/ SKU'}
                                   </div>
                                 </div>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleProduct(product.id)}
+                                  className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all shrink-0 shadow-sm"
+                                  title="Adicionar"
+                                >
+                                  <Plus size={16} />
+                                </button>
                               </div>
-                            );
-                          })}
+                            ))
+                          )}
                         </div>
-                      )}
-                    </div>
-                    
-                    <div className="text-xs text-slate-400 font-bold text-right shrink-0">
-                      {formData.productIds.length} produtos selecionados no total
+                      </div>
+
+                      {/* Middle Arrow */}
+                      <div className="flex items-center justify-center">
+                        <div className="text-slate-300 lg:rotate-0 rotate-90">
+                          <ArrowRightLeft size={20} />
+                        </div>
+                      </div>
+
+                      {/* Right: Selected */}
+                      <div className="flex flex-col h-full bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 bg-white space-y-3 shrink-0">
+                          <div className="flex justify-between items-center">
+                             <h3 className="font-bold text-slate-700">Selecionados</h3>
+                             <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full">{formData.productIds.length}</span>
+                          </div>
+                          
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                            <input 
+                              type="text"
+                              placeholder="Buscar selecionados..."
+                              className="w-full h-10 pl-9 pr-3 rounded-lg bg-slate-50 border border-slate-200 text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-red-100 transition-all placeholder:text-slate-400"
+                              value={selectedSearchTerm}
+                              onChange={(e) => setSelectedSearchTerm(e.target.value)}
+                            />
+                          </div>
+
+                          <div className="h-10"></div> {/* Spacer to align with left column brand select height */}
+                          
+                           <button
+                            type="button"
+                            onClick={removeAllVisible}
+                            disabled={selectedProductsList.length === 0}
+                            className="w-full py-2 rounded-lg bg-red-50 text-red-600 text-xs font-black hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                          >
+                            <Trash size={14} />
+                            Remover Todos
+                          </button>
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto p-2 space-y-2 bg-slate-50">
+                          {selectedProductsList.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-2">
+                              <CheckSquare size={24} className="opacity-20" />
+                              <p className="text-xs font-medium">Nenhum produto selecionado</p>
+                            </div>
+                          ) : (
+                            selectedProductsList.map(product => (
+                              <div 
+                                key={product.id}
+                                className="bg-white p-3 rounded-xl border border-slate-100 flex items-center gap-3 hover:border-red-200 transition-colors group relative"
+                              >
+                                {product.image ? (
+                                  <img src={product.image} alt="" className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0" />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 text-[10px] font-bold shrink-0">IMG</div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-bold text-slate-700 text-xs truncate" title={product.name}>{product.name}</div>
+                                  <div className="text-[10px] font-medium text-slate-400 truncate">
+                                    {product.brand?.name || 'Sem Marca'} • {product.sku || 'S/ SKU'}
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleProduct(product.id)}
+                                  className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shrink-0 shadow-sm"
+                                  title="Remover"
+                                >
+                                  <Trash size={16} />
+                                </button>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}

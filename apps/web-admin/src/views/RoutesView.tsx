@@ -1851,9 +1851,10 @@ const RoutesView: React.FC = () => {
                    })()}
                 </div>
               ) : (
-                // Step 2: Select Products for selected client
-                <div className="space-y-2">
-                   <div className="flex flex-col gap-2 sticky top-0 bg-white z-10 pt-1 pb-2">
+                // Step 2: Select Products for selected client (Transfer List Pattern)
+                <div className="flex flex-col h-[60vh]">
+                   {/* Header / Search */}
+                   <div className="flex flex-col gap-2 mb-4">
                      <button 
                        onClick={() => setSelectedClientForModal(null)}
                        className="text-xs text-blue-600 font-bold hover:underline flex items-center gap-1 self-start"
@@ -1872,91 +1873,161 @@ const RoutesView: React.FC = () => {
                      </div>
                    </div>
                    
-                   {Object.entries(products
-                     .filter(p => p.client?.id === selectedClientForModal)
-                     .filter(p => {
-                        // Search Filter
-                        const search = productSearch.toLowerCase();
-                        const matchesSearch = p.name.toLowerCase().includes(search) || (p.sku && p.sku.toLowerCase().includes(search));
-                        if (!matchesSearch) return false;
+                   {/* Transfer List Grid */}
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-hidden">
+                      {/* Left: Available */}
+                      <div className="flex flex-col border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                        <div className="p-3 bg-white border-b border-slate-200 flex justify-between items-center">
+                            <span className="text-xs font-black text-slate-500 uppercase">Disponíveis</span>
+                            <button 
+                                onClick={() => {
+                                    // Logic to add all visible products
+                                    const productsToAdd = products
+                                        .filter(p => p.client?.id === selectedClientForModal && !tempSelectedProducts.includes(p.id))
+                                        .filter(p => {
+                                            // Search Filter
+                                            const search = productSearch.toLowerCase();
+                                            const matchesSearch = p.name.toLowerCase().includes(search) || (p.sku && p.sku.toLowerCase().includes(search));
+                                            if (!matchesSearch) return false;
 
-                        // Supermarket/Group Filter
-                        const currentSupermarket = currentRouteItemIndex !== null && routeItems[currentRouteItemIndex] 
-                            ? routeItems[currentRouteItemIndex].supermarket 
-                            : null;
+                                            // Supermarket/Group Filter
+                                            const currentSupermarket = currentRouteItemIndex !== null && routeItems[currentRouteItemIndex] 
+                                                ? routeItems[currentRouteItemIndex].supermarket 
+                                                : null;
 
-                        if (!currentSupermarket) return true;
+                                            if (!currentSupermarket) return true;
 
-                        const hasGroups = p.supermarketGroups && p.supermarketGroups.length > 0;
-                        const hasSupermarkets = p.supermarkets && p.supermarkets.length > 0;
+                                            const hasGroups = p.supermarketGroups && p.supermarketGroups.length > 0;
+                                            const hasSupermarkets = p.supermarkets && p.supermarkets.length > 0;
 
-                        if (!hasGroups && !hasSupermarkets) return true;
+                                            if (!hasGroups && !hasSupermarkets) return true;
 
-                        const matchesGroup = hasGroups && currentSupermarket.group && p.supermarketGroups.some((g: any) => g.id === currentSupermarket.group.id);
-                        const matchesSupermarket = hasSupermarkets && p.supermarkets.some((s: any) => s.id === currentSupermarket.id);
+                                            const matchesGroup = hasGroups && currentSupermarket.group && p.supermarketGroups.some((g: any) => g.id === currentSupermarket.group.id);
+                                            const matchesSupermarket = hasSupermarkets && p.supermarkets.some((s: any) => s.id === currentSupermarket.id);
 
-                        return matchesGroup || matchesSupermarket;
-                     })
-                     .reduce((acc, product) => {
-                        const categoryName = product.categoryRef?.name || product.category || 'Sem Categoria';
-                        if (!acc[categoryName]) acc[categoryName] = [];
-                        acc[categoryName].push(product);
-                        return acc;
-                     }, {} as Record<string, any[]>)
-                   ).sort((a, b) => a[0].localeCompare(b[0])).map(([categoryName, categoryProducts]) => (
-                     <div key={categoryName}>
-                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-1 sticky top-0 bg-white z-10 py-1 border-b border-slate-50">
-                          {categoryName} <span className="text-slate-300 font-normal">({categoryProducts.length})</span>
-                        </h4>
-                        <div className="space-y-2 mb-4">
-                           {categoryProducts.map(product => (
-                      <div 
-                        key={product.id} 
-                        onClick={() => handleToggleProductSelection(product.id)}
-                        className={`p-3 rounded-lg border cursor-pointer flex items-center justify-between transition-all ${
-                          tempSelectedProducts.includes(product.id) 
-                            ? 'bg-blue-50 border-blue-200' 
-                            : 'border-slate-100 hover:bg-slate-50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-5 h-5 rounded border flex items-center justify-center ${
-                            tempSelectedProducts.includes(product.id) ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
-                          }`}>
-                            {tempSelectedProducts.includes(product.id) && <CheckCircle size={12} className="text-white" />}
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-slate-800">{product.name}</p>
-                            <p className="text-xs text-slate-500">SKU: {product.sku}</p>
-                          </div>
+                                            return matchesGroup || matchesSupermarket;
+                                        });
+                                    setTempSelectedProducts(prev => [...prev, ...productsToAdd.map(p => p.id)]);
+                                }}
+                                className="text-xs font-bold text-blue-600 hover:text-blue-700"
+                            >
+                                Adicionar Todos
+                            </button>
                         </div>
+                        <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                           {products
+                             .filter(p => p.client?.id === selectedClientForModal && !tempSelectedProducts.includes(p.id))
+                             .filter(p => {
+                                // Search Filter
+                                const search = productSearch.toLowerCase();
+                                const matchesSearch = p.name.toLowerCase().includes(search) || (p.sku && p.sku.toLowerCase().includes(search));
+                                if (!matchesSearch) return false;
 
-                        {tempSelectedProducts.includes(product.id) && (
-                          <div className="ml-4" onClick={(e) => e.stopPropagation()}>
-                             <select
-                               value={tempProductChecklists[product.id] || ''}
-                               onChange={(e) => setTempProductChecklists({
-                                 ...tempProductChecklists,
-                                 [product.id]: e.target.value
-                               })}
-                               className="text-xs border border-slate-200 rounded p-1 max-w-[150px] outline-none focus:border-blue-400 bg-white"
-                             >
-                               <option value="">
-                                 {product.checklistTemplate 
-                                   ? `Padrão (${product.checklistTemplate.name})` 
-                                   : 'Checklist Padrão'}
-                               </option>
-                               {checklistTemplates.map(t => (
-                                 <option key={t.id} value={t.id}>{t.name}</option>
-                               ))}
-                             </select>
-                          </div>
-                        )}
+                                // Supermarket/Group Filter
+                                const currentSupermarket = currentRouteItemIndex !== null && routeItems[currentRouteItemIndex] 
+                                    ? routeItems[currentRouteItemIndex].supermarket 
+                                    : null;
+
+                                if (!currentSupermarket) return true;
+
+                                const hasGroups = p.supermarketGroups && p.supermarketGroups.length > 0;
+                                const hasSupermarkets = p.supermarkets && p.supermarkets.length > 0;
+
+                                if (!hasGroups && !hasSupermarkets) return true;
+
+                                const matchesGroup = hasGroups && currentSupermarket.group && p.supermarketGroups.some((g: any) => g.id === currentSupermarket.group.id);
+                                const matchesSupermarket = hasSupermarkets && p.supermarkets.some((s: any) => s.id === currentSupermarket.id);
+
+                                return matchesGroup || matchesSupermarket;
+                             })
+                             .map(product => (
+                                <div 
+                                    key={product.id}
+                                    onClick={() => handleToggleProductSelection(product.id)}
+                                    className="p-3 bg-white rounded-lg border border-slate-200 hover:border-blue-300 cursor-pointer transition-all group"
+                                >
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <p className="text-sm font-bold text-slate-700 group-hover:text-blue-700">{product.name}</p>
+                                            <p className="text-xs text-slate-400">{product.sku}</p>
+                                            {product.category && <p className="text-[10px] text-slate-400 uppercase mt-1">{product.categoryRef?.name || product.category}</p>}
+                                        </div>
+                                        <Plus size={16} className="text-slate-300 group-hover:text-blue-500" />
+                                    </div>
+                                </div>
+                             ))}
+                             {/* Empty state for available */}
+                             {products.filter(p => p.client?.id === selectedClientForModal && !tempSelectedProducts.includes(p.id)).length === 0 && (
+                                 <div className="text-center py-8 text-slate-400 text-xs">
+                                     Nenhum produto disponível.
+                                 </div>
+                             )}
+                        </div>
                       </div>
-                        ))}
-                     </div>
-                  </div>
-               ))}
+
+                      {/* Right: Selected */}
+                      <div className="flex flex-col border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                        <div className="p-3 bg-white border-b border-slate-200 flex justify-between items-center">
+                            <span className="text-xs font-black text-slate-500 uppercase">Selecionados ({tempSelectedProducts.length})</span>
+                            <button 
+                                onClick={() => setTempSelectedProducts([])}
+                                className="text-xs font-bold text-red-500 hover:text-red-600"
+                            >
+                                Remover Todos
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                           {products
+                             .filter(p => tempSelectedProducts.includes(p.id))
+                             .map(product => (
+                                <div 
+                                    key={product.id}
+                                    className="p-3 bg-white rounded-lg border border-blue-200 shadow-sm"
+                                >
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div>
+                                            <p className="text-sm font-bold text-slate-800">{product.name}</p>
+                                            <p className="text-xs text-slate-500">{product.sku}</p>
+                                        </div>
+                                        <button 
+                                            onClick={() => handleToggleProductSelection(product.id)}
+                                            className="text-red-300 hover:text-red-500"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                    
+                                    {/* Checklist Selector */}
+                                    <div className="mt-2 pt-2 border-t border-slate-50">
+                                         <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Checklist</label>
+                                         <select
+                                           value={tempProductChecklists[product.id] || ''}
+                                           onChange={(e) => setTempProductChecklists({
+                                             ...tempProductChecklists,
+                                             [product.id]: e.target.value
+                                           })}
+                                           className="w-full text-xs border border-slate-200 rounded p-1.5 outline-none focus:border-blue-400 bg-slate-50"
+                                         >
+                                           <option value="">
+                                             {product.checklistTemplate 
+                                               ? `Padrão (${product.checklistTemplate.name})` 
+                                               : 'Checklist Padrão'}
+                                           </option>
+                                           {checklistTemplates.map(t => (
+                                             <option key={t.id} value={t.id}>{t.name}</option>
+                                           ))}
+                                         </select>
+                                    </div>
+                                </div>
+                             ))}
+                             {tempSelectedProducts.length === 0 && (
+                                 <div className="text-center py-8 text-slate-400 text-xs">
+                                     Nenhum produto selecionado.
+                                 </div>
+                             )}
+                        </div>
+                      </div>
+                   </div>
                 </div>
               )}
             </div>
