@@ -243,8 +243,8 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
       {/* Modal de Cadastro/Edição */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[2rem] w-full max-w-xl shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md px-8 py-6 border-b border-slate-100 flex justify-between items-center rounded-t-[2rem]">
+          <div className="bg-white rounded-[2rem] w-full max-w-xl shadow-2xl animate-in zoom-in-95 duration-200 h-[80vh] flex flex-col relative">
+            <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center rounded-t-[2rem] shrink-0">
               <div>
                 <h2 className="text-2xl font-black text-slate-900">
                   {editingGroup ? 'Editar Rede' : 'Nova Rede'}
@@ -259,9 +259,9 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
               </button>
             </div>
             
-            <form onSubmit={handleSave} className="flex flex-col h-full">
+            <form onSubmit={handleSave} className="flex flex-col flex-1 min-h-0 overflow-hidden">
               {/* Tabs */}
-              <div className="px-8 border-b border-slate-100 flex gap-6">
+              <div className="px-8 border-b border-slate-100 flex gap-6 shrink-0 bg-white z-10">
                  <button
                    type="button"
                    onClick={() => setActiveTab('details')}
@@ -286,9 +286,9 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
                  </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-8">
+              <div className="flex-1 min-h-0 overflow-hidden flex flex-col relative">
                 {activeTab === 'details' ? (
-                  <div className="space-y-8">
+                  <div className="overflow-y-auto p-8 space-y-8 h-full">
                     <div>
                        <label className="text-[11px] font-black text-slate-400 uppercase mb-3 block tracking-widest">Nome da Rede *</label>
                        <input 
@@ -314,8 +314,8 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-6 h-full flex flex-col">
-                    <div className="flex items-end gap-4">
+                  <div className="flex flex-col h-full p-8 space-y-6">
+                    <div className="flex items-end gap-4 shrink-0">
                       <div className="flex-1">
                         <SearchableSelect
                           label="Filtrar por Marca"
@@ -331,23 +331,23 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
                       <button
                         type="button"
                         onClick={toggleAllVisibleProducts}
-                        className="h-14 px-6 rounded-2xl border-2 border-slate-200 hover:border-blue-200 hover:bg-blue-50 text-slate-600 font-bold flex items-center gap-2 transition-all"
+                        className="h-14 px-6 rounded-2xl border-2 border-slate-200 hover:border-blue-200 hover:bg-blue-50 text-slate-600 font-bold flex items-center gap-2 transition-all shrink-0"
                       >
                         {isAllVisibleSelected ? (
                           <>
                             <CheckSquare className="text-blue-600" size={20} />
-                            Desmarcar Todos ({filteredProducts.length})
+                            Desmarcar ({filteredProducts.length})
                           </>
                         ) : (
                           <>
                             <Square className="text-slate-400" size={20} />
-                            Marcar Todos ({filteredProducts.length})
+                            Marcar ({filteredProducts.length})
                           </>
                         )}
                       </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto border border-slate-200 rounded-2xl">
+                    <div className="flex-1 min-h-0 overflow-y-auto border border-slate-200 rounded-2xl relative">
                       {filteredProducts.length === 0 ? (
                         <div className="p-8 text-center text-slate-400 font-medium">
                           Nenhum produto encontrado com os filtros atuais.
@@ -364,16 +364,16 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
                                   isSelected ? 'bg-blue-50/50 hover:bg-blue-50' : 'hover:bg-slate-50'
                                 }`}
                               >
-                                <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                                <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0 ${
                                   isSelected ? 'bg-blue-500 border-blue-500' : 'border-slate-300 bg-white'
                                 }`}>
                                   {isSelected && <CheckSquare size={16} className="text-white" />}
                                 </div>
                                 
                                 {product.image ? (
-                                  <img src={product.image} alt="" className="w-10 h-10 rounded-lg object-cover bg-slate-100" />
+                                  <img src={product.image} alt="" className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0" />
                                 ) : (
-                                  <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 text-xs font-bold">IMG</div>
+                                  <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 text-xs font-bold shrink-0">IMG</div>
                                 )}
                                 
                                 <div>
@@ -389,14 +389,14 @@ const SupermarketGroupsListView: React.FC<SupermarketGroupsListViewProps> = ({ o
                       )}
                     </div>
                     
-                    <div className="text-xs text-slate-400 font-bold text-right">
+                    <div className="text-xs text-slate-400 font-bold text-right shrink-0">
                       {formData.productIds.length} produtos selecionados no total
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="p-8 pt-6 border-t border-slate-100 flex justify-end gap-4 bg-white rounded-b-[2rem]">
+              <div className="p-8 pt-6 border-t border-slate-100 flex justify-end gap-4 bg-white rounded-b-[2rem] shrink-0 z-10">
                  <button 
                    type="button"
                    onClick={() => setShowModal(false)} 

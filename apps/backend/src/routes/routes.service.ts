@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { RouteItemCheckin } from './entities/route-item-checkin.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, DataSource, Brackets, IsNull } from 'typeorm';
+import { Repository, In, DataSource, Brackets, IsNull, MoreThanOrEqual } from 'typeorm';
 import { Employee } from '../employees/entities/employee.entity';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
@@ -564,11 +564,36 @@ export class RoutesService {
     return this.create(newRouteData);
   }
 
-  async createBatch(body: { dates: string[]; promoterIds?: string[]; items: CreateRouteDto['items']; status?: string; type?: string }) {
-    const { dates, promoterIds, items, status, type } = body;
+  async createBatch(body: { 
+    dates: string[]; 
+    promoterIds?: string[]; 
+    items: CreateRouteDto['items']; 
+    status?: string; 
+    type?: string;
+    recurrenceGroup?: string;
+    replaceFrom?: string;
+  }) {
+    const { dates, promoterIds, items, status, type, replaceFrom } = body;
+    let { recurrenceGroup } = body;
+
     if (!dates || dates.length === 0) {
       throw new BadRequestException('Nenhuma data selecionada');
     }
+
+    // Generate new group ID if not provided
+    if (!recurrenceGroup) {
+      recurrenceGroup = uuidv4();
+    }
+
+    // If replaceFrom is provided, delete future routes in this group
+          if (replaceFrom && recurrenceGroup) {
+            await this.routesRepository.delete({
+              recurrenceGroup,
+              date: MoreThanOrEqual(replaceFrom),
+              status: In(['DRAFT', 'CONFIRMED']) // Allow updating drafts and confirmed routes
+            });
+          }
+
     const results = [];
     for (const date of dates) {
       const dto: CreateRouteDto = {
@@ -577,7 +602,8 @@ export class RoutesService {
         status: status || 'DRAFT',
         isTemplate: false,
         items,
-        type: type || 'VISIT'
+        type: type || 'VISIT',
+        recurrenceGroup
       };
       const created = await this.create(dto);
       results.push(created);

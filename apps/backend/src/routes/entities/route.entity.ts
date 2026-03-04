@@ -37,6 +37,9 @@ export class Route {
   @Column({ nullable: true })
   templateName: string;
 
+  @Column({ nullable: true })
+  recurrenceGroup: string;
+
   @OneToMany(() => RouteItem, (item) => item.route, { cascade: true, eager: true })
   items: RouteItem[];
 }

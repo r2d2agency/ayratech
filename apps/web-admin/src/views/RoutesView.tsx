@@ -291,6 +291,12 @@ const RoutesView: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [editingRouteId, setEditingRouteId] = useState<string | null>(null);
 
+  // Recurrence Edit State
+  const [editingRecurrenceGroup, setEditingRecurrenceGroup] = useState<string | null>(null);
+  const [recurrenceReplaceFrom, setRecurrenceReplaceFrom] = useState<string | null>(null);
+  const [showRecurrenceChoiceModal, setShowRecurrenceChoiceModal] = useState(false);
+  const [pendingRouteEdit, setPendingRouteEdit] = useState<any>(null);
+
   // Search States
   const [promoterSearch, setPromoterSearch] = useState('');
   const [supermarketSearch, setSupermarketSearch] = useState('');
@@ -356,6 +362,32 @@ const RoutesView: React.FC = () => {
     }
     return dates;
   };
+  const handleRecurrenceOption = (option: 'single' | 'future') => {
+    if (!pendingRouteEdit) return;
+
+    if (option === 'single') {
+      // Edit just this route
+      setRouteStatus(pendingRouteEdit.status);
+      setEditingRouteId(pendingRouteEdit.id);
+      setActiveTab('editor');
+    } else {
+      // Edit future series
+      setEditingRecurrenceGroup(pendingRouteEdit.recurrenceGroup);
+      setRecurrenceReplaceFrom(pendingRouteEdit.date);
+      
+      // Pre-fill Weekly Modal
+      const date = new Date(pendingRouteEdit.date);
+      const dayOfWeek = date.getDay();
+      setWeeklyWeekdays({ 0: false, 1: false, 2: false, 3: false, 4: false, 5: false, 6: false, [dayOfWeek]: true });
+      setWeeklyMonths(1); 
+      
+      setShowWeeklyModal(true);
+    }
+    
+    setShowRecurrenceChoiceModal(false);
+    setPendingRouteEdit(null);
+  };
+
   const handleCreateWeeklyRoutes = async () => {
     if (selectedPromoters.length === 0 || routeItems.length === 0) {
       alert('Selecione promotor(es) e adicione pelo menos um PDV.');
@@ -379,10 +411,14 @@ const RoutesView: React.FC = () => {
           estimatedDuration: item.estimatedDuration ? parseInt(item.estimatedDuration) : undefined,
           productIds: item.productIds || [],
           products: item.products || item.productIds?.map((id: string) => ({ productId: id })) || []
-        }))
+        })),
+        recurrenceGroup: editingRecurrenceGroup || undefined,
+        replaceFrom: recurrenceReplaceFrom || undefined
       });
-      alert('Rotas criadas com sucesso!');
+      alert(editingRecurrenceGroup ? 'Série de rotas atualizada com sucesso!' : 'Rotas criadas com sucesso!');
       setShowWeeklyModal(false);
+      setEditingRecurrenceGroup(null);
+      setRecurrenceReplaceFrom(null);
       fetchRoutesForWeek();
     } catch (error) {
       console.error('Error creating weekly routes:', error);
@@ -1008,8 +1044,6 @@ const RoutesView: React.FC = () => {
       setSelectedPromoters([]);
     }
     setSelectedDate(route.date.split('T')[0]);
-    setRouteStatus(route.status);
-    setEditingRouteId(route.id);
     
     // Load items
     const items = route.items.map((item: any) => ({
@@ -1026,6 +1060,16 @@ const RoutesView: React.FC = () => {
       })) || []
     }));
     setRouteItems(items);
+
+    // Check Recurrence
+    if (route.recurrenceGroup) {
+      setPendingRouteEdit(route);
+      setShowRecurrenceChoiceModal(true);
+      return;
+    }
+
+    setRouteStatus(route.status);
+    setEditingRouteId(route.id);
     setActiveTab('editor');
   };
 
@@ -2394,7 +2438,47 @@ const RoutesView: React.FC = () => {
                 className="px-6 py-2 rounded-lg font-bold text-white"
                 style={{ backgroundColor: settings.primaryColor }}
               >
-                Criar Rotas
+                {editingRecurrenceGroup ? 'Atualizar Série' : 'Criar Rotas'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRecurrenceChoiceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95">
+            <h3 className="text-xl font-black text-slate-800 mb-2">Editar Rota Recorrente</h3>
+            <p className="text-slate-500 mb-6">
+              Esta rota faz parte de uma série recorrente. Você deseja editar apenas esta rota específica ou todas as rotas futuras desta série?
+            </p>
+            
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => handleRecurrenceOption('single')}
+                className="w-full py-3 px-4 rounded-xl border-2 border-slate-200 font-bold text-slate-600 hover:border-slate-300 hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+              >
+                <Calendar size={18} />
+                Apenas Esta Rota {pendingRouteEdit?.date ? `(${new Date(pendingRouteEdit.date).toLocaleDateString('pt-BR')})` : ''}
+              </button>
+              
+              <button
+                onClick={() => handleRecurrenceOption('future')}
+                className="w-full py-3 px-4 rounded-xl font-bold text-white shadow-lg shadow-blue-200 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                style={{ backgroundColor: settings.primaryColor }}
+              >
+                <List size={18} />
+                Todas as Futuras (Série)
+              </button>
+              
+              <button
+                onClick={() => {
+                  setShowRecurrenceChoiceModal(false);
+                  setPendingRouteEdit(null);
+                }}
+                className="mt-2 text-sm font-bold text-slate-400 hover:text-slate-600"
+              >
+                Cancelar
               </button>
             </div>
           </div>

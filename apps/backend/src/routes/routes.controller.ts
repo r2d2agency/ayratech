@@ -26,7 +26,7 @@ export class RoutesController {
   }
 
   @Post('batch')
-  createBatch(@Body() body: { dates: string[]; promoterIds?: string[]; items: CreateRouteDto['items']; status?: string }) {
+  createBatch(@Body() body: { dates: string[]; promoterIds?: string[]; items: CreateRouteDto['items']; status?: string; recurrenceGroup?: string; replaceFrom?: string }) {
     return this.routesService.createBatch(body);
   }
   @Get()

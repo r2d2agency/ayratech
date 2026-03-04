@@ -69,6 +69,10 @@ export class CreateRouteDto {
   @IsString()
   templateName?: string;
 
+  @IsOptional()
+  @IsString()
+  recurrenceGroup?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => RouteItemDto)
