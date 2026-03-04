@@ -225,9 +225,11 @@ const DashboardView = () => {
                           </div>
                           
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-bold text-gray-800 truncate">{item.supermarket.name}</h3>
+                            <h3 className="font-bold text-gray-800 truncate">
+                              {item.supermarket?.fantasyName || item.supermarket?.name || 'PDV Sem Nome'}
+                            </h3>
                             <p className="text-xs text-gray-500 truncate flex items-center gap-1">
-                              <MapPin size={10} /> {item.supermarket.address}
+                              <MapPin size={10} /> {item.supermarket?.address || 'Endereço não disponível'}
                             </p>
                             <button
                                 onClick={(e) => {

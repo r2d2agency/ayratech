@@ -504,20 +504,86 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     const beforeOk = Array.isArray(photos.before) ? photos.before.length > 0 : !!photos.before;
     const afterOk = Array.isArray(photos.after) ? photos.after.length > 0 : !!photos.after;
     const canFinish = beforeOk && afterOk && areAllProductsComplete();
+    
     return (
-      <div className="flex flex-col h-full p-6 space-y-6 items-center justify-center">
-        <h2 className="text-2xl font-bold text-center">Categoria Concluída!</h2>
-        <p className="text-center text-gray-500">Você finalizou as fotos e contagens de <strong>{category}</strong>.</p>
+      <div className="flex flex-col h-full p-4 space-y-4 overflow-y-auto">
+        <div className="text-center space-y-1">
+          <h2 className="text-xl font-bold text-gray-800">Categoria Concluída!</h2>
+          <p className="text-sm text-gray-500">Resumo da execução em <strong>{category}</strong>.</p>
+        </div>
+
+        {/* Photos Preview Grid */}
+        <div className="grid grid-cols-2 gap-3 w-full">
+            {(['before', 'after'] as const).map(type => {
+                const typePhotos = photos[type];
+                const photoUrl = Array.isArray(typePhotos) ? typePhotos[0] : typePhotos;
+                
+                return (
+                    <div key={type} className="flex flex-col gap-1">
+                        <div className="flex justify-between items-center px-1">
+                            <span className="text-xs font-bold text-gray-600">{getLabel(type)}</span>
+                            <button 
+                                onClick={() => setStep(type === 'before' ? STEPS.BEFORE_PHOTO : STEPS.AFTER_PHOTO)}
+                                className="text-[10px] text-blue-600 font-medium"
+                            >
+                                Alterar
+                            </button>
+                        </div>
+                        <div 
+                            className="aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200 relative cursor-pointer"
+                            onClick={() => photoUrl && setPreviewUrl(photoUrl)}
+                        >
+                            {photoUrl ? (
+                                <img 
+                                    src={getImageUrl(photoUrl)} 
+                                    className="w-full h-full object-cover"
+                                    alt={getLabel(type)}
+                                />
+                            ) : (
+                                <div className="flex items-center justify-center h-full text-gray-400 flex-col gap-1">
+                                    <Camera size={20} />
+                                    <span className="text-[10px]">Pendente</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+
+        {/* Status Summary */}
+        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-2">
+             <div className="flex justify-between text-sm">
+                 <span className="text-gray-600">Produtos</span>
+                 <span className="font-bold text-gray-900">{products.filter(isProductCountComplete).length} / {products.length}</span>
+             </div>
+             <div className="flex justify-between text-sm">
+                 <span className="text-gray-600">Fotos</span>
+                 <span className={`font-bold ${beforeOk && afterOk ? 'text-green-600' : 'text-orange-500'}`}>
+                    {beforeOk && afterOk ? 'OK' : 'Pendentes'}
+                 </span>
+             </div>
+             <button 
+                onClick={() => setStep(STEPS.GONDOLA_COUNT)}
+                className="w-full mt-2 py-2 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50"
+             >
+                Revisar Contagens
+             </button>
+        </div>
+
         {!canFinish && (
-          <div className="bg-yellow-50 p-4 rounded-lg text-yellow-800 text-sm w-full">
-            <AlertTriangle size={16} className="inline mr-2" />
-            É necessário tirar as fotos de Antes e Depois e concluir as contagens.
+          <div className="bg-yellow-50 p-4 rounded-lg text-yellow-800 text-xs w-full flex items-start gap-2">
+            <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+            <span>É necessário tirar as fotos de Antes e Depois e concluir todas as contagens para finalizar.</span>
           </div>
         )}
+        
+        <div className="flex-1" />
+
         <button 
           onClick={onFinish}
           disabled={!canFinish}
-          className="w-full py-4 bg-green-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-4 bg-green-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
         >
           Finalizar Categoria
         </button>
