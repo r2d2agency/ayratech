@@ -21,4 +21,9 @@ export class CreateBrandDto {
   @IsString()
   @IsOptional()
   inventoryFrequency?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsUUID()
+  checklistTemplateId?: string;
 }

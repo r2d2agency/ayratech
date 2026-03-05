@@ -83,7 +83,61 @@ export class RoutesService {
             }
         }
     }
-    return result;
+
+    // Fetch Category Photos
+    const categoryQb = this.routeItemsRepository.createQueryBuilder('ri')
+        .innerJoinAndSelect('ri.supermarket', 'sm')
+        .innerJoinAndSelect('ri.route', 'r')
+        .leftJoinAndSelect('r.promoter', 'p')
+        .leftJoinAndSelect('r.promoters', 'ps')
+        .where("ri.categoryPhotos IS NOT NULL")
+        .andWhere("ri.updatedAt >= :timeThreshold", { timeThreshold }); // Use updatedAt for category photos
+
+    // Note: Filtering category photos by client is harder because they are not directly linked to a product/client
+    // We might skip client filter for category photos or try to infer it (complex)
+    // For now, we return all category photos if no client filter, or skip if client filter is strict.
+    // However, category photos are often generic. Let's include them if clientId is NOT provided, 
+    // or if we can link them. But RouteItem doesn't link to Client directly.
+    // If the user wants to see "Real Time Process", they likely want to see everything.
+    
+    const categoryItems = await categoryQb.getMany();
+
+    for (const item of categoryItems) {
+        if (item.categoryPhotos) {
+            Object.entries(item.categoryPhotos).forEach(([catId, photos]: [string, any]) => {
+                const allPhotos: string[] = [];
+                // Handle various structures
+                if (Array.isArray(photos)) allPhotos.push(...photos);
+                else if (typeof photos === 'string') allPhotos.push(photos);
+                else if (typeof photos === 'object') {
+                    if (photos.before) allPhotos.push(...(Array.isArray(photos.before) ? photos.before : [photos.before]));
+                    if (photos.after) allPhotos.push(...(Array.isArray(photos.after) ? photos.after : [photos.after]));
+                    if (photos.storage) allPhotos.push(...(Array.isArray(photos.storage) ? photos.storage : [photos.storage]));
+                }
+
+                const validPhotos = allPhotos.filter(p => typeof p === 'string');
+                
+                validPhotos.forEach(url => {
+                    let promoterName = 'Promotor';
+                    if (item.route?.promoter?.fullName) promoterName = item.route.promoter.fullName;
+                    else if (item.route?.promoters && item.route.promoters.length > 0) promoterName = item.route.promoters[0].fullName;
+
+                    result.push({
+                        id: item.id,
+                        photoUrl: url,
+                        productName: 'Foto de Categoria', 
+                        brandName: 'Categoria', 
+                        supermarketName: item.supermarket.fantasyName,
+                        promoterName: promoterName,
+                        timestamp: item.updatedAt
+                    });
+                });
+            });
+        }
+    }
+
+    // Sort combined result by timestamp descending
+    return result.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 20);
   }
 
   async create(createRouteDto: CreateRouteDto) {
@@ -418,6 +472,9 @@ export class RoutesService {
       .leftJoinAndSelect('itemProducts.completedBy', 'completedBy')
       .leftJoinAndSelect('itemProducts.checklists', 'checklists')
       .leftJoinAndSelect('product.brand', 'brand')
+      .leftJoinAndSelect('brand.checklistTemplate', 'brandChecklistTemplate')
+      .leftJoinAndSelect('brandChecklistTemplate.items', 'brandTemplateItems')
+      .leftJoinAndSelect('brandTemplateItems.competitors', 'brandTemplateCompetitors')
       .leftJoinAndSelect('product.checklistTemplate', 'checklistTemplate')
       .leftJoinAndSelect('checklistTemplate.items', 'templateItems')
       .leftJoinAndSelect('templateItems.competitors', 'templateCompetitors')
@@ -465,7 +522,15 @@ export class RoutesService {
         'items.products', 
         'items.products.completedBy',
         'items.products.product', 
-        'items.products.product.brand'
+        'items.products.product.brand',
+        'items.products.product.brand.checklistTemplate',
+        'items.products.product.brand.checklistTemplate.items',
+        'items.products.product.brand.checklistTemplate.items.competitor',
+        'items.products.product.brand.checklistTemplate.items.competitors',
+        'items.products.product.checklistTemplate',
+        'items.products.product.checklistTemplate.items',
+        'items.products.product.checklistTemplate.items.competitor',
+        'items.products.product.checklistTemplate.items.competitors'
       ],
       order: { date: 'DESC' }
     });
@@ -487,6 +552,9 @@ export class RoutesService {
         .leftJoinAndSelect('templateItems.competitors', 'templateCompetitors')
         .leftJoinAndSelect('product.client', 'productClient')
         .leftJoinAndSelect('product.brand', 'brand')
+        .leftJoinAndSelect('brand.checklistTemplate', 'brandChecklistTemplate')
+        .leftJoinAndSelect('brandChecklistTemplate.items', 'brandTemplateItems')
+        .leftJoinAndSelect('brandTemplateItems.competitors', 'brandTemplateCompetitors')
         .leftJoinAndSelect('brand.client', 'brandClient')
         .leftJoin('supermarket.clients', 'smClient')
         .where('productClient.id = :clientId', { clientId })
@@ -627,8 +695,14 @@ export class RoutesService {
         'items.products.product', 
         'items.products.product.client',
         'items.products.product.brand',
+        'items.products.product.brand.checklistTemplate',
+        'items.products.product.brand.checklistTemplate.items',
+        'items.products.product.brand.checklistTemplate.items.competitor',
+        'items.products.product.brand.checklistTemplate.items.competitors',
         'items.products.product.checklistTemplate',
         'items.products.product.checklistTemplate.items',
+        'items.products.product.checklistTemplate.items.competitor',
+        'items.products.product.checklistTemplate.items.competitors',
         'items.products.checklists',
          'items.products.checklists.completedBy',
          'items.products.completedBy',

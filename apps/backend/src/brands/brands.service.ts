@@ -33,13 +33,13 @@ export class BrandsService {
   }
 
   findAll() {
-    return this.brandsRepository.find({ relations: ['client', 'products'] });
+    return this.brandsRepository.find({ relations: ['client', 'products', 'checklistTemplate'] });
   }
 
   findOne(id: string) {
     return this.brandsRepository.findOne({ 
       where: { id },
-      relations: ['client', 'products']
+      relations: ['client', 'products', 'checklistTemplate']
     });
   }
 

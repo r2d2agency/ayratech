@@ -2,6 +2,8 @@ import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateCol
 import { Client } from './client.entity';
 import { Product } from './product.entity';
 
+import { ChecklistTemplate } from '../checklists/entities/checklist-template.entity';
+
 @Entity()
 export class Brand {
   @PrimaryGeneratedColumn('uuid')
@@ -16,6 +18,13 @@ export class Brand {
 
   @Column({ nullable: true, insert: false, update: false })
   clientId: string;
+
+  @ManyToOne(() => ChecklistTemplate, { nullable: true })
+  @JoinColumn({ name: 'checklistTemplateId' })
+  checklistTemplate: ChecklistTemplate;
+
+  @Column({ nullable: true })
+  checklistTemplateId: string;
 
   @Column({ default: false })
   waitForStockCount: boolean;

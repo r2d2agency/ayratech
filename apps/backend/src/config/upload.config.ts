@@ -4,19 +4,31 @@ import * as fs from 'fs';
 let uploadRoot = process.env.UPLOAD_DIR;
 
 if (!uploadRoot) {
-  // Check if we are running from project root
-  const appsBackendUploads = path.join(process.cwd(), 'apps', 'backend', 'uploads');
-  const localUploads = path.join(process.cwd(), 'uploads');
-
-  if (fs.existsSync(appsBackendUploads)) {
-    uploadRoot = appsBackendUploads;
-  } else if (fs.existsSync(path.join(process.cwd(), 'apps', 'backend'))) {
-    // We are in root, but uploads folder might not exist yet. Default to apps/backend/uploads
-    uploadRoot = appsBackendUploads;
+  const cwd = process.cwd();
+  
+  // Check if we are already inside apps/backend (e.g. running from that dir)
+  // We check for src/main.ts to be sure it's a nest app root
+  if (cwd.endsWith('backend') && fs.existsSync(path.join(cwd, 'src', 'main.ts'))) {
+     uploadRoot = path.join(cwd, 'uploads');
   } else {
-    // We are likely in apps/backend or elsewhere
-    uploadRoot = localUploads;
+     // We are likely in the monorepo root
+     const appsBackendPath = path.join(cwd, 'apps', 'backend');
+     if (fs.existsSync(appsBackendPath)) {
+        uploadRoot = path.join(appsBackendPath, 'uploads');
+     } else {
+        // Fallback to local uploads folder
+        uploadRoot = path.join(cwd, 'uploads');
+     }
   }
+}
+
+// Ensure the directory exists
+if (!fs.existsSync(uploadRoot)) {
+    try {
+        fs.mkdirSync(uploadRoot, { recursive: true });
+    } catch (error) {
+        console.error(`[Config] Failed to create upload directory at ${uploadRoot}:`, error);
+    }
 }
 
 console.log(`[Config] UPLOAD_ROOT resolved to: ${uploadRoot}`);
