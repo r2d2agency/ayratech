@@ -94,6 +94,7 @@ interface RouteReportItem {
       city?: string;
       state?: string;
     };
+    categoryPhotos?: Record<string, string[] | string>;
     products: Array<{
       id: string;
       isStockout: boolean;
@@ -842,12 +843,22 @@ const RoutesReportView: React.FC = () => {
 
   const formatRouteDate = (dateString: string) => {
     if (!dateString) return '-';
-    // Handle ISO string by taking only the date part to avoid timezone issues
-    if (dateString.includes('T')) {
-      dateString = dateString.split('T')[0];
+    // Use Date object to handle timezone conversion correctly
+    // If string ends with Z or contains T, Date() parses it as UTC/ISO
+    // and toLocaleDateString converts to user's local time
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        // Fallback for non-standard formats if necessary
+        if (dateString.includes('T')) {
+           return dateString.split('T')[0].split('-').reverse().join('/');
+        }
+        return dateString;
+      }
+      return date.toLocaleDateString('pt-BR');
+    } catch (e) {
+      return dateString;
     }
-    const [year, month, day] = dateString.split('-');
-    return `${day}/${month}/${year}`;
   };
 
   const handleExport = () => {
@@ -1578,6 +1589,33 @@ const RoutesReportView: React.FC = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Category Photos Section */}
+                  {item.categoryPhotos && Object.keys(item.categoryPhotos).length > 0 && (
+                    <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
+                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                        <ImageIcon size={14} />
+                        Fotos da Gôndola / Categoria
+                      </h4>
+                      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                        {Object.entries(item.categoryPhotos).flatMap(([catId, photos]) => {
+                           const photoList = Array.isArray(photos) ? photos : [photos];
+                           return photoList.map((photo, idx) => (
+                             <a 
+                               key={`${catId}-${idx}`}
+                               href={getImageUrl(photo)} 
+                               target="_blank" 
+                               rel="noopener noreferrer"
+                               className="block w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-slate-200 shadow-sm hover:ring-2 ring-blue-500 transition-all group relative"
+                             >
+                               <img src={getImageUrl(photo)} alt="Foto da Categoria" className="w-full h-full object-cover" />
+                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                             </a>
+                           ));
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Products Table */}
                   <div className="overflow-x-auto">

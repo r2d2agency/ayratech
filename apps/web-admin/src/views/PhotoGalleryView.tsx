@@ -98,7 +98,15 @@ const PhotoGalleryView: React.FC = () => {
 
     routes.forEach(route => {
       route.items.forEach(item => {
-        const itemPhotos = item.products.flatMap(p => p.photos || []);
+        // Extract Product Photos
+        const productPhotos = item.products.flatMap(p => p.photos || []);
+        
+        // Extract Category Photos
+        const categoryPhotosRaw = Object.values(item.categoryPhotos || {});
+        const categoryPhotos = categoryPhotosRaw.flatMap(p => Array.isArray(p) ? p : [p]);
+
+        const itemPhotos = [...categoryPhotos, ...productPhotos];
+
         if (itemPhotos.length > 0) {
           // Check Filters
           if (galleryFilters.pdv && !item.supermarket.fantasyName.toLowerCase().includes(galleryFilters.pdv.toLowerCase())) return;
@@ -298,6 +306,45 @@ const PhotoGalleryView: React.FC = () => {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6 bg-slate-50/30 space-y-8">
+              
+              {/* Category Photos Section */}
+              {selectedVisit.item.categoryPhotos && Object.keys(selectedVisit.item.categoryPhotos).length > 0 && (
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                    <div>
+                      <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                        <ImageIcon size={18} className="text-blue-500"/>
+                        Fotos da Gôndola / Categoria
+                      </h3>
+                      <div className="text-xs text-slate-500 mt-0.5">Visão Geral</div>
+                    </div>
+                    <span className="text-xs font-bold text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-200">
+                      {Object.values(selectedVisit.item.categoryPhotos).flatMap(p => Array.isArray(p) ? p : [p]).length} foto(s)
+                    </span>
+                  </div>
+                  <div className="p-4">
+                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                       {Object.values(selectedVisit.item.categoryPhotos).flatMap(p => Array.isArray(p) ? p : [p]).map((photo, pIdx) => (
+                         <a 
+                           key={`cat-${pIdx}`}
+                          href={getImageUrl(photo)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group relative aspect-square rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:ring-4 ring-blue-100 transition-all"
+                        >
+                          <img 
+                            src={getImageUrl(photo)} 
+                            alt="" 
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {selectedVisit.item.products
                 .filter(p => p.photos && p.photos.length > 0)
                 .map((product, idx) => (
