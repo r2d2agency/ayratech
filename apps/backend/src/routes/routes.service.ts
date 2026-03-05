@@ -1707,7 +1707,9 @@ export class RoutesService {
             if (!existingCheckin) {
                 const newCheckin = this.dataSource.getRepository(RouteItemCheckin).create({
                     routeItem: { id: itemId },
+                    routeItemId: itemId,
                     promoter: { id: userId },
+                    promoterId: userId,
                     checkInTime: new Date(data.timestamp)
                 });
                 await this.dataSource.getRepository(RouteItemCheckin).save(newCheckin);

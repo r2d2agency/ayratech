@@ -14,6 +14,7 @@ export class CreateProductDto {
 
   @IsOptional()
   @IsString()
+  @Transform(({ value }) => value === '' ? null : value)
   categoryId?: string;
 
   @IsOptional()
@@ -25,6 +26,7 @@ export class CreateProductDto {
 
   @IsOptional()
   @IsString()
+  @Transform(({ value }) => value === '' ? null : value)
   brandId?: string;
 
   @IsOptional()
@@ -49,6 +51,7 @@ export class CreateProductDto {
 
   @IsOptional()
   @IsString()
+  @Transform(({ value }) => value === '' ? null : value)
   checklistTemplateId?: string;
 
   @IsOptional()
