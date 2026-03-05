@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import * as sharp from 'sharp';
 import { RouteItemCheckin } from './entities/route-item-checkin.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, DataSource, Brackets, IsNull, MoreThanOrEqual, Between } from 'typeorm';
@@ -1195,19 +1196,75 @@ export class RoutesService {
     return this.routeItemsRepository.save(item);
   }
 
-  async uploadPhoto(itemId: string, file: any, type: string, category?: string) {
-    const item = await this.routeItemsRepository.findOne({ where: { id: itemId } });
-    if (!item) throw new NotFoundException('Route Item not found');
-
-    const fileName = `${itemId}_${Date.now()}_${file.originalname.replace(/\s+/g, '_')}`;
+  private async processAndSaveImage(buffer: Buffer, itemId: string, supermarketName: string, promoterName: string): Promise<string> {
+    const timestamp = Date.now();
+    const date = new Date(timestamp);
+    const dateStr = date.toLocaleDateString('pt-BR');
+    const timeStr = date.toLocaleTimeString('pt-BR');
+    const fileName = `${itemId}_${timestamp}_${Math.random().toString(36).substring(7)}.webp`;
     const filePath = path.join(UPLOAD_ROOT, fileName);
     
     if (!fs.existsSync(UPLOAD_ROOT)) {
       fs.mkdirSync(UPLOAD_ROOT, { recursive: true });
     }
 
-    fs.writeFileSync(filePath, file.buffer);
-    const url = `/uploads/${fileName}`;
+    // Create SVG Watermark
+    const width = 800; // Target width
+    const height = 600; // Target height (approx)
+    
+    // SVG with semi-transparent background and text
+    const svgText = `
+    <svg width="${width}" height="${height}">
+      <style>
+        .text { fill: white; font-family: Arial, sans-serif; font-weight: bold; font-size: 24px; filter: drop-shadow(1px 1px 1px black); }
+        .bg { fill: rgba(0, 0, 0, 0.5); }
+      </style>
+      <!-- Bottom Background Strip -->
+      <rect x="0" y="${height - 80}" width="${width}" height="80" class="bg" />
+      
+      <!-- Text Lines -->
+      <text x="20" y="${height - 50}" class="text">${supermarketName}</text>
+      <text x="20" y="${height - 20}" class="text" style="font-size: 18px;">${promoterName} | ${dateStr} ${timeStr}</text>
+    </svg>
+    `;
+    const svgBuffer = Buffer.from(svgText);
+
+    try {
+        // Process Image with Sharp
+        await sharp(buffer)
+            .resize(800, 800, { fit: 'inside', withoutEnlargement: true }) // Resize to max 800x800
+            .composite([{ input: svgBuffer, gravity: 'south' }]) // Apply watermark at bottom
+            .webp({ quality: 80 }) // Convert to WebP for optimization
+            .toFile(filePath);
+            
+    } catch (error) {
+        console.error('Error processing image with watermark:', error);
+        // Fallback: Save original buffer if processing fails
+        fs.writeFileSync(filePath, buffer);
+    }
+
+    return `/uploads/${fileName}`;
+  }
+
+  async uploadPhoto(itemId: string, file: any, type: string, category?: string) {
+    const item = await this.routeItemsRepository.findOne({ 
+        where: { id: itemId },
+        relations: ['supermarket', 'route', 'route.promoter', 'route.promoters']
+    });
+    if (!item) throw new NotFoundException('Route Item not found');
+
+    // Prepare Watermark Data
+    const supermarketName = item.supermarket?.fantasyName || 'PDV Desconhecido';
+    
+    // Determine Promoter Name
+    let promoterName = 'Promotor';
+    if (item.route?.promoter?.fullName) {
+        promoterName = item.route.promoter.fullName;
+    } else if (item.route?.promoters && item.route.promoters.length > 0) {
+        promoterName = item.route.promoters[0].fullName;
+    }
+
+    const url = await this.processAndSaveImage(file.buffer, itemId, supermarketName, promoterName);
 
     // If category and type are provided, update the route item categoryPhotos
     const normalizedType = type.replace('CATEGORY_', '').toLowerCase();
@@ -1220,7 +1277,17 @@ export class RoutesService {
             item.categoryPhotos[category] = {};
         }
 
-        item.categoryPhotos[category][normalizedType as 'before' | 'after'] = url;
+        const current = item.categoryPhotos[category][normalizedType as 'before' | 'after'];
+        if (Array.isArray(current)) {
+            item.categoryPhotos[category][normalizedType as 'before' | 'after'] = [...current, url];
+        } else if (current) {
+             // Convert existing string to array
+             item.categoryPhotos[category][normalizedType as 'before' | 'after'] = [current, url];
+        } else {
+             // Initialize as array
+             item.categoryPhotos[category][normalizedType as 'before' | 'after'] = [url];
+        }
+        
         await this.routeItemsRepository.save(item);
     }
 
@@ -1257,7 +1324,46 @@ export class RoutesService {
       if (data.observation !== undefined) itemProduct.observation = data.observation;
       if (data.isStockout !== undefined) itemProduct.isStockout = data.isStockout;
       if (data.stockoutType !== undefined) itemProduct.stockoutType = data.stockoutType;
-      if (data.photos !== undefined) itemProduct.photos = data.photos;
+      if (data.photos !== undefined) {
+      // Process photos to ensure they are saved as files (handling Base64 from offline sync)
+      const processedPhotos: string[] = [];
+      
+      for (const photo of data.photos) {
+        if (photo.startsWith('data:image')) {
+           try {
+             // Extract Base64 data
+             const matches = photo.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+             if (matches && matches.length === 3) {
+                const buffer = Buffer.from(matches[2], 'base64');
+                
+                // Get context for watermark
+                const supermarketName = itemProduct.routeItem?.supermarket?.fantasyName || 'PDV Desconhecido';
+                let promoterName = 'Promotor';
+                if (itemProduct.completedBy?.fullName) {
+                    promoterName = itemProduct.completedBy.fullName;
+                } else if (employee?.fullName) {
+                    promoterName = employee.fullName;
+                }
+
+                const url = await this.processAndSaveImage(buffer, routeItemId, supermarketName, promoterName);
+                processedPhotos.push(url);
+             } else {
+                // Invalid Base64 format
+                console.error('Invalid Base64 format in checkProduct');
+                throw new BadRequestException('Formato de imagem inválido (Base64 corrompido).');
+             }
+           } catch (err) {
+             console.error('Error processing Base64 photo in checkProduct:', err);
+             // Do NOT fallback to Base64 string as it causes database/display issues
+             // Throw error so the sync action fails and retries (or stays pending)
+             throw new InternalServerErrorException('Falha ao processar e salvar a foto: ' + err.message);
+           }
+        } else {
+           processedPhotos.push(photo);
+        }
+      }
+      itemProduct.photos = processedPhotos;
+    }
       if (data.checkInTime !== undefined) itemProduct.checkInTime = new Date(data.checkInTime);
       if (data.checkOutTime !== undefined) itemProduct.checkOutTime = new Date(data.checkOutTime);
       if (data.validityDate !== undefined) itemProduct.validityDate = data.validityDate;
@@ -1267,6 +1373,19 @@ export class RoutesService {
       // Handle Counts
       if (data.gondolaCount !== undefined) itemProduct.gondolaCount = data.gondolaCount;
       if (data.inventoryCount !== undefined) itemProduct.inventoryCount = data.inventoryCount;
+      if (data.stockCount !== undefined) itemProduct.stockCount = data.stockCount;
+      if (data.ruptureReason !== undefined) itemProduct.ruptureReason = data.ruptureReason;
+      
+      // Log for debugging stock count issues
+      if (data.gondolaCount !== undefined || data.inventoryCount !== undefined || data.stockCount !== undefined) {
+          console.log(`[STOCK DEBUG] Updating product ${productId} in item ${itemId}. Data:`, {
+              gondola: data.gondolaCount,
+              inventory: data.inventoryCount,
+              stock: data.stockCount,
+              rupture: data.ruptureReason,
+              isStockout: data.isStockout
+          });
+      }
       
       // Calculate total stock count if both are provided or update individually
       // If stockCount is provided directly (legacy), use it. 

@@ -386,8 +386,8 @@ const RoutesReportView: React.FC = () => {
           
           // Add actual completers
           relevantProducts.forEach(p => {
-              if (p.completedBy?.name) {
-                  entry.promoters.add(p.completedBy.name);
+              if (p.completedBy?.fullName) {
+                  entry.promoters.add(p.completedBy.fullName);
               }
           });
 
@@ -461,7 +461,7 @@ const RoutesReportView: React.FC = () => {
                 validityQuantity: p.validityQuantity,
                 checked: p.checked,
                 checkInTime: p.checkInTime,
-                promoterName: p.completedBy?.name || r.promoter.fullName || 'N/A',
+                promoterName: p.completedBy?.fullName || r.promoter.fullName || 'N/A',
                 date: r.date
             });
         });
@@ -916,16 +916,16 @@ const RoutesReportView: React.FC = () => {
             p.product.name,
             p.product.brand?.name || '-',
             item.status,
-            p.completedBy?.name || '-',
+            p.completedBy?.fullName || '-',
             item.checkInTime ? new Date(item.checkInTime).toLocaleTimeString('pt-BR') : '-',
             item.checkOutTime ? new Date(item.checkOutTime).toLocaleTimeString('pt-BR') : '-',
             p.isStockout ? 'Sim' : 'Não',
             p.checked ? 'Sim' : 'Não',
             p.validityDate ? formatRouteDate(p.validityDate) : '-',
             p.validityQuantity || '-',
-            p.gondolaCount || '-',
-            p.inventoryCount || p.stockCount || '-',
-            ((Number(p.gondolaCount || 0) + Number(p.inventoryCount || p.stockCount || 0))) || '-',
+            p.gondolaCount !== undefined && p.gondolaCount !== null ? p.gondolaCount : '-',
+            p.inventoryCount !== undefined && p.inventoryCount !== null ? p.inventoryCount : '-',
+            p.stockCount !== undefined && p.stockCount !== null ? p.stockCount : '-',
             p.observation || ''
           ];
           
@@ -1610,7 +1610,7 @@ const RoutesReportView: React.FC = () => {
                             <td className="p-3 text-xs font-bold text-slate-500">
             {p.completedBy ? (
                 <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded-md border border-blue-100 whitespace-nowrap">
-                    {p.completedBy.name}
+                    {p.completedBy.fullName}
                 </span>
             ) : '-'}
         </td>
@@ -1629,7 +1629,7 @@ const RoutesReportView: React.FC = () => {
                             <td className="p-3 text-xs font-bold text-slate-700">
                                 {((p.gondolaCount !== undefined && p.gondolaCount !== null) || (p.inventoryCount !== undefined && p.inventoryCount !== null)) ? 
                                   ((Number(p.gondolaCount) || 0) + (Number(p.inventoryCount) || 0)) 
-                                  : '-'}
+                                  : (p.stockCount !== undefined && p.stockCount !== null ? p.stockCount : '-')}
                             </td>
                             <td className="p-3 text-xs text-slate-700">
                                 {p.product.checklistTemplate?.title && (

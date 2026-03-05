@@ -23,7 +23,7 @@ Este documento detalha as regras de negócio e fluxos operacionais do sistema Ay
 *   Atributos importantes: 
     *   **Código de barras (EAN):** Essencial para leitura rápida no App via câmera.
     *   **Status:** Controle de 'active'/'inactive' para produtos que saíram de linha.
-    *   **Imagem:** Referência visual para o promotor encontrar o produto na gôndola.
+    *   **Imagem:** Referência visual para o promotor encontrar o produto na loja.
 
 ### 2.3. Supermercados (PDVs)
 *   Locais onde o serviço é executado.
@@ -64,12 +64,12 @@ Este documento detalha as regras de negócio e fluxos operacionais do sistema Ay
     *   O App exibe a lista de produtos vinculados àquele PDV específico na rota.
     *   **Ações:** Marcar como `Conferido` (Check) ou deixar pendente.
     *   **Observações:** Possibilidade de adicionar notas de texto por produto (ex: "Produto sem preço", "Embalagem danificada").
-*   **Tarefas Adicionais:** Fotos de Gôndola, Validação de Planograma.
+*   **Tarefas Adicionais:** Fotos de Loja, Validação de Planograma.
 *   **Check-out:** Finaliza a visita e sincroniza os dados.
 
 ### 3.3. Dashboard e Relatórios
 *   **Visão Admin:** Vê produtividade de todos os promotores, alertas de ruptura global e status dos contratos.
-*   **Visão Cliente:** Vê apenas dados dos seus produtos (Preço médio, Presença/Ruptura, Fotos das gôndolas).
+*   **Visão Cliente:** Vê apenas dados dos seus produtos (Preço médio, Presença/Ruptura, Fotos das lojas).
 
 ## 4. Regras de Acesso e Segurança (Autenticação)
 

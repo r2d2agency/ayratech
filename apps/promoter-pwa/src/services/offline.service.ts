@@ -52,11 +52,16 @@ class OfflineService {
         status: 'PENDING',
         retryCount: 0
       });
-      toast.success('Ação salva offline. Será sincronizada quando houver conexão.');
       
-      // Try to sync immediately if online
       if (navigator.onLine) {
+        // If online, don't show "Saved offline" toast, just let the sync start
+        // The sync process will show "Synchronizing..."
         this.syncPendingActions();
+      } else {
+        toast.success('Salvo no dispositivo. Será enviado quando houver conexão.', {
+            icon: '💾',
+            duration: 4000
+        });
       }
     } catch (error) {
       console.error('Error saving pending action:', error);
@@ -163,10 +168,21 @@ class OfflineService {
         // Unless it's clearly invalid data that will never succeed
         else if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 408 && statusCode !== 429) {
              console.error(`Client error ${statusCode} for action ${action.id}. Keeping in queue as ERROR.`);
-             // Previously we deleted it, but that caused data loss for photos if backend rejected type
+             
+             let errorMsg = `${errorMessage} (${statusCode})`;
+             
+             // Handle Payload Too Large specifically
+             if (statusCode === 413) {
+                 errorMsg = 'Foto muito grande para envio. Tente tirar uma foto com menor resolução.';
+                 // In this case, retrying won't help unless we resize. 
+                 // Ideally we should resize on client before sending, but here we are stuck with the payload.
+                 // We could try to compress the base64 if it's an image action?
+                 // For now, just mark as specific error so user knows.
+             }
+
              await db.pendingActions.update(action.id!, { 
                status: 'ERROR', 
-               error: `${errorMessage} (${statusCode})`,
+               error: errorMsg,
                retryCount: (action.retryCount || 0) + 1 
              });
              failCount++;
@@ -187,6 +203,7 @@ class OfflineService {
     
     if (failCount === 0) {
       toast.success('Sincronização concluída com sucesso!');
+      window.dispatchEvent(new Event('sync-complete'));
     } else {
       // Get the last error message to show to the user
       // Recarrega as ações para pegar o erro atualizado do DB

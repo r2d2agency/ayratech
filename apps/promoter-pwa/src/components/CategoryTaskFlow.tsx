@@ -221,7 +221,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
               category
             }
           );
-          toast.success('Foto salva offline. Será enviada quando houver conexão.');
+          // Toast feedback is handled by offlineService
         };
       }
     } catch (error: any) {
@@ -252,7 +252,16 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     toast.success('Foto removida.');
   };
 
-  const handleProductSave = async (_productId: string, _data: any) => {};
+  const handleProductSave = async (productId: string, data: any) => {
+    try {
+      await onUpdateProduct(productId, data);
+      setSelectedProduct(null);
+      toast.success('Salvo com sucesso!');
+    } catch (error) {
+      console.error('Erro ao salvar produto:', error);
+      toast.error('Erro ao salvar. Tente novamente.');
+    }
+  };
 
   const validateStep = () => {
     if (step === STEPS.BEFORE_PHOTO) {
