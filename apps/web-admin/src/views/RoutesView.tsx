@@ -438,6 +438,7 @@ const RoutesView: React.FC = () => {
   // Rules State
   const [rules, setRules] = useState<any[]>([]);
   const [newRule, setNewRule] = useState({ name: '', description: '', value: '' });
+  const [completedProductIds, setCompletedProductIds] = useState<string[]>([]);
 
   useEffect(() => {
     checkAdmin();
@@ -645,6 +646,10 @@ const RoutesView: React.FC = () => {
   };
 
   const handleToggleProductSelection = (productId: string) => {
+    if (completedProductIds.includes(productId)) {
+        alert('Este produto já foi iniciado/concluído e não pode ser removido.');
+        return;
+    }
     if (tempSelectedProducts.includes(productId)) {
       setTempSelectedProducts(tempSelectedProducts.filter(id => id !== productId));
     } else {
@@ -733,6 +738,7 @@ const RoutesView: React.FC = () => {
       // Clear form
       setRouteItems([]);
       setEditingRouteId(null);
+      setCompletedProductIds([]);
     } catch (error: any) {
       console.error('Error saving route:', error);
       const errorMsg = error.response?.data?.message || error.message || 'Erro desconhecido';
@@ -1081,6 +1087,21 @@ const RoutesView: React.FC = () => {
     }
     setSelectedDate(route.date.split('T')[0]);
     
+    // Identify completed/started products to prevent removal
+    const completedIds: string[] = [];
+    if (route.items) {
+        route.items.forEach((item: any) => {
+            if (item.products) {
+                item.products.forEach((p: any) => {
+                    if (p.checked || p.checkInTime) {
+                        completedIds.push(p.productId);
+                    }
+                });
+            }
+        });
+    }
+    setCompletedProductIds(completedIds);
+
     // Load items
     const items = route.items.map((item: any) => ({
       supermarketId: item.supermarket.id,
@@ -1320,6 +1341,7 @@ const RoutesView: React.FC = () => {
                         setSelectedDate(dateStr);
                         setRouteItems([]);
                         setEditingRouteId(null);
+                        setCompletedProductIds([]);
                         setRouteStatus('DRAFT');
                         setActiveTab('editor');
                     }}
@@ -2049,9 +2071,11 @@ const RoutesView: React.FC = () => {
                                         </div>
                                         <button 
                                             onClick={() => handleToggleProductSelection(product.id)}
-                                            className="text-red-300 hover:text-red-500"
+                                            className={`${completedProductIds.includes(product.id) ? 'text-slate-300 cursor-not-allowed' : 'text-red-300 hover:text-red-500'}`}
+                                            disabled={completedProductIds.includes(product.id)}
+                                            title={completedProductIds.includes(product.id) ? 'Produto já realizado/iniciado' : 'Remover produto'}
                                         >
-                                            <Trash2 size={16} />
+                                            {completedProductIds.includes(product.id) ? <CheckCircle size={16} /> : <Trash2 size={16} />}
                                         </button>
                                     </div>
                                     

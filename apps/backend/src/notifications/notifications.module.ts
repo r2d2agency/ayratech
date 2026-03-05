@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { NotificationsService } from './notifications.service';
 import { WhatsappService } from './whatsapp.service';
+import { NotificationsGateway } from './notifications.gateway';
 import { NotificationsController } from './notifications.controller';
 import { Notification } from './entities/notification.entity';
 
@@ -12,7 +13,7 @@ import { Notification } from './entities/notification.entity';
     ConfigModule,
   ],
   controllers: [NotificationsController],
-  providers: [NotificationsService, WhatsappService],
+  providers: [NotificationsService, WhatsappService, NotificationsGateway],
   exports: [NotificationsService, WhatsappService],
 })
 export class NotificationsModule {}

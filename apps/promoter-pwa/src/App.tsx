@@ -14,6 +14,7 @@ import SettingsView from './views/SettingsView';
 import BottomNav from './components/BottomNav';
 import LocationTracker from './components/LocationTracker';
 import TimeClockAlert from './components/TimeClockAlert';
+import RouteUpdateAlert from './components/RouteUpdateAlert';
 import SyncStatus from './components/SyncStatus';
 
 const ProtectedLayout = () => {
@@ -35,6 +36,7 @@ const ProtectedLayout = () => {
     <div className="pb-20" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       <LocationTracker />
       <TimeClockAlert />
+      <RouteUpdateAlert />
       <SyncStatus />
       <Outlet />
       <BottomNav />

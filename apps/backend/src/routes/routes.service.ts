@@ -24,6 +24,8 @@ import { CreateRouteDto } from './dto/create-route.dto';
 import { UpdateRouteDto } from './dto/update-route.dto';
 import { WhatsappService } from '../notifications/whatsapp.service';
 
+import { NotificationsService } from '../notifications/notifications.service';
+
 @Injectable()
 export class RoutesService {
   constructor(
@@ -37,6 +39,7 @@ export class RoutesService {
     private routeRulesRepository: Repository<RouteRule>,
     private dataSource: DataSource,
     private whatsappService: WhatsappService,
+    private notificationsService: NotificationsService,
     private configService: ConfigService,
   ) {}
 
@@ -655,7 +658,7 @@ export class RoutesService {
 
       // Check if route can be edited
       const userRole = user?.role?.toLowerCase() || '';
-      const isAdmin = ['admin', 'manager', 'superadmin', 'administrador do sistema', 'supervisor de operações'].includes(userRole);
+      const isAdmin = ['admin', 'manager', 'superadmin', 'administrador do sistema', 'supervisor de operações', 'supervisor'].includes(userRole);
 
       if (!isAdmin) {
         if (route.status === 'COMPLETED') {
@@ -933,6 +936,13 @@ export class RoutesService {
                   }
 
                   const productsToRemove = existingItem.products.filter(p => !newProductIds.has(p.productId));
+                  
+                  // STRICT CHECK: Cannot remove products that are already checked/started
+                  const completedRemoved = productsToRemove.find(p => p.checked || p.checkInTime);
+                  if (completedRemoved) {
+                      throw new BadRequestException(`Não é possível remover o produto "${completedRemoved.product?.name || 'Item'}" pois já foi iniciado ou concluído.`);
+                  }
+
                   if (productsToRemove.length > 0) {
                       await queryRunner.manager.remove(productsToRemove);
                   }
@@ -973,6 +983,13 @@ export class RoutesService {
 
           // Delete items removed from route
           const itemsToDelete = existingItems.filter(i => !processedItemIds.has(i.id));
+          
+          // STRICT CHECK: Cannot remove items (stops) that have started execution
+          const startedItemRemoved = itemsToDelete.find(i => i.checkInTime || i.products?.some(p => p.checked || p.checkInTime));
+          if (startedItemRemoved) {
+             throw new BadRequestException(`Não é possível remover o ponto de venda "${startedItemRemoved.supermarket?.fantasyName || 'PDV'}" pois já foi iniciado.`);
+          }
+
           if (itemsToDelete.length > 0) {
               await queryRunner.manager.remove(itemsToDelete);
           }
@@ -996,6 +1013,28 @@ export class RoutesService {
       }
       
       await queryRunner.commitTransaction();
+
+      // NOTIFY Promoters about the update
+      try {
+        const updatedRoute = await this.findOne(id);
+        const promotersToNotify = updatedRoute.promoters || (updatedRoute.promoter ? [updatedRoute.promoter] : []);
+        
+        for (const promoter of promotersToNotify) {
+            if (promoter.user) { // Ensure promoter has a linked user account
+                await this.notificationsService.create({
+                    userId: promoter.user.id,
+                    title: 'Rota Atualizada',
+                    message: `Sua rota do dia ${new Date(updatedRoute.date).toLocaleDateString('pt-BR')} foi atualizada. Novos produtos foram adicionados.`,
+                    type: 'alert',
+                    relatedId: updatedRoute.id
+                });
+            }
+        }
+      } catch (notifyError) {
+          console.error('Error sending notification after route update:', notifyError);
+          // Don't fail the request if notification fails
+      }
+
       return this.findOne(id);
     } catch (error) {
       await queryRunner.rollbackTransaction();
