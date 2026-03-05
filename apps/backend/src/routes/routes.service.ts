@@ -1390,26 +1390,40 @@ export class RoutesService {
           const normalizedType = type.replace('CATEGORY_', '').toLowerCase();
           if (category && (normalizedType === 'before' || normalizedType === 'after')) {
               console.log(`RoutesService.uploadPhoto: Updating categoryPhotos for category=${category}, type=${normalizedType}`);
-              if (!item.categoryPhotos) {
-                  item.categoryPhotos = {};
-              }
               
-              if (!item.categoryPhotos[category]) {
-                  item.categoryPhotos[category] = {};
+              // Clone existing photos to ensure TypeORM detects the change
+              const newCategoryPhotos = { ...(item.categoryPhotos || {}) };
+              
+              if (!newCategoryPhotos[category]) {
+                  newCategoryPhotos[category] = {};
               }
 
-              const current = item.categoryPhotos[category][normalizedType as 'before' | 'after'];
+              // Ensure the category object is also cloned if it exists (though shallow copy above handles top level)
+              // But deeper levels need care if we mutate.
+              // Let's create a new object for the category to be safe.
+              const categoryObj = { ...newCategoryPhotos[category] };
+              const current = categoryObj[normalizedType as 'before' | 'after'];
+
+              let updatedList: string[];
               if (Array.isArray(current)) {
-                  item.categoryPhotos[category][normalizedType as 'before' | 'after'] = [...current, url];
+                  updatedList = [...current, url];
               } else if (current) {
                    // Convert existing string to array
-                   item.categoryPhotos[category][normalizedType as 'before' | 'after'] = [current, url];
+                   updatedList = [current as string, url];
               } else {
                    // Initialize as array
-                   item.categoryPhotos[category][normalizedType as 'before' | 'after'] = [url];
+                   updatedList = [url];
               }
+              
+              categoryObj[normalizedType as 'before' | 'after'] = updatedList;
+              newCategoryPhotos[category] = categoryObj;
 
+              item.categoryPhotos = newCategoryPhotos;
               console.log('RoutesService.uploadPhoto: Saving item with new categoryPhotos:', JSON.stringify(item.categoryPhotos));
+              
+              // Use update instead of save to force update of specific column if needed, 
+              // but save is better for relations.
+              // However, with simple-json, save() should work if object reference changed.
               await this.routeItemsRepository.save(item);
           }
 
