@@ -8,7 +8,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts, products, disabled }: any) => {
+const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts, products, disabled, completedProductIds = [] }: any) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ 
       id,
       disabled
@@ -103,15 +103,20 @@ const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts
                   <div key={categoryName} className="border-l-2 border-slate-200 pl-3">
                     <h6 className="text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">{categoryName}</h6>
                     <div className="space-y-2">
-                      {categoryProducts.map((product, pIndex) => (
-                        <div key={product.id} className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg border border-slate-100">
-                          <span className="text-xs font-bold text-slate-400 w-6">{(gIndex + 1)}.{pIndex + 1}</span>
+                      {categoryProducts.map((product, pIndex) => {
+                        const isCompleted = completedProductIds.includes(product.id);
+                        return (
+                        <div key={product.id} className={`flex items-center gap-3 p-2 rounded-lg border ${isCompleted ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'}`}>
+                          <span className={`text-xs font-bold w-6 ${isCompleted ? 'text-green-600' : 'text-slate-400'}`}>{(gIndex + 1)}.{pIndex + 1}</span>
                           <div className="flex-1">
-                            <p className="text-sm font-bold text-slate-700">{product.name}</p>
-                            <p className="text-xs text-slate-400">{product.ean || ''}</p>
+                            <div className="flex items-center gap-2">
+                                <p className={`text-sm font-bold ${isCompleted ? 'text-green-800' : 'text-slate-700'}`}>{product.name}</p>
+                                {isCompleted && <CheckCircle size={14} className="text-green-600" />}
+                            </div>
+                            <p className={`text-xs ${isCompleted ? 'text-green-600' : 'text-slate-400'}`}>{product.ean || ''}</p>
                           </div>
                         </div>
-                      ))}
+                      )})}
                     </div>
                   </div>
                 ));
@@ -1653,6 +1658,7 @@ const RoutesView: React.FC = () => {
                           onUpdate={handleUpdateItem}
                           onOpenProducts={handleOpenProductModal}
                           products={products}
+                          completedProductIds={completedProductIds}
                           disabled={!isAdmin && (routeStatus === 'COMPLETED' || routeStatus === 'IN_PROGRESS')}
                         />
                       ))}
