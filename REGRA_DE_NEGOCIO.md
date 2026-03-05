@@ -39,6 +39,13 @@ Este documento detalha as regras de negócio e fluxos operacionais do sistema Ay
     *   O cadastro de funcionário permite a criação automática ("toggle") de um usuário de sistema.
     *   Este usuário herda o perfil `Promotor` e usa o email do funcionário como login.
 
+### 2.5. Evidências (Fotos)
+*   **Tipos de Registro:**
+    *   **Antes (Before):** Estado inicial do ponto de venda/gôndola antes da intervenção.
+    *   **Depois (After):** Resultado do trabalho do promotor (abastecimento, organização, precificação).
+    *   **Estoque (Storage):** Registro de produtos em estoque/aéreo para comprovar ruptura virtual ou excesso.
+*   **Associação:** Toda foto deve estar vinculada a uma **Categoria** de produtos específica da visita.
+
 ## 3. Fluxos Operacionais
 
 ### 3.1. Gestão de Rotas e Planejamento
@@ -70,6 +77,10 @@ Este documento detalha as regras de negócio e fluxos operacionais do sistema Ay
 ### 3.3. Dashboard e Relatórios
 *   **Visão Admin:** Vê produtividade de todos os promotores, alertas de ruptura global e status dos contratos.
 *   **Visão Cliente:** Vê apenas dados dos seus produtos (Preço médio, Presença/Ruptura, Fotos das lojas).
+*   **Galeria de Fotos:** 
+    *   As fotos devem ser exibidas agrupadas por **Categoria**.
+    *   Dentro de cada categoria, devem ser separadas visualmente por tipo: **Antes**, **Depois** e **Estoque**.
+    *   Fotos antigas ou sem tipo definido devem aparecer como "Geral".
 
 ## 4. Regras de Acesso e Segurança (Autenticação)
 
