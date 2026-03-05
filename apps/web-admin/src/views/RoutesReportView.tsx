@@ -94,7 +94,7 @@ interface RouteReportItem {
       city?: string;
       state?: string;
     };
-    categoryPhotos?: Record<string, string[] | string>;
+    categoryPhotos?: Record<string, string[] | string | { before?: string[] | string, after?: string[] | string }>;
     products: Array<{
       id: string;
       isStockout: boolean;
@@ -1597,47 +1597,70 @@ const RoutesReportView: React.FC = () => {
                         <ImageIcon size={14} />
                         Fotos da Gôndola / Categoria
                       </h4>
-                      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-                        {Object.entries(item.categoryPhotos).flatMap(([catId, photosData]) => {
-                           if (!photosData) return [];
+                      <div className="space-y-4">
+                        {Object.entries(item.categoryPhotos).map(([catId, photosData]) => {
+                           if (!photosData) return null;
                            
-                           // Handle legacy string array or single string
+                           // Extract photos by type
+                           const beforePhotos: string[] = [];
+                           const afterPhotos: string[] = [];
+                           const storagePhotos: string[] = [];
+                           const legacyPhotos: string[] = [];
+
                            if (Array.isArray(photosData) || typeof photosData === 'string') {
                                const list = Array.isArray(photosData) ? photosData : [photosData];
-                               return list.filter((p): p is string => typeof p === 'string');
-                           }
-                           
-                           // Handle structured object { before?: string[], after?: string[] }
-                           const structuredPhotos: string[] = [];
-                           if (typeof photosData === 'object') {
+                               legacyPhotos.push(...list.filter((p): p is string => typeof p === 'string'));
+                           } else if (typeof photosData === 'object') {
                                const pd = photosData as any;
                                if (pd.before) {
-                                   const beforeList = Array.isArray(pd.before) ? pd.before : [pd.before];
-                                   structuredPhotos.push(...beforeList.filter((p: any) => typeof p === 'string'));
+                                   const list = Array.isArray(pd.before) ? pd.before : [pd.before];
+                                   beforePhotos.push(...list.filter((p: any) => typeof p === 'string'));
                                }
                                if (pd.after) {
-                                   const afterList = Array.isArray(pd.after) ? pd.after : [pd.after];
-                                   structuredPhotos.push(...afterList.filter((p: any) => typeof p === 'string'));
+                                   const list = Array.isArray(pd.after) ? pd.after : [pd.after];
+                                   afterPhotos.push(...list.filter((p: any) => typeof p === 'string'));
                                }
                                if (pd.storage) {
-                                   const storageList = Array.isArray(pd.storage) ? pd.storage : [pd.storage];
-                                   structuredPhotos.push(...storageList.filter((p: any) => typeof p === 'string'));
+                                   const list = Array.isArray(pd.storage) ? pd.storage : [pd.storage];
+                                   storagePhotos.push(...list.filter((p: any) => typeof p === 'string'));
                                }
                            }
                            
-                           return structuredPhotos;
-                        }).map((photo, idx) => (
-                             <a 
-                               key={`cat-photo-${idx}`}
-                               href={getImageUrl(photo)} 
-                               target="_blank" 
-                               rel="noopener noreferrer"
-                               className="block w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-slate-200 shadow-sm hover:ring-2 ring-blue-500 transition-all group relative"
-                             >
-                               <img src={getImageUrl(photo)} alt="Foto da Categoria" className="w-full h-full object-cover" />
-                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                             </a>
-                           ))}
+                           if (beforePhotos.length === 0 && afterPhotos.length === 0 && storagePhotos.length === 0 && legacyPhotos.length === 0) return null;
+
+                           // Helper to render photo list
+                           const renderPhotoList = (photos: string[], label: string) => (
+                             photos.length > 0 && (
+                               <div className="mb-2 last:mb-0">
+                                 <span className="text-[10px] font-bold text-slate-400 uppercase mb-1 block pl-1">{label}</span>
+                                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                                   {photos.map((photo, idx) => (
+                                      <a 
+                                        key={`${catId}-${label}-${idx}`}
+                                        href={getImageUrl(photo)} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="block w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden border border-slate-200 shadow-sm hover:ring-2 ring-blue-500 transition-all group relative"
+                                      >
+                                        <img src={getImageUrl(photo)} alt={`${catId} ${label}`} className="w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                                      </a>
+                                   ))}
+                                 </div>
+                               </div>
+                             )
+                           );
+
+                           return (
+                             <div key={catId} className="border-l-2 border-slate-300 pl-3 py-1">
+                               <h5 className="font-bold text-sm text-slate-800 mb-2 bg-slate-100 px-2 py-1 rounded inline-block">{catId}</h5>
+                               {renderPhotoList(beforePhotos, 'Antes')}
+                               {renderPhotoList(afterPhotos, 'Depois')}
+                               {renderPhotoList(storagePhotos, 'Estoque')}
+                               {renderPhotoList(legacyPhotos, 'Geral')}
+                             </div>
+                           );
+                        })}
                       </div>
                     </div>
                   )}

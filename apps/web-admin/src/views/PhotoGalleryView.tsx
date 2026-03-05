@@ -39,6 +39,7 @@ interface RouteReportItem {
       city?: string;
       state?: string;
     };
+    categoryPhotos?: Record<string, string[] | string | { before?: string[] | string, after?: string[] | string }>;
     products: Array<{
       id: string;
       photos?: string[];
@@ -343,37 +344,75 @@ const PhotoGalleryView: React.FC = () => {
                         <ImageIcon size={18} className="text-blue-500"/>
                         Fotos da Gôndola / Categoria
                       </h3>
-                      <div className="text-xs text-slate-500 mt-0.5">Visão Geral</div>
+                      <div className="text-xs text-slate-500 mt-0.5">Visão Geral por Categoria</div>
                     </div>
-                    <span className="text-xs font-bold text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-200">
-                      {Object.values(selectedVisit.item.categoryPhotos)
-                        .flatMap(p => Array.isArray(p) ? p : [p])
-                        .filter((p): p is string => typeof p === 'string')
-                        .length} foto(s)
-                    </span>
                   </div>
-                  <div className="p-4">
-                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                       {Object.values(selectedVisit.item.categoryPhotos)
-                         .flatMap(p => Array.isArray(p) ? p : [p])
-                         .filter((p): p is string => typeof p === 'string')
-                         .map((photo, pIdx) => (
-                         <a 
-                           key={`cat-${pIdx}`}
-                          href={getImageUrl(photo)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="group relative aspect-square rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:ring-4 ring-blue-100 transition-all"
-                        >
-                          <img 
-                            src={getImageUrl(photo)} 
-                            alt="" 
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                          />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                        </a>
-                      ))}
-                    </div>
+                  <div className="p-4 space-y-6">
+                     {Object.entries(selectedVisit.item.categoryPhotos).map(([catId, photosData]) => {
+                       if (!photosData) return null;
+
+                       const beforePhotos: string[] = [];
+                       const afterPhotos: string[] = [];
+                       const storagePhotos: string[] = [];
+                       const legacyPhotos: string[] = [];
+
+                       if (Array.isArray(photosData) || typeof photosData === 'string') {
+                           const list = Array.isArray(photosData) ? photosData : [photosData];
+                           legacyPhotos.push(...list.filter((p): p is string => typeof p === 'string'));
+                       } else if (typeof photosData === 'object') {
+                           const pd = photosData as any;
+                           if (pd.before) {
+                               const list = Array.isArray(pd.before) ? pd.before : [pd.before];
+                               beforePhotos.push(...list.filter((p: any) => typeof p === 'string'));
+                           }
+                           if (pd.after) {
+                               const list = Array.isArray(pd.after) ? pd.after : [pd.after];
+                               afterPhotos.push(...list.filter((p: any) => typeof p === 'string'));
+                           }
+                           if (pd.storage) {
+                               const list = Array.isArray(pd.storage) ? pd.storage : [pd.storage];
+                               storagePhotos.push(...list.filter((p: any) => typeof p === 'string'));
+                           }
+                       }
+
+                       if (beforePhotos.length === 0 && afterPhotos.length === 0 && storagePhotos.length === 0 && legacyPhotos.length === 0) return null;
+
+                       const renderPhotoGrid = (photos: string[], label: string) => (
+                         photos.length > 0 && (
+                           <div className="mb-4 last:mb-0">
+                             <span className="text-xs font-bold text-slate-400 uppercase mb-2 block">{label}</span>
+                             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                               {photos.map((photo, pIdx) => (
+                                 <a 
+                                   key={`${catId}-${label}-${pIdx}`}
+                                   href={getImageUrl(photo)}
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   className="group relative aspect-square rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:ring-4 ring-blue-100 transition-all"
+                                 >
+                                   <img 
+                                     src={getImageUrl(photo)} 
+                                     alt={`${catId} ${label}`} 
+                                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                                   />
+                                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                                 </a>
+                               ))}
+                             </div>
+                           </div>
+                         )
+                       );
+
+                       return (
+                         <div key={catId} className="border-l-4 border-blue-500 pl-4 py-2 bg-slate-50/30 rounded-r-xl">
+                           <h4 className="font-bold text-base text-slate-800 mb-3">{catId}</h4>
+                           {renderPhotoGrid(beforePhotos, 'Antes')}
+                           {renderPhotoGrid(afterPhotos, 'Depois')}
+                           {renderPhotoGrid(storagePhotos, 'Estoque')}
+                           {renderPhotoGrid(legacyPhotos, 'Geral')}
+                         </div>
+                       );
+                     })}
                   </div>
                 </div>
               )}
