@@ -1378,7 +1378,7 @@ export class RoutesService {
       
       // Log for debugging stock count issues
       if (data.gondolaCount !== undefined || data.inventoryCount !== undefined || data.stockCount !== undefined) {
-          console.log(`[STOCK DEBUG] Updating product ${productId} in item ${itemId}. Data:`, {
+          console.log(`[STOCK DEBUG] Updating product ${productId} in item ${routeItemId}. Data:`, {
               gondola: data.gondolaCount,
               inventory: data.inventoryCount,
               stock: data.stockCount,
