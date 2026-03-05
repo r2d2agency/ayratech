@@ -91,7 +91,7 @@ export class RoutesService {
         .leftJoinAndSelect('r.promoter', 'p')
         .leftJoinAndSelect('r.promoters', 'ps')
         .where("ri.categoryPhotos IS NOT NULL")
-        .andWhere("ri.updatedAt >= :timeThreshold", { timeThreshold }); // Use updatedAt for category photos
+        .andWhere("ri.checkInTime >= :timeThreshold", { timeThreshold }); // Use checkInTime for category photos
 
     // Note: Filtering category photos by client is harder because they are not directly linked to a product/client
     // We might skip client filter for category photos or try to infer it (complex)
@@ -129,7 +129,7 @@ export class RoutesService {
                         brandName: 'Categoria', 
                         supermarketName: item.supermarket.fantasyName,
                         promoterName: promoterName,
-                        timestamp: item.updatedAt
+                        timestamp: item.checkOutTime || item.checkInTime || new Date()
                     });
                 });
             });
@@ -1094,9 +1094,10 @@ export class RoutesService {
         const promotersToNotify = updatedRoute.promoters || (updatedRoute.promoter ? [updatedRoute.promoter] : []);
         
         for (const promoter of promotersToNotify) {
-            if (promoter.user) { // Ensure promoter has a linked user account
+            const user = await this.dataSource.getRepository(User).findOne({ where: { employeeId: promoter.id } });
+            if (user) { // Ensure promoter has a linked user account
                 await this.notificationsService.create({
-                    userId: promoter.user.id,
+                    userId: user.id,
                     title: 'Rota Atualizada',
                     message: `Sua rota do dia ${new Date(updatedRoute.date).toLocaleDateString('pt-BR')} foi atualizada. Novos produtos foram adicionados.`,
                     type: 'alert',
