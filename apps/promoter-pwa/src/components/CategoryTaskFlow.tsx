@@ -135,7 +135,36 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     return routeItem.categoryPhotos?.[category] || {};
   };
 
+  const getChecklistTemplate = (p: any) => {
+    const product = p.product;
+    // Prioritize product-specific template, then brand template
+    return product.checklistTemplate || product.brand?.checklistTemplate;
+  };
+
+  const isStockCountRequired = (p: any) => {
+    const template = getChecklistTemplate(p);
+    // If no template, default to TRUE (safe default)
+    if (!template) return true;
+    // Check if any item in template is STOCK_COUNT
+    // Assuming 'STOCK_COUNT' is the type. Check backend enum or values.
+    // In backend ChecklistItemType enum: STOCK_COUNT = 'STOCK_COUNT'
+    // Also check for legacy string matches if needed, but type is safer.
+    return template.items?.some((i: any) => i.type === 'STOCK_COUNT');
+  };
+
   const isProductCountComplete = (p: any) => {
+    const required = isStockCountRequired(p);
+    const checked = !!p.checked;
+
+    if (!required) {
+      // If stock count not required, just need to be checked (saved)
+      // Unless validity is required? 
+      // Validity check is usually inside the modal logic too.
+      // If validity is required, the modal won't let you save without it.
+      // So 'checked' implies validity was done if required.
+      return checked;
+    }
+
     const gDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
     const inv = p.inventoryCount;
     const hasRupture = !!p.ruptureReason || !!p.isStockout;
@@ -144,7 +173,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
       if (inv === 0) return hasRupture;
       return inv > 0;
     })();
-    const checked = !!p.checked;
+    
     return gDone && iDone && checked;
   };
 
@@ -455,6 +484,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {products.map(p => {
+            const required = isStockCountRequired(p);
             const gDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
             const inv = p.inventoryCount;
             const hasRupture = !!p.ruptureReason || !!p.isStockout;
@@ -466,9 +496,13 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
             const checked = !!p.checked;
 
             let progress = 0;
-            if (gDone) progress += 40;
-            if (iDone) progress += 40;
-            if (checked) progress += 20;
+            if (!required) {
+               if (checked) progress = 100;
+            } else {
+               if (gDone) progress += 40;
+               if (iDone) progress += 40;
+               if (checked) progress += 20;
+            }
 
             return (
               <div 
@@ -480,9 +514,10 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900">{p.product.name}</h3>
                     <p className="text-xs text-gray-500">{p.product.ean || 'Sem EAN'}</p>
+                    {!required && <span className="text-[10px] bg-gray-100 text-gray-500 px-1 rounded">Estoque Opcional</span>}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {checked ? <span className="text-green-600">Checklist ok</span> : <span className="text-orange-600">Checklist pendente</span>}
+                    {checked ? <span className="text-green-600">Concluído</span> : <span className="text-orange-600">Pendente</span>}
                   </div>
                 </div>
                 <div className="w-full flex items-center gap-2">
@@ -629,6 +664,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
           onSave={handleProductSave}
           mode={countMode}
           readOnly={readOnly}
+          requireStockCount={isStockCountRequired(selectedProduct)}
         />
       )}
 

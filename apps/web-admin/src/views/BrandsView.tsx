@@ -8,6 +8,7 @@ const BrandsView: React.FC = () => {
   const { settings } = useBranding();
   const [brands, setBrands] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
+  const [checklistTemplates, setChecklistTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingBrand, setEditingBrand] = useState<any | null>(null);
@@ -18,12 +19,14 @@ const BrandsView: React.FC = () => {
     clientId: '',
     waitForStockCount: false,
     stockNotificationContact: '',
-    inventoryFrequency: ''
+    inventoryFrequency: '',
+    checklistTemplateId: ''
   });
 
   useEffect(() => {
     fetchBrands();
     fetchClients();
+    fetchChecklistTemplates();
   }, []);
 
   const fetchBrands = async () => {
@@ -43,6 +46,15 @@ const BrandsView: React.FC = () => {
       setClients(response.data);
     } catch (error) {
       console.error("Error fetching clients:", error);
+    }
+  };
+
+  const fetchChecklistTemplates = async () => {
+    try {
+      const response = await api.get('/checklists');
+      setChecklistTemplates(response.data);
+    } catch (error) {
+      console.error("Error fetching checklist templates:", error);
     }
   };
 
@@ -120,7 +132,8 @@ const BrandsView: React.FC = () => {
       clientId: '',
       waitForStockCount: false,
       stockNotificationContact: '',
-      inventoryFrequency: ''
+      inventoryFrequency: '',
+      checklistTemplateId: ''
     });
     setEditingBrand(null);
   };
@@ -136,7 +149,8 @@ const BrandsView: React.FC = () => {
       clientId: brand.clientId || brand.client?.id || '',
       waitForStockCount: brand.waitForStockCount || false,
       stockNotificationContact: brand.stockNotificationContact || '',
-      inventoryFrequency: brand.inventoryFrequency || ''
+      inventoryFrequency: brand.inventoryFrequency || '',
+      checklistTemplateId: brand.checklistTemplateId || (brand.checklistTemplate ? brand.checklistTemplate.id : '')
     });
     setShowModal(true);
   };
@@ -201,6 +215,13 @@ const BrandsView: React.FC = () => {
                       <span className="font-medium text-slate-700">{brand.client.nomeFantasia || brand.client.razaoSocial}</span>
                     ) : (
                       <span className="text-slate-300 italic">Sem cliente</span>
+                    )}
+                    {brand.checklistTemplate && (
+                        <div className="mt-1 flex items-center gap-1">
+                            <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100">
+                                Checklist: {brand.checklistTemplate.name}
+                            </span>
+                        </div>
                     )}
                   </td>
                   <td className="p-6 text-slate-500">
@@ -277,6 +298,21 @@ const BrandsView: React.FC = () => {
                   }))}
                 />
                 <p className="text-[10px] text-slate-400 mt-1 ml-1">A marca deve estar vinculada a um cliente (indústria).</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Template de Checklist Padrão</label>
+                <select
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium"
+                  value={formData.checklistTemplateId}
+                  onChange={e => setFormData({...formData, checklistTemplateId: e.target.value})}
+                >
+                  <option value="">Nenhum (Padrão do Sistema)</option>
+                  {checklistTemplates.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-slate-400 mt-1 ml-1">Checklist que será aplicado aos produtos desta marca caso não tenham um específico.</p>
               </div>
 
               <div className="bg-slate-50 p-4 rounded-xl space-y-4">

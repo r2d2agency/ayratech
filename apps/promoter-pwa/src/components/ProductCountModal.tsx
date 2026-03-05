@@ -9,6 +9,7 @@ interface ProductCountModalProps {
   onSave: (productId: string, data: any) => Promise<void>;
   mode: 'GONDOLA' | 'INVENTORY' | 'BOTH'; // Context of where we are opening it from
   readOnly?: boolean;
+  requireStockCount?: boolean;
 }
 
 export const ProductCountModal: React.FC<ProductCountModalProps> = ({
@@ -17,7 +18,8 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
   product,
   onSave,
   mode,
-  readOnly = false
+  readOnly = false,
+  requireStockCount = true
 }) => {
   const [gondolaCount, setGondolaCount] = useState<number | ''>('');
   const [inventoryCount, setInventoryCount] = useState<number | ''>('');
@@ -76,7 +78,7 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
       }
 
       // Validation
-      if (total === 0 && !ruptureReason && !isStockout) {
+      if (requireStockCount && total === 0 && !ruptureReason && !isStockout) {
         // If total is 0, we require a reason or mark as stockout
         // But maybe the user just wants to save 0 for now?
         // User said: "se Estiver zerado.. o produto. abre uma ruptura e ele tem que descrever o motivo"
@@ -89,8 +91,8 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
       const payload = {
         gondolaCount: gondolaCount === '' ? 0 : gondolaCount,
         inventoryCount: inventoryCount === '' ? 0 : inventoryCount,
-        ruptureReason: total === 0 ? ruptureReason : null, // Clear reason if stock > 0
-        isStockout: total === 0,
+        ruptureReason: (requireStockCount && total === 0) ? ruptureReason : null, // Clear reason if stock > 0
+        isStockout: requireStockCount && total === 0,
         stockCount: total,
         validityDate: validityDate || null,
         validityQuantity: validityQuantity === '' ? null : validityQuantity,
@@ -121,12 +123,22 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
 
         <div className="p-4 space-y-6">
           
-          {/* Total Display */}
-          <div className="bg-blue-50 p-4 rounded-lg flex items-center justify-between">
-            <span className="font-semibold text-blue-800">Total Contado:</span>
-            <span className="text-2xl font-bold text-blue-600">{total}</span>
-          </div>
+          {/* Total Display - Only if stock count required */}
+          {requireStockCount && (
+            <div className="bg-blue-50 p-4 rounded-lg flex items-center justify-between">
+              <span className="font-semibold text-blue-800">Total Contado:</span>
+              <span className="text-2xl font-bold text-blue-600">{total}</span>
+            </div>
+          )}
 
+          {!requireStockCount && (
+             <div className="bg-green-50 p-4 rounded-lg border border-green-100 text-green-800 text-sm flex items-center gap-2">
+                <Info size={16} />
+                <span>Contagem de estoque não obrigatória para este item.</span>
+             </div>
+          )}
+
+          {requireStockCount && (
           <div className="grid grid-cols-2 gap-4">
             {/* Gondola Input */}
             <div className={`space-y-2 ${(mode === 'INVENTORY' && !mode.includes('BOTH')) ? 'opacity-50' : ''}`}>
@@ -162,6 +174,7 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
               />
             </div>
           </div>
+          )}
 
           {/* Validity Fields (if there is a validity-related checklist) */}
           {Array.isArray(product.checklists) &&
@@ -200,7 +213,7 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
           )}
 
           {/* Rupture Reason - Only if Total is 0 */}
-          {total === 0 && (
+          {requireStockCount && total === 0 && (
             <div className="space-y-2 animate-fadeIn">
               <label className="flex items-center text-sm font-medium text-red-600">
                 <AlertTriangle size={16} className="mr-1" />

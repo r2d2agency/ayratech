@@ -35,7 +35,7 @@ export const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
   useEffect(() => {
     const handleScroll = (event: Event) => {
       // Don't close if scrolling inside the dropdown
-      if (dropdownRef.current && dropdownRef.current.contains(event.target as Node)) {
+      if (dropdownRef.current && event.target instanceof Node && dropdownRef.current.contains(event.target)) {
         return;
       }
       if (isOpen) setIsOpen(false);

@@ -724,13 +724,13 @@ const RoutesReportView: React.FC = () => {
       }));
       if (hasNearExpiry) nearExpiryCount++;
 
-      const supName = route.promoter.supervisor?.fullName || 'Sem Supervisor';
+      const supName = route.promoter?.supervisor?.fullName || 'Sem Supervisor';
       if (!supervisors[supName]) supervisors[supName] = { name: supName, executed: 0, total: 0 };
       supervisors[supName].total++;
       if (isExecuted) supervisors[supName].executed++;
 
       // Count for Main Promoter
-      const mainPromName = route.promoter.fullName || 'Sem Nome';
+      const mainPromName = route.promoter?.fullName || 'Sem Nome';
       if (!promoters[mainPromName]) promoters[mainPromName] = { name: mainPromName, executed: 0, total: 0 };
       promoters[mainPromName].total++;
       if (isExecuted) promoters[mainPromName].executed++;

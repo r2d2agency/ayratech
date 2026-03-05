@@ -263,7 +263,7 @@ const PhotoGalleryView: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-2 text-xs text-slate-500">
                     <User size={12} className="text-slate-400" />
-                    <span className="truncate">{visit.route.promoter.fullName}</span>
+                    <span className="truncate">{visit.route.promoter?.fullName || 'N/A'}</span>
                   </div>
                 </div>
               </div>
@@ -314,9 +314,9 @@ const PhotoGalleryView: React.FC = () => {
                   </span>
                   <span className="flex items-center gap-1.5">
                     <User size={14} />
-                    Promotor: <strong className="text-slate-700">{selectedVisit.route.promoter.fullName}</strong>
+                    Promotor: <strong className="text-slate-700">{selectedVisit.route.promoter?.fullName || 'N/A'}</strong>
                   </span>
-                  {selectedVisit.route.promoter.supervisor && (
+                  {selectedVisit.route.promoter?.supervisor && (
                     <span className="flex items-center gap-1.5">
                       <User size={14} />
                       Supervisor: <strong className="text-slate-700">{selectedVisit.route.promoter.supervisor.fullName}</strong>
