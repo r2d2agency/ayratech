@@ -1599,8 +1599,11 @@ const RoutesReportView: React.FC = () => {
                       </h4>
                       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
                         {Object.entries(item.categoryPhotos).flatMap(([catId, photos]) => {
+                           if (!photos) return [];
                            const photoList = Array.isArray(photos) ? photos : [photos];
-                           return photoList.map((photo, idx) => (
+                           return photoList
+                             .filter((p): p is string => typeof p === 'string')
+                             .map((photo, idx) => (
                              <a 
                                key={`${catId}-${idx}`}
                                href={getImageUrl(photo)} 

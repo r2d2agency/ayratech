@@ -319,12 +319,18 @@ const PhotoGalleryView: React.FC = () => {
                       <div className="text-xs text-slate-500 mt-0.5">Visão Geral</div>
                     </div>
                     <span className="text-xs font-bold text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-200">
-                      {Object.values(selectedVisit.item.categoryPhotos).flatMap(p => Array.isArray(p) ? p : [p]).length} foto(s)
+                      {Object.values(selectedVisit.item.categoryPhotos)
+                        .flatMap(p => Array.isArray(p) ? p : [p])
+                        .filter((p): p is string => typeof p === 'string')
+                        .length} foto(s)
                     </span>
                   </div>
                   <div className="p-4">
                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                       {Object.values(selectedVisit.item.categoryPhotos).flatMap(p => Array.isArray(p) ? p : [p]).map((photo, pIdx) => (
+                       {Object.values(selectedVisit.item.categoryPhotos)
+                         .flatMap(p => Array.isArray(p) ? p : [p])
+                         .filter((p): p is string => typeof p === 'string')
+                         .map((photo, pIdx) => (
                          <a 
                            key={`cat-${pIdx}`}
                           href={getImageUrl(photo)}
