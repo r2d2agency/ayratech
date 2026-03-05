@@ -1204,6 +1204,12 @@ export class RoutesService {
     const fileName = `${itemId}_${timestamp}_${Math.random().toString(36).substring(7)}.webp`;
     const filePath = path.join(UPLOAD_ROOT, fileName);
     
+    try {
+      fs.writeFileSync('debug_last_save_path.txt', `Last save path: ${filePath}\nUPLOAD_ROOT: ${UPLOAD_ROOT}\nTimestamp: ${new Date().toISOString()}`);
+    } catch (e) {
+      console.error('Failed to write debug file', e);
+    }
+    
     if (!fs.existsSync(UPLOAD_ROOT)) {
       fs.mkdirSync(UPLOAD_ROOT, { recursive: true });
     }

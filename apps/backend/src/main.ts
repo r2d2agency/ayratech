@@ -11,6 +11,11 @@ async function bootstrap() {
   try {
     // Ensure uploads directory exists
     const uploadsPath = UPLOAD_ROOT;
+    try {
+      fs.writeFileSync('debug_upload_root.txt', `UPLOAD_ROOT: ${uploadsPath}\nCWD: ${process.cwd()}`);
+    } catch (e) {
+      console.error('Failed to write debug file', e);
+    }
     if (!fs.existsSync(uploadsPath)) {
       console.log(`Creating uploads directory at: ${uploadsPath}`);
       fs.mkdirSync(uploadsPath, { recursive: true });
