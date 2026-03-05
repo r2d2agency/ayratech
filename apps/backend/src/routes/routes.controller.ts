@@ -3,6 +3,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { RoutesService } from './routes.service';
 import { CreateRouteDto } from './dto/create-route.dto';
 import { UpdateRouteDto } from './dto/update-route.dto';
+import { UploadPhotoDto } from './dto/upload-photo.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('routes')
@@ -15,8 +16,9 @@ export class RoutesController {
   uploadPhoto(
     @Param('itemId') itemId: string,
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: { type: string, category?: string }
+    @Body() body: UploadPhotoDto
   ) {
+    console.log(`RoutesController.uploadPhoto: itemId=${itemId}, type=${body.type}, category=${body.category}, file=${file?.originalname}`);
     return this.routesService.uploadPhoto(itemId, file, body.type, body.category);
   }
 

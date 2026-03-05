@@ -1598,14 +1598,37 @@ const RoutesReportView: React.FC = () => {
                         Fotos da Gôndola / Categoria
                       </h4>
                       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-                        {Object.entries(item.categoryPhotos).flatMap(([catId, photos]) => {
-                           if (!photos) return [];
-                           const photoList = Array.isArray(photos) ? photos : [photos];
-                           return photoList
-                             .filter((p): p is string => typeof p === 'string')
-                             .map((photo, idx) => (
+                        {Object.entries(item.categoryPhotos).flatMap(([catId, photosData]) => {
+                           if (!photosData) return [];
+                           
+                           // Handle legacy string array or single string
+                           if (Array.isArray(photosData) || typeof photosData === 'string') {
+                               const list = Array.isArray(photosData) ? photosData : [photosData];
+                               return list.filter((p): p is string => typeof p === 'string');
+                           }
+                           
+                           // Handle structured object { before?: string[], after?: string[] }
+                           const structuredPhotos: string[] = [];
+                           if (typeof photosData === 'object') {
+                               const pd = photosData as any;
+                               if (pd.before) {
+                                   const beforeList = Array.isArray(pd.before) ? pd.before : [pd.before];
+                                   structuredPhotos.push(...beforeList.filter((p: any) => typeof p === 'string'));
+                               }
+                               if (pd.after) {
+                                   const afterList = Array.isArray(pd.after) ? pd.after : [pd.after];
+                                   structuredPhotos.push(...afterList.filter((p: any) => typeof p === 'string'));
+                               }
+                               if (pd.storage) {
+                                   const storageList = Array.isArray(pd.storage) ? pd.storage : [pd.storage];
+                                   structuredPhotos.push(...storageList.filter((p: any) => typeof p === 'string'));
+                               }
+                           }
+                           
+                           return structuredPhotos;
+                        }).map((photo, idx) => (
                              <a 
-                               key={`${catId}-${idx}`}
+                               key={`cat-photo-${idx}`}
                                href={getImageUrl(photo)} 
                                target="_blank" 
                                rel="noopener noreferrer"
@@ -1614,8 +1637,7 @@ const RoutesReportView: React.FC = () => {
                                <img src={getImageUrl(photo)} alt="Foto da Categoria" className="w-full h-full object-cover" />
                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                              </a>
-                           ));
-                        })}
+                           ))}
                       </div>
                     </div>
                   )}

@@ -172,9 +172,9 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
       });
 
       const formData = new FormData();
-      formData.append('file', blob, 'photo.jpg');
-      formData.append('type', type);
-      formData.append('category', category);
+            formData.append('type', type);
+            formData.append('category', category);
+            formData.append('file', blob, 'photo.jpg');
 
       try {
         const res = await client.post(`/routes/items/${routeItem.id}/photos`, formData, {

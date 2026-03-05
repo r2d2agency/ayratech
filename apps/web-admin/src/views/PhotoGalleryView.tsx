@@ -103,7 +103,34 @@ const PhotoGalleryView: React.FC = () => {
         
         // Extract Category Photos
         const categoryPhotosRaw = Object.values(item.categoryPhotos || {});
-        const categoryPhotos = categoryPhotosRaw.flatMap(p => Array.isArray(p) ? p : [p]);
+        const categoryPhotos = categoryPhotosRaw.flatMap(photosData => {
+            if (!photosData) return [];
+            
+            // Handle legacy string array or single string
+            if (Array.isArray(photosData) || typeof photosData === 'string') {
+                const list = Array.isArray(photosData) ? photosData : [photosData];
+                return list.filter((p): p is string => typeof p === 'string');
+            }
+            
+            // Handle structured object { before?: string[], after?: string[] }
+            const structuredPhotos: string[] = [];
+            if (typeof photosData === 'object') {
+                const pd = photosData as any;
+                if (pd.before) {
+                    const beforeList = Array.isArray(pd.before) ? pd.before : [pd.before];
+                    structuredPhotos.push(...beforeList.filter((p: any) => typeof p === 'string'));
+                }
+                if (pd.after) {
+                    const afterList = Array.isArray(pd.after) ? pd.after : [pd.after];
+                    structuredPhotos.push(...afterList.filter((p: any) => typeof p === 'string'));
+                }
+                if (pd.storage) {
+                    const storageList = Array.isArray(pd.storage) ? pd.storage : [pd.storage];
+                    structuredPhotos.push(...storageList.filter((p: any) => typeof p === 'string'));
+                }
+            }
+            return structuredPhotos;
+        });
 
         const itemPhotos = [...categoryPhotos, ...productPhotos];
 

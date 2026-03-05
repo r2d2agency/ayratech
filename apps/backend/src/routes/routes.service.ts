@@ -1253,6 +1253,7 @@ export class RoutesService {
   }
 
   async uploadPhoto(itemId: string, file: any, type: string, category?: string) {
+    console.log(`RoutesService.uploadPhoto: itemId=${itemId}, type=${type}, category=${category}`);
     const item = await this.routeItemsRepository.findOne({ 
         where: { id: itemId },
         relations: ['supermarket', 'route', 'route.promoter', 'route.promoters']
@@ -1273,32 +1274,34 @@ export class RoutesService {
     const url = await this.processAndSaveImage(file.buffer, itemId, supermarketName, promoterName);
 
     // If category and type are provided, update the route item categoryPhotos
-    const normalizedType = type.replace('CATEGORY_', '').toLowerCase();
-    if (category && (normalizedType === 'before' || normalizedType === 'after')) {
-        if (!item.categoryPhotos) {
-            item.categoryPhotos = {};
-        }
-        
-        if (!item.categoryPhotos[category]) {
-            item.categoryPhotos[category] = {};
-        }
+          const normalizedType = type.replace('CATEGORY_', '').toLowerCase();
+          if (category && (normalizedType === 'before' || normalizedType === 'after')) {
+              console.log(`RoutesService.uploadPhoto: Updating categoryPhotos for category=${category}, type=${normalizedType}`);
+              if (!item.categoryPhotos) {
+                  item.categoryPhotos = {};
+              }
+              
+              if (!item.categoryPhotos[category]) {
+                  item.categoryPhotos[category] = {};
+              }
 
-        const current = item.categoryPhotos[category][normalizedType as 'before' | 'after'];
-        if (Array.isArray(current)) {
-            item.categoryPhotos[category][normalizedType as 'before' | 'after'] = [...current, url];
-        } else if (current) {
-             // Convert existing string to array
-             item.categoryPhotos[category][normalizedType as 'before' | 'after'] = [current, url];
-        } else {
-             // Initialize as array
-             item.categoryPhotos[category][normalizedType as 'before' | 'after'] = [url];
-        }
-        
-        await this.routeItemsRepository.save(item);
-    }
+              const current = item.categoryPhotos[category][normalizedType as 'before' | 'after'];
+              if (Array.isArray(current)) {
+                  item.categoryPhotos[category][normalizedType as 'before' | 'after'] = [...current, url];
+              } else if (current) {
+                   // Convert existing string to array
+                   item.categoryPhotos[category][normalizedType as 'before' | 'after'] = [current, url];
+              } else {
+                   // Initialize as array
+                   item.categoryPhotos[category][normalizedType as 'before' | 'after'] = [url];
+              }
 
-    return { url };
-  }
+              console.log('RoutesService.uploadPhoto: Saving item with new categoryPhotos:', JSON.stringify(item.categoryPhotos));
+              await this.routeItemsRepository.save(item);
+          }
+
+          return { url, categoryPhotos: item.categoryPhotos };
+        }
 
   async checkProduct(routeItemId: string, productId: string, data: { checked?: boolean, observation?: string, isStockout?: boolean, stockoutType?: string, photos?: string[], checkInTime?: string, checkOutTime?: string, validityDate?: string, validityQuantity?: number, stockCount?: number, gondolaCount?: number, inventoryCount?: number, ruptureReason?: string, checklists?: { id: string, isChecked: boolean, value?: string }[] }, userId?: string) {
     console.log(`RoutesService.checkProduct: Item ${routeItemId}, Product ${productId}`);
