@@ -42,6 +42,7 @@ import {
   Legend, 
   ResponsiveContainer
 } from 'recharts';
+import * as XLSX from 'xlsx';
 
 const ProductImage = ({ src, alt }: { src: string, alt?: string }) => {
   const [error, setError] = useState(false);
@@ -867,29 +868,7 @@ const RoutesReportView: React.FC = () => {
       return;
     }
 
-    const csvContent = [];
-    const headers = [
-      'Data',
-      'Promotor(es)',
-      'Supervisor',
-      'PDV',
-      'Cidade',
-      'Produto',
-      'Marca',
-      'Status',
-      'Quem Realizou',
-      'Check-in',
-      'Check-out',
-      'Ruptura',
-      'Verificado',
-      'Validade',
-      'Qtd. Validade',
-      'Loja',
-      'Estoque',
-      'Total Estoque',
-      'Observação'
-    ];
-    csvContent.push(headers.join(';'));
+    const data: any[] = [];
 
     filteredRoutes.forEach(route => {
       const date = formatRouteDate(route.date);
@@ -918,51 +897,38 @@ const RoutesReportView: React.FC = () => {
           if (selectedProduct && p.product.name !== selectedProduct) return;
           if (selectedClient && p.product.brand?.name !== selectedClient) return;
 
-          const row = [
-            date,
-            promoterStr,
-            supervisor,
-            pdv,
-            city,
-            p.product.name,
-            p.product.brand?.name || '-',
-            item.status,
-            p.completedBy?.fullName || '-',
-            item.checkInTime ? new Date(item.checkInTime).toLocaleTimeString('pt-BR') : '-',
-            item.checkOutTime ? new Date(item.checkOutTime).toLocaleTimeString('pt-BR') : '-',
-            p.isStockout ? 'Sim' : 'Não',
-            p.checked ? 'Sim' : 'Não',
-            p.validityDate ? formatRouteDate(p.validityDate) : '-',
-            p.validityQuantity || '-',
-            p.gondolaCount !== undefined && p.gondolaCount !== null ? p.gondolaCount : '-',
-            p.inventoryCount !== undefined && p.inventoryCount !== null ? p.inventoryCount : '-',
-            p.stockCount !== undefined && p.stockCount !== null ? p.stockCount : '-',
-            p.observation || ''
-          ];
+          const row = {
+            'Data': date,
+            'Promotor(es)': promoterStr,
+            'Supervisor': supervisor,
+            'PDV': pdv,
+            'Cidade': city,
+            'Produto': p.product.name,
+            'Categoria': (p.product as any).category || (p.product as any).categoria || '-',
+            'Marca': p.product.brand?.name || '-',
+            'Status': item.status,
+            'Quem Realizou': p.completedBy?.fullName || '-',
+            'Check-in': item.checkInTime ? new Date(item.checkInTime).toLocaleTimeString('pt-BR') : '-',
+            'Check-out': item.checkOutTime ? new Date(item.checkOutTime).toLocaleTimeString('pt-BR') : '-',
+            'Ruptura': p.isStockout ? 'Sim' : 'Não',
+            'Verificado': p.checked ? 'Sim' : 'Não',
+            'Validade': p.validityDate ? formatRouteDate(p.validityDate) : '-',
+            'Qtd. Validade': p.validityQuantity || '-',
+            'Loja': p.gondolaCount !== undefined && p.gondolaCount !== null ? p.gondolaCount : '-',
+            'Estoque': p.inventoryCount !== undefined && p.inventoryCount !== null ? p.inventoryCount : '-',
+            'Total Estoque': p.stockCount !== undefined && p.stockCount !== null ? p.stockCount : '-',
+            'Observação': p.observation || ''
+          };
           
-          // Escape fields that might contain semicolons or newlines
-          const escapedRow = row.map(field => {
-             const str = String(field);
-             if (str.includes(';') || str.includes('\n')) {
-               return `"${str.replace(/"/g, '""')}"`;
-             }
-             return str;
-          });
-
-          csvContent.push(escapedRow.join(';'));
+          data.push(row);
         });
       });
     });
 
-    const blob = new Blob([csvContent.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `relatorio_rotas_${startDate}_${endDate}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Relatório");
+    XLSX.writeFile(workbook, `relatorio_rotas_${startDate}_${endDate}.xlsx`);
   };
 
   return (
