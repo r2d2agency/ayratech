@@ -109,9 +109,9 @@ const PhotoGalleryView: React.FC = () => {
 
         if (itemPhotos.length > 0) {
           // Check Filters
-          if (galleryFilters.pdv && !item.supermarket.fantasyName.toLowerCase().includes(galleryFilters.pdv.toLowerCase())) return;
-          if (galleryFilters.promoter && !route.promoter.fullName.toLowerCase().includes(galleryFilters.promoter.toLowerCase())) return;
-          if (galleryFilters.supervisor && !route.promoter.supervisor?.fullName.toLowerCase().includes(galleryFilters.supervisor.toLowerCase())) return;
+          if (galleryFilters.pdv && !item.supermarket.fantasyName?.toLowerCase()?.includes(galleryFilters.pdv.toLowerCase())) return;
+          if (galleryFilters.promoter && !route.promoter?.fullName?.toLowerCase()?.includes(galleryFilters.promoter.toLowerCase())) return;
+          if (galleryFilters.supervisor && !route.promoter?.supervisor?.fullName?.toLowerCase()?.includes(galleryFilters.supervisor.toLowerCase())) return;
 
           visits.push({
             route,

@@ -1,7 +1,7 @@
 import { API_URL } from '../api/client';
 
-export const getImageUrl = (url: string) => {
-  if (!url) return '';
+export const getImageUrl = (url: string | undefined | null) => {
+  if (!url || typeof url !== 'string') return '';
   if (url.startsWith('data:')) return url;
 
   // Handle full URLs FIRST to avoid mangling external URLs that happen to contain /uploads/

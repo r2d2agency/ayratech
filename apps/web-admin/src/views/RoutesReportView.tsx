@@ -247,8 +247,8 @@ const RoutesReportView: React.FC = () => {
     const pdvs = new Set<string>();
 
     routes.forEach(r => {
-      if (r.promoter.supervisor?.fullName) supervisors.add(r.promoter.supervisor.fullName);
-      if (r.promoter.fullName) promoters.add(r.promoter.fullName);
+      if (r.promoter?.supervisor?.fullName) supervisors.add(r.promoter.supervisor.fullName);
+      if (r.promoter?.fullName) promoters.add(r.promoter.fullName);
       if (r.promoters && r.promoters.length > 0) {
         r.promoters.forEach(p => {
           if (p.fullName) promoters.add(p.fullName);
@@ -277,9 +277,9 @@ const RoutesReportView: React.FC = () => {
   const filteredRoutes = useMemo(() => {
     return routes.filter(r => {
       // Route-level filters
-      if (selectedSupervisor && r.promoter.supervisor?.fullName !== selectedSupervisor) return false;
+      if (selectedSupervisor && r.promoter?.supervisor?.fullName !== selectedSupervisor) return false;
       if (selectedPromoter) {
-        const mainPromoterMatch = r.promoter.fullName === selectedPromoter;
+        const mainPromoterMatch = r.promoter?.fullName === selectedPromoter;
         const sharedPromoterMatch = r.promoters?.some(p => p.fullName === selectedPromoter);
         if (!mainPromoterMatch && !sharedPromoterMatch) return false;
       }
