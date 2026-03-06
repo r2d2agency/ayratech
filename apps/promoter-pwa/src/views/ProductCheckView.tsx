@@ -7,6 +7,7 @@ import { offlineService } from '../services/offline.service';
 import { processImage, WatermarkData } from '../utils/image-processor';
 import { getImageUrl } from '../utils/image';
 import { useAuth } from '../context/AuthContext';
+import { useBranding } from '../context/BrandingContext';
 
 enum ChecklistItemType {
   SIMPLE = 'SIMPLE',
@@ -69,6 +70,7 @@ const ProductCheckView: React.FC = () => {
   const { routeId, itemId } = useParams<{ routeId: string; itemId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { branding } = useBranding();
   
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<RouteItemProduct[]>([]);
@@ -502,7 +504,8 @@ const ProductCheckView: React.FC = () => {
       const watermarkData: WatermarkData = {
         supermarketName: supermarketName || 'PDV',
         promoterName: user?.name || 'Promotor',
-        timestamp: new Date()
+        timestamp: new Date(),
+        blurThreshold: branding?.blurThreshold
       };
       
       console.log('Processing image with watermark:', watermarkData);

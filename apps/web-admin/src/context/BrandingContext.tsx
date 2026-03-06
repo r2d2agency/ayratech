@@ -12,6 +12,7 @@ export interface BrandingSettings {
   faviconUrl?: string;
   pwaIconUrl?: string;
   siteIconUrl?: string;
+  blurThreshold?: number;
 }
 
 interface BrandingContextType {

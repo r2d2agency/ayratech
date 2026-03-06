@@ -1513,21 +1513,20 @@ const RoutesReportView: React.FC = () => {
                     onClick={() => {
                       setLoading(true);
                       fetchRoutes().then(() => {
-                        // The routes state will be updated by fetchRoutes
-                        // We need to update selectedRoute with the new data
-                        // But since fetchRoutes is async and sets state, we might need a way to get the fresh data.
-                        // Actually, let's just re-fetch everything and rely on the user clicking refresh, 
-                        // but we need to ensure the modal doesn't close or show stale data.
-                        // Better approach: find the route in the NEW routes list.
-                        // But React state updates are batched. 
-                        // Let's implement a specific refresh for the modal.
                         api.get(`/routes/${selectedRoute.id}`).then(res => {
+                             console.log('Route updated:', res.data);
+                             if (res.data.items) {
+                               res.data.items.forEach((i: any) => console.log(`Item ${i.id} categoryPhotos:`, i.categoryPhotos));
+                             }
                              setSelectedRoute(res.data);
                              setLoading(false);
                         }).catch(err => {
-                            console.error(err);
+                            console.error('Error updating route details:', err);
                             setLoading(false);
                         });
+                      }).catch(err => {
+                          console.error('Error fetching routes list:', err);
+                          setLoading(false);
                       });
                     }}
                     className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-blue-500 transition-all flex-shrink-0"

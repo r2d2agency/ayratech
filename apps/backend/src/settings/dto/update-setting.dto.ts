@@ -37,4 +37,7 @@ export class UpdateSettingDto {
   @IsString()
   @IsOptional()
   siteIconUrl?: string;
+
+  @IsOptional()
+  blurThreshold?: number;
 }

@@ -31,4 +31,7 @@ export class Setting {
 
   @Column({ nullable: true })
   siteIconUrl: string;
+
+  @Column({ default: 8 })
+  blurThreshold: number;
 }

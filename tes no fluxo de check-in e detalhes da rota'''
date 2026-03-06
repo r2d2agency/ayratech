@@ -1,0 +1,51 @@
+[33mcommit 18e074891b918b4aa144fb708bb861eee39953ce[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: tnicodemos <tnicodemos@gmail.com>
+Date:   Thu Mar 5 16:17:33 2026 -0300
+
+    feat: correcoes em componentes de selecao e melhorias nos fluxos de tarefas
+
+[1mdiff --git a/apps/web-admin/src/views/PhotoGalleryView.tsx b/apps/web-admin/src/views/PhotoGalleryView.tsx[m
+[1mindex fc4804c..9957559 100644[m
+[1m--- a/apps/web-admin/src/views/PhotoGalleryView.tsx[m
+[1m+++ b/apps/web-admin/src/views/PhotoGalleryView.tsx[m
+[36m@@ -263,7 +263,7 @@[m [mconst PhotoGalleryView: React.FC = () => {[m
+                   </div>[m
+                   <div className="flex items-center gap-2 text-xs text-slate-500">[m
+                     <User size={12} className="text-slate-400" />[m
+[31m-                    <span className="truncate">{visit.route.promoter.fullName}</span>[m
+[32m+[m[32m                    <span className="truncate">{visit.route.promoter?.fullName || 'N/A'}</span>[m
+                   </div>[m
+                 </div>[m
+               </div>[m
+[36m@@ -314,9 +314,9 @@[m [mconst PhotoGalleryView: React.FC = () => {[m
+                   </span>[m
+                   <span className="flex items-center gap-1.5">[m
+                     <User size={14} />[m
+[31m-                    Promotor: <strong className="text-slate-700">{selectedVisit.route.promoter.fullName}</strong>[m
+[32m+[m[32m                    Promotor: <strong className="text-slate-700">{selectedVisit.route.promoter?.fullName || 'N/A'}</strong>[m
+                   </span>[m
+[31m-                  {selectedVisit.route.promoter.supervisor && ([m
+[32m+[m[32m                  {selectedVisit.route.promoter?.supervisor && ([m
+                     <span className="flex items-center gap-1.5">[m
+                       <User size={14} />[m
+                       Supervisor: <strong className="text-slate-700">{selectedVisit.route.promoter.supervisor.fullName}</strong>[m
+[1mdiff --git a/apps/web-admin/src/views/RoutesReportView.tsx b/apps/web-admin/src/views/RoutesReportView.tsx[m
+[1mindex 5fdd744..13055d4 100644[m
+[1m--- a/apps/web-admin/src/views/RoutesReportView.tsx[m
+[1m+++ b/apps/web-admin/src/views/RoutesReportView.tsx[m
+[36m@@ -724,13 +724,13 @@[m [mconst RoutesReportView: React.FC = () => {[m
+       }));[m
+       if (hasNearExpiry) nearExpiryCount++;[m
+ [m
+[31m-      const supName = route.promoter.supervisor?.fullName || 'Sem Supervisor';[m
+[32m+[m[32m      const supName = route.promoter?.supervisor?.fullName || 'Sem Supervisor';[m
+       if (!supervisors[supName]) supervisors[supName] = { name: supName, executed: 0, total: 0 };[m
+       supervisors[supName].total++;[m
+       if (isExecuted) supervisors[supName].executed++;[m
+ [m
+       // Count for Main Promoter[m
+[31m-      const mainPromName = route.promoter.fullName || 'Sem Nome';[m
+[32m+[m[32m      const mainPromName = route.promoter?.fullName || 'Sem Nome';[m
+       if (!promoters[mainPromName]) promoters[mainPromName] = { name: mainPromName, executed: 0, total: 0 };[m
+       promoters[mainPromName].total++;[m
+       if (isExecuted) promoters[mainPromName].executed++;[m

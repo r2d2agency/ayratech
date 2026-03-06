@@ -4,6 +4,7 @@ import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { offlineService } from '../services/offline.service';
 import { processImage } from '../utils/image-processor';
+import { useBranding } from '../context/BrandingContext';
 import { MapPin, ArrowLeft, CheckCircle, Circle, Camera, Navigation, Wifi, WifiOff, RefreshCw, X, ChevronRight, Clock, ListTodo, AlertTriangle } from 'lucide-react';
 import { CategoryTaskFlow } from '../components/CategoryTaskFlow';
 import { format } from 'date-fns';
@@ -43,6 +44,7 @@ function formatDuration(start?: string | Date, end?: string | Date) {
 
 const RouteDetailsView = () => {
   const { user } = useAuth();
+  const { branding } = useBranding();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -92,9 +94,18 @@ const RouteDetailsView = () => {
       const targetId = location.state?.targetItemId;
       const openTasks = location.state?.openTasks;
 
-      // Auto-open tasks modal if requested
+      // Auto-open tasks modal if requested AND user is checked in
       if (openTasks && activeItem) {
-          setShowTasksModal(true);
+          // Verify if user is checked in to this active item
+          const isCheckedIn = activeItem.checkins?.some((c: any) => {
+              const pId = c.promoterId || c.promoter?.id;
+              const uId = user?.employee?.id || user?.id;
+              return pId === uId && !c.checkOutTime;
+          });
+
+          if (isCheckedIn) {
+             setShowTasksModal(true);
+          }
       }
 
       if (targetId) {
@@ -165,7 +176,8 @@ const RouteDetailsView = () => {
         const result = await processImage(file, {
             supermarketName: activeItem.supermarket?.fantasyName || activeItem.supermarket?.name || 'PDV',
             promoterName: promoterName,
-            timestamp: new Date()
+            timestamp: new Date(),
+            blurThreshold: branding?.blurThreshold
         });
         
         setCurrentPhoto({ blob: result.blob, url: result.previewUrl });
@@ -443,7 +455,8 @@ const RouteDetailsView = () => {
         const result = await processImage(file, {
             supermarketName,
             promoterName,
-            timestamp: new Date()
+            timestamp: new Date(),
+            blurThreshold: branding?.blurThreshold
         });
         
         const reader = new FileReader();

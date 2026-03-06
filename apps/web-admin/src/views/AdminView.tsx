@@ -152,6 +152,7 @@ const AdminView: React.FC = () => {
         if (brandingForm.loginLogoUrl) formData.append('loginLogoUrl', brandingForm.loginLogoUrl);
         if (brandingForm.systemLogoUrl) formData.append('systemLogoUrl', brandingForm.systemLogoUrl);
         if (brandingForm.splashScreenUrl) formData.append('splashScreenUrl', brandingForm.splashScreenUrl);
+        formData.append('blurThreshold', String(brandingForm.blurThreshold || 8));
 
         if (logoFile) formData.append('logo', logoFile);
         if (loginLogoFile) formData.append('loginLogo', loginLogoFile);
@@ -621,6 +622,33 @@ const AdminView: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div className="pt-6 border-t border-slate-100">
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-2 block tracking-widest">
+                  Sensibilidade de Foto Borrada (Blur Threshold)
+                </label>
+                <div className="flex items-center gap-4">
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="20" 
+                    step="0.5"
+                    value={brandingForm.blurThreshold || 8}
+                    onChange={e => setBrandingForm({...brandingForm, blurThreshold: Number(e.target.value)})}
+                    className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[var(--primary-color)]"
+                  />
+                  <div className="flex flex-col items-center min-w-[3rem]">
+                    <span className="font-bold text-slate-700 text-lg">{brandingForm.blurThreshold || 8}</span>
+                    <span className="text-[10px] text-slate-400 font-medium uppercase">Valor</span>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-400 mt-2">
+                  Ajuste o nível de exigência para fotos borradas. <br/>
+                  <span className="font-bold text-slate-500">Menor (0-5):</span> Aceita mais fotos (menos rigoroso). <br/>
+                  <span className="font-bold text-slate-500">Maior (10+):</span> Exige fotos muito nítidas (mais rigoroso). <br/>
+                  <span className="font-bold text-[var(--primary-color)]">Recomendado: 8</span>
+                </p>
             </div>
 
             <div className="pt-6 border-t border-slate-100 flex justify-end">

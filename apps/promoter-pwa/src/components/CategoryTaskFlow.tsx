@@ -6,6 +6,7 @@ import { offlineService } from '../services/offline.service';
 import client from '../api/client';
 import { processImage } from '../utils/image-processor';
 import { useAuth } from '../context/AuthContext';
+import { useBranding } from '../context/BrandingContext';
 import { getImageUrl } from '../utils/image';
 
 type CategoryFlowMode = 'FULL' | 'ITEMS' | 'PHOTOS';
@@ -64,6 +65,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
+  const { branding } = useBranding();
   const [validationError, setValidationError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const initializedRef = useRef<string | null>(null);
@@ -197,7 +199,8 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
       const { blob, previewUrl } = await processImage(file, {
         supermarketName,
         promoterName,
-        timestamp: new Date()
+        timestamp: new Date(),
+        blurThreshold: branding?.blurThreshold
       });
 
       const formData = new FormData();

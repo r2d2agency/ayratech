@@ -9,6 +9,7 @@ export interface WatermarkData {
   supermarketName: string;
   promoterName: string;
   timestamp: Date;
+  blurThreshold?: number;
 }
 
 // Helper to load image to an HTMLImageElement
@@ -41,7 +42,7 @@ export const processImage = async (
   const img = await loadImage(src);
 
   // 2. Validate Image Quality
-  const validation = validateImageQuality(img);
+  const validation = validateImageQuality(img, data.blurThreshold);
   if (!validation.isValid) {
     URL.revokeObjectURL(src);
     throw new Error(validation.reason);
@@ -133,7 +134,7 @@ export const processImage = async (
   });
 };
 
-const validateImageQuality = (img: HTMLImageElement): ImageValidationResult => {
+const validateImageQuality = (img: HTMLImageElement, blurThreshold: number = 8): ImageValidationResult => {
   const canvas = document.createElement('canvas');
   // Resize for faster analysis, but keep enough detail for blur detection
   // Increased from 100 to 300 to better detect blur
@@ -220,9 +221,9 @@ const validateImageQuality = (img: HTMLImageElement): ImageValidationResult => {
   // Threshold for blur
   // With higher resolution (300px), we expect higher edge scores for sharp images.
   // Blurry images will have low edge scores.
-  // Adjusted threshold to 8 based on request to be stricter with image quality.
+  // Adjusted threshold based on settings (default 8)
   // Very sharp images often > 20-30. Blurry often < 5-8.
-  if (!isNaN(avgEdge) && avgEdge < 8) {
+  if (!isNaN(avgEdge) && avgEdge < blurThreshold) {
       return { isValid: false, reason: 'A foto parece borrada ou fora de foco. Por favor, segure o celular com firmeza e foque no produto.' };
   }
 
