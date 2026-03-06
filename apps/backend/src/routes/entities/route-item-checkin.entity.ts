@@ -27,6 +27,12 @@ export class RouteItemCheckin {
   @Column({ type: 'timestamp', nullable: true })
   checkOutTime: Date;
 
+  @Column({ type: 'text', nullable: true })
+  entryPhoto: string;
+
+  @Column({ type: 'text', nullable: true })
+  exitPhoto: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

@@ -196,7 +196,7 @@ export class RoutesController {
   }
 
   @Post('items/:itemId/check-in')
-  checkIn(@Param('itemId') itemId: string, @Body() body: { lat: number; lng: number; timestamp: string }, @Req() req: any) {
+  checkIn(@Param('itemId') itemId: string, @Body() body: { lat: number; lng: number; timestamp: string; entryPhoto?: string }, @Req() req: any) {
     // For check-in, we need the Employee ID (promoterId), not the User ID
     console.log('Check-in Request:', { itemId, user: req.user });
     const promoterId = req.user?.employee?.id;
@@ -212,7 +212,7 @@ export class RoutesController {
   }
 
   @Post('items/:itemId/check-out')
-  checkOut(@Param('itemId') itemId: string, @Body() body: { lat: number; lng: number; timestamp: string }, @Req() req: any) {
+  checkOut(@Param('itemId') itemId: string, @Body() body: { lat: number; lng: number; timestamp: string; exitPhoto?: string }, @Req() req: any) {
     // For check-out, we need the Employee ID (promoterId), not the User ID
     const promoterId = req.user?.employee?.id;
     return this.routesService.checkOut(itemId, body, promoterId);

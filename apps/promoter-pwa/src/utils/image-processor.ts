@@ -58,51 +58,65 @@ export const processImage = async (
   // Draw original image
   ctx.drawImage(img, 0, 0);
 
-  const wmWidth = canvas.width * 0.5;
-  const wmHeight = canvas.height * 0.25;
+  const wmWidth = canvas.width;
+  const wmHeight = canvas.height * 0.15; // 15% height for bottom bar
   const wmX = 0;
-  const wmY = 0;
+  const wmY = canvas.height - wmHeight; // Position at bottom
 
   // Draw Watermark Background (Semi-transparent black)
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
   ctx.fillRect(wmX, wmY, wmWidth, wmHeight);
 
   // Text Configuration
   ctx.fillStyle = '#FFFFFF';
   ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
+  ctx.textBaseline = 'middle';
 
   // Dynamic font size based on image width
-  const fontSize = Math.floor(canvas.width * 0.035); // ~3.5% of width
-  const lineHeight = fontSize * 1.4;
-  const padding = Math.floor(canvas.width * 0.03); // 3% padding
+  // Ensure text fits in the bar
+  const fontSize = Math.floor(wmHeight * 0.25); // 4 lines effectively (3 lines + padding)
+  const lineHeight = wmHeight / 3;
+  const padding = 20;
 
-  let currentY = wmY + padding;
+  let currentY = wmY + (lineHeight / 2);
 
-  // Helper to draw label and value
   const drawField = (label: string, value: string) => {
-    // Label
-    ctx.font = `bold ${fontSize}px Arial`;
-    ctx.fillText(label, wmX + padding, currentY);
-    currentY += lineHeight;
-
-    // Value
-    ctx.font = `${fontSize}px Arial`;
-    // Use maxWidth to scale text if it exceeds the box width (minus padding)
-    ctx.fillText(value, wmX + padding, currentY, wmWidth - (padding * 2));
-    currentY += lineHeight * 1.5; // Extra spacing between fields
+      // Calculate positions
+      // We'll put label on left, value on right? Or just sequential lines?
+      // Given the requirement "informações na parte de baixo", sequential lines is better for clarity
+      // But we have 3 fields: Date/Time, PDV, Promoter.
+      // Let's try 2 columns if width allows, or 3 lines.
+      // With 15% height, 3 lines is tight but doable.
+      
+      // Let's try a single line per item for better readability on mobile
+      // Or maybe:
+      // Line 1: DATA / HORA
+      // Line 2: PDV
+      // Line 3: PROMOTOR
+      
+      // Let's stick to the previous loop logic but adjusted for bottom
+      
+      ctx.font = `bold ${fontSize}px Arial`;
+      const labelWidth = ctx.measureText(label).width;
+      
+      ctx.fillText(label, wmX + padding, currentY);
+      
+      ctx.font = `${fontSize}px Arial`;
+      ctx.fillText(value, wmX + padding + labelWidth + 10, currentY, wmWidth - (padding * 2) - labelWidth - 10);
+      
+      currentY += lineHeight;
   };
 
   // 1. Date/Time
   const dateStr = data.timestamp.toLocaleDateString('pt-BR');
   const timeStr = data.timestamp.toLocaleTimeString('pt-BR');
-  drawField("DATA / HORA:", `${dateStr} ${timeStr}`);
+  drawField("DATA:", `${dateStr} ${timeStr}`);
 
   // 2. PDV (Supermarket)
-  drawField("PDV:", data.supermarketName);
+  drawField("PDV:", data.supermarketName || '-');
 
   // 3. Promoter
-  drawField("PROMOTOR:", data.promoterName);
+  drawField("PROMOTOR:", data.promoterName || '-');
 
   // Convert to Blob
   return new Promise((resolve, reject) => {

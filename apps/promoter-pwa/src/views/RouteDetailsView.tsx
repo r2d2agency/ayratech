@@ -163,7 +163,7 @@ const RouteDetailsView = () => {
         const promoterName = user?.name || 'Promotor';
 
         const result = await processImage(file, {
-            supermarketName: activeItem.supermarket.name,
+            supermarketName: activeItem.supermarket?.fantasyName || activeItem.supermarket?.name || 'PDV',
             promoterName: promoterName,
             timestamp: new Date()
         });
@@ -305,43 +305,21 @@ const RouteDetailsView = () => {
     }
   };
 
-  const handleCheckIn = async (itemId: string) => {
-    // Check if route date is today
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
-    // Use string manipulation to avoid timezone shifts (e.g. UTC midnight becoming previous day)
-    const routeDateStr = String(route.date).split('T')[0];
-    
-    if (todayStr !== routeDateStr) {
-        toast.error('Check-in permitido apenas na data agendada da visita.');
-        return;
-    }
+  // Photo Action State
+  const actionFileInputRef = useRef<HTMLInputElement>(null);
+  const [pendingAction, setPendingAction] = useState<{ type: 'CHECKIN' | 'CHECKOUT', itemId: string, location: { lat: number, lng: number } } | null>(null);
 
-    // REMOVED: activeItem check to allow multiple checkins on same item by different users (handled by backend)
-    // Actually, we still want to prevent checking in if *I* am already checked in somewhere else?
-    // But existing logic "activeItem" is based on route item status.
-    // If I am in a shared route, another item might be active by someone else.
-    // So "activeItem" logic in frontend needs to be smarter.
-    
-    // For now, let's allow it, but maybe warn?
-    // The user requirement: "pra mim precisa aparecer a opcao de fazer checkin"
-    
-    // Find the item to check coordinates
-    const itemToCheck = route.items.find((i: any) => i.id === itemId);
-    if (!itemToCheck) return;
-
-    setProcessing(true);
-    
-    const proceedWithCheckIn = async (lat: number, lng: number) => {
+  const executeCheckIn = async (itemId: string, lat: number, lng: number, entryPhoto?: string) => {
         try {
             await client.post(`/routes/items/${itemId}/check-in`, {
               lat,
               lng,
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
+              entryPhoto
             });
             toast.success('Check-in realizado!');
             fetchRoute();
         } catch (err: any) {
-            // Fix: If it's a 4xx error (Client Error), do NOT queue for offline. Show error and stop.
             if (err.response && err.response.status >= 400 && err.response.status < 500) {
                  console.error('Check-in failed with 4xx:', err.response.data);
                  toast.error(`Erro: ${err.response.data?.message || 'Check-in não permitido'}`);
@@ -354,104 +332,44 @@ const RouteDetailsView = () => {
                 'CHECKIN', 
                 `/routes/items/${itemId}/check-in`, 
                 'POST', 
-                { lat, lng, timestamp: new Date().toISOString() }
+                { lat, lng, timestamp: new Date().toISOString(), entryPhoto }
             );
             
             // Optimistic update
             const updatedItems = route.items.map((i: any) => {
                 if (i.id === itemId) {
-                    // Create a fake checkin record for current user
-                    // Use exact same logic as validation to ensure consistency
                     const promoterId = user?.employee?.id || user?.id;
-                    
                     const newCheckin = {
                         id: 'temp-' + Date.now(),
                         promoterId: promoterId,
                         checkInTime: new Date().toISOString(),
                         checkOutTime: null
                     };
-                    
-                    // Add to existing checkins or create new array
                     const existingCheckins = i.checkins || [];
-                    
-                    return { 
-                        ...i, 
-                        status: 'CHECKIN',
-                        checkins: [...existingCheckins, newCheckin]
-                    };
+                    return { ...i, status: 'CHECKIN', checkins: [...existingCheckins, newCheckin] };
                 }
                 return i;
             });
 
             setRoute({ ...route, items: updatedItems });
-            // Update active item reference with new checkins
             const updatedActiveItem = updatedItems.find((i: any) => i.id === itemId);
             setActiveItem(updatedActiveItem);
-            
             updatePendingCount();
         } finally {
             setProcessing(false);
         }
-    };
-
-    if ('geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const userLat = position.coords.latitude;
-                const userLng = position.coords.longitude;
-
-                // Validate Distance (Max 300 meters)
-                if (itemToCheck.supermarket?.latitude && itemToCheck.supermarket?.longitude) {
-                  const distance = getDistanceFromLatLonInM(
-                    userLat,
-                    userLng,
-                    Number(itemToCheck.supermarket.latitude),
-                    Number(itemToCheck.supermarket.longitude)
-                  );
-
-                  if (distance > 300) {
-                    toast.error(`Você está a ${Math.round(distance)}m do local. Aproxime-se para fazer check-in (Max: 300m).`);
-                    setProcessing(false);
-                    return;
-                  }
-                }
-                
-                proceedWithCheckIn(userLat, userLng);
-            },
-            (error) => {
-               console.warn('Geolocation error:', error);
-               toast.error('Erro de geolocalização: ' + (error.message || 'Tempo esgotado'));
-               setProcessing(false);
-            }, 
-            { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 }
-        );
-    } else {
-        toast.error('Geolocalização não suportada');
-        setProcessing(false);
-    }
   };
 
-  const handleCheckOut = async (itemId: string) => {
-    // REMOVED: Frontend validation for photos/inventory.
-    // We now rely on Backend validation (RoutesService.checkOut) which checks:
-    // 1. Geolocation (500m radius)
-    // 2. Required photos (before/after/categories)
-    // 3. Inventory count (based on client frequency)
-    // 4. Validity checklists
-    // The backend returns 400 BadRequest with specific messages if any requirement is unmet.
-    
-    setProcessing(true);
-    
-    const proceedWithCheckOut = async (lat: number, lng: number) => {
+  const executeCheckOut = async (itemId: string, lat: number, lng: number, exitPhoto?: string) => {
         try {
           await client.post(`/routes/items/${itemId}/check-out`, {
             lat,
             lng,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            exitPhoto
           });
           toast.success('Visita finalizada!');
           
-          // Optimistic update for immediate feedback
           const updatedItems = route.items.map((i: any) => {
             if (i.id === itemId) {
                 const promoterId = user?.employee?.id || user?.id;
@@ -470,13 +388,10 @@ const RouteDetailsView = () => {
           const allDone = updatedItems.every((i: any) => i.status === 'CHECKOUT' || i.status === 'COMPLETED');
           setRoute({ ...route, status: allDone ? 'COMPLETED' : route.status, items: updatedItems });
           setActiveItem(null);
-          
           fetchRoute();
         } catch (err: any) {
-          // Fix: If it's a 4xx error (Client Error), do NOT queue for offline. Show error and stop.
           if (err.response && err.response.status >= 400 && err.response.status < 500) {
                console.error('Checkout failed with 4xx:', err.response.data);
-               // Display the specific error message from backend
                toast.error(`Erro: ${err.response.data?.message || 'Erro ao finalizar visita'}`);
                setProcessing(false);
                return;
@@ -487,10 +402,9 @@ const RouteDetailsView = () => {
             'CHECKOUT',
             `/routes/items/${itemId}/check-out`,
             'POST',
-            { lat, lng, timestamp: new Date().toISOString() }
+            { lat, lng, timestamp: new Date().toISOString(), exitPhoto }
           );
 
-          // Optimistic update
           const updatedItems = route.items.map((i: any) => {
             if (i.id === itemId) {
                 const promoterId = user?.employee?.id || user?.id;
@@ -513,11 +427,171 @@ const RouteDetailsView = () => {
         } finally {
           setProcessing(false);
         }
-    };
+  };
 
+  const handleActionPhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0 || !pendingAction) return;
+    
+    const file = event.target.files[0];
+    setProcessing(true);
+    
+    try {
+        const item = route.items.find((i: any) => i.id === pendingAction.itemId);
+        const promoterName = user?.name || 'Promotor';
+        const supermarketName = item?.supermarket?.fantasyName || item?.supermarket?.name || 'PDV';
+        
+        const result = await processImage(file, {
+            supermarketName,
+            promoterName,
+            timestamp: new Date()
+        });
+        
+        const reader = new FileReader();
+        reader.readAsDataURL(result.blob);
+        reader.onloadend = async () => {
+            const base64data = String(reader.result);
+            
+            if (pendingAction.type === 'CHECKIN') {
+                await executeCheckIn(pendingAction.itemId, pendingAction.location.lat, pendingAction.location.lng, base64data);
+            } else {
+                await executeCheckOut(pendingAction.itemId, pendingAction.location.lat, pendingAction.location.lng, base64data);
+            }
+            
+            setPendingAction(null);
+            if (actionFileInputRef.current) actionFileInputRef.current.value = '';
+        };
+        
+    } catch (error: any) {
+        toast.error('Erro ao processar foto: ' + (error?.message || 'Erro desconhecido'));
+        setProcessing(false);
+    }
+  };
+
+  const handleCheckIn = async (itemId: string) => {
+    // Check if route date is today
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    // Use string manipulation to avoid timezone shifts (e.g. UTC midnight becoming previous day)
+    const routeDateStr = String(route.date).split('T')[0];
+    
+    if (todayStr !== routeDateStr) {
+        toast.error('Check-in permitido apenas na data agendada da visita.');
+        return;
+    }
+
+    // Find the item to check coordinates
+    const itemToCheck = route.items.find((i: any) => i.id === itemId);
+    if (!itemToCheck) return;
+
+    setProcessing(true);
+    
     if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
-            (position) => proceedWithCheckOut(position.coords.latitude, position.coords.longitude),
+            (position) => {
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
+
+                // Validate Distance (Max 300 meters)
+                if (itemToCheck.supermarket?.latitude && itemToCheck.supermarket?.longitude) {
+                  const distance = getDistanceFromLatLonInM(
+                    userLat,
+                    userLng,
+                    Number(itemToCheck.supermarket.latitude),
+                    Number(itemToCheck.supermarket.longitude)
+                  );
+
+                  if (distance > 300) {
+                    toast.error(`Você está a ${Math.round(distance)}m do local. Aproxime-se para fazer check-in (Max: 300m).`);
+                    setProcessing(false);
+                    return;
+                  }
+                }
+                
+                // Request Photo instead of proceeding immediately
+                setPendingAction({ type: 'CHECKIN', itemId, location: { lat: userLat, lng: userLng } });
+                setProcessing(false);
+                setTimeout(() => actionFileInputRef.current?.click(), 100);
+                toast('Por favor, tire uma foto da fachada da loja para iniciar.', { icon: '📸' });
+            },
+            (error) => {
+               console.warn('Geolocation error:', error);
+               toast.error('Erro de geolocalização: ' + (error.message || 'Tempo esgotado'));
+               setProcessing(false);
+            }, 
+            { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 }
+        );
+    } else {
+        toast.error('Geolocalização não suportada');
+        setProcessing(false);
+    }
+  };
+
+  const validateRouteItemCompletion = (item: any) => {
+    if (!item || !item.products) return { valid: false, message: 'Dados inválidos' };
+
+    // Group by Category
+    const categories = Array.from(new Set(item.products.map((p: any) => p.product?.category || 'Geral')));
+
+    for (const cat of categories) {
+        const catProducts = item.products.filter((p: any) => (p.product?.category || 'Geral') === cat);
+        
+        // Check Products
+        const incompleteProducts = catProducts.filter((p: any) => {
+            const gDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
+            const inv = p.inventoryCount;
+            const hasRupture = !!p.ruptureReason || !!p.isStockout;
+            
+            const iDone = (() => {
+                if (inv === null || inv === undefined) return false;
+                if (inv === 0) return hasRupture;
+                return inv > 0;
+            })();
+            
+            const checked = !!p.checked;
+            return !(gDone && iDone && checked);
+        });
+
+        if (incompleteProducts.length > 0) {
+            return { valid: false, message: `Existem ${incompleteProducts.length} itens pendentes na categoria ${cat}.` };
+        }
+
+        // Check Category Photos
+        const catPhotos = item.categoryPhotos?.[cat] || {};
+        const hasBefore = Array.isArray(catPhotos.before) ? catPhotos.before.length > 0 : !!catPhotos.before;
+        const hasAfter = Array.isArray(catPhotos.after) ? catPhotos.after.length > 0 : !!catPhotos.after;
+
+        if (!hasBefore) {
+            return { valid: false, message: `Foto de 'Antes' pendente na categoria ${cat}.` };
+        }
+        if (!hasAfter) {
+            return { valid: false, message: `Foto de 'Depois' pendente na categoria ${cat}.` };
+        }
+    }
+    
+    return { valid: true };
+  };
+
+  const handleCheckOut = async (itemId: string) => {
+    // Validate Checklist Completion
+    const item = route.items.find((i: any) => i.id === itemId);
+    const validation = validateRouteItemCompletion(item);
+    if (!validation.valid) {
+        toast.error(validation.message || 'Complete todas as tarefas antes de finalizar.');
+        return;
+    }
+
+    setProcessing(true);
+    if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
+                
+                // Request Photo instead of proceeding immediately
+                setPendingAction({ type: 'CHECKOUT', itemId, location: { lat: userLat, lng: userLng } });
+                setProcessing(false);
+                setTimeout(() => actionFileInputRef.current?.click(), 100);
+                toast('Por favor, tire uma foto final da loja para encerrar.', { icon: '📸' });
+            },
             (error) => {
                 console.error('Geolocation error on checkout', error);
                 toast.error('Erro de geolocalização: ' + (error.message || 'Não foi possível obter sua localização.'));
@@ -1042,6 +1116,15 @@ const RouteDetailsView = () => {
         capture="environment"
         className="hidden"
         onChange={handlePhotoCapture}
+      />
+
+      <input 
+        type="file" 
+        ref={actionFileInputRef}
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleActionPhoto}
       />
 
       {validationError && (

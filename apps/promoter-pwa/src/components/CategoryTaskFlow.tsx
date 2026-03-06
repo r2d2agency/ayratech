@@ -191,7 +191,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     const file = e.target.files[0];
 
     try {
-      const supermarketName = routeItem.supermarket?.name || 'PDV';
+      const supermarketName = routeItem.supermarket?.fantasyName || routeItem.supermarket?.name || 'PDV';
       const promoterName = user?.name || 'Promotor';
 
       const { blob, previewUrl } = await processImage(file, {

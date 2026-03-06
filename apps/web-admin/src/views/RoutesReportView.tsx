@@ -844,19 +844,35 @@ const RoutesReportView: React.FC = () => {
 
   const formatRouteDate = (dateString: string) => {
     if (!dateString) return '-';
-    // Use Date object to handle timezone conversion correctly
-    // If string ends with Z or contains T, Date() parses it as UTC/ISO
-    // and toLocaleDateString converts to user's local time
+    
+    // Check if it's a simple YYYY-MM-DD string
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        return dateString.split('-').reverse().join('/');
+    }
+
+    // Check if it's an ISO string (YYYY-MM-DDTHH:mm:ss...)
+    if (/^\d{4}-\d{2}-\d{2}T/.test(dateString)) {
+        return dateString.split('T')[0].split('-').reverse().join('/');
+    }
+
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) {
-        // Fallback for non-standard formats if necessary
-        if (dateString.includes('T')) {
-           return dateString.split('T')[0].split('-').reverse().join('/');
-        }
         return dateString;
       }
-      return date.toLocaleDateString('pt-BR');
+      // If we are here, it might be some other format, but usually we want to avoid timezone shifts for dates
+      // that are meant to be absolute (like route dates). 
+      // However, if it's a full timestamp we might want local time.
+      // But for "Route Date", it's usually just YYYY-MM-DD.
+      // Let's stick to UTC or string split if possible.
+      
+      // Fallback to string manipulation if possible to match YYYY-MM-DD pattern inside
+      const match = dateString.match(/(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+          return `${match[3]}/${match[2]}/${match[1]}`;
+      }
+
+      return date.toLocaleDateString('pt-BR', { timeZone: 'UTC' }); // Try forcing UTC if it's a date object
     } catch (e) {
       return dateString;
     }
@@ -922,6 +938,51 @@ const RoutesReportView: React.FC = () => {
           
           data.push(row);
         });
+
+        // Add Category Photos rows
+        if (item.categoryPhotos) {
+          Object.entries(item.categoryPhotos).forEach(([category, photos]) => {
+            const processPhotos = (photoList: string[] | string, type: string) => {
+              const list = Array.isArray(photoList) ? photoList : [photoList];
+              list.forEach(photoUrl => {
+                 if (!photoUrl) return;
+                 const photoRow = {
+                  'Data': date,
+                  'Promotor(es)': promoterStr,
+                  'Supervisor': supervisor,
+                  'PDV': pdv,
+                  'Cidade': city,
+                  'Produto': `FOTO: ${category} - ${type}`,
+                  'Categoria': category,
+                  'Marca': '-',
+                  'Status': item.status,
+                  'Quem Realizou': '-',
+                  'Check-in': item.checkInTime ? new Date(item.checkInTime).toLocaleTimeString('pt-BR') : '-',
+                  'Check-out': item.checkOutTime ? new Date(item.checkOutTime).toLocaleTimeString('pt-BR') : '-',
+                  'Ruptura': '-',
+                  'Verificado': 'Sim',
+                  'Validade': '-',
+                  'Qtd. Validade': '-',
+                  'Loja': '-',
+                  'Estoque': '-',
+                  'Total Estoque': '-',
+                  'Observação': photoUrl
+                };
+                data.push(photoRow);
+              });
+            };
+
+            if (Array.isArray(photos)) {
+              processPhotos(photos, 'Geral');
+            } else if (typeof photos === 'string') {
+               processPhotos(photos, 'Geral');
+            } else if (typeof photos === 'object' && photos !== null) {
+              if (photos.before) processPhotos(photos.before, 'Antes');
+              if (photos.after) processPhotos(photos.after, 'Depois');
+              if (photos.storage) processPhotos(photos.storage, 'Estoque');
+            }
+          });
+        }
       });
     });
 
@@ -1460,7 +1521,7 @@ const RoutesReportView: React.FC = () => {
                         // Better approach: find the route in the NEW routes list.
                         // But React state updates are batched. 
                         // Let's implement a specific refresh for the modal.
-                        api.get(`/routes/${selectedRoute.id}/report`).then(res => {
+                        api.get(`/routes/${selectedRoute.id}`).then(res => {
                              setSelectedRoute(res.data);
                              setLoading(false);
                         }).catch(err => {

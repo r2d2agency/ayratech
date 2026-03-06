@@ -1329,6 +1329,8 @@ export class RoutesService {
     }
 
     // Create SVG Watermark
+    /* 
+    // DISABLED: PWA already applies watermark. Double watermarking causes issues and overwrites correct data.
     const width = 800; // Target width
     const height = 600; // Target height (approx)
     
@@ -1348,12 +1350,14 @@ export class RoutesService {
     </svg>
     `;
     const svgBuffer = Buffer.from(svgText);
+    */
 
     try {
         // Process Image with Sharp
+        // Just resize/convert, DO NOT apply watermark again
         await sharp(buffer)
             .resize(800, 800, { fit: 'inside', withoutEnlargement: true }) // Resize to max 800x800
-            .composite([{ input: svgBuffer, gravity: 'south' }]) // Apply watermark at bottom
+            // .composite([{ input: svgBuffer, gravity: 'south' }]) // Apply watermark at bottom
             .webp({ quality: 80 }) // Convert to WebP for optimization
             .toFile(filePath);
             
@@ -1811,7 +1815,7 @@ export class RoutesService {
     }
   }
 
-  async checkIn(itemId: string, data: { lat: number; lng: number; timestamp: string }, userId?: string) {
+  async checkIn(itemId: string, data: { lat: number; lng: number; timestamp: string; entryPhoto?: string }, userId?: string) {
     const item = await this.routeItemsRepository.findOne({ 
       where: { id: itemId },
       relations: ['route', 'checkins', 'checkins.promoter']
@@ -1841,7 +1845,8 @@ export class RoutesService {
                     routeItemId: itemId,
                     promoter: { id: userId },
                     promoterId: userId,
-                    checkInTime: new Date(data.timestamp)
+                    checkInTime: new Date(data.timestamp),
+                    entryPhoto: data.entryPhoto
                 });
                 await this.dataSource.getRepository(RouteItemCheckin).save(newCheckin);
             }
@@ -1898,7 +1903,7 @@ export class RoutesService {
     return count > 0;
   }
 
-  async checkOut(itemId: string, data: { lat: number; lng: number; timestamp: string }, userId?: string) {
+  async checkOut(itemId: string, data: { lat: number; lng: number; timestamp: string; exitPhoto?: string }, userId?: string) {
     const item = await this.routeItemsRepository.findOne({ 
       where: { id: itemId },
       relations: [
@@ -1938,6 +1943,7 @@ export class RoutesService {
         
         if (openCheckin) {
             openCheckin.checkOutTime = new Date(data.timestamp);
+            if (data.exitPhoto) openCheckin.exitPhoto = data.exitPhoto;
             await this.dataSource.getRepository(RouteItemCheckin).save(openCheckin);
         } else {
             // Fallback: If no open checkin found (maybe legacy flow or error), create one closed immediately?
@@ -1947,7 +1953,8 @@ export class RoutesService {
                 routeItem: { id: itemId },
                 promoter: { id: userId },
                 checkInTime: new Date(data.timestamp), // Approximated
-                checkOutTime: new Date(data.timestamp)
+                checkOutTime: new Date(data.timestamp),
+                exitPhoto: data.exitPhoto
             });
             await this.dataSource.getRepository(RouteItemCheckin).save(newCheckin);
         }
