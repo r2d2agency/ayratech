@@ -845,15 +845,26 @@ const RouteDetailsView = () => {
                 Ver Lista de Tarefas
               </button>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-col">
+                {!validateRouteItemCompletion(item).valid && (
+                  <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded border border-orange-100 mb-1">
+                    Complete todas as tarefas para finalizar.
+                  </div>
+                )}
                 <button 
                   onClick={() => handleCheckOut(item.id)}
-                  disabled={processing}
-                  className="w-full bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+                  disabled={processing || !validateRouteItemCompletion(item).valid}
+                  className={`flex-1 py-3 text-white rounded-lg font-bold shadow-sm flex items-center justify-center gap-2 transition-all ${
+                    processing || !validateRouteItemCompletion(item).valid
+                      ? 'bg-gray-300 cursor-not-allowed text-gray-500' 
+                      : 'bg-green-600 hover:bg-green-700 animate-pulse'
+                  }`}
                 >
+                  <CheckCircle size={20} />
                   Finalizar Visita
                 </button>
               </div>
+
             </div>
           ) : isCompleted ? (
             <div className="flex flex-col items-start gap-1 text-sm">

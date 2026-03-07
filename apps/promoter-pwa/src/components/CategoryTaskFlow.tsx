@@ -421,7 +421,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
           onChange={(e) => handlePhotoUpload(e, type)}
         />
 
-        <div className="w-full pt-4">
+        <div className="w-full pt-4 space-y-3">
           <button 
             onClick={nextStep}
             className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
@@ -429,6 +429,16 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
             Próximo
             <ChevronRight className="ml-2" />
           </button>
+          
+          {urls.length > 0 && (
+            <button 
+              onClick={onBack}
+              className="w-full py-3 bg-white text-gray-700 border border-gray-300 rounded-xl font-medium shadow-sm hover:bg-gray-50 transition-colors flex items-center justify-center"
+            >
+              <ListTodo className="mr-2" size={20} />
+              Voltar para Lista
+            </button>
+          )}
         </div>
       </div>
     );

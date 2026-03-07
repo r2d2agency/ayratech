@@ -30,9 +30,9 @@ export const processImage = async (
   // 1. Compress first to reduce memory usage and standardise size
   const compressedFile = await new Promise<File | Blob>((resolve, reject) => {
     new Compressor(file, {
-      quality: 0.8,
-      maxWidth: 1920,
-      maxHeight: 1920,
+      quality: 0.7,
+      maxWidth: 1280,
+      maxHeight: 1280,
       success: resolve,
       error: reject,
     });
