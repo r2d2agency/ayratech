@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, ChevronRight, AlertTriangle, ArrowLeft, X } from 'lucide-react';
+import { Camera, ChevronRight, AlertTriangle, ArrowLeft, X, ListChecks, Package, Image as ImageIcon, CheckCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { ProductCountModal } from './ProductCountModal';
 import { offlineService } from '../services/offline.service';
@@ -40,6 +40,7 @@ interface CategoryTaskFlowProps {
 }
 
 const STEPS = {
+  MENU: -1,
   BEFORE_PHOTO: 0,
   GONDOLA_COUNT: 1,
   INVENTORY_COUNT: 2,
@@ -59,7 +60,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   mode = 'FULL',
   readOnly = false
 }) => {
-  const [step, setStep] = useState(STEPS.BEFORE_PHOTO);
+  const [step, setStep] = useState(mode === 'ITEMS' ? STEPS.GONDOLA_COUNT : STEPS.MENU);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [countMode, setCountMode] = useState<'GONDOLA' | 'INVENTORY'>('GONDOLA');
   const [uploading, setUploading] = useState(false);
@@ -72,51 +73,18 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
   useEffect(() => {
     const key = `${category}-${mode}`;
-    // If already initialized for this category/mode, don't auto-update step on data changes (e.g. adding photos)
-    if (initializedRef.current === key) {
-      return;
-    }
+    if (initializedRef.current === key) return;
     initializedRef.current = key;
 
-    const photos = getCategoryPhotos();
-    const catProducts = products || [];
-    const allProductsComplete = catProducts.length > 0 && catProducts.every(isProductCountComplete);
-
-    if (mode === 'PHOTOS') {
-      if (!photos.before) {
-        setStep(STEPS.BEFORE_PHOTO);
-        return;
-      }
-      if (!photos.after) {
-        setStep(STEPS.AFTER_PHOTO);
-        return;
-      }
-      setStep(STEPS.SUMMARY);
-      return;
-    }
-
+    // Se for modo ITEMS, vai direto para contagem
     if (mode === 'ITEMS') {
       setStep(STEPS.GONDOLA_COUNT);
       return;
     }
-
-    if (!photos.before) {
-      setStep(STEPS.BEFORE_PHOTO);
-      return;
-    }
-
-    if (!allProductsComplete) {
-      setStep(STEPS.GONDOLA_COUNT);
-      return;
-    }
-
-    if (!photos.after) {
-      setStep(STEPS.AFTER_PHOTO);
-      return;
-    }
-
-    setStep(STEPS.SUMMARY);
-  }, [category, routeItem.categoryPhotos, products, mode]);
+    
+    // Para FULL e PHOTOS, exibe o menu principal
+    setStep(STEPS.MENU);
+  }, [category, mode]);
 
   const getLabel = (type: 'before' | 'after') => {
     const categoryConfig = photoConfig?.categories?.[category];
@@ -296,14 +264,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   };
 
   const validateStep = () => {
-    if (step === STEPS.BEFORE_PHOTO) {
-      const photos = getCategoryPhotos();
-      const beforeCount = Array.isArray(photos.before) ? photos.before.length : (photos.before ? 1 : 0);
-      if (beforeCount === 0) {
-        toast.error(`Tire a ${getLabel('before')} para continuar.`);
-        return false;
-      }
-    }
+    // Validação só é necessária ao tentar finalizar ou avançar no fluxo de contagem
     return true;
   };
 
@@ -318,52 +279,42 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     }
 
     if (mode === 'PHOTOS') {
-      if (!validateStep()) return;
-      if (step === STEPS.BEFORE_PHOTO) {
-        setStep(STEPS.AFTER_PHOTO);
-      } else if (step === STEPS.AFTER_PHOTO) {
-        setStep(STEPS.SUMMARY);
-      } else if (step === STEPS.SUMMARY) {
-        onBack();
-      }
-      return;
+       // Modo legado apenas fotos
+       if (step === STEPS.BEFORE_PHOTO) setStep(STEPS.AFTER_PHOTO);
+       else if (step === STEPS.AFTER_PHOTO) setStep(STEPS.MENU);
+       else onBack();
+       return;
     }
 
-    if (validateStep()) {
-      setStep(prev => prev + 1);
+    // Fluxo HUB
+    if (step === STEPS.GONDOLA_COUNT) {
+        setStep(STEPS.INVENTORY_COUNT);
+        return;
     }
+    
+    // Qualquer outro passo volta para o menu
+    setStep(STEPS.MENU);
   };
 
   const prevStep = () => {
     if (mode === 'ITEMS') {
-      if (step === STEPS.GONDOLA_COUNT) {
-        onBack();
-      } else if (step === STEPS.INVENTORY_COUNT) {
-        setStep(STEPS.GONDOLA_COUNT);
-      }
+      if (step === STEPS.GONDOLA_COUNT) onBack();
+      else if (step === STEPS.INVENTORY_COUNT) setStep(STEPS.GONDOLA_COUNT);
       return;
     }
 
-    if (mode === 'PHOTOS') {
-      if (step === STEPS.BEFORE_PHOTO) {
+    if (step === STEPS.MENU) {
         onBack();
         return;
-      }
-      if (step === STEPS.AFTER_PHOTO) {
-        setStep(STEPS.BEFORE_PHOTO);
-        return;
-      }
-      if (step === STEPS.SUMMARY) {
-        setStep(STEPS.AFTER_PHOTO);
-        return;
-      }
     }
 
-    if (step === STEPS.BEFORE_PHOTO) {
-      onBack();
-    } else {
-      setStep(prev => prev - 1);
+    if (step === STEPS.INVENTORY_COUNT) {
+        setStep(STEPS.GONDOLA_COUNT);
+        return;
     }
+
+    // Qualquer outro sub-passo volta para o menu
+    setStep(STEPS.MENU);
   };
 
   const renderPhotoStep = (type: 'before' | 'after', title: string, description: string) => {
@@ -372,16 +323,16 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     const urls = Array.isArray(currentUrl) ? currentUrl : (currentUrl ? [currentUrl] : []);
 
     return (
-      <div className="flex flex-col items-center justify-center h-full p-6 space-y-6 pb-10">
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
-          <p className="text-gray-500">{description}</p>
+      <>
+      <div className="flex flex-col items-center h-full p-4 space-y-4 pb-48 overflow-y-auto">
+        <div className="text-center space-y-1">
+          <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+          <p className="text-sm text-gray-500">{description}</p>
         </div>
 
-        <div className="w-full">
-          <div className="grid grid-cols-3 gap-3">
+        <div className="w-full grid grid-cols-2 gap-3">
             {urls.map((u: string, i: number) => (
-              <div key={i} className="relative w-full aspect-square rounded-lg overflow-hidden border border-gray-200">
+              <div key={i} className="relative w-full aspect-square rounded-lg overflow-hidden border border-gray-200 shadow-sm">
                 <img
                   src={getImageUrl(u)}
                   alt={`${title} ${i + 1}`}
@@ -390,25 +341,26 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
                 />
                 <button
                   onClick={() => handlePhotoRemove(type, i)}
-                  className="absolute top-1 right-1 bg-red-500 text-white text-[10px] px-2 py-1 rounded"
+                  className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full shadow-md hover:bg-red-600"
                 >
-                  Remover
+                  <X size={14} />
                 </button>
               </div>
             ))}
+            
             <label
               htmlFor={`category-photo-${type}`}
-              className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg aspect-square text-gray-400 cursor-pointer bg-gray-50 hover:bg-gray-100"
+              className="flex flex-col items-center justify-center border-2 border-dashed border-blue-300 rounded-lg aspect-square text-blue-500 cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors"
             >
-              <Camera size={24} />
-              <span className="mt-1 text-xs font-medium">Tirar foto</span>
-              {uploading && (
-                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                </div>
+              {uploading ? (
+                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              ) : (
+                <>
+                  <Camera size={32} className="mb-2" />
+                  <span className="text-xs font-bold">Adicionar Foto</span>
+                </>
               )}
             </label>
-          </div>
         </div>
 
         <input 
@@ -421,24 +373,108 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
           onChange={(e) => handlePhotoUpload(e, type)}
         />
 
-        <div className="w-full pt-4 space-y-3">
+      </div>
+      <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-lg z-50">
           <button 
-            onClick={nextStep}
-            className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+            onClick={() => setStep(STEPS.MENU)}
+            className="w-full py-3 bg-white text-gray-700 border border-gray-300 rounded-xl font-medium shadow-sm hover:bg-gray-50 transition-colors flex items-center justify-center"
           >
-            Próximo
-            <ChevronRight className="ml-2" />
+            <ListChecks className="mr-2" size={20} />
+            Voltar ao Menu
           </button>
-          
-          {urls.length > 0 && (
+      </div>
+      </>
+    );
+  };
+
+  const renderMenu = () => {
+    const photos = getCategoryPhotos();
+    const beforeCount = Array.isArray(photos.before) ? photos.before.length : (photos.before ? 1 : 0);
+    const afterCount = Array.isArray(photos.after) ? photos.after.length : (photos.after ? 1 : 0);
+    const totalProducts = products.length;
+    const completedProducts = products.filter(isProductCountComplete).length;
+    const canFinish = beforeCount > 0 && afterCount > 0 && completedProducts === totalProducts;
+
+    return (
+      <div className="flex flex-col h-full bg-gray-50 p-4 space-y-4 overflow-y-auto pb-48">
+        <div className="text-center mb-2">
+          <h2 className="text-lg font-bold text-gray-800">{category}</h2>
+          <p className="text-xs text-gray-500">Selecione uma etapa para realizar</p>
+        </div>
+
+        <button
+          onClick={() => setStep(STEPS.BEFORE_PHOTO)}
+          className="w-full bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between active:scale-[0.98] transition-transform"
+        >
+          <div className="flex items-center gap-3">
+            <div className={`p-3 rounded-full ${beforeCount > 0 ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
+              <Camera size={24} />
+            </div>
+            <div className="text-left">
+              <h3 className="font-bold text-gray-900">{getLabel('before')}</h3>
+              <p className="text-xs text-gray-500">{beforeCount} fotos registradas</p>
+            </div>
+          </div>
+          {beforeCount > 0 ? <CheckCircle className="text-green-500" size={24} /> : <ChevronRight className="text-gray-400" />}
+        </button>
+
+        <button
+          onClick={() => setStep(STEPS.GONDOLA_COUNT)}
+          className="w-full bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between active:scale-[0.98] transition-transform"
+        >
+          <div className="flex items-center gap-3">
+            <div className={`p-3 rounded-full ${completedProducts > 0 ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
+              <ListChecks size={24} />
+            </div>
+            <div className="text-left">
+              <h3 className="font-bold text-gray-900">Contagem de Produtos</h3>
+              <div className="w-32 h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
+                <div 
+                  className="h-full bg-blue-500 rounded-full" 
+                  style={{ width: `${(completedProducts / Math.max(1, totalProducts)) * 100}%` }}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">{completedProducts} / {totalProducts} concluídos</p>
+            </div>
+          </div>
+          {completedProducts === totalProducts ? <CheckCircle className="text-green-500" size={24} /> : <ChevronRight className="text-gray-400" />}
+        </button>
+
+        <button
+          onClick={() => setStep(STEPS.AFTER_PHOTO)}
+          className="w-full bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between active:scale-[0.98] transition-transform"
+        >
+          <div className="flex items-center gap-3">
+            <div className={`p-3 rounded-full ${afterCount > 0 ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
+              <ImageIcon size={24} />
+            </div>
+            <div className="text-left">
+              <h3 className="font-bold text-gray-900">{getLabel('after')}</h3>
+              <p className="text-xs text-gray-500">{afterCount} fotos registradas</p>
+            </div>
+          </div>
+          {afterCount > 0 ? <CheckCircle className="text-green-500" size={24} /> : <ChevronRight className="text-gray-400" />}
+        </button>
+
+        <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-lg z-50">
+            {!canFinish && (
+              <div className="mb-3 text-xs text-orange-600 bg-orange-50 p-2 rounded flex items-center gap-2">
+                <AlertTriangle size={14} />
+                <span>Complete fotos e contagens para finalizar.</span>
+              </div>
+            )}
             <button 
-              onClick={onBack}
-              className="w-full py-3 bg-white text-gray-700 border border-gray-300 rounded-xl font-medium shadow-sm hover:bg-gray-50 transition-colors flex items-center justify-center"
+              onClick={onFinish}
+              disabled={!canFinish}
+              className={`w-full py-4 text-white rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all ${
+                !canFinish 
+                  ? 'bg-gray-300 cursor-not-allowed text-gray-500' 
+                  : 'bg-green-600 hover:bg-green-700 animate-pulse'
+              }`}
             >
-              <ListTodo className="mr-2" size={20} />
-              Voltar para Lista
+              <CheckCircle size={20} />
+              Finalizar Categoria
             </button>
-          )}
         </div>
       </div>
     );
@@ -495,7 +531,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-20">
           {products.map(p => {
             const required = isStockCountRequired(p);
             const gDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
@@ -552,108 +588,16 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
             onClick={nextStep}
             className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700"
           >
-            Próxima Etapa
+            {mode === 'GONDOLA' ? 'Ir para Estoque' : 'Concluir Contagem'}
           </button>
         </div>
       </div>
     );
   };
 
-  const renderSummary = () => {
-    const photos = getCategoryPhotos();
-    const beforeOk = Array.isArray(photos.before) ? photos.before.length > 0 : !!photos.before;
-    const afterOk = Array.isArray(photos.after) ? photos.after.length > 0 : !!photos.after;
-    const canFinish = beforeOk && afterOk && areAllProductsComplete();
-    
-    return (
-      <div className="flex flex-col h-full p-4 space-y-4 overflow-y-auto">
-        <div className="text-center space-y-1">
-          <h2 className="text-xl font-bold text-gray-800">Categoria Concluída!</h2>
-          <p className="text-sm text-gray-500">Resumo da execução em <strong>{category}</strong>.</p>
-        </div>
-
-        {/* Photos Preview Grid */}
-        <div className="grid grid-cols-2 gap-3 w-full">
-            {(['before', 'after'] as const).map(type => {
-                const typePhotos = photos[type];
-                const photoUrl = Array.isArray(typePhotos) ? typePhotos[0] : typePhotos;
-                
-                return (
-                    <div key={type} className="flex flex-col gap-1">
-                        <div className="flex justify-between items-center px-1">
-                            <span className="text-xs font-bold text-gray-600">{getLabel(type)}</span>
-                            <button 
-                                onClick={() => setStep(type === 'before' ? STEPS.BEFORE_PHOTO : STEPS.AFTER_PHOTO)}
-                                className="text-[10px] text-blue-600 font-medium"
-                            >
-                                Alterar
-                            </button>
-                        </div>
-                        <div 
-                            className="aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200 relative cursor-pointer"
-                            onClick={() => photoUrl && setPreviewUrl(photoUrl)}
-                        >
-                            {photoUrl ? (
-                                <img 
-                                    src={getImageUrl(photoUrl)} 
-                                    className="w-full h-full object-cover"
-                                    alt={getLabel(type)}
-                                />
-                            ) : (
-                                <div className="flex items-center justify-center h-full text-gray-400 flex-col gap-1">
-                                    <Camera size={20} />
-                                    <span className="text-[10px]">Pendente</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                );
-            })}
-        </div>
-
-        {/* Status Summary */}
-        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-2">
-             <div className="flex justify-between text-sm">
-                 <span className="text-gray-600">Produtos</span>
-                 <span className="font-bold text-gray-900">{products.filter(isProductCountComplete).length} / {products.length}</span>
-             </div>
-             <div className="flex justify-between text-sm">
-                 <span className="text-gray-600">Fotos</span>
-                 <span className={`font-bold ${beforeOk && afterOk ? 'text-green-600' : 'text-orange-500'}`}>
-                    {beforeOk && afterOk ? 'OK' : 'Pendentes'}
-                 </span>
-             </div>
-             <button 
-                onClick={() => setStep(STEPS.GONDOLA_COUNT)}
-                className="w-full mt-2 py-2 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50"
-             >
-                Revisar Contagens
-             </button>
-        </div>
-
-        {!canFinish && (
-          <div className="bg-yellow-50 p-4 rounded-lg text-yellow-800 text-xs w-full flex items-start gap-2">
-            <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-            <span>É necessário tirar as fotos de Antes e Depois e concluir todas as contagens para finalizar.</span>
-          </div>
-        )}
-        
-        <div className="flex-1" />
-
-        <button 
-          onClick={onFinish}
-          disabled={!canFinish}
-          className="w-full py-4 bg-green-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
-        >
-          Finalizar Categoria
-        </button>
-      </div>
-    );
-  };
-
   return (
     <div className="fixed inset-0 bg-gray-50 z-40 flex flex-col animate-slideUp">
-      <div className="bg-white border-b p-4 flex items-center justify-between shadow-sm">
+      <div className="bg-white border-b p-4 flex items-center justify-between shadow-sm z-20">
         <button onClick={prevStep} className="text-gray-600 p-2">
           <ArrowLeft />
         </button>
@@ -662,11 +606,12 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
       </div>
 
       <div className="flex-1 overflow-hidden relative">
+        {step === STEPS.MENU && renderMenu()}
         {step === STEPS.BEFORE_PHOTO && renderPhotoStep('before', getLabel('before'), 'Registre o estado inicial.')}
         {step === STEPS.GONDOLA_COUNT && renderCountStep('GONDOLA', 'Contagem: Loja (Frente)')}
         {step === STEPS.INVENTORY_COUNT && renderCountStep('INVENTORY', 'Contagem: Estoque')}
         {step === STEPS.AFTER_PHOTO && renderPhotoStep('after', getLabel('after'), 'Registre o resultado final.')}
-        {step === STEPS.SUMMARY && renderSummary()}
+        {/* SUMMARY was replaced by MENU */}
       </div>
 
       {selectedProduct && (

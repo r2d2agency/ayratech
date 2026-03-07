@@ -1004,6 +1004,81 @@ const RouteDetailsView = () => {
                     </div>
                     
                     <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-24">
+                        {/* Registro de Visita Card */}
+                        <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
+                            <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                                <MapPin size={18} className="text-blue-600" />
+                                Registro de Visita
+                            </h4>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                    <span className="text-xs font-medium text-gray-500 block">Entrada (Check-in)</span>
+                                    {activeItem.checkins?.find((c: any) => (c.promoterId || c.promoter?.id) === (user?.employee?.id || user?.id))?.entryPhoto ? (
+                                        <div 
+                                            className="aspect-square rounded-lg overflow-hidden border border-gray-200 relative group cursor-pointer"
+                                            onClick={() => {
+                                                const checkin = activeItem.checkins?.find((c: any) => (c.promoterId || c.promoter?.id) === (user?.employee?.id || user?.id));
+                                                if (checkin?.entryPhoto) {
+                                                    setCurrentPhoto({ blob: new Blob(), url: getImageUrl(checkin.entryPhoto) });
+                                                    setShowPhotoPreview(true);
+                                                }
+                                            }}
+                                        >
+                                            <img 
+                                                src={getImageUrl(activeItem.checkins?.find((c: any) => (c.promoterId || c.promoter?.id) === (user?.employee?.id || user?.id))?.entryPhoto)} 
+                                                alt="Check-in" 
+                                                className="w-full h-full object-cover"
+                                            />
+                                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all flex items-center justify-center">
+                                                <Camera size={20} className="text-white opacity-0 group-hover:opacity-100 drop-shadow-md" />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="aspect-square rounded-lg bg-gray-50 border border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400">
+                                            <Camera size={24} className="mb-1" />
+                                            <span className="text-[10px]">Sem foto</span>
+                                        </div>
+                                    )}
+                                    <div className="text-xs text-gray-600">
+                                        {activeItem.checkins?.find((c: any) => (c.promoterId || c.promoter?.id) === (user?.employee?.id || user?.id))?.checkInTime ? 
+                                            format(new Date(activeItem.checkins?.find((c: any) => (c.promoterId || c.promoter?.id) === (user?.employee?.id || user?.id))?.checkInTime), 'HH:mm') : '--:--'}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <span className="text-xs font-medium text-gray-500 block">Saída (Check-out)</span>
+                                    {activeItem.checkins?.find((c: any) => (c.promoterId || c.promoter?.id) === (user?.employee?.id || user?.id))?.exitPhoto ? (
+                                         <div 
+                                            className="aspect-square rounded-lg overflow-hidden border border-gray-200 relative group cursor-pointer"
+                                            onClick={() => {
+                                                const checkin = activeItem.checkins?.find((c: any) => (c.promoterId || c.promoter?.id) === (user?.employee?.id || user?.id));
+                                                if (checkin?.exitPhoto) {
+                                                    setCurrentPhoto({ blob: new Blob(), url: getImageUrl(checkin.exitPhoto) });
+                                                    setShowPhotoPreview(true);
+                                                }
+                                            }}
+                                         >
+                                            <img 
+                                                src={getImageUrl(activeItem.checkins?.find((c: any) => (c.promoterId || c.promoter?.id) === (user?.employee?.id || user?.id))?.exitPhoto)} 
+                                                alt="Check-out" 
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="aspect-square rounded-lg bg-gray-50 border border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400">
+                                            <LogOut size={24} className="mb-1" />
+                                            <span className="text-[10px]">Pendente</span>
+                                        </div>
+                                    )}
+                                     <div className="text-xs text-gray-600">
+                                        {activeItem.checkins?.find((c: any) => (c.promoterId || c.promoter?.id) === (user?.employee?.id || user?.id))?.checkOutTime ? 
+                                            format(new Date(activeItem.checkins?.find((c: any) => (c.promoterId || c.promoter?.id) === (user?.employee?.id || user?.id))?.checkOutTime), 'HH:mm') : '--:--'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         {Array.from(new Set(activeItem.products?.map((p: any) => p.product?.category || 'Geral') as string[])).sort().map((cat) => {
                             const catProducts = activeItem.products.filter((p: any) => (p.product?.category || 'Geral') === cat);
                             const total = catProducts.length;
@@ -1111,13 +1186,22 @@ const RouteDetailsView = () => {
                     </div>
                     
                     <div className="sticky bottom-0 bg-white border-t p-4">
-                        <button
-                          onClick={() => handleCheckOut(activeItem.id)}
-                          className="w-full py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700"
-                          disabled={processing}
-                        >
-                          Finalizar Visita
-                        </button>
+                        {(() => {
+                          const validation = validateRouteItemCompletion(activeItem);
+                          return (
+                            <button
+                              onClick={() => handleCheckOut(activeItem.id)}
+                              className={`w-full py-3 rounded-lg font-bold transition-all ${
+                                validation.valid 
+                                  ? 'bg-green-600 text-white hover:bg-green-700 shadow-lg animate-pulse' 
+                                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              }`}
+                              disabled={processing || !validation.valid}
+                            >
+                              Finalizar Visita
+                            </button>
+                          );
+                        })()}
                     </div>
                 </div>
             </div>
