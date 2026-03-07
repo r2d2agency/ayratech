@@ -5,37 +5,66 @@ import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { UPLOAD_ROOT } from '../config/upload.config';
 
+interface UploadOptions {
+  subDir?: string;
+  width?: number;
+  height?: number;
+  quality?: number;
+  prefix?: string;
+}
+
 @Injectable()
 export class UploadService {
-  async uploadFile(file: Express.Multer.File) {
+  async uploadFile(file: Express.Multer.File, options: UploadOptions = {}) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
 
-    const uploadDir = UPLOAD_ROOT;
+    const { 
+      subDir = '', 
+      width = 800, 
+      height = null, 
+      quality = 80,
+      prefix = ''
+    } = options;
+
+    const uploadDir = subDir ? path.join(UPLOAD_ROOT, subDir) : UPLOAD_ROOT;
+    
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
     // Generate unique filename
-    const filename = `${uuidv4()}.webp`;
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    const filename = `${prefix ? prefix + '-' : ''}${uniqueSuffix}.webp`;
     const filepath = path.join(uploadDir, filename);
 
-    // Process image: resize to max 800px width, convert to webp, compress quality 80
-    await sharp(file.buffer)
-      .resize(800, null, { withoutEnlargement: true }) // maintain aspect ratio, max width 800
-      .webp({ quality: 80 })
-      .toFile(filepath);
+    // Process image
+    try {
+      const sharpInstance = sharp(file.buffer);
+      
+      if (width || height) {
+        sharpInstance.resize(width, height, { 
+          fit: 'inside', 
+          withoutEnlargement: true 
+        });
+      }
 
-    // Return the URL (assuming standard setup)
-    // Note: The frontend needs to prepend the API base URL or host if this returns relative path
-    // Based on ServeStaticModule in AppModule, it serves from /uploads
+      await sharpInstance
+        .webp({ quality })
+        .toFile(filepath);
+    } catch (sharpError) {
+      console.error('Sharp processing error:', sharpError);
+      throw new BadRequestException(`Image processing failed: ${sharpError.message}`);
+    }
+
+    // Return the URL
     const host = process.env.API_URL || 'http://localhost:3000'; 
-    // Ideally we return relative path or full URL. Let's return full URL to be safe, or just path.
-    // Let's return the relative path that matches ServeStaticModule
+    const relativePath = subDir ? `/uploads/${subDir}/${filename}` : `/uploads/${filename}`;
+    
     return { 
-      url: `${host}/uploads/${filename}`,
-      path: `/uploads/${filename}`
+      url: `${host}${relativePath}`,
+      path: relativePath
     };
   }
 }

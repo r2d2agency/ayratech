@@ -9,6 +9,7 @@ import { RouteItemProduct } from './entities/route-item-product.entity';
 import { RouteRule } from './entities/route-rule.entity';
 import { RouteItemProductChecklist } from './entities/route-item-product-checklist.entity';
 import { RouteItemCheckin } from './entities/route-item-checkin.entity';
+import { RouteFactoryService } from './route-factory.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ConfigModule } from '@nestjs/config';
 
@@ -19,7 +20,7 @@ import { ConfigModule } from '@nestjs/config';
     ConfigModule
   ],
   controllers: [RoutesController, PublicRoutesController],
-  providers: [RoutesService],
+  providers: [RoutesService, RouteFactoryService],
   exports: [RoutesService],
 })
 export class RoutesModule {}

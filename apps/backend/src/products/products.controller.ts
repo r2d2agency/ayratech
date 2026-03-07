@@ -1,16 +1,16 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFiles, HttpException, HttpStatus } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ProductsService } from './products.service';
+import { UploadService } from '../upload/upload.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as sharp from 'sharp';
-import { UPLOAD_ROOT } from '../config/upload.config';
 
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly uploadService: UploadService
+  ) {}
 
   @Post()
   @UseInterceptors(FileFieldsInterceptor([
@@ -22,64 +22,26 @@ export class ProductsController {
     @UploadedFiles() files: { image?: Express.Multer.File[], referenceImage?: Express.Multer.File[] }
   ) {
     try {
-      // Parse supermarketGroupIds if it is a string (multipart/form-data)
-      if (typeof createProductDto.supermarketGroupIds === 'string') {
-        try {
-          createProductDto.supermarketGroupIds = JSON.parse(createProductDto.supermarketGroupIds);
-        } catch (e) {
-          // ignore error
-        }
-      }
-
-      // Parse supermarketIds if it is a string (multipart/form-data)
-      if (typeof createProductDto.supermarketIds === 'string') {
-        try {
-          createProductDto.supermarketIds = JSON.parse(createProductDto.supermarketIds);
-        } catch (e) {
-          // ignore error
-        }
-      }
+      this.parseMultipartFields(createProductDto);
 
       if (files?.image?.[0]) {
-        const file = files.image[0];
-        const filename = `product-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
-        const uploadDir = path.join(UPLOAD_ROOT, 'products');
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        
-        try {
-          await sharp(file.buffer)
-            .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
-            .webp({ quality: 80 })
-            .toFile(path.join(uploadDir, filename));
-        } catch (sharpError) {
-          console.error('Sharp processing error:', sharpError);
-          throw new HttpException(`Image processing failed: ${sharpError.message}`, HttpStatus.BAD_REQUEST);
-        }
-          
-        createProductDto.image = `/uploads/products/${filename}`;
+        const result = await this.uploadService.uploadFile(files.image[0], {
+          subDir: 'products',
+          width: 800,
+          quality: 80,
+          prefix: 'product'
+        });
+        createProductDto.image = result.path; // Or result.url if needed
       }
 
       if (files?.referenceImage?.[0]) {
-        const file = files.referenceImage[0];
-        const filename = `ref-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
-        const uploadDir = path.join(UPLOAD_ROOT, 'products/references');
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        
-        try {
-          await sharp(file.buffer)
-            .resize(1280, 1280, { fit: 'inside', withoutEnlargement: true })
-            .webp({ quality: 85 })
-            .toFile(path.join(uploadDir, filename));
-        } catch (sharpError) {
-          console.error('Sharp processing error:', sharpError);
-          throw new HttpException(`Reference Image processing failed: ${sharpError.message}`, HttpStatus.BAD_REQUEST);
-        }
-          
-        createProductDto.referenceImageUrl = `/uploads/products/references/${filename}`;
+        const result = await this.uploadService.uploadFile(files.referenceImage[0], {
+          subDir: 'products/references',
+          width: 1280,
+          quality: 85,
+          prefix: 'ref'
+        });
+        createProductDto.referenceImageUrl = result.path;
       }
 
       return await this.productsService.create(createProductDto);
@@ -93,28 +55,6 @@ export class ProductsController {
   @Get()
   findAll() {
     return this.productsService.findAll();
-  }
-
-  @Get('debug/files')
-  debugFiles() {
-    const uploadDir = path.join(UPLOAD_ROOT, 'products');
-    try {
-      if (!fs.existsSync(uploadDir)) {
-        return { message: 'Directory does not exist', path: uploadDir, cwd: process.cwd() };
-      }
-      const files = fs.readdirSync(uploadDir);
-      return { 
-        path: uploadDir,
-        cwd: process.cwd(),
-        count: files.length,
-        files: files.sort((a, b) => {
-            return fs.statSync(path.join(uploadDir, b)).mtime.getTime() - 
-                   fs.statSync(path.join(uploadDir, a)).mtime.getTime();
-        }).slice(0, 10) // Newest 10 files
-      };
-    } catch (e) {
-      return { error: e.message, path: uploadDir };
-    }
   }
 
   @Get(':id')
@@ -133,64 +73,26 @@ export class ProductsController {
     @UploadedFiles() files: { image?: Express.Multer.File[], referenceImage?: Express.Multer.File[] }
   ) {
     try {
-      // Parse supermarketGroupIds if it is a string (multipart/form-data)
-      if (typeof updateProductDto.supermarketGroupIds === 'string') {
-        try {
-          updateProductDto.supermarketGroupIds = JSON.parse(updateProductDto.supermarketGroupIds);
-        } catch (e) {
-          // ignore error
-        }
-      }
-
-      // Parse supermarketIds if it is a string (multipart/form-data)
-      if (typeof updateProductDto.supermarketIds === 'string') {
-        try {
-          updateProductDto.supermarketIds = JSON.parse(updateProductDto.supermarketIds);
-        } catch (e) {
-          // ignore error
-        }
-      }
+      this.parseMultipartFields(updateProductDto);
 
       if (files?.image?.[0]) {
-        const file = files.image[0];
-        const filename = `product-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
-        const uploadDir = path.join(UPLOAD_ROOT, 'products');
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        
-        try {
-          await sharp(file.buffer)
-            .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
-            .webp({ quality: 80 })
-            .toFile(path.join(uploadDir, filename));
-        } catch (sharpError) {
-          console.error('Sharp processing error:', sharpError);
-          throw new HttpException(`Image processing failed: ${sharpError.message}`, HttpStatus.BAD_REQUEST);
-        }
-          
-        updateProductDto.image = `/uploads/products/${filename}`;
+        const result = await this.uploadService.uploadFile(files.image[0], {
+          subDir: 'products',
+          width: 800,
+          quality: 80,
+          prefix: 'product'
+        });
+        updateProductDto.image = result.path;
       }
 
       if (files?.referenceImage?.[0]) {
-        const file = files.referenceImage[0];
-        const filename = `ref-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
-        const uploadDir = path.join(UPLOAD_ROOT, 'products/references');
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        
-        try {
-          await sharp(file.buffer)
-            .resize(1280, 1280, { fit: 'inside', withoutEnlargement: true })
-            .webp({ quality: 85 })
-            .toFile(path.join(uploadDir, filename));
-        } catch (sharpError) {
-          console.error('Sharp processing error:', sharpError);
-          throw new HttpException(`Reference Image processing failed: ${sharpError.message}`, HttpStatus.BAD_REQUEST);
-        }
-          
-        updateProductDto.referenceImageUrl = `/uploads/products/references/${filename}`;
+        const result = await this.uploadService.uploadFile(files.referenceImage[0], {
+          subDir: 'products/references',
+          width: 1280,
+          quality: 85,
+          prefix: 'ref'
+        });
+        updateProductDto.referenceImageUrl = result.path;
       }
 
       return await this.productsService.update(id, updateProductDto);
@@ -204,5 +106,25 @@ export class ProductsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.productsService.remove(id);
+  }
+
+  private parseMultipartFields(dto: any) {
+    // Parse supermarketGroupIds if it is a string (multipart/form-data)
+    if (typeof dto.supermarketGroupIds === 'string') {
+      try {
+        dto.supermarketGroupIds = JSON.parse(dto.supermarketGroupIds);
+      } catch (e) {
+        // ignore error
+      }
+    }
+
+    // Parse supermarketIds if it is a string (multipart/form-data)
+    if (typeof dto.supermarketIds === 'string') {
+      try {
+        dto.supermarketIds = JSON.parse(dto.supermarketIds);
+      } catch (e) {
+        // ignore error
+      }
+    }
   }
 }

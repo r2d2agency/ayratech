@@ -15,7 +15,6 @@ import { RouteItemProduct } from './entities/route-item-product.entity';
 import { RouteItemProductChecklist } from './entities/route-item-product-checklist.entity';
 import { RouteRule } from './entities/route-rule.entity';
 import { ChecklistTemplate } from '../checklists/entities/checklist-template.entity';
-import { ChecklistItemType } from '../checklists/entities/checklist-template-item.entity';
 import { Client } from '../entities/client.entity';
 import { Product } from '../entities/product.entity';
 import { Supermarket } from '../entities/supermarket.entity';
@@ -25,6 +24,7 @@ import { UpdateRouteDto } from './dto/update-route.dto';
 import { WhatsappService } from '../notifications/whatsapp.service';
 
 import { NotificationsService } from '../notifications/notifications.service';
+import { RouteFactoryService } from './route-factory.service';
 
 @Injectable()
 export class RoutesService {
@@ -41,6 +41,7 @@ export class RoutesService {
     private whatsappService: WhatsappService,
     private notificationsService: NotificationsService,
     private configService: ConfigService,
+    private routeFactoryService: RouteFactoryService,
   ) {}
 
   async findRecentPhotos(minutes: number = 30, clientId?: string) {
@@ -274,19 +275,9 @@ export class RoutesService {
                const product = productsMap.get(prodData.productId);
                
                // FILTERING LOGIC: Check Assortment (SupermarketGroup)
-               // If product has restricted groups, supermarket MUST belong to one of them.
-               if (product && product.supermarketGroups && product.supermarketGroups.length > 0) {
-                   if (!currentSupermarket || !currentSupermarket.group) {
-                       // Supermarket has no group, but product is restricted -> SKIP
-                       continue;
-                   }
-                   const isAllowed = product.supermarketGroups.some(g => g.id === currentSupermarket.group.id);
-                   if (!isAllowed) {
-                       // Product is restricted to groups A, B, but Supermarket is in group C (or A != C) -> SKIP
-                       continue;
-                   }
+               if (!this.routeFactoryService.shouldAddProductToSupermarket(product, currentSupermarket)) {
+                   continue;
                }
-               // If product.supermarketGroups is empty, it's available to all (Global).
 
                const rip = this.routeItemProductsRepository.create({
                    routeItem: { id: savedItem.id },
@@ -297,52 +288,15 @@ export class RoutesService {
                });
                const savedRip = await queryRunner.manager.save(RouteItemProduct, rip);
                
-               let checklistTemplate: ChecklistTemplate | null = null;
-               if (prodData.checklistTemplateId) {
-                   checklistTemplate = checklistTemplatesMap.get(prodData.checklistTemplateId) || null;
-               } else {
-                   const product = productsMap.get(prodData.productId);
-                   if (product) {
-                     if (product.checklistTemplate) {
-                       checklistTemplate = product.checklistTemplate as any;
-                     } else {
-                       const client: any = (product as any).client || (product as any).brand?.client;
-                       const routeType = savedRoute.type || 'VISIT';
-                       const clientTemplateId =
-                         routeType === 'INVENTORY'
-                           ? client?.defaultInventoryChecklistTemplateId || client?.defaultVisitChecklistTemplateId
-                           : client?.defaultVisitChecklistTemplateId || client?.defaultInventoryChecklistTemplateId;
-                       if (clientTemplateId) {
-                         checklistTemplate = checklistTemplatesMap.get(clientTemplateId) || null;
-                       }
-                     }
-                   }
-               }
+               const checklistTemplate = this.routeFactoryService.resolveChecklistTemplate(
+                   product,
+                   prodData.checklistTemplateId,
+                   checklistTemplatesMap,
+                   savedRoute.type
+               );
                
-               if (checklistTemplate?.items?.length) {
-                   const checklists = [];
-                   for (const tplItem of checklistTemplate.items) {
-                      if (tplItem.type === ChecklistItemType.PRICE_CHECK && tplItem.competitors?.length > 0) {
-                          for (const comp of tplItem.competitors) {
-                              checklists.push(this.dataSource.getRepository(RouteItemProductChecklist).create({
-                                  routeItemProduct: savedRip,
-                                  description: tplItem.description,
-                                  type: tplItem.type,
-                                  isChecked: false,
-                                  competitorName: comp.name
-                              }));
-                          }
-                      } else {
-                          checklists.push(this.dataSource.getRepository(RouteItemProductChecklist).create({
-                              routeItemProduct: savedRip,
-                              description: tplItem.description,
-                              type: tplItem.type,
-                              isChecked: false,
-                              competitorName: tplItem.competitor?.name || null
-                          }));
-                      }
-                   }
-                   await queryRunner.manager.save(RouteItemProductChecklist, checklists);
+               if (checklistTemplate) {
+                   await this.routeFactoryService.createChecklists(queryRunner.manager, savedRip, checklistTemplate);
                }
             }
           }
@@ -1304,7 +1258,27 @@ export class RoutesService {
     if (!item) throw new NotFoundException('Route Item not found');
 
     if (data.categoryPhotos !== undefined) {
-      item.categoryPhotos = data.categoryPhotos;
+      // Smart Merge Logic for Category Photos
+      // This preserves categories that might have been added by other promoters concurrently
+      // but were not present in the current payload.
+      // For categories present in the payload, the payload is considered the source of truth.
+      const currentPhotos = item.categoryPhotos || {};
+      const newPhotos = data.categoryPhotos || {};
+      
+      if (typeof newPhotos === 'object' && newPhotos !== null) {
+          // Start with existing photos
+          const merged = { ...currentPhotos };
+          
+          // Overwrite with new data for specific categories
+          for (const [category, photos] of Object.entries(newPhotos)) {
+              merged[category] = photos;
+          }
+          
+          item.categoryPhotos = merged;
+      } else {
+          // Fallback for non-object data (should not happen usually)
+          item.categoryPhotos = data.categoryPhotos;
+      }
     }
 
     return this.routeItemsRepository.save(item);

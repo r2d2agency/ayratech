@@ -889,14 +889,30 @@ const RouteDetailsView = () => {
                 <span>Use o painel web para ajustes ou lançamentos manuais.</span>
              </div>
           ) : (
-            <button 
-              onClick={() => handleCheckIn(item.id)}
-              disabled={processing}
-              className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              <MapPin size={16} />
-              Fazer Check-in {isItemActiveGlobal ? '(Juntar-se à Equipe)' : ''}
-            </button>
+            <div className="space-y-2">
+                {/* Visual block for checklist if team is active but user hasn't joined */}
+                {isItemActiveGlobal && (
+                    <button
+                        disabled
+                        className="w-full py-3 bg-gray-100 text-gray-400 rounded-lg font-medium shadow-sm flex items-center justify-center gap-2 cursor-not-allowed border border-gray-200 mb-2"
+                    >
+                        <ListTodo size={20} />
+                        Checklist Bloqueado (Necessário Entrar na Equipe)
+                    </button>
+                )}
+                <button 
+                  onClick={() => handleCheckIn(item.id)}
+                  disabled={processing}
+                  className={`w-full py-2 rounded-lg text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2 text-white ${
+                      isItemActiveGlobal 
+                        ? 'bg-orange-600 hover:bg-orange-700 shadow-md' 
+                        : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                >
+                  <MapPin size={16} />
+                  {isItemActiveGlobal ? 'Entrar na Equipe' : 'Fazer Check-in'}
+                </button>
+            </div>
           )}
                  </div>
                </div>

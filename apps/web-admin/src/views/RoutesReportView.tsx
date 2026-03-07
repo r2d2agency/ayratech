@@ -43,6 +43,7 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import * as XLSX from 'xlsx';
+import { toast } from 'react-hot-toast';
 
 const ProductImage = ({ src, alt }: { src: string, alt?: string }) => {
   const [error, setError] = useState(false);
@@ -1512,6 +1513,8 @@ const RoutesReportView: React.FC = () => {
                   <button 
                     onClick={() => {
                       setLoading(true);
+                      const loadingToast = toast.loading('Atualizando dados da rota...');
+                      
                       fetchRoutes().then(() => {
                         api.get(`/routes/${selectedRoute.id}`).then(res => {
                              console.log('Route updated:', res.data);
@@ -1520,13 +1523,16 @@ const RoutesReportView: React.FC = () => {
                              }
                              setSelectedRoute(res.data);
                              setLoading(false);
+                             toast.success('Dados atualizados com sucesso!', { id: loadingToast });
                         }).catch(err => {
                             console.error('Error updating route details:', err);
                             setLoading(false);
+                            toast.error('Erro ao atualizar detalhes da rota.', { id: loadingToast });
                         });
                       }).catch(err => {
                           console.error('Error fetching routes list:', err);
                           setLoading(false);
+                          toast.error('Erro ao atualizar lista de rotas.', { id: loadingToast });
                       });
                     }}
                     className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-blue-500 transition-all flex-shrink-0"

@@ -84,8 +84,9 @@ export class DashboardService {
                 totalProductsCount++;
                 if (p.checked) {
                     checkedProductsCount++;
-                    // Simulate photo count logic
-                    if (Math.random() > 0.3) photosCount++;
+                    if (p.photos && Array.isArray(p.photos)) {
+                        photosCount += p.photos.length;
+                    }
                 }
             });
         });
