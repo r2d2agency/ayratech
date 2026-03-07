@@ -5,7 +5,9 @@ import { useAuth } from '../context/AuthContext';
 import { offlineService } from '../services/offline.service';
 import { processImage } from '../utils/image-processor';
 import { useBranding } from '../context/BrandingContext';
-import { MapPin, ArrowLeft, CheckCircle, Circle, Camera, Navigation, Wifi, WifiOff, RefreshCw, X, ChevronRight, Clock, ListTodo, AlertTriangle } from 'lucide-react';
+// Import helper for image URLs
+import { resolveImageUrl } from '../utils/image';
+import { MapPin, ArrowLeft, CheckCircle, Circle, Camera, Navigation, Wifi, WifiOff, RefreshCw, X, ChevronRight, Clock, ListTodo, AlertTriangle, LogOut } from 'lucide-react';
 import { CategoryTaskFlow } from '../components/CategoryTaskFlow';
 import { format } from 'date-fns';
 import { toast, Toaster } from 'react-hot-toast';
@@ -1020,13 +1022,13 @@ const RouteDetailsView = () => {
                                             onClick={() => {
                                                 const checkin = activeItem.checkins?.find((c: any) => (c.promoterId || c.promoter?.id) === (user?.employee?.id || user?.id));
                                                 if (checkin?.entryPhoto) {
-                                                    setCurrentPhoto({ blob: new Blob(), url: getImageUrl(checkin.entryPhoto) });
+                                                    setCurrentPhoto({ blob: new Blob(), url: resolveImageUrl(checkin.entryPhoto) });
                                                     setShowPhotoPreview(true);
                                                 }
                                             }}
                                         >
                                             <img 
-                                                src={getImageUrl(activeItem.checkins?.find((c: any) => (c.promoterId || c.promoter?.id) === (user?.employee?.id || user?.id))?.entryPhoto)} 
+                                                src={resolveImageUrl(activeItem.checkins?.find((c: any) => (c.promoterId || c.promoter?.id) === (user?.employee?.id || user?.id))?.entryPhoto)} 
                                                 alt="Check-in" 
                                                 className="w-full h-full object-cover"
                                             />
@@ -1054,13 +1056,13 @@ const RouteDetailsView = () => {
                                             onClick={() => {
                                                 const checkin = activeItem.checkins?.find((c: any) => (c.promoterId || c.promoter?.id) === (user?.employee?.id || user?.id));
                                                 if (checkin?.exitPhoto) {
-                                                    setCurrentPhoto({ blob: new Blob(), url: getImageUrl(checkin.exitPhoto) });
+                                                    setCurrentPhoto({ blob: new Blob(), url: resolveImageUrl(checkin.exitPhoto) });
                                                     setShowPhotoPreview(true);
                                                 }
                                             }}
                                          >
                                             <img 
-                                                src={getImageUrl(activeItem.checkins?.find((c: any) => (c.promoterId || c.promoter?.id) === (user?.employee?.id || user?.id))?.exitPhoto)} 
+                                                src={resolveImageUrl(activeItem.checkins?.find((c: any) => (c.promoterId || c.promoter?.id) === (user?.employee?.id || user?.id))?.exitPhoto)} 
                                                 alt="Check-out" 
                                                 className="w-full h-full object-cover"
                                             />

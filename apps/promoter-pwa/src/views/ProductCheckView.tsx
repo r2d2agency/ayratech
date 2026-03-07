@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 import api from '../api/client';
 import { offlineService } from '../services/offline.service';
 import { processImage, WatermarkData } from '../utils/image-processor';
-import { getImageUrl } from '../utils/image';
+import { resolveImageUrl } from '../utils/image';
 import { useAuth } from '../context/AuthContext';
 import { useBranding } from '../context/BrandingContext';
 
@@ -957,7 +957,7 @@ const ProductCheckView: React.FC = () => {
                 {selectedProduct.photos && selectedProduct.photos.map((photo, index) => (
                   <div key={index} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border border-gray-200">
                     <img 
-                      src={getImageUrl(photo)} 
+                      src={resolveImageUrl(photo)} 
                       alt={`Foto ${index + 1}`} 
                       className="w-full h-full object-cover"
                       onClick={() => setPreviewPhoto(photo)}
@@ -1088,7 +1088,7 @@ const ProductCheckView: React.FC = () => {
         <div className="fixed inset-0 z-[65] bg-black bg-opacity-90 flex items-center justify-center p-4">
           <div className="relative w-full max-w-md">
             <img
-              src={getImageUrl(previewPhoto)}
+              src={resolveImageUrl(previewPhoto)}
               alt="Preview"
               className="w-full max-h-[80vh] object-contain rounded-lg bg-black"
             />

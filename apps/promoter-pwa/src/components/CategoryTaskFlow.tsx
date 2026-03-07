@@ -7,7 +7,7 @@ import client from '../api/client';
 import { processImage } from '../utils/image-processor';
 import { useAuth } from '../context/AuthContext';
 import { useBranding } from '../context/BrandingContext';
-import { getImageUrl } from '../utils/image';
+import { resolveImageUrl } from '../utils/image';
 
 type CategoryFlowMode = 'FULL' | 'ITEMS' | 'PHOTOS';
 
@@ -334,7 +334,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
             {urls.map((u: string, i: number) => (
               <div key={i} className="relative w-full aspect-square rounded-lg overflow-hidden border border-gray-200 shadow-sm">
                 <img
-                  src={getImageUrl(u)}
+                  src={resolveImageUrl(u)}
                   alt={`${title} ${i + 1}`}
                   className="w-full h-full object-cover"
                   onClick={() => setPreviewUrl(u)}
@@ -374,7 +374,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
         />
 
       </div>
-      <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-lg z-50">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-lg z-50 pb-8">
           <button 
             onClick={() => setStep(STEPS.MENU)}
             className="w-full py-3 bg-white text-gray-700 border border-gray-300 rounded-xl font-medium shadow-sm hover:bg-gray-50 transition-colors flex items-center justify-center"
@@ -456,29 +456,29 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
           {afterCount > 0 ? <CheckCircle className="text-green-500" size={24} /> : <ChevronRight className="text-gray-400" />}
         </button>
 
-        <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-lg z-50">
-            {!canFinish && (
-              <div className="mb-3 text-xs text-orange-600 bg-orange-50 p-2 rounded flex items-center gap-2">
-                <AlertTriangle size={14} />
-                <span>Complete fotos e contagens para finalizar.</span>
-              </div>
-            )}
-            <button 
-              onClick={onFinish}
-              disabled={!canFinish}
-              className={`w-full py-4 text-white rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all ${
-                !canFinish 
-                  ? 'bg-gray-300 cursor-not-allowed text-gray-500' 
-                  : 'bg-green-600 hover:bg-green-700 animate-pulse'
-              }`}
-            >
-              <CheckCircle size={20} />
-              Finalizar Categoria
-            </button>
-        </div>
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-lg z-50 pb-8">
+          {!canFinish && (
+            <div className="mb-3 text-xs text-orange-600 bg-orange-50 p-2 rounded flex items-center gap-2">
+              <AlertTriangle size={14} />
+              <span>Complete fotos e contagens para finalizar.</span>
+            </div>
+          )}
+          <button 
+            onClick={onFinish}
+            disabled={!canFinish}
+            className={`w-full py-4 text-white rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all ${
+              !canFinish 
+                ? 'bg-gray-300 cursor-not-allowed text-gray-500' 
+                : 'bg-green-600 hover:bg-green-700 animate-pulse'
+            }`}
+          >
+            <CheckCircle size={20} />
+            Finalizar Categoria
+          </button>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
   const renderPreviewModal = () => {
     if (!previewUrl) return null;
@@ -486,7 +486,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
       <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-4">
         <div className="relative w-full max-w-md">
           <img
-            src={getImageUrl(previewUrl)}
+            src={resolveImageUrl(previewUrl)}
             alt="Preview"
             className="w-full max-h-[80vh] object-contain rounded-lg bg-black"
           />
@@ -596,7 +596,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-50 z-40 flex flex-col animate-slideUp">
+    <div className="fixed inset-0 bg-gray-50 z-[100] flex flex-col animate-slideUp">
       <div className="bg-white border-b p-4 flex items-center justify-between shadow-sm z-20">
         <button onClick={prevStep} className="text-gray-600 p-2">
           <ArrowLeft />

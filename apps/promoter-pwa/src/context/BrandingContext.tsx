@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import api from '../api/client';
-import { getImageUrl } from '../utils/image';
+import { resolveImageUrl } from '../utils/image';
 
 export interface BrandingSettings {
   companyName: string;
@@ -64,13 +64,13 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement || document.createElement('link');
         link.type = 'image/x-icon';
         link.rel = 'shortcut icon';
-        link.href = getImageUrl(settings.faviconUrl);
+        link.href = resolveImageUrl(settings.faviconUrl);
         document.getElementsByTagName('head')[0].appendChild(link);
     }
 
     // Update PWA Icon & Manifest
     if (settings.pwaIconUrl) {
-        const pwaIconFullUrl = getImageUrl(settings.pwaIconUrl);
+        const pwaIconFullUrl = resolveImageUrl(settings.pwaIconUrl);
 
         // Update Apple Touch Icon
         const appleLink = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement || document.createElement('link');

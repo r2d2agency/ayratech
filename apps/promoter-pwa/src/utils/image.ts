@@ -1,6 +1,6 @@
 import { API_URL } from '../api/client';
 
-export const getImageUrl = (url: string | undefined | null) => {
+export const resolveImageUrl = (url: string | undefined | null) => {
   if (!url) return '';
   if (url.startsWith('data:')) return url;
   if (url.startsWith('blob:')) return url;

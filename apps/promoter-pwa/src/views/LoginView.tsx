@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useBranding } from '../context/BrandingContext';
-import { getImageUrl } from '../utils/image';
+import { resolveImageUrl } from '../utils/image';
 import { toast, Toaster } from 'react-hot-toast';
 import { saveOfflineSession, verifyOfflineLogin } from '../utils/auth-storage';
 import { APP_VERSION } from '../version';
@@ -84,7 +84,7 @@ const LoginView = () => {
         <div className="text-center">
           {settings.loginLogoUrl || settings.logoUrl ? (
             <img 
-              src={getImageUrl(settings.loginLogoUrl || settings.logoUrl)} 
+              src={resolveImageUrl(settings.loginLogoUrl || settings.logoUrl)} 
               alt={settings.companyName} 
               className="h-20 mx-auto mb-4 object-contain"
             />
