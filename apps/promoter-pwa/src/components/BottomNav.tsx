@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Calendar, FileText, User, Clock } from 'lucide-react';
+import { Home, Calendar, FileText, User, Clock, AlertTriangle } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 
 const BottomNav = () => {
@@ -13,6 +13,7 @@ const BottomNav = () => {
     { icon: Home, label: 'Início', path: '/' },
     { icon: Calendar, label: 'Agenda', path: '/calendar' },
     { icon: Clock, label: 'Ponto', path: '/time-clock' },
+    { icon: AlertTriangle, label: 'Avarias', path: '/breakages' },
     { icon: FileText, label: 'Arquivos', path: '/documents' },
     // { icon: User, label: 'Perfil', path: '/profile' },
   ];

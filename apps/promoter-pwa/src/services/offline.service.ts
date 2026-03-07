@@ -120,6 +120,38 @@ class OfflineService {
              formData.append('file', blob, filename || 'photo.jpg');
              await client.post(action.url, formData);
 
+        } else if (action.type === 'BREAKAGE_REPORT') {
+             const { productId, routeItemId, supermarketId, quantity, photos } = action.payload;
+             const uploadedPhotoUrls: string[] = [];
+
+             if (photos && Array.isArray(photos)) {
+                 for (const photo of photos) {
+                     // 1. Convert base64 to Blob
+                     const res = await fetch(photo.base64);
+                     const blob = await res.blob();
+
+                     // 2. Upload to /upload
+                     const formData = new FormData();
+                     formData.append('file', blob, photo.filename || 'breakage.jpg');
+                     
+                     const uploadRes = await client.post('/upload', formData);
+                     if (uploadRes.data && uploadRes.data.url) {
+                         uploadedPhotoUrls.push(uploadRes.data.url);
+                     }
+                 }
+             }
+
+             // 3. Post JSON to /breakages
+             const breakagePayload = {
+                 productId,
+                 routeItemId,
+                 supermarketId,
+                 quantity: Number(quantity),
+                 photos: uploadedPhotoUrls
+             };
+
+             await client.post(action.url, breakagePayload);
+
         } else if (action.method === 'POST') {
           await client.post(action.url, action.payload);
         } else if (action.method === 'PUT') {

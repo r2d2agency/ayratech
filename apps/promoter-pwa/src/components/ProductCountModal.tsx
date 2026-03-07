@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, AlertTriangle, Package, Layers, Info } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { BreakageReportModal } from './BreakageReportModal';
 
 interface ProductCountModalProps {
   isOpen: boolean;
@@ -10,6 +11,8 @@ interface ProductCountModalProps {
   mode: 'GONDOLA' | 'INVENTORY' | 'BOTH'; // Context of where we are opening it from
   readOnly?: boolean;
   requireStockCount?: boolean;
+  routeItemId?: string;
+  supermarketId?: string;
 }
 
 export const ProductCountModal: React.FC<ProductCountModalProps> = ({
@@ -19,7 +22,9 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
   onSave,
   mode,
   readOnly = false,
-  requireStockCount = true
+  requireStockCount = true,
+  routeItemId,
+  supermarketId
 }) => {
   const [gondolaCount, setGondolaCount] = useState<number | ''>('');
   const [inventoryCount, setInventoryCount] = useState<number | ''>('');
@@ -29,6 +34,7 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
 
   const [validityDate, setValidityDate] = useState('');
   const [validityQuantity, setValidityQuantity] = useState<number | ''>('');
+  const [isBreakageModalOpen, setIsBreakageModalOpen] = useState(false);
 
   const isValidityChecklistItem = (item: any) => {
     const desc = (item?.description || '').toLowerCase();
@@ -122,6 +128,17 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
         </div>
 
         <div className="p-4 space-y-6">
+          {!readOnly && (
+            <div className="flex justify-end">
+              <button
+                onClick={() => setIsBreakageModalOpen(true)}
+                className="text-red-600 border border-red-200 bg-red-50 px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-medium hover:bg-red-100 transition-colors"
+              >
+                <AlertTriangle size={16} />
+                Reportar Avaria
+              </button>
+            </div>
+          )}
           
           {/* Total Display - Only if stock count required */}
           {requireStockCount && (
@@ -261,6 +278,14 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
           )}
         </div>
       </div>
+
+      <BreakageReportModal
+        isOpen={isBreakageModalOpen}
+        onClose={() => setIsBreakageModalOpen(false)}
+        product={product}
+        routeItemId={routeItemId || ''}
+        supermarketId={supermarketId || ''}
+      />
     </div>
   );
 };

@@ -32,3 +32,5 @@ export const getImageUrl = (url: string | undefined | null) => {
   // Handle other relative paths
   return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
 };
+
+export const resolveImageUrl = getImageUrl;

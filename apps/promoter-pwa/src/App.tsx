@@ -9,6 +9,7 @@ import RouteDetailsView from './views/RouteDetailsView';
 import ProductCheckView from './views/ProductCheckView';
 import CalendarView from './views/CalendarView';
 import DocumentsView from './views/DocumentsView';
+import { BreakagesView } from './views/BreakagesView';
 import TimeClockView from './views/TimeClockView';
 import SettingsView from './views/SettingsView';
 import BottomNav from './components/BottomNav';
@@ -59,6 +60,7 @@ const App = () => {
               <Route path="/routes/:routeId/items/:itemId/check" element={<ProductCheckView />} />
               <Route path="/calendar" element={<CalendarView />} />
               <Route path="/documents" element={<DocumentsView />} />
+              <Route path="/breakages" element={<BreakagesView />} />
               <Route path="/time-clock" element={<TimeClockView />} />
               <Route path="/settings" element={<SettingsView />} />
             </Route>

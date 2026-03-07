@@ -623,6 +623,8 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
           mode={countMode}
           readOnly={readOnly}
           requireStockCount={isStockCountRequired(selectedProduct)}
+          routeItemId={routeItem?.id}
+          supermarketId={routeItem?.supermarket?.id || routeItem?.supermarketId}
         />
       )}
 
