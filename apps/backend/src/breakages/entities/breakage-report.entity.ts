@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, Up
 import { Product } from '../../entities/product.entity';
 import { User } from '../../users/entities/user.entity';
 import { RouteItem } from '../../routes/entities/route-item.entity';
-import { Supermarket } from '../../supermarkets/entities/supermarket.entity';
+import { Supermarket } from '../../entities/supermarket.entity';
 
 export enum BreakageStatus {
   PENDING_INVOICE = 'PENDING_INVOICE',

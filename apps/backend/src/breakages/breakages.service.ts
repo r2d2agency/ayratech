@@ -25,10 +25,10 @@ export class BreakagesService {
     if (createBreakageDto.routeItemId && !createBreakageDto.supermarketId) {
       const routeItem = await this.routeItemRepository.findOne({
         where: { id: createBreakageDto.routeItemId },
-        relations: ['route', 'route.supermarket'],
+        relations: ['supermarket'],
       });
-      if (routeItem?.route?.supermarket) {
-        breakage.supermarketId = routeItem.route.supermarket.id;
+      if (routeItem?.supermarket) {
+        breakage.supermarketId = routeItem.supermarket.id;
       }
     }
 
