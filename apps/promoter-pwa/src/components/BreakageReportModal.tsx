@@ -114,7 +114,8 @@ export const BreakageReportModal: React.FC<BreakageReportModalProps> = ({
         const formData = new FormData();
         formData.append('file', photo.blob, 'breakage.jpg');
         const uploadRes = await api.post('/upload', formData);
-        photoUrls.push(uploadRes.data.url);
+        // Use path instead of full URL to avoid hardcoded domains in DB
+        photoUrls.push(uploadRes.data.path || uploadRes.data.url);
       }
 
       // 2. Create Breakage Report
