@@ -112,13 +112,18 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   };
 
   const isStockCountRequired = (p: any) => {
+    // 1. Check instantiated checklists (generated at route creation)
+    // This is the most accurate source of truth for the specific task
+    if (p.checklists && p.checklists.length > 0) {
+      return p.checklists.some((c: any) => c.type === 'STOCK_COUNT');
+    }
+
+    // 2. Fallback: Check template directly (for legacy or newly added products not yet synced?)
     const template = getChecklistTemplate(p);
-    // If no template, default to TRUE (safe default)
+    // If no template, default to TRUE (safe default to ensure data collection)
     if (!template) return true;
+    
     // Check if any item in template is STOCK_COUNT
-    // Assuming 'STOCK_COUNT' is the type. Check backend enum or values.
-    // In backend ChecklistItemType enum: STOCK_COUNT = 'STOCK_COUNT'
-    // Also check for legacy string matches if needed, but type is safer.
     return template.items?.some((i: any) => i.type === 'STOCK_COUNT');
   };
 

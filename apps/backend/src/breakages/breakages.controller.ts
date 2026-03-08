@@ -12,7 +12,7 @@ export class BreakagesController {
   constructor(private readonly breakagesService: BreakagesService) {}
 
   @Post()
-  @Roles('promoter', 'supervisor', 'admin')
+  @Roles('promoter', 'promotor', 'supervisor', 'admin', 'administrador', 'user')
   create(@Request() req, @Body() createBreakageDto: CreateBreakageDto) {
     return this.breakagesService.create(req.user.id, createBreakageDto);
   }
@@ -28,7 +28,7 @@ export class BreakagesController {
   }
 
   @Patch('invoice')
-  @Roles('promoter', 'supervisor', 'admin')
+  @Roles('promoter', 'promotor', 'supervisor', 'admin', 'administrador')
   updateInvoice(@Body() updateDto: { ids: string[], invoiceData: UpdateBreakageDto }) {
     return this.breakagesService.updateInvoice(updateDto.ids, updateDto.invoiceData);
   }
