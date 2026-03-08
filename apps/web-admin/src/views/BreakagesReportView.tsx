@@ -149,10 +149,10 @@ const BreakagesReportView = () => {
                       {report.quantity} un.
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {report.supermarket.name}
+                      {report.supermarket.fantasyName || report.supermarket.name}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {report.promoter.name}
+                      {report.promoter.fullName || report.promoter.name}
                     </td>
                     <td className="px-6 py-4">
                       {report.status === 'COMPLETED' ? (
