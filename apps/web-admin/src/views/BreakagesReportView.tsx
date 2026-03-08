@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, AlertTriangle, FileText, Calendar, CheckCircle, Clock, Camera } from 'lucide-react';
+import { Search, Filter, AlertTriangle, FileText, Calendar, CheckCircle, Clock, X } from 'lucide-react';
 import api from '../api/client';
 import { toast } from 'react-hot-toast';
 import { resolveImageUrl } from '../utils/image';
@@ -39,6 +39,7 @@ const BreakagesReportView = () => {
     promoterId: ''
   });
   const [selectedReport, setSelectedReport] = useState<BreakageReport | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<{ url: string; date: string; pdv: string } | null>(null);
 
   useEffect(() => {
     fetchReports();
@@ -189,8 +190,8 @@ const BreakagesReportView = () => {
 
       {/* Details Modal */}
       {selectedReport && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-xl overflow-hidden flex flex-col animate-in zoom-in duration-200">
+        <div className="fixed inset-0 z-[9999] bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-xl overflow-hidden flex flex-col animate-in zoom-in duration-200 relative">
             <div className="p-6 border-b flex items-center justify-between bg-gray-50">
               <h3 className="font-bold text-xl text-gray-800">Detalhes da Avaria</h3>
               <button onClick={() => setSelectedReport(null)} className="text-gray-500 hover:text-gray-700">
@@ -210,8 +211,8 @@ const BreakagesReportView = () => {
 
                 <div>
                   <h4 className="font-bold text-gray-700 mb-2 border-b pb-1">Local e Responsável</h4>
-                  <p className="text-sm text-gray-600"><span className="font-medium">Supermercado:</span> {selectedReport.supermarket.name}</p>
-                  <p className="text-sm text-gray-600"><span className="font-medium">Promotor:</span> {selectedReport.promoter.name}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Supermercado:</span> {selectedReport.supermarket.fantasyName || selectedReport.supermarket.name}</p>
+                  <p className="text-sm text-gray-600"><span className="font-medium">Promotor:</span> {selectedReport.promoter.fullName || selectedReport.promoter.name}</p>
                   <p className="text-sm text-gray-600"><span className="font-medium">Data:</span> {new Date(selectedReport.createdAt).toLocaleString()}</p>
                 </div>
 
@@ -227,17 +228,34 @@ const BreakagesReportView = () => {
               {/* Photos */}
               <div className="space-y-6">
                 <div>
-                  <h4 className="font-bold text-gray-700 mb-3 border-b pb-1 flex items-center gap-2">
-                    <Camera size={18} />
+                  <h4 className="font-bold text-gray-700 mb-3 border-b pb-1">
                     Fotos da Avaria
                   </h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    {selectedReport.photos.map((photo, idx) => (
-                      <a key={idx} href={resolveImageUrl(photo)} target="_blank" rel="noopener noreferrer" className="block aspect-square rounded-lg overflow-hidden border hover:opacity-90 transition-opacity">
-                        <img src={resolveImageUrl(photo)} alt={`Avaria ${idx + 1}`} className="w-full h-full object-cover" />
-                      </a>
-                    ))}
-                  </div>
+                  {selectedReport.photos && selectedReport.photos.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      {selectedReport.photos.map((photo, idx) => (
+                        <div 
+                          key={idx} 
+                          className="relative group rounded-lg overflow-hidden border bg-gray-100 cursor-pointer hover:shadow-lg transition-all"
+                          onClick={() => setSelectedPhoto({
+                            url: resolveImageUrl(photo),
+                            date: new Date(selectedReport.createdAt).toLocaleString(),
+                            pdv: selectedReport.supermarket.fantasyName || selectedReport.supermarket.name || ''
+                          })}
+                        >
+                          <div className="aspect-square">
+                            <img src={resolveImageUrl(photo)} alt={`Avaria ${idx + 1}`} className="w-full h-full object-cover" />
+                          </div>
+                          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-[10px] p-2">
+                            <div className="font-medium truncate">{selectedReport.supermarket.fantasyName || selectedReport.supermarket.name}</div>
+                            <div className="text-gray-300 truncate">{new Date(selectedReport.createdAt).toLocaleString()}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 italic text-sm">Nenhuma foto registrada.</p>
+                  )}
                 </div>
 
                 {selectedReport.invoicePhoto && (
@@ -246,11 +264,55 @@ const BreakagesReportView = () => {
                       <FileText size={18} />
                       Foto da Nota Fiscal
                     </h4>
-                    <a href={resolveImageUrl(selectedReport.invoicePhoto)} target="_blank" rel="noopener noreferrer" className="block aspect-video rounded-lg overflow-hidden border bg-gray-100 hover:opacity-90 transition-opacity">
+                    <div 
+                      className="cursor-pointer rounded-lg overflow-hidden border bg-gray-100 hover:opacity-90 transition-opacity aspect-video relative"
+                      onClick={() => setSelectedPhoto({
+                        url: resolveImageUrl(selectedReport.invoicePhoto!),
+                        date: selectedReport.invoiceDate ? new Date(selectedReport.invoiceDate).toLocaleDateString() : '-',
+                        pdv: selectedReport.supermarket.fantasyName || selectedReport.supermarket.name || ''
+                      })}
+                    >
                       <img src={resolveImageUrl(selectedReport.invoicePhoto)} alt="Nota Fiscal" className="w-full h-full object-contain" />
-                    </a>
+                    </div>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Photo Lightbox */}
+      {selectedPhoto && (
+        <div 
+          className="fixed inset-0 z-[10000] bg-black bg-opacity-95 flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setSelectedPhoto(null)}
+        >
+          <div className="relative max-w-5xl max-h-[90vh] w-full flex flex-col items-center" onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setSelectedPhoto(null)}
+              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors"
+            >
+              <X size={32} />
+            </button>
+            
+            <div className="bg-white rounded-lg overflow-hidden shadow-2xl max-h-[80vh] flex flex-col">
+              <div className="relative flex-1 overflow-hidden bg-black flex items-center justify-center">
+                <img 
+                  src={selectedPhoto.url} 
+                  alt="Detalhe" 
+                  className="max-w-full max-h-[75vh] object-contain"
+                />
+              </div>
+              <div className="bg-gray-900 text-white p-4 flex justify-between items-center text-sm border-t border-gray-800">
+                <div>
+                  <p className="font-medium text-gray-300 text-xs uppercase tracking-wider mb-1">Local</p>
+                  <p className="font-bold text-lg">{selectedPhoto.pdv}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-medium text-gray-300 text-xs uppercase tracking-wider mb-1">Data e Hora</p>
+                  <p className="font-bold text-lg">{selectedPhoto.date}</p>
+                </div>
               </div>
             </div>
           </div>
