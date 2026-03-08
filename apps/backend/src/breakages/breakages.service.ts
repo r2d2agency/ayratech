@@ -16,23 +16,32 @@ export class BreakagesService {
   ) {}
 
   async create(userId: string, createBreakageDto: CreateBreakageDto) {
-    const breakage = this.breakageRepository.create({
-      ...createBreakageDto,
-      promoterId: userId,
-    });
-
-    // Se tiver routeItemId, tentar pegar o supermarketId dele se não vier no DTO
-    if (createBreakageDto.routeItemId && !createBreakageDto.supermarketId) {
-      const routeItem = await this.routeItemRepository.findOne({
-        where: { id: createBreakageDto.routeItemId },
-        relations: ['supermarket'],
+    try {
+      console.log('Creating Breakage Report:', { userId, ...createBreakageDto });
+      
+      const breakage = this.breakageRepository.create({
+        ...createBreakageDto,
+        promoterId: userId,
       });
-      if (routeItem?.supermarket) {
-        breakage.supermarketId = routeItem.supermarket.id;
-      }
-    }
 
-    return this.breakageRepository.save(breakage);
+      // Se tiver routeItemId, tentar pegar o supermarketId dele se não vier no DTO
+      if (createBreakageDto.routeItemId && !createBreakageDto.supermarketId) {
+        const routeItem = await this.routeItemRepository.findOne({
+          where: { id: createBreakageDto.routeItemId },
+          relations: ['supermarket'],
+        });
+        if (routeItem?.supermarket) {
+          breakage.supermarketId = routeItem.supermarket.id;
+        }
+      }
+
+      const saved = await this.breakageRepository.save(breakage);
+      console.log('Breakage saved:', saved.id);
+      return saved;
+    } catch (error) {
+      console.error('Error creating breakage report:', error);
+      throw error;
+    }
   }
 
   async findAll(query: any, user: any) {

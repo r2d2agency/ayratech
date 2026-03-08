@@ -43,6 +43,8 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
     return false;
   };
 
+  const [checklistState, setChecklistState] = useState<{ [key: string]: boolean }>({});
+
   useEffect(() => {
     if (product) {
       setGondolaCount(product.gondolaCount ?? '');
@@ -55,6 +57,15 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
           ? product.validityQuantity
           : ''
       );
+      
+      // Initialize checklist state
+      if (Array.isArray(product.checklists)) {
+        const initialChecklistState: { [key: string]: boolean } = {};
+        product.checklists.forEach((c: any) => {
+          initialChecklistState[c.id] = c.isChecked || false;
+        });
+        setChecklistState(initialChecklistState);
+      }
     }
   }, [product]);
 
@@ -62,6 +73,13 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
   const g = typeof gondolaCount === 'number' ? gondolaCount : 0;
   const i = typeof inventoryCount === 'number' ? inventoryCount : 0;
   const total = g + i;
+
+  const handleChecklistToggle = (id: string) => {
+    setChecklistState(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -85,10 +103,6 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
 
       // Validation
       if (requireStockCount && total === 0 && !ruptureReason && !isStockout) {
-        // If total is 0, we require a reason or mark as stockout
-        // But maybe the user just wants to save 0 for now?
-        // User said: "se Estiver zerado.. o produto. abre uma ruptura e ele tem que descrever o motivo"
-        // So we should probably prompt for reason if 0.
         toast.error('Se o estoque é 0, descreva o motivo da ruptura.');
         setSaving(false);
         return;
@@ -102,7 +116,14 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
         stockCount: total,
         validityDate: validityDate || null,
         validityQuantity: validityQuantity === '' ? null : validityQuantity,
-        checked: true // Mark as checked/counted
+        checked: true, // Mark as checked/counted
+        checklists: Array.isArray(product.checklists) 
+          ? product.checklists.map((c: any) => ({
+              id: c.id,
+              isChecked: checklistState[c.id] !== undefined ? checklistState[c.id] : c.isChecked,
+              value: c.value
+            }))
+          : []
       };
 
       await onSave(product.productId, payload);
@@ -139,6 +160,35 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
               </button>
             </div>
           )}
+
+          {/* Checklist Items Display (Simple Tasks) */}
+          {Array.isArray(product.checklists) && product.checklists.length > 0 && (
+             <div className="space-y-2">
+                {product.checklists.map((item: any) => {
+                    // Skip STOCK_COUNT (handled by inputs) and VALIDITY_CHECK (handled by its own section)
+                    if (item.type === 'STOCK_COUNT') return null;
+                    if (isValidityChecklistItem(item)) return null;
+
+                    return (
+                        <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
+                            <input
+                                type="checkbox"
+                                checked={checklistState[item.id] || false}
+                                onChange={() => handleChecklistToggle(item.id)}
+                                disabled={readOnly}
+                                className="w-6 h-6 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
+                            />
+                            <span 
+                              className="text-base font-medium text-gray-800 flex-1 cursor-pointer select-none" 
+                              onClick={() => !readOnly && handleChecklistToggle(item.id)}
+                            >
+                                {item.description}
+                            </span>
+                        </div>
+                    );
+                })}
+             </div>
+          )}
           
           {/* Total Display - Only if stock count required */}
           {requireStockCount && (
@@ -146,13 +196,6 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
               <span className="font-semibold text-blue-800">Total Contado:</span>
               <span className="text-2xl font-bold text-blue-600">{total}</span>
             </div>
-          )}
-
-          {!requireStockCount && (
-             <div className="bg-green-50 p-4 rounded-lg border border-green-100 text-green-800 text-sm flex items-center gap-2">
-                <Info size={16} />
-                <span>Contagem de estoque não obrigatória para este item.</span>
-             </div>
           )}
 
           {requireStockCount && (
