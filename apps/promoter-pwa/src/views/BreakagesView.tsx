@@ -251,7 +251,7 @@ export const BreakagesView = () => {
       </div>
 
       {selectedIds.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-lg z-20 pb-8 animate-slideUp">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-lg z-[60] pb-8 animate-slideUp">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-gray-600 font-medium">
               {selectedIds.length} itens selecionados
@@ -274,7 +274,7 @@ export const BreakagesView = () => {
       )}
 
       {showInvoiceModal && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[70] bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden animate-in zoom-in duration-200">
             <div className="p-4 border-b flex items-center justify-between bg-gray-50">
               <h3 className="font-bold text-lg">Dados da Nota Fiscal</h3>

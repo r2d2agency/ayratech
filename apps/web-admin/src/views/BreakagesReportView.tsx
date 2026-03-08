@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, AlertTriangle, FileText, Calendar, CheckCircle, Clock } from 'lucide-react';
+import { Search, Filter, AlertTriangle, FileText, Calendar, CheckCircle, Clock, Camera } from 'lucide-react';
 import api from '../api/client';
 import { toast } from 'react-hot-toast';
 import { resolveImageUrl } from '../utils/image';
