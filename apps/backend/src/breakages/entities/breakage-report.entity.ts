@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Product } from '../../entities/product.entity';
-import { User } from '../../users/entities/user.entity';
+import { Employee } from '../../employees/entities/employee.entity';
 import { RouteItem } from '../../routes/entities/route-item.entity';
 import { Supermarket } from '../../entities/supermarket.entity';
 
@@ -20,8 +20,8 @@ export class BreakageReport {
   @Column()
   productId: string;
 
-  @ManyToOne(() => User, { eager: true })
-  promoter: User;
+  @ManyToOne(() => Employee, { eager: true })
+  promoter: Employee;
 
   @Column()
   promoterId: string;

@@ -118,11 +118,22 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
         validityQuantity: validityQuantity === '' ? null : validityQuantity,
         checked: true, // Mark as checked/counted
         checklists: Array.isArray(product.checklists) 
-          ? product.checklists.map((c: any) => ({
-              id: c.id,
-              isChecked: checklistState[c.id] !== undefined ? checklistState[c.id] : c.isChecked,
-              value: c.value
-            }))
+          ? product.checklists.map((c: any) => {
+              // Auto-check validity items if date is provided
+              if (isValidityChecklistItem(c) && validityDate) {
+                return {
+                  id: c.id,
+                  isChecked: true,
+                  value: validityDate
+                };
+              }
+
+              return {
+                id: c.id,
+                isChecked: checklistState[c.id] !== undefined ? checklistState[c.id] : c.isChecked,
+                value: c.value
+              };
+            })
           : []
       };
 

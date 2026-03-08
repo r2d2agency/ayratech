@@ -52,8 +52,8 @@ export class BreakagesService {
     }
 
     // Se for promotor, só vê os seus
-    if (user.role === 'promoter') {
-      where.promoterId = user.id;
+    if (user.role === 'promoter' || user.role === 'promotor') {
+      where.promoterId = user.employee?.id || user.userId;
     } else if (query.promoterId) {
       // Admin pode filtrar por promotor
       where.promoterId = query.promoterId;
