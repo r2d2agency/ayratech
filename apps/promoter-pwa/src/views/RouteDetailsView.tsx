@@ -499,6 +499,17 @@ const RouteDetailsView = () => {
     const itemToCheck = route.items.find((i: any) => i.id === itemId);
     if (!itemToCheck) return;
 
+    // Check camera permission passively
+    if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions.query({ name: 'camera' as PermissionName }).then((permissionStatus) => {
+            if (permissionStatus.state === 'denied') {
+                setPermissionError('Acesso à câmera está bloqueado nas configurações do navegador.');
+            }
+        }).catch(() => {
+            // Ignore if permission query is not supported
+        });
+    }
+
     setProcessing(true);
     
     if ('geolocation' in navigator) {
@@ -1275,26 +1286,22 @@ const RouteDetailsView = () => {
             </div>
 
             <button 
-              onClick={async () => {
+              onClick={() => {
                 setPermissionError(null);
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    actionFileInputRef.current?.click();
-                    return;
-                }
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    stream.getTracks().forEach(track => track.stop());
-                    actionFileInputRef.current?.click();
-                } catch (err: any) {
-                    console.error('Permission denied', err);
-                    setPermissionError('Acesso à câmera bloqueado! Por favor, habilite nas configurações do navegador.');
-                }
+                // Directly trigger input click to avoid losing user activation context
+                // The browser will handle permissions for file input with capture="environment"
+                actionFileInputRef.current?.click();
               }}
               className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-blue-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             >
               <Camera size={24} />
               Tirar Foto Agora
             </button>
+
+            {/* Helper text for permissions */}
+            <div className="text-xs text-gray-500 text-center mt-2 px-4">
+              <p>Se a câmera não abrir, verifique se o navegador tem permissão de acesso à câmera nas configurações do site.</p>
+            </div>
 
             {permissionError && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 w-full text-center animate-shake">
