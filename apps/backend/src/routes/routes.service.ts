@@ -769,7 +769,7 @@ export class RoutesService {
              
           const targetDate = routeData.date || route.date;
              
-          if (targetPromoters.length > 0 && targetDate) {
+          if (targetPromoters.length > 0 && targetDate && !isAdmin) {
               for (const promoter of targetPromoters) {
                   for (const item of items) {
                      await this.checkPromoterAvailability(

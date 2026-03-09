@@ -443,6 +443,8 @@ const RouteDetailsView = () => {
         }
   };
 
+  const [permissionError, setPermissionError] = useState<string | null>(null);
+
   const handleActionPhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || event.target.files.length === 0 || !pendingAction) return;
     
@@ -524,8 +526,8 @@ const RouteDetailsView = () => {
                 // Request Photo instead of proceeding immediately
                 setPendingAction({ type: 'CHECKIN', itemId, location: { lat: userLat, lng: userLng } });
                 setProcessing(false);
-                setTimeout(() => actionFileInputRef.current?.click(), 100);
-                toast('Por favor, tire uma foto da fachada da loja para iniciar.', { icon: '📸' });
+                // setTimeout(() => actionFileInputRef.current?.click(), 100); // Removed auto-trigger to ensure user reads the modal
+                // toast('Por favor, tire uma foto da fachada da loja para iniciar.', { icon: '📸' }); // Toast moved to modal logic if needed
             },
             (error) => {
                console.warn('Geolocation error:', error);
@@ -604,8 +606,8 @@ const RouteDetailsView = () => {
                 // Request Photo instead of proceeding immediately
                 setPendingAction({ type: 'CHECKOUT', itemId, location: { lat: userLat, lng: userLng } });
                 setProcessing(false);
-                setTimeout(() => actionFileInputRef.current?.click(), 100);
-                toast('Por favor, tire uma foto final da loja para encerrar.', { icon: '📸' });
+                // setTimeout(() => actionFileInputRef.current?.click(), 100);
+                // toast('Por favor, tire uma foto final da loja para encerrar.', { icon: '📸' });
             },
             (error) => {
                 console.error('Geolocation error on checkout', error);
@@ -1252,6 +1254,71 @@ const RouteDetailsView = () => {
         className="hidden"
         onChange={handleActionPhoto}
       />
+
+      {/* Camera Trigger Modal - Fallback if auto-open fails */}
+      {pendingAction && (
+        <div className="fixed inset-0 z-[70] bg-black bg-opacity-80 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-sm rounded-2xl p-6 flex flex-col items-center gap-6 shadow-2xl">
+            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 animate-pulse">
+              <Camera size={40} />
+            </div>
+            
+            <div className="text-center">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                {pendingAction.type === 'CHECKIN' ? 'Foto da Fachada' : 'Foto de Saída'}
+              </h3>
+              <p className="text-gray-600">
+                {pendingAction.type === 'CHECKIN' 
+                  ? 'Para confirmar sua chegada, precisamos de uma foto da frente da loja.' 
+                  : 'Para finalizar, tire uma foto para comprovar o término do trabalho.'}
+              </p>
+            </div>
+
+            <button 
+              onClick={async () => {
+                setPermissionError(null);
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    actionFileInputRef.current?.click();
+                    return;
+                }
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    stream.getTracks().forEach(track => track.stop());
+                    actionFileInputRef.current?.click();
+                } catch (err: any) {
+                    console.error('Permission denied', err);
+                    setPermissionError('Acesso à câmera bloqueado! Por favor, habilite nas configurações do navegador.');
+                }
+              }}
+              className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-blue-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            >
+              <Camera size={24} />
+              Tirar Foto Agora
+            </button>
+
+            {permissionError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 w-full text-center animate-shake">
+                    <p className="font-bold flex items-center justify-center gap-1">
+                        <AlertTriangle size={16} /> Permissão Negada
+                    </p>
+                    <p>{permissionError}</p>
+                    <p className="text-xs mt-1 text-red-500">Verifique: Configurações &gt; Permissões do Site &gt; Câmera</p>
+                </div>
+            )}
+
+            <button 
+              onClick={() => {
+                setPendingAction(null);
+                setProcessing(false);
+                setPermissionError(null);
+              }}
+              className="text-gray-500 font-medium text-sm hover:text-gray-700 py-2"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
 
       {validationError && (
         <div className="fixed inset-0 z-[60] bg-black bg-opacity-70 flex items-center justify-center p-4 backdrop-blur-sm">

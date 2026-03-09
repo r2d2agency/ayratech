@@ -429,6 +429,7 @@ const RoutesView: React.FC = () => {
       fetchRoutesForWeek();
     } catch (error: any) {
       console.error('Error creating weekly routes:', error);
+      if (error.response?.status === 401) return;
       const msg = error.response?.data?.message || error.message || 'Erro desconhecido';
       alert(`Erro ao criar rotas: ${Array.isArray(msg) ? msg.join(', ') : msg}`);
     } finally {
@@ -701,6 +702,7 @@ const RoutesView: React.FC = () => {
       setRouteStatus('DRAFT');
     } catch (error: any) {
       console.error('Error deleting route:', error);
+      if (error.response?.status === 401) return;
       alert('Erro ao excluir rota.');
     } finally {
       setLoading(false);
@@ -746,6 +748,7 @@ const RoutesView: React.FC = () => {
       setCompletedProductIds([]);
     } catch (error: any) {
       console.error('Error saving route:', error);
+      if (error.response?.status === 401) return;
       const errorMsg = error.response?.data?.message || error.message || 'Erro desconhecido';
       alert(`Erro ao salvar rota: ${errorMsg}`);
     } finally {
@@ -815,8 +818,9 @@ const RoutesView: React.FC = () => {
       setDuplicateTargetDates([]);
       setCurrentDateInput('');
       fetchRoutesForWeek();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error duplicating route:', error);
+      if (error.response?.status === 401) return;
       alert('Erro ao duplicar rota.');
     }
   };
@@ -903,8 +907,9 @@ const RoutesView: React.FC = () => {
       setShowCalendarModal(false);
       setCalendarSelectedDates([]);
       fetchRoutesForWeek();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating calendar routes:', error);
+      if (error.response?.status === 401) return;
       alert('Erro ao criar rotas.');
     } finally {
       setLoading(false);
@@ -933,8 +938,9 @@ const RoutesView: React.FC = () => {
         alert('Promotores atualizados com sucesso!');
         setManagingPromotersRoute(null);
         fetchRoutesForWeek();
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error updating promoters:', error);
+        if (error.response?.status === 401) return;
         alert('Erro ao atualizar promotores.');
     } finally {
         setLoading(false);
@@ -1074,8 +1080,9 @@ const RoutesView: React.FC = () => {
     try {
       await api.delete(`/routes/${routeId}${deleteSeries ? '?recurrence=true' : ''}`);
       fetchRoutesForWeek();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting route:', error);
+      if (error.response?.status === 401) return;
       alert('Erro ao excluir rota.');
     }
   };
@@ -1145,8 +1152,9 @@ const RoutesView: React.FC = () => {
       alert('Regra criada com sucesso!');
       setNewRule({ name: '', description: '', value: '' });
       fetchRules();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating rule:', error);
+      if (error.response?.status === 401) return;
       alert('Erro ao criar regra. Verifique se o valor é um JSON válido.');
     }
   };
@@ -1205,8 +1213,9 @@ const RoutesView: React.FC = () => {
 
     try {
       await api.patch(`/routes/${routeId}`, { date: newDate });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error moving route:', error);
+      if (error.response?.status === 401) return;
       alert('Erro ao mover rota.');
       setWeekRoutes(originalRoutes);
     }
