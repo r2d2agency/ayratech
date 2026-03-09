@@ -43,6 +43,7 @@ export const BreakagesView = () => {
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
   const [invoicePhoto, setInvoicePhoto] = useState<{ url: string; blob: Blob } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedItemDetails, setSelectedItemDetails] = useState<BreakageItem | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
@@ -198,9 +199,12 @@ export const BreakagesView = () => {
                 return (
                   <div 
                     key={item.id}
-                    onClick={() => isPending && toggleSelection(item.id)}
+                    onClick={() => {
+                      if (isPending) toggleSelection(item.id);
+                      else setSelectedItemDetails(item);
+                    }}
                     className={`bg-white p-4 rounded-xl border shadow-sm flex items-center gap-3 transition-colors ${
-                      isPending ? 'cursor-pointer' : ''
+                      'cursor-pointer'
                     } ${
                       isSelected ? 'border-red-500 bg-red-50' : 'border-gray-100'
                     }`}
@@ -346,6 +350,107 @@ export const BreakagesView = () => {
                 {submitting ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" /> : <CheckCircle size={20} />}
                 Confirmar Vinculação
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Item Details Modal */}
+      {selectedItemDetails && (
+        <div className="fixed inset-0 z-[80] bg-black bg-opacity-90 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden animate-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b flex items-center justify-between bg-gray-50 shrink-0">
+              <h3 className="font-bold text-lg text-gray-800">Detalhes da Avaria</h3>
+              <button 
+                onClick={() => setSelectedItemDetails(null)} 
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 text-gray-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-4 overflow-y-auto space-y-6">
+              {/* Product Info */}
+              <div className="flex items-start gap-4">
+                <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
+                  {selectedItemDetails.product.image ? (
+                    <img src={resolveImageUrl(selectedItemDetails.product.image)} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                      <AlertTriangle size={24} />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900">{selectedItemDetails.product.name}</h4>
+                  <p className="text-sm text-gray-500 mt-1">EAN: {selectedItemDetails.product.barcode || selectedItemDetails.product.sku}</p>
+                  <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    Qtd: {selectedItemDetails.quantity} un.
+                  </div>
+                </div>
+              </div>
+
+              {/* Invoice Info */}
+              {selectedItemDetails.invoiceNumber && (
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                  <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                    <FileText size={18} />
+                    Nota Fiscal de Devolução
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-blue-600 block text-xs">Número</span>
+                      <span className="font-medium text-blue-900">{selectedItemDetails.invoiceNumber}</span>
+                    </div>
+                    <div>
+                      <span className="text-blue-600 block text-xs">Emissão</span>
+                      <span className="font-medium text-blue-900">
+                        {selectedItemDetails.invoiceDate ? new Date(selectedItemDetails.invoiceDate).toLocaleDateString() : '-'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {selectedItemDetails.invoicePhoto && (
+                    <div className="mt-3">
+                      <span className="text-blue-600 block text-xs mb-1">Foto da Nota</span>
+                      <div className="rounded-lg overflow-hidden border border-blue-200">
+                        <img 
+                          src={resolveImageUrl(selectedItemDetails.invoicePhoto)} 
+                          className="w-full h-auto object-contain bg-black"
+                          alt="Nota Fiscal"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Breakage Photos */}
+              <div>
+                <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                  <Camera size={18} />
+                  Fotos da Avaria
+                </h4>
+                {selectedItemDetails.photos && selectedItemDetails.photos.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedItemDetails.photos.map((photo, idx) => (
+                      <div key={idx} className="aspect-square rounded-lg overflow-hidden border bg-gray-100">
+                        <img 
+                          src={resolveImageUrl(photo)} 
+                          className="w-full h-full object-cover"
+                          alt={`Avaria ${idx + 1}`} 
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm italic">Nenhuma foto registrada.</p>
+                )}
+              </div>
+
+              <div className="text-xs text-gray-400 text-center pt-4 border-t">
+                Registrado em {new Date(selectedItemDetails.createdAt).toLocaleString()}
+              </div>
             </div>
           </div>
         </div>
