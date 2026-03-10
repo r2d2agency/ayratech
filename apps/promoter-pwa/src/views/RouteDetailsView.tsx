@@ -1034,7 +1034,7 @@ const RouteDetailsView = () => {
             readOnly={isPastRoute || activeItem.status === 'CHECKOUT' || activeItem.status === 'COMPLETED'}
           />
         ) : (
-            <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex flex-col justify-end sm:justify-center" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+            <div className="fixed inset-0 z-60 bg-black bg-opacity-50 flex flex-col justify-end sm:justify-center" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
                 <div className="bg-white rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col w-full sm:max-w-md mx-auto">
                     <div className="p-4 border-b flex justify-between items-center" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
                         <div>
@@ -1242,7 +1242,7 @@ const RouteDetailsView = () => {
 
       {/* Modal Preview Photo */}
       {showPhotoPreview && currentPhoto && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex flex-col items-center justify-center p-4">
+        <div className="fixed inset-0 z-60 bg-black bg-opacity-90 flex flex-col items-center justify-center p-4">
             <div className="bg-white p-2 rounded-lg max-w-full max-h-[80vh] overflow-hidden flex flex-col gap-4">
                 <img src={currentPhoto.url} alt="Preview" className="max-w-full max-h-[60vh] object-contain" />
                 <div className="flex gap-2 justify-between">
@@ -1383,7 +1383,7 @@ const RouteDetailsView = () => {
           const uId = user?.employee?.id || user?.id;
           return pId === uId && !c.checkOutTime;
       })) && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-around items-center z-10">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-around items-center z-60">
           {/* <button 
             onClick={() => fileInputRef.current?.click()}
             className="flex flex-col items-center gap-1 text-blue-600"

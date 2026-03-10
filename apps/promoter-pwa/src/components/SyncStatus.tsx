@@ -81,7 +81,7 @@ const SyncStatus = () => {
   // Render logic
   // Always render to provide reassurance
   return (
-    <div className="fixed top-4 right-4 z-[100] animate-in fade-in slide-in-from-top-4 duration-300">
+    <div className="fixed top-4 right-4 z-40 animate-in fade-in slide-in-from-top-4 duration-300">
       <button
         onClick={performSync}
         disabled={isSyncing || (pendingCount === 0 && isOnline)}
