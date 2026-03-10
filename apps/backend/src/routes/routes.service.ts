@@ -222,12 +222,19 @@ export class RoutesService {
                 'checklistTemplate.items.competitor',
                 'checklistTemplate.items.competitors',
                 'supermarketGroups',
-                'client'
+                'client',
+                'brand',
+                'brand.client'
               ]
           });
           products.forEach(p => {
             productsMap.set(p.id, p);
-            const client: any = (p as any).client;
+            const brand: any = (p as any).brand;
+            if (brand?.checklistTemplateId) {
+              allChecklistTemplateIds.add(brand.checklistTemplateId);
+            }
+
+            const client: any = (p as any).client || brand?.client;
             if (client?.defaultVisitChecklistTemplateId) {
               allChecklistTemplateIds.add(client.defaultVisitChecklistTemplateId);
             }
@@ -810,12 +817,19 @@ export class RoutesService {
                   'checklistTemplate.items.competitor',
                   'checklistTemplate.items.competitors',
                   'supermarketGroups',
-                  'client'
+                  'client',
+                  'brand',
+                  'brand.client'
                 ]
             });
             products.forEach(p => {
               productsMap.set(p.id, p);
-              const client: any = (p as any).client;
+              const brand: any = (p as any).brand;
+              if (brand?.checklistTemplateId) {
+                allChecklistTemplateIds.add(brand.checklistTemplateId);
+              }
+
+              const client: any = (p as any).client || brand?.client;
               if (client?.defaultVisitChecklistTemplateId) {
                 allChecklistTemplateIds.add(client.defaultVisitChecklistTemplateId);
               }
@@ -873,13 +887,18 @@ export class RoutesService {
                        if (product.checklistTemplate) {
                          checklistTemplate = product.checklistTemplate as any;
                        } else {
-                         const client: any = (product as any).client;
+                         const brand: any = (product as any).brand;
+                         if (brand?.checklistTemplateId) {
+                           checklistTemplate = checklistTemplatesMap.get(brand.checklistTemplateId) || null;
+                         }
+
+                         const client: any = (product as any).client || brand?.client;
                          const routeType = (route as any).type || 'VISIT';
                          const clientTemplateId =
                            routeType === 'INVENTORY'
                              ? client?.defaultInventoryChecklistTemplateId || client?.defaultVisitChecklistTemplateId
                              : client?.defaultVisitChecklistTemplateId || client?.defaultInventoryChecklistTemplateId;
-                         if (clientTemplateId) {
+                         if (!checklistTemplate && clientTemplateId) {
                            checklistTemplate = checklistTemplatesMap.get(clientTemplateId) || null;
                          }
                        }
@@ -1997,10 +2016,10 @@ export class RoutesService {
     // 2) Regras por produto: contagens, validade, checklist e ruptura
     const hasProductValidationIssue = (item.products || []).some(ip => {
       const isRupture = !!ip.isStockout;
-      const brandWaitForStockCount = !!(ip.product?.brand && (ip.product.brand as any).waitForStockCount);
       const client = (ip.product as any)?.client as any;
       const brand = (ip.product as any)?.brand as any;
       const routeType = item.route?.type || 'VISIT';
+      const checklists = ip.checklists || [];
 
       // Ruptura exige motivo
       if (isRupture) {
@@ -2008,8 +2027,10 @@ export class RoutesService {
         return false;
       }
 
-      // Contagens: gondolaCount é sempre obrigatória.
-      // inventoryCount é obrigatória apenas se o cliente exigir OU se a rota for de INVENTÁRIO.
+      const stockCountItemsCount = checklists.filter(c => c.type === 'STOCK_COUNT').length;
+      const requiresGondola = stockCountItemsCount >= 1;
+      const requiresInventory = stockCountItemsCount >= 2;
+
       const hasGondola = ip.gondolaCount !== null && ip.gondolaCount !== undefined;
       
       let isRequiredByFrequency = true;
@@ -2019,19 +2040,15 @@ export class RoutesService {
            isRequiredByFrequency = inventoryRequirements.get(`client:${client.id}`) ?? true;
       }
 
-      const inventoryRequired = routeType === 'INVENTORY' || (!!client?.requiresInventoryCount && isRequiredByFrequency);
-      if (!hasGondola) return true;
-      if (inventoryRequired) {
+      const inventoryRequiredByPolicy = routeType === 'INVENTORY' || (!!client?.requiresInventoryCount && isRequiredByFrequency);
+      if (requiresGondola && !hasGondola) return true;
+      if (requiresInventory || (requiresGondola && inventoryRequiredByPolicy)) {
         const hasInventory = ip.inventoryCount !== null && ip.inventoryCount !== undefined;
         if (!hasInventory) return true;
       }
 
       // Checklist: todos itens devem estar marcados
-      // Se a marca usa waitForStockCount, ignorar itens do tipo STOCK_COUNT (pois a contagem já é capturada nos campos dedicados)
-      const checklists = ip.checklists || [];
-      const requiredChecklists = checklists.filter(c => {
-        return c.type !== 'STOCK_COUNT' || !brandWaitForStockCount ? true : false;
-      });
+      const requiredChecklists = checklists.filter(c => c.type !== 'STOCK_COUNT');
       const allChecked = requiredChecklists.every(c => !!c.isChecked);
       if (!allChecked) return true;
 

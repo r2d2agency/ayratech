@@ -50,7 +50,12 @@ export class RouteFactoryService {
             return product.checklistTemplate as any;
         }
 
-        const client: any = (product as any).client || (product as any).brand?.client;
+        const brand: any = (product as any).brand;
+        if (brand?.checklistTemplateId && templatesMap) {
+            return templatesMap.get(brand.checklistTemplateId) || null;
+        }
+
+        const client: any = (product as any).client || brand?.client;
         
         // Determine client default template based on route type
         const clientTemplateId = routeType === 'INVENTORY'

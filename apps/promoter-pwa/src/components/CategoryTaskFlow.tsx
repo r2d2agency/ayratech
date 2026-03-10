@@ -112,27 +112,19 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   };
 
   const isStockCountRequired = (p: any) => {
-    // 0. Check brand configuration first
-    // If brand doesn't wait for stock count, we shouldn't require it regardless of checklist
-    // This aligns with ProductCheckView which hides inputs if waitForStockCount is false
-    if (!p.product?.brand?.waitForStockCount) {
-        return false;
-    }
+    const hasStockInChecklists =
+      Array.isArray(p.checklists) &&
+      p.checklists.some((c: any) => c?.type === 'STOCK_COUNT');
 
-    // 1. Check instantiated checklists (generated at route creation)
-    // This is the most accurate source of truth for the specific task
-    if (p.checklists && p.checklists.length > 0) {
-      return p.checklists.some((c: any) => c.type === 'STOCK_COUNT');
-    }
+    if (hasStockInChecklists) return true;
 
-    // 2. Fallback: Check template directly (for legacy or newly added products not yet synced?)
     const template = getChecklistTemplate(p);
-    // If no template, default to TRUE (safe default to ensure data collection)
-    if (!template) return true;
-    
-    // Check if any item in template is STOCK_COUNT
-    return template.items?.some((i: any) => i.type === 'STOCK_COUNT');
+    if (!template?.items?.length) return false;
+
+    return template.items.some((i: any) => i?.type === 'STOCK_COUNT');
   };
+
+  const hasAnyStockCountRequired = (products || []).some(isStockCountRequired);
 
   const isProductCountComplete = (p: any) => {
     const required = isStockCountRequired(p);
@@ -283,7 +275,8 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   const nextStep = () => {
     if (mode === 'ITEMS') {
       if (step === STEPS.GONDOLA_COUNT) {
-        setStep(STEPS.INVENTORY_COUNT);
+        if (hasAnyStockCountRequired) setStep(STEPS.INVENTORY_COUNT);
+        else onBack();
       } else if (step === STEPS.INVENTORY_COUNT) {
         onBack();
       }
@@ -300,7 +293,8 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
     // Fluxo HUB
     if (step === STEPS.GONDOLA_COUNT) {
-        setStep(STEPS.INVENTORY_COUNT);
+        if (hasAnyStockCountRequired) setStep(STEPS.INVENTORY_COUNT);
+        else setStep(STEPS.MENU);
         return;
     }
     
@@ -321,7 +315,8 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     }
 
     if (step === STEPS.INVENTORY_COUNT) {
-        setStep(STEPS.GONDOLA_COUNT);
+        if (hasAnyStockCountRequired) setStep(STEPS.GONDOLA_COUNT);
+        else setStep(STEPS.MENU);
         return;
     }
 
@@ -439,7 +434,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
               <ListChecks size={24} />
             </div>
             <div className="text-left">
-              <h3 className="font-bold text-gray-900">Contagem de Produtos</h3>
+              <h3 className="font-bold text-gray-900">{hasAnyStockCountRequired ? 'Contagem de Produtos' : 'Checklist de Produtos'}</h3>
               <div className="w-32 h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
                 <div 
                   className="h-full bg-blue-500 rounded-full" 
@@ -516,15 +511,18 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   const renderCountStep = (mode: 'GONDOLA' | 'INVENTORY', title: string) => {
     const total = products.length;
     const counted = products.filter(p => {
+      const required = isStockCountRequired(p);
+      const checked = !!p.checked;
+
+      if (!required) return checked;
+
       if (mode === 'GONDOLA') return p.gondolaCount !== null && p.gondolaCount !== undefined;
-      if (mode === 'INVENTORY') {
-        const inv = p.inventoryCount;
-        const hasRupture = !!p.ruptureReason || !!p.isStockout;
-        if (inv === null || inv === undefined) return false;
-        if (inv === 0) return hasRupture;
-        return inv > 0;
-      }
-      return false;
+
+      const inv = p.inventoryCount;
+      const hasRupture = !!p.ruptureReason || !!p.isStockout;
+      if (inv === null || inv === undefined) return false;
+      if (inv === 0) return hasRupture;
+      return inv > 0;
     }).length;
 
     return (
@@ -600,7 +598,9 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
             onClick={nextStep}
             className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700"
           >
-            {mode === 'GONDOLA' ? 'Ir para Estoque' : 'Concluir Contagem'}
+            {mode === 'GONDOLA'
+              ? (hasAnyStockCountRequired ? 'Ir para Estoque' : 'Concluir')
+              : 'Concluir Contagem'}
           </button>
         </div>
       </div>
@@ -620,7 +620,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
       <div className="flex-1 overflow-hidden relative">
         {step === STEPS.MENU && renderMenu()}
         {step === STEPS.BEFORE_PHOTO && renderPhotoStep('before', getLabel('before'), 'Registre o estado inicial.')}
-        {step === STEPS.GONDOLA_COUNT && renderCountStep('GONDOLA', 'Contagem: Loja (Frente)')}
+        {step === STEPS.GONDOLA_COUNT && renderCountStep('GONDOLA', hasAnyStockCountRequired ? 'Contagem: Loja (Frente)' : 'Checklist de Produtos')}
         {step === STEPS.INVENTORY_COUNT && renderCountStep('INVENTORY', 'Contagem: Estoque')}
         {step === STEPS.AFTER_PHOTO && renderPhotoStep('after', getLabel('after'), 'Registre o resultado final.')}
         {/* SUMMARY was replaced by MENU */}

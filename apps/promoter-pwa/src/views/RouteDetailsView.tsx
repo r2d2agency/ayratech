@@ -564,30 +564,23 @@ const RouteDetailsView = () => {
     // Check constraints
     let hasStockChecklist = false;
     
-    if (p.checklists && p.checklists.length > 0) {
-        hasStockChecklist = p.checklists.some((c: any) => c.type === 'STOCK_COUNT');
-    } else {
-        // Fallback to template if checklists not instantiated yet (should not happen usually but safe)
-        const template = getChecklistTemplate(p);
-        if (template) {
-            hasStockChecklist = template.items?.some((i: any) => i.type === 'STOCK_COUNT');
-        } else {
-            // Default to TRUE if no info? Or FALSE? 
-            // If no template and no checklists, assume no stock count needed?
-            // Actually, if no template, we can't enforce stock count.
-            hasStockChecklist = false; 
-        }
-    }
+    const hasStockInChecklists =
+      Array.isArray(p.checklists) &&
+      p.checklists.some((c: any) => c?.type === 'STOCK_COUNT');
 
-    const isWaitForStockCount = p.product?.brand?.waitForStockCount;
+    const template = getChecklistTemplate(p);
+    const hasStockInTemplate =
+      Array.isArray(template?.items) &&
+      template.items.some((i: any) => i?.type === 'STOCK_COUNT');
 
-    // If no stock checklist OR brand doesn't wait for count, only 'checked' matters
-    // This aligns with ProductCheckView logic where count inputs are only shown if both are true
-    if (!hasStockChecklist || !isWaitForStockCount) {
+    hasStockChecklist = hasStockInChecklists || hasStockInTemplate;
+
+    // If no stock checklist, only 'checked' matters
+    if (!hasStockChecklist) {
         return checked;
     }
 
-    // If strictly requires stock count
+    // If the checklist explicitly requires stock count
     const gDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
     const inv = p.inventoryCount;
     const hasRupture = !!p.ruptureReason || !!p.isStockout;
