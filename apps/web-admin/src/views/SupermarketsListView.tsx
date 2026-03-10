@@ -738,7 +738,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
               )}
 
               {activeTab === 'products' && (
-                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                <div key="products-tab" className="space-y-6">
                   <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-4">
                     <p className="text-sm text-blue-800">
                       Gerencie o Mix de Produtos deste ponto de venda. Selecione uma marca para visualizar e vincular produtos.
@@ -747,13 +747,14 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
 
                   <div>
                     <SearchableSelect 
+                        key="brand-select"
                         label="Selecione a Marca para filtrar produtos"
                         placeholder="Selecione uma marca..."
                         value={selectedBrandForMix}
                         onChange={(val) => setSelectedBrandForMix(val)}
                         options={[
                           { value: '', label: 'Selecione...' },
-                          ...brands.map(brand => ({ value: brand.id, label: brand.name }))
+                          ...(Array.isArray(brands) ? brands.filter(b => b && b.id && b.name).map(brand => ({ value: brand.id, label: brand.name })) : [])
                         ]}
                     />
                   </div>
@@ -765,11 +766,11 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                         <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
                           <h3 className="font-bold text-slate-700">Disponíveis</h3>
                           <span className="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded-full">
-                            {products.filter(p => (p.brand?.id === selectedBrandForMix || p.brandId === selectedBrandForMix) && !formData.productIds.includes(p.id)).length}
+                            {Array.isArray(products) ? products.filter(p => (p.brand?.id === selectedBrandForMix || p.brandId === selectedBrandForMix) && !formData.productIds.includes(p.id)).length : 0}
                           </span>
                         </div>
                         <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                          {products
+                          {Array.isArray(products) && products
                             .filter(p => (p.brand?.id === selectedBrandForMix || p.brandId === selectedBrandForMix) && !formData.productIds.includes(p.id))
                             .map(product => (
                               <div 
@@ -794,7 +795,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                               </div>
                             ))
                           }
-                          {products.filter(p => (p.brand?.id === selectedBrandForMix || p.brandId === selectedBrandForMix) && !formData.productIds.includes(p.id)).length === 0 && (
+                          {Array.isArray(products) && products.filter(p => (p.brand?.id === selectedBrandForMix || p.brandId === selectedBrandForMix) && !formData.productIds.includes(p.id)).length === 0 && (
                             <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center">
                               <p className="text-sm">Todos os produtos desta marca já foram selecionados.</p>
                             </div>
@@ -821,11 +822,11 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                         <div className="bg-green-50 px-4 py-3 border-b border-green-100 flex justify-between items-center">
                           <h3 className="font-bold text-green-800">Selecionados (Mix)</h3>
                           <span className="text-xs bg-green-200 text-green-700 px-2 py-1 rounded-full">
-                            {products.filter(p => (p.brand?.id === selectedBrandForMix || p.brandId === selectedBrandForMix) && formData.productIds.includes(p.id)).length}
+                            {Array.isArray(products) ? products.filter(p => (p.brand?.id === selectedBrandForMix || p.brandId === selectedBrandForMix) && formData.productIds.includes(p.id)).length : 0}
                           </span>
                         </div>
                         <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                          {products
+                          {Array.isArray(products) && products
                             .filter(p => (p.brand?.id === selectedBrandForMix || p.brandId === selectedBrandForMix) && formData.productIds.includes(p.id))
                             .map(product => (
                               <div 
@@ -850,7 +851,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                               </div>
                             ))
                           }
-                           {products.filter(p => (p.brand?.id === selectedBrandForMix || p.brandId === selectedBrandForMix) && formData.productIds.includes(p.id)).length === 0 && (
+                           {Array.isArray(products) && products.filter(p => (p.brand?.id === selectedBrandForMix || p.brandId === selectedBrandForMix) && formData.productIds.includes(p.id)).length === 0 && (
                             <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center">
                               <p className="text-sm">Nenhum produto selecionado para esta marca.</p>
                             </div>
