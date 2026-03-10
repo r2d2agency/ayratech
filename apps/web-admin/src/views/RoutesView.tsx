@@ -1976,23 +1976,26 @@ const RoutesView: React.FC = () => {
 
                                             if (!currentSupermarket) return true;
 
+                                            // Find the full supermarket object from the state to ensure we have relations
+                                            const fullSupermarket = supermarkets.find(s => s.id === currentSupermarket.id);
+                                            const targetSupermarket = fullSupermarket || currentSupermarket;
+
+                                            // Check Mix first
+                                            if (targetSupermarket.products && targetSupermarket.products.length > 0) {
+                                                return targetSupermarket.products.some((mp: any) => mp.id === p.id);
+                                            }
+
                                             const hasGroups = p.supermarketGroups && p.supermarketGroups.length > 0;
                                             const hasSupermarkets = p.supermarkets && p.supermarkets.length > 0;
 
                                             if (!hasGroups && !hasSupermarkets) return true;
 
-                                            const matchesGroup = hasGroups && currentSupermarket.group && p.supermarketGroups.some((g: any) => g.id === currentSupermarket.group.id);
-                                            const matchesSupermarket = hasSupermarkets && p.supermarkets.some((s: any) => s.id === currentSupermarket.id);
+                                            const matchesGroup = hasGroups && targetSupermarket.group && p.supermarketGroups.some((g: any) => g.id === targetSupermarket.group.id);
+                                            const matchesSupermarket = hasSupermarkets && p.supermarkets.some((s: any) => s.id === targetSupermarket.id);
 
                                             // Also check if the Product's Client (Brand Owner) is linked to this Supermarket
                                             // This allows products to appear if the PDV is linked to the Client, even if not explicitly in product's list
                                             const productClientId = p.client?.id || p.brand?.client?.id;
-                                            
-                                            // Find the full supermarket object from the state to ensure we have the 'clients' relation
-                                            // The 'currentSupermarket' from routeItems might be stale or incomplete if added differently
-                                            const fullSupermarket = supermarkets.find(s => s.id === currentSupermarket.id);
-                                            const targetSupermarket = fullSupermarket || currentSupermarket;
-
                                             const matchesClient = productClientId && targetSupermarket.clients?.some((c: any) => c.id === productClientId);
 
                                             return matchesGroup || matchesSupermarket || matchesClient;
@@ -2020,23 +2023,26 @@ const RoutesView: React.FC = () => {
 
                                 if (!currentSupermarket) return true;
 
+                                // Find the full supermarket object from the state to ensure we have relations
+                                const fullSupermarket = supermarkets.find(s => s.id === currentSupermarket.id);
+                                const targetSupermarket = fullSupermarket || currentSupermarket;
+
+                                // Check Mix first
+                                if (targetSupermarket.products && targetSupermarket.products.length > 0) {
+                                    return targetSupermarket.products.some((mp: any) => mp.id === p.id);
+                                }
+
                                 const hasGroups = p.supermarketGroups && p.supermarketGroups.length > 0;
                                 const hasSupermarkets = p.supermarkets && p.supermarkets.length > 0;
 
                                 if (!hasGroups && !hasSupermarkets) return true;
 
-                                const matchesGroup = hasGroups && currentSupermarket.group && p.supermarketGroups.some((g: any) => g.id === currentSupermarket.group.id);
-                                const matchesSupermarket = hasSupermarkets && p.supermarkets.some((s: any) => s.id === currentSupermarket.id);
+                                const matchesGroup = hasGroups && targetSupermarket.group && p.supermarketGroups.some((g: any) => g.id === targetSupermarket.group.id);
+                                const matchesSupermarket = hasSupermarkets && p.supermarkets.some((s: any) => s.id === targetSupermarket.id);
 
                                 // Also check if the Product's Client (Brand Owner) is linked to this Supermarket
                                 // This allows products to appear if the PDV is linked to the Client, even if not explicitly in product's list
                                 const productClientId = p.client?.id || p.brand?.client?.id;
-                                
-                                // Find the full supermarket object from the state to ensure we have the 'clients' relation
-                                // The 'currentSupermarket' from routeItems might be stale or incomplete if added differently
-                                const fullSupermarket = supermarkets.find(s => s.id === currentSupermarket.id);
-                                const targetSupermarket = fullSupermarket || currentSupermarket;
-
                                 const matchesClient = productClientId && targetSupermarket.clients?.some((c: any) => c.id === productClientId);
 
                                 return matchesGroup || matchesSupermarket || matchesClient;

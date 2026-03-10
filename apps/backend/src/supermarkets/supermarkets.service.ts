@@ -44,14 +44,14 @@ export class SupermarketsService {
 
   findAll() {
     return this.supermarketsRepository.find({
-      relations: ['group', 'clients']
+      relations: ['group', 'clients', 'products']
     });
   }
 
   findOne(id: string) {
     return this.supermarketsRepository.findOne({ 
       where: { id },
-      relations: ['group', 'clients']
+      relations: ['group', 'clients', 'products']
     });
   }
 
@@ -63,7 +63,7 @@ export class SupermarketsService {
         throw new NotFoundException(`Supermercado com ID ${id} não encontrado.`);
       }
 
-      const { clientIds, groupId, ...rest } = updateSupermarketDto;
+      const { clientIds, productIds, groupId, ...rest } = updateSupermarketDto;
       
       // Update basic fields and group
       const updateData: any = { ...rest };
@@ -96,6 +96,20 @@ export class SupermarketsService {
         if (supermarketWithClients) {
           supermarketWithClients.clients = clientIds.map(cid => ({ id: cid } as any));
           await this.supermarketsRepository.save(supermarketWithClients);
+        }
+      }
+
+      // If productIds provided, we need to update the relationship
+      if (productIds) {
+        // Reload with products relation to ensure clean update
+        const supermarketWithProducts = await this.supermarketsRepository.findOne({ 
+          where: { id },
+          relations: ['products'] 
+        });
+        
+        if (supermarketWithProducts) {
+          supermarketWithProducts.products = productIds.map(pid => ({ id: pid } as any));
+          await this.supermarketsRepository.save(supermarketWithProducts);
         }
       }
       

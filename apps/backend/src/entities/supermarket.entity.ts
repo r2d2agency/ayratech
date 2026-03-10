@@ -58,6 +58,6 @@ export class Supermarket {
   @ManyToMany(() => Client, (client) => client.supermarkets)
   clients: Client[];
 
-  @ManyToMany(() => Product, (product) => product.supermarkets)
+  @ManyToMany(() => Product, (product) => product.supermarkets, { cascade: true })
   products: Product[];
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Store, Edit, Trash2, X, Search, MapPin, Map as MapIcon, List } from 'lucide-react';
+import { Store, Edit, Trash2, X, Search, MapPin, Map as MapIcon, List, Package, Plus, CheckCircle2, Building2 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -34,6 +34,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
   const [supermarkets, setSupermarkets] = useState<any[]>([]);
   const [groups, setGroups] = useState<SupermarketGroup[]>([]);
   const [clients, setClients] = useState<any[]>([]);
+  const [brands, setBrands] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,9 +45,11 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
   // Modal & Form State
   const [showModal, setShowModal] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'location' | 'clients'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'location' | 'clients' | 'products'>('general');
   const [editingSupermarket, setEditingSupermarket] = useState<any | null>(null);
   const [cepLoading, setCepLoading] = useState(false);
+  const [selectedBrandForMix, setSelectedBrandForMix] = useState<string>('');
+
   const [formData, setFormData] = useState({
     fantasyName: '',
     cnpj: '',
@@ -62,21 +65,24 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
     latitude: null as number | null,
     longitude: null as number | null,
     status: true,
-    clientIds: [] as string[]
+    clientIds: [] as string[],
+    productIds: [] as string[]
   });
 
   const fetchData = async () => {
     try {
-      const [supermarketsRes, groupsRes, clientsRes, productsRes] = await Promise.all([
+      const [supermarketsRes, groupsRes, clientsRes, productsRes, brandsRes] = await Promise.all([
         api.get('/supermarkets'),
         api.get('/supermarket-groups'),
         api.get('/clients'),
-        api.get('/products')
+        api.get('/products'),
+        api.get('/brands')
       ]);
       setSupermarkets(supermarketsRes.data);
       setGroups(groupsRes.data);
       setClients(clientsRes.data);
       setProducts(productsRes.data);
+      setBrands(brandsRes.data);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -111,6 +117,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
   const handleAddNew = () => {
     resetForm();
     setActiveTab('general');
+    setFormData(prev => ({ ...prev, productIds: [] }));
     setShowModal(true);
   };
 
@@ -132,7 +139,8 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
       latitude: supermarket.latitude ? parseFloat(supermarket.latitude) : null,
       longitude: supermarket.longitude ? parseFloat(supermarket.longitude) : null,
       status: supermarket.status !== undefined ? supermarket.status : true,
-      clientIds: supermarket.clients ? supermarket.clients.map((c: any) => c.id) : []
+      clientIds: supermarket.clients ? supermarket.clients.map((c: any) => c.id) : [],
+      productIds: supermarket.products ? supermarket.products.map((p: any) => p.id) : []
     });
     setShowModal(true);
   };
@@ -484,6 +492,13 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
               >
                 Clientes Vinculados
               </button>
+              <button 
+                type="button"
+                className={`flex-1 px-8 py-4 font-bold text-sm uppercase tracking-wider transition-all border-b-2 ${activeTab === 'products' ? 'border-blue-500 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                onClick={() => setActiveTab('products')}
+              >
+                Produtos (Mix)
+              </button>
             </div>
             
             <form onSubmit={handleSave} className="p-8 space-y-8">
@@ -719,6 +734,145 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+
+              {activeTab === 'products' && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                  <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-4">
+                    <p className="text-sm text-blue-800">
+                      Gerencie o Mix de Produtos deste ponto de venda. Selecione uma marca para visualizar e vincular produtos.
+                    </p>
+                  </div>
+
+                  <div>
+                    <SearchableSelect 
+                        label="Selecione a Marca para filtrar produtos"
+                        placeholder="Selecione uma marca..."
+                        value={selectedBrandForMix}
+                        onChange={(val) => setSelectedBrandForMix(val)}
+                        options={[
+                          { value: '', label: 'Selecione...' },
+                          ...brands.map(brand => ({ value: brand.id, label: brand.name }))
+                        ]}
+                    />
+                  </div>
+
+                  {selectedBrandForMix && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-[500px]">
+                      {/* Available Products */}
+                      <div className="flex flex-col h-full border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                        <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
+                          <h3 className="font-bold text-slate-700">Disponíveis</h3>
+                          <span className="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded-full">
+                            {products.filter(p => (p.brand?.id === selectedBrandForMix || p.brandId === selectedBrandForMix) && !formData.productIds.includes(p.id)).length}
+                          </span>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                          {products
+                            .filter(p => (p.brand?.id === selectedBrandForMix || p.brandId === selectedBrandForMix) && !formData.productIds.includes(p.id))
+                            .map(product => (
+                              <div 
+                                key={product.id}
+                                onClick={() => setFormData(prev => ({ ...prev, productIds: [...prev.productIds, product.id] }))}
+                                className="p-3 rounded-xl border border-slate-100 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all group flex items-center justify-between"
+                              >
+                                <div className="flex items-center gap-3">
+                                  {product.image ? (
+                                    <img src={product.image} alt="" className="w-8 h-8 rounded-lg object-cover bg-white" />
+                                  ) : (
+                                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                                      <Package size={14} className="text-slate-400" />
+                                    </div>
+                                  )}
+                                  <div>
+                                    <p className="text-sm font-medium text-slate-700 group-hover:text-blue-700">{product.name}</p>
+                                    {product.sku && <p className="text-[10px] text-slate-400">SKU: {product.sku}</p>}
+                                  </div>
+                                </div>
+                                <Plus size={16} className="text-slate-300 group-hover:text-blue-500" />
+                              </div>
+                            ))
+                          }
+                          {products.filter(p => (p.brand?.id === selectedBrandForMix || p.brandId === selectedBrandForMix) && !formData.productIds.includes(p.id)).length === 0 && (
+                            <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+                              <p className="text-sm">Todos os produtos desta marca já foram selecionados.</p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-3 border-t border-slate-100 bg-slate-50">
+                           <button
+                             type="button" 
+                             onClick={() => {
+                               const available = products
+                                 .filter(p => (p.brand?.id === selectedBrandForMix || p.brandId === selectedBrandForMix) && !formData.productIds.includes(p.id))
+                                 .map(p => p.id);
+                               setFormData(prev => ({ ...prev, productIds: [...prev.productIds, ...available] }));
+                             }}
+                             className="w-full py-2 text-xs font-bold text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                           >
+                             Adicionar Todos
+                           </button>
+                        </div>
+                      </div>
+
+                      {/* Selected Products */}
+                      <div className="flex flex-col h-full border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                        <div className="bg-green-50 px-4 py-3 border-b border-green-100 flex justify-between items-center">
+                          <h3 className="font-bold text-green-800">Selecionados (Mix)</h3>
+                          <span className="text-xs bg-green-200 text-green-700 px-2 py-1 rounded-full">
+                            {products.filter(p => (p.brand?.id === selectedBrandForMix || p.brandId === selectedBrandForMix) && formData.productIds.includes(p.id)).length}
+                          </span>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                          {products
+                            .filter(p => (p.brand?.id === selectedBrandForMix || p.brandId === selectedBrandForMix) && formData.productIds.includes(p.id))
+                            .map(product => (
+                              <div 
+                                key={product.id}
+                                onClick={() => setFormData(prev => ({ ...prev, productIds: prev.productIds.filter(id => id !== product.id) }))}
+                                className="p-3 rounded-xl border border-green-100 bg-green-50/30 hover:border-red-300 hover:bg-red-50 cursor-pointer transition-all group flex items-center justify-between"
+                              >
+                                <div className="flex items-center gap-3">
+                                  {product.image ? (
+                                    <img src={product.image} alt="" className="w-8 h-8 rounded-lg object-cover bg-white" />
+                                  ) : (
+                                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                                      <Package size={14} className="text-slate-400" />
+                                    </div>
+                                  )}
+                                  <div>
+                                    <p className="text-sm font-medium text-slate-700 group-hover:text-red-700">{product.name}</p>
+                                    {product.sku && <p className="text-[10px] text-slate-400">SKU: {product.sku}</p>}
+                                  </div>
+                                </div>
+                                <X size={16} className="text-green-300 group-hover:text-red-500" />
+                              </div>
+                            ))
+                          }
+                           {products.filter(p => (p.brand?.id === selectedBrandForMix || p.brandId === selectedBrandForMix) && formData.productIds.includes(p.id)).length === 0 && (
+                            <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+                              <p className="text-sm">Nenhum produto selecionado para esta marca.</p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-3 border-t border-slate-100 bg-slate-50">
+                           <button 
+                             type="button"
+                             onClick={() => {
+                               const toRemove = products
+                                 .filter(p => (p.brand?.id === selectedBrandForMix || p.brandId === selectedBrandForMix) && formData.productIds.includes(p.id))
+                                 .map(p => p.id);
+                               setFormData(prev => ({ ...prev, productIds: prev.productIds.filter(id => !toRemove.includes(id)) }));
+                             }}
+                             className="w-full py-2 text-xs font-bold text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                           >
+                             Remover Todos
+                           </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
