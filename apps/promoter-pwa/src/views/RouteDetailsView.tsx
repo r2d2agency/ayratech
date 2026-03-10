@@ -553,6 +553,54 @@ const RouteDetailsView = () => {
     }
   };
 
+  const getChecklistTemplate = (p: any) => {
+    const product = p.product;
+    return product.checklistTemplate || product.brand?.checklistTemplate;
+  };
+
+  const isProductComplete = (p: any) => {
+    const checked = !!p.checked;
+    
+    // Check constraints
+    let hasStockChecklist = false;
+    
+    if (p.checklists && p.checklists.length > 0) {
+        hasStockChecklist = p.checklists.some((c: any) => c.type === 'STOCK_COUNT');
+    } else {
+        // Fallback to template if checklists not instantiated yet (should not happen usually but safe)
+        const template = getChecklistTemplate(p);
+        if (template) {
+            hasStockChecklist = template.items?.some((i: any) => i.type === 'STOCK_COUNT');
+        } else {
+            // Default to TRUE if no info? Or FALSE? 
+            // If no template and no checklists, assume no stock count needed?
+            // Actually, if no template, we can't enforce stock count.
+            hasStockChecklist = false; 
+        }
+    }
+
+    const isWaitForStockCount = p.product?.brand?.waitForStockCount;
+
+    // If no stock checklist OR brand doesn't wait for count, only 'checked' matters
+    // This aligns with ProductCheckView logic where count inputs are only shown if both are true
+    if (!hasStockChecklist || !isWaitForStockCount) {
+        return checked;
+    }
+
+    // If strictly requires stock count
+    const gDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
+    const inv = p.inventoryCount;
+    const hasRupture = !!p.ruptureReason || !!p.isStockout;
+    
+    const iDone = (() => {
+        if (inv === null || inv === undefined) return false;
+        if (inv === 0) return hasRupture;
+        return inv > 0;
+    })();
+    
+    return gDone && iDone && checked;
+  };
+
   const validateRouteItemCompletion = (item: any) => {
     if (!item || !item.products) return { valid: false, message: 'Dados inválidos' };
 
@@ -563,20 +611,7 @@ const RouteDetailsView = () => {
         const catProducts = item.products.filter((p: any) => (p.product?.category || 'Geral') === cat);
         
         // Check Products
-        const incompleteProducts = catProducts.filter((p: any) => {
-            const gDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
-            const inv = p.inventoryCount;
-            const hasRupture = !!p.ruptureReason || !!p.isStockout;
-            
-            const iDone = (() => {
-                if (inv === null || inv === undefined) return false;
-                if (inv === 0) return hasRupture;
-                return inv > 0;
-            })();
-            
-            const checked = !!p.checked;
-            return !(gDone && iDone && checked);
-        });
+        const incompleteProducts = catProducts.filter((p: any) => !isProductComplete(p));
 
         if (incompleteProducts.length > 0) {
             return { valid: false, message: `Existem ${incompleteProducts.length} itens pendentes na categoria ${cat}.` };
@@ -1097,18 +1132,7 @@ const RouteDetailsView = () => {
                         {Array.from(new Set(activeItem.products?.map((p: any) => p.product?.category || 'Geral') as string[])).sort().map((cat) => {
                             const catProducts = activeItem.products.filter((p: any) => (p.product?.category || 'Geral') === cat);
                             const total = catProducts.length;
-                            const completed = catProducts.filter((p: any) => {
-                                const gDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
-                                const inv = p.inventoryCount;
-                                const hasRupture = !!p.ruptureReason || !!p.isStockout;
-                                const iDone = (() => {
-                                  if (inv === null || inv === undefined) return false;
-                                  if (inv === 0) return hasRupture;
-                                  return inv > 0;
-                                })();
-                                const checked = !!p.checked;
-                                return gDone && iDone && checked;
-                            }).length;
+                            const completed = catProducts.filter((p: any) => isProductComplete(p)).length;
                             const catPhotos = activeItem.categoryPhotos?.[cat] || {};
                             const beforeOk = !!catPhotos.before;
                             const afterOk = !!catPhotos.after;
@@ -1253,7 +1277,7 @@ const RouteDetailsView = () => {
         ref={fileInputRef}
         accept="image/*"
         capture="environment"
-        className="hidden"
+        className="fixed top-0 left-0 opacity-0 w-1 h-1 -z-10"
         onChange={handlePhotoCapture}
       />
 
@@ -1262,7 +1286,7 @@ const RouteDetailsView = () => {
         ref={actionFileInputRef}
         accept="image/*"
         capture="environment"
-        className="hidden"
+        className="fixed top-0 left-0 opacity-0 w-1 h-1 -z-10"
         onChange={handleActionPhoto}
       />
 

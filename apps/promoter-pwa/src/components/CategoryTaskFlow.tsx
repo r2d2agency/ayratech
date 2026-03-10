@@ -112,6 +112,13 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   };
 
   const isStockCountRequired = (p: any) => {
+    // 0. Check brand configuration first
+    // If brand doesn't wait for stock count, we shouldn't require it regardless of checklist
+    // This aligns with ProductCheckView which hides inputs if waitForStockCount is false
+    if (!p.product?.brand?.waitForStockCount) {
+        return false;
+    }
+
     // 1. Check instantiated checklists (generated at route creation)
     // This is the most accurate source of truth for the specific task
     if (p.checklists && p.checklists.length > 0) {

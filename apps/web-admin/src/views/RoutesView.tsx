@@ -1984,7 +1984,12 @@ const RoutesView: React.FC = () => {
                                             const matchesGroup = hasGroups && currentSupermarket.group && p.supermarketGroups.some((g: any) => g.id === currentSupermarket.group.id);
                                             const matchesSupermarket = hasSupermarkets && p.supermarkets.some((s: any) => s.id === currentSupermarket.id);
 
-                                            return matchesGroup || matchesSupermarket;
+                                            // Also check if the Product's Client (Brand Owner) is linked to this Supermarket
+                                            // This allows products to appear if the PDV is linked to the Client, even if not explicitly in product's list
+                                            const productClientId = p.client?.id || p.brand?.client?.id;
+                                            const matchesClient = productClientId && currentSupermarket.clients?.some((c: any) => c.id === productClientId);
+
+                                            return matchesGroup || matchesSupermarket || matchesClient;
                                         });
                                     setTempSelectedProducts(prev => [...prev, ...productsToAdd.map(p => p.id)]);
                                 }}
@@ -2017,7 +2022,12 @@ const RoutesView: React.FC = () => {
                                 const matchesGroup = hasGroups && currentSupermarket.group && p.supermarketGroups.some((g: any) => g.id === currentSupermarket.group.id);
                                 const matchesSupermarket = hasSupermarkets && p.supermarkets.some((s: any) => s.id === currentSupermarket.id);
 
-                                return matchesGroup || matchesSupermarket;
+                                // Also check if the Product's Client (Brand Owner) is linked to this Supermarket
+                                // This allows products to appear if the PDV is linked to the Client, even if not explicitly in product's list
+                                const productClientId = p.client?.id || p.brand?.client?.id;
+                                const matchesClient = productClientId && currentSupermarket.clients?.some((c: any) => c.id === productClientId);
+
+                                return matchesGroup || matchesSupermarket || matchesClient;
                              })
                              .map(product => (
                                 <div 
