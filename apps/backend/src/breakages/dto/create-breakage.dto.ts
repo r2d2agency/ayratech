@@ -22,4 +22,8 @@ export class CreateBreakageDto {
   @IsString({ each: true })
   @IsOptional()
   photos: string[];
+
+  @IsString()
+  @IsOptional()
+  description?: string;
 }

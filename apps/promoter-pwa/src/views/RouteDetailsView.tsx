@@ -405,8 +405,7 @@ const RouteDetailsView = () => {
           fetchRoute();
         } catch (err: any) {
           if (err.response && err.response.status >= 400 && err.response.status < 500) {
-               console.error('Checkout failed with 4xx:', err.response.data);
-               toast.error(`Erro: ${err.response.data?.message || 'Erro ao finalizar visita'}`);
+               console.error('Checkout failed with 4xx:', err.response.data); const item = route.items.find((i: any) => i.id === itemId); const v = validateRouteItemCompletion(item); const msg = !v.valid && v.message ? v.message : `Erro: ${err.response.data?.message || 'Erro ao finalizar visita'}`; toast.error(msg);
                setProcessing(false);
                return;
           }
@@ -557,83 +556,56 @@ const RouteDetailsView = () => {
     const product = p.product;
     return product.checklistTemplate || product.brand?.checklistTemplate;
   };
-
-  const isProductComplete = (p: any) => {
-    const checked = !!p.checked;
-    
-    // Check constraints
-    let hasStockChecklist = false;
-    
-    const hasStockInChecklists =
-      Array.isArray(p.checklists) &&
-      p.checklists.some((c: any) => c?.type === 'STOCK_COUNT');
-
-    const template = getChecklistTemplate(p);
-    const hasStockInTemplate =
-      Array.isArray(template?.items) &&
-      template.items.some((i: any) => i?.type === 'STOCK_COUNT');
-
-    hasStockChecklist = hasStockInChecklists || hasStockInTemplate;
-
-    // If no stock checklist, only 'checked' matters
-    if (!hasStockChecklist) {
-        return checked;
-    }
-
-    // If the checklist explicitly requires stock count
-    const gDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
-    const inv = p.inventoryCount;
-    const hasRupture = !!p.ruptureReason || !!p.isStockout;
-    
-    const iDone = (() => {
-        if (inv === null || inv === undefined) return false;
-        if (inv === 0) return hasRupture;
-        return inv > 0;
-    })();
-    
-    return gDone && iDone && checked;
-  };
-
-  const validateRouteItemCompletion = (item: any) => {
-    if (!item || !item.products) return { valid: false, message: 'Dados inválidos' };
-
-    // Group by Category
-    const categories = Array.from(new Set(item.products.map((p: any) => p.product?.category || 'Geral')));
-
-    for (const cat of categories) {
-        const catProducts = item.products.filter((p: any) => (p.product?.category || 'Geral') === cat);
-        
-        // Check Products
-        const incompleteProducts = catProducts.filter((p: any) => !isProductComplete(p));
-
-        if (incompleteProducts.length > 0) {
-            return { valid: false, message: `Existem ${incompleteProducts.length} itens pendentes na categoria ${cat}.` };
-        }
-
-        // Check Category Photos
-        const catPhotos = item.categoryPhotos?.[cat] || {};
-        const hasBefore = Array.isArray(catPhotos.before) ? catPhotos.before.length > 0 : !!catPhotos.before;
-        const hasAfter = Array.isArray(catPhotos.after) ? catPhotos.after.length > 0 : !!catPhotos.after;
-
-        if (!hasBefore) {
-            return { valid: false, message: `Foto de 'Antes' pendente na categoria ${cat}.` };
-        }
-        if (!hasAfter) {
-            return { valid: false, message: `Foto de 'Depois' pendente na categoria ${cat}.` };
-        }
-    }
-    
-    return { valid: true };
-  };
-
+    const isProductComplete = (p: any) => {
+      if (!p?.checked) return false;
+      if (p.isStockout) return !!(p.ruptureReason && String(p.ruptureReason).trim());
+  
+      const cl = Array.isArray(p.checklists) ? p.checklists : [];
+      const n = cl.filter((c: any) => c?.type === 'STOCK_COUNT').length;
+  
+      const tpl = getChecklistTemplate(p);
+      const needsG = n >= 1 || (!cl.length && Array.isArray(tpl?.items) && tpl.items.some((i: any) => i?.type === 'STOCK_COUNT'));
+      if (needsG && p.gondolaCount == null) return false;
+  
+      const invPolicy = !!p.product?.client?.requiresInventoryCount;
+      if ((n >= 2 || (needsG && invPolicy)) && p.inventoryCount == null) return false;
+  
+      if (cl.some((c: any) => c?.type !== 'STOCK_COUNT' && !c?.isChecked)) return false;
+  
+      const needsV = cl.some((c: any) => c?.type === 'VALIDITY_CHECK' && !!c?.isChecked);
+      if (needsV && (!p.validityDate || !p.validityQuantity || p.validityQuantity <= 0)) return false;
+  
+      return true;
+    };
+  
+    const validateRouteItemCompletion = (item: any) => {
+      if (!item?.products) return { valid: false, message: 'Dados inválidos' };
+  
+      const getCat = (p: any) => p.product?.categoryRef?.name || p.product?.category || 'Geral';
+      const categories = Array.from(new Set(item.products.map((p: any) => getCat(p))));
+  
+      for (const cat of categories) {
+        const catProducts = item.products.filter((p: any) => getCat(p) === cat);
+  
+        const photos = item.categoryPhotos?.[cat] || {};
+        const hasBefore = Array.isArray(photos.before) ? photos.before.length > 0 : !!photos.before;
+        const hasAfter = Array.isArray(photos.after) ? photos.after.length > 0 : !!photos.after;
+  
+        if (!hasBefore) return { valid: false, message: `Foto de 'Antes' pendente na categoria ${cat}.` };
+        if (!hasAfter) return { valid: false, message: `Foto de 'Depois' pendente na categoria ${cat}.` };
+  
+        const p = catProducts.find((p: any) => !isProductComplete(p));
+        if (p) return { valid: false, message: `Pendência em ${p.product?.name || 'Produto'} (${cat}).` };
+      }
+  
+      return { valid: true };
+    };
+  
   const handleCheckOut = async (itemId: string) => {
     // Validate Checklist Completion
     const item = route.items.find((i: any) => i.id === itemId);
     const validation = validateRouteItemCompletion(item);
-    if (!validation.valid) {
-        toast.error(validation.message || 'Complete todas as tarefas antes de finalizar.');
-        return;
-    }
+    if (!validation.valid) { const msg = validation.message || 'Complete todas as tarefas antes de finalizar.'; toast.error(msg); return; }
 
     setProcessing(true);
     if ('geolocation' in navigator) {
@@ -891,7 +863,7 @@ const RouteDetailsView = () => {
               <div className="flex gap-2 flex-col">
                 {!validateRouteItemCompletion(item).valid && (
                   <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded border border-orange-100 mb-1">
-                    Complete todas as tarefas para finalizar.
+                    {validateRouteItemCompletion(item).message || 'Complete todas as tarefas para finalizar.'}
                   </div>
                 )}
                 <button 
@@ -1444,3 +1416,4 @@ function LogOut(props: any) {
 }
 
 export default RouteDetailsView;
+                                                                                                

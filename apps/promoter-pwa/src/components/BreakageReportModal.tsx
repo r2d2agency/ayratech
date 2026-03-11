@@ -23,6 +23,7 @@ export const BreakageReportModal: React.FC<BreakageReportModalProps> = ({
   supermarketId,
 }) => {
   const [quantity, setQuantity] = useState<number | ''>('');
+  const [description, setDescription] = useState('');
   const [photos, setPhotos] = useState<{ url: string; blob: Blob }[]>([]);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -88,7 +89,8 @@ export const BreakageReportModal: React.FC<BreakageReportModalProps> = ({
                     routeItemId,
                     supermarketId,
                     quantity: Number(quantity),
-                    photos: offlinePhotos
+                    photos: offlinePhotos,
+                    description: description.trim() || undefined,
                 },
                 createdAt: new Date(),
                 status: 'PENDING',
@@ -125,6 +127,7 @@ export const BreakageReportModal: React.FC<BreakageReportModalProps> = ({
         supermarketId,
         quantity: Number(quantity),
         photos: photoUrls,
+        description: description.trim() || undefined,
       });
 
       toast.success('Avaria registrada com sucesso!');
@@ -167,6 +170,18 @@ export const BreakageReportModal: React.FC<BreakageReportModalProps> = ({
               onChange={(e) => setQuantity(Number(e.target.value))}
               className="w-full border rounded-lg p-3 text-lg font-bold text-center focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
               placeholder="0"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Descrição / Motivo
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none min-h-[90px]"
+              placeholder="Ex.: embalagem amassada, produto quebrado, vencido, etc."
             />
           </div>
 

@@ -44,6 +44,9 @@ export class BreakageReport {
   @Column('simple-array', { nullable: true })
   photos: string[];
 
+  @Column({ type: 'text', nullable: true })
+  description: string;
+
   @Column({
     type: 'enum',
     enum: BreakageStatus,

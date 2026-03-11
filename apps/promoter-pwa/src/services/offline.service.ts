@@ -121,7 +121,7 @@ class OfflineService {
              await client.post(action.url, formData);
 
         } else if (action.type === 'BREAKAGE_REPORT') {
-             const { productId, routeItemId, supermarketId, quantity, photos } = action.payload;
+             const { productId, routeItemId, supermarketId, quantity, photos, description } = action.payload;
              const uploadedPhotoUrls: string[] = [];
 
              if (photos && Array.isArray(photos)) {
@@ -147,7 +147,8 @@ class OfflineService {
                  routeItemId,
                  supermarketId,
                  quantity: Number(quantity),
-                 photos: uploadedPhotoUrls
+                 photos: uploadedPhotoUrls,
+                 description,
              };
 
              await client.post(action.url, breakagePayload);

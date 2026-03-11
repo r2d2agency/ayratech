@@ -24,6 +24,7 @@ interface BreakageItem {
   };
   createdAt: string;
   photos: string[];
+  description?: string;
   status?: 'PENDING_INVOICE' | 'COMPLETED';
   invoiceNumber?: string;
   invoiceDate?: string;
@@ -199,10 +200,7 @@ export const BreakagesView = () => {
                 return (
                   <div 
                     key={item.id}
-                    onClick={() => {
-                      if (isPending) toggleSelection(item.id);
-                      else setSelectedItemDetails(item);
-                    }}
+                    onClick={() => setSelectedItemDetails(item)}
                     className={`bg-white p-4 rounded-xl border shadow-sm flex items-center gap-3 transition-colors ${
                       'cursor-pointer'
                     } ${
@@ -210,11 +208,17 @@ export const BreakagesView = () => {
                     }`}
                   >
                     {isPending && (
-                      <div className={`w-5 h-5 rounded border flex items-center justify-center ${
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSelection(item.id);
+                        }}
+                        className={`w-5 h-5 rounded border flex items-center justify-center ${
                         isSelected ? 'bg-red-500 border-red-500 text-white' : 'border-gray-300'
                       }`}>
                         {isSelected && <CheckCircle size={14} />}
-                      </div>
+                      </button>
                     )}
                     
                     <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
@@ -424,6 +428,13 @@ export const BreakagesView = () => {
                   )}
                 </div>
               )}
+
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <h4 className="font-bold text-gray-800 mb-2">Descrição / Motivo</h4>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                  {selectedItemDetails.description || '—'}
+                </p>
+              </div>
 
               {/* Breakage Photos */}
               <div>

@@ -13,6 +13,7 @@ interface BreakageReport {
     sku?: string;
   };
   quantity: number;
+  description?: string;
   supermarket: {
     fantasyName: string;
     name?: string;
@@ -207,6 +208,13 @@ const BreakagesReportView = () => {
                   <p className="text-lg text-gray-900">{selectedReport.product.name}</p>
                   <p className="text-sm text-gray-500">EAN: {selectedReport.product.ean}</p>
                   <p className="text-sm text-gray-500">Qtd Avariada: <span className="font-bold text-red-600">{selectedReport.quantity}</span></p>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-gray-700 mb-2 border-b pb-1">Descrição / Motivo</h4>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                    {selectedReport.description || '—'}
+                  </p>
                 </div>
 
                 <div>
