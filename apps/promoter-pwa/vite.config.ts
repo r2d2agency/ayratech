@@ -15,6 +15,8 @@ export default defineConfig({
         name: 'Ayratech Promotor',
         short_name: 'Promotor',
         description: 'App para Promotores - Ayratech',
+        start_url: '/',
+        scope: '/',
         theme_color: '#a1069aff',
         background_color: '#ffffff',
         display: 'standalone',
