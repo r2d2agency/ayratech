@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Camera, Save, X, Trash2, AlertTriangle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../api/client';
@@ -24,11 +24,37 @@ export const BreakageReportModal: React.FC<BreakageReportModalProps> = ({
 }) => {
   const [quantity, setQuantity] = useState<number | ''>('');
   const [description, setDescription] = useState('');
+  const [reasons, setReasons] = useState<Array<{ id: string; label: string }>>([]);
+  const [selectedReasonId, setSelectedReasonId] = useState<string>('');
   const [photos, setPhotos] = useState<{ url: string; blob: Blob }[]>([]);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { settings } = useBranding();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await api.get('/incident-reasons', { params: { type: 'BREAKAGE' } });
+        const list = Array.isArray(res.data) ? res.data : [];
+        const normalized = list
+          .filter((r: any) => r && r.id && r.label)
+          .map((r: any) => ({ id: String(r.id), label: String(r.label) }));
+
+        if (cancelled) return;
+        setReasons(normalized);
+      } catch {
+        if (cancelled) return;
+        setReasons([]);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (!isOpen) return null;
 
@@ -66,6 +92,22 @@ export const BreakageReportModal: React.FC<BreakageReportModalProps> = ({
       return;
     }
 
+    const composedDescription = (() => {
+      if (!selectedReasonId) return description.trim() || undefined;
+      if (selectedReasonId === '__OTHER__') return description.trim() || undefined;
+
+      const selected = reasons.find(r => r.id === selectedReasonId);
+      if (!selected?.label) return description.trim() || undefined;
+
+      const details = description.trim();
+      return details.length > 0 ? `${selected.label} - ${details}` : selected.label;
+    })();
+
+    if (!selectedReasonId && reasons.length > 0) {
+      toast.error('Selecione o motivo da avaria.');
+      return;
+    }
+
     setLoading(true);
 
     // Offline check
@@ -90,7 +132,7 @@ export const BreakageReportModal: React.FC<BreakageReportModalProps> = ({
                     supermarketId,
                     quantity: Number(quantity),
                     photos: offlinePhotos,
-                    description: description.trim() || undefined,
+                    description: composedDescription,
                 },
                 createdAt: new Date(),
                 status: 'PENDING',
@@ -127,7 +169,7 @@ export const BreakageReportModal: React.FC<BreakageReportModalProps> = ({
         supermarketId,
         quantity: Number(quantity),
         photos: photoUrls,
-        description: description.trim() || undefined,
+        description: composedDescription,
       });
 
       toast.success('Avaria registrada com sucesso!');
@@ -175,13 +217,34 @@ export const BreakageReportModal: React.FC<BreakageReportModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Descrição / Motivo
+              Motivo
+            </label>
+            <select
+              value={selectedReasonId}
+              onChange={(e) => setSelectedReasonId(e.target.value)}
+              className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none bg-white disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-500"
+              disabled={loading}
+            >
+              <option value="">Selecionar motivo...</option>
+              {reasons.map(r => (
+                <option key={r.id} value={r.id}>
+                  {r.label}
+                </option>
+              ))}
+              <option value="__OTHER__">Outro (descrever)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Descrição (opcional)
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none min-h-[90px]"
               placeholder="Ex.: embalagem amassada, produto quebrado, vencido, etc."
+              disabled={loading}
             />
           </div>
 

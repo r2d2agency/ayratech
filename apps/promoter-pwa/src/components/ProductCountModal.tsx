@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, AlertTriangle, Package, Layers, Info } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { BreakageReportModal } from './BreakageReportModal';
+import api from '../api/client';
 
 interface ProductCountModalProps {
   isOpen: boolean;
@@ -31,6 +32,9 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
   const [ruptureReason, setRuptureReason] = useState('');
   const [isStockout, setIsStockout] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [ruptureReasons, setRuptureReasons] = useState<Array<{ id: string; label: string }>>([]);
+  const [selectedRuptureReasonId, setSelectedRuptureReasonId] = useState<string>('');
+  const [ruptureDetails, setRuptureDetails] = useState<string>('');
 
   const [validityDate, setValidityDate] = useState('');
   const [validityQuantity, setValidityQuantity] = useState<number | ''>('');
@@ -51,6 +55,8 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
       setInventoryCount(product.inventoryCount ?? '');
       setRuptureReason(product.ruptureReason || '');
       setIsStockout(product.isStockout || false);
+      setSelectedRuptureReasonId('');
+      setRuptureDetails(product.ruptureReason || '');
       setValidityDate(product.validityDate || '');
       setValidityQuantity(
         product.validityQuantity !== null && product.validityQuantity !== undefined
@@ -68,6 +74,50 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
       }
     }
   }, [product]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (readOnly) return;
+    if (!requireStockCount) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await api.get('/incident-reasons', {
+          params: { type: 'RUPTURE' }
+        });
+        const list = Array.isArray(res.data) ? res.data : [];
+        const normalized = list
+          .filter((r: any) => r && r.id && r.label)
+          .map((r: any) => ({ id: String(r.id), label: String(r.label) }));
+
+        if (cancelled) return;
+        setRuptureReasons(normalized);
+
+        const existing = (product?.ruptureReason || '').trim();
+        if (!existing || selectedRuptureReasonId) return;
+
+        const match = normalized.find(r => existing === r.label || existing.startsWith(`${r.label} - `));
+        if (match) {
+          setSelectedRuptureReasonId(match.id);
+          if (existing !== match.label) {
+            setRuptureDetails(existing.slice(`${match.label} - `.length));
+          }
+        } else {
+          setSelectedRuptureReasonId('__OTHER__');
+          setRuptureDetails(existing);
+        }
+      } catch {
+        if (cancelled) return;
+        setRuptureReasons([]);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, readOnly, requireStockCount, product, selectedRuptureReasonId]);
 
   // Calculate total
   const g = typeof gondolaCount === 'number' ? gondolaCount : 0;
@@ -101,8 +151,29 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
         }
       }
 
+      const composedRuptureReason = (() => {
+        if (!requireStockCount) return null;
+        if (total !== 0) return null;
+
+        if (!selectedRuptureReasonId) {
+          const freeText = ruptureDetails.trim() || ruptureReason.trim();
+          return freeText.length > 0 ? freeText : null;
+        }
+
+        if (selectedRuptureReasonId === '__OTHER__') {
+          const freeText = ruptureDetails.trim() || ruptureReason.trim();
+          return freeText.length > 0 ? freeText : null;
+        }
+
+        const selected = ruptureReasons.find(r => r.id === selectedRuptureReasonId);
+        if (!selected?.label) return null;
+
+        const details = ruptureDetails.trim();
+        return details.length > 0 ? `${selected.label} - ${details}` : selected.label;
+      })();
+
       // Validation
-      if (requireStockCount && total === 0 && !ruptureReason && !isStockout) {
+      if (requireStockCount && total === 0 && !composedRuptureReason && !isStockout) {
         toast.error('Se o estoque é 0, descreva o motivo da ruptura.');
         setSaving(false);
         return;
@@ -111,7 +182,7 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
       const payload = {
         gondolaCount: gondolaCount === '' ? 0 : gondolaCount,
         inventoryCount: inventoryCount === '' ? 0 : inventoryCount,
-        ruptureReason: (requireStockCount && total === 0) ? ruptureReason : null, // Clear reason if stock > 0
+        ruptureReason: composedRuptureReason, // Clear reason if stock > 0
         isStockout: requireStockCount && total === 0,
         stockCount: total,
         validityDate: validityDate || null,
@@ -290,11 +361,31 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
                 <AlertTriangle size={16} className="mr-1" />
                 Motivo da Ruptura
               </label>
-              <textarea
-                value={ruptureReason}
-                onChange={(e) => setRuptureReason(e.target.value)}
+              <select
+                value={selectedRuptureReasonId}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setSelectedRuptureReasonId(next);
+                  if (next === '__OTHER__') return;
+                  setRuptureDetails('');
+                }}
                 className="w-full border border-red-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-red-500 outline-none bg-red-50 disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-500"
-                placeholder="Descreva o motivo..."
+                disabled={readOnly}
+              >
+                <option value="">Selecionar motivo...</option>
+                {ruptureReasons.map(r => (
+                  <option key={r.id} value={r.id}>
+                    {r.label}
+                  </option>
+                ))}
+                <option value="__OTHER__">Outro (descrever)</option>
+              </select>
+
+              <textarea
+                value={ruptureDetails}
+                onChange={(e) => setRuptureDetails(e.target.value)}
+                className="w-full border border-red-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-red-500 outline-none bg-red-50 disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-500"
+                placeholder={selectedRuptureReasonId && selectedRuptureReasonId !== '__OTHER__' ? 'Complemento (opcional)...' : 'Descreva o motivo...'}
                 rows={3}
                 disabled={readOnly}
               />

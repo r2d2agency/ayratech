@@ -135,8 +135,9 @@ class OfflineService {
                      formData.append('file', blob, photo.filename || 'breakage.jpg');
                      
                      const uploadRes = await client.post('/upload', formData);
-                     if (uploadRes.data && uploadRes.data.url) {
-                         uploadedPhotoUrls.push(uploadRes.data.url);
+                     const url = uploadRes?.data?.path || uploadRes?.data?.url;
+                     if (url) {
+                         uploadedPhotoUrls.push(url);
                      }
                  }
              }
