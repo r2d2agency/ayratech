@@ -59,8 +59,10 @@ const RouteDetailsView = () => {
   const [currentPhoto, setCurrentPhoto] = useState<{blob: Blob, url: string} | null>(null);
   const [showPhotoPreview, setShowPhotoPreview] = useState(false);
   const [showTasksModal, setShowTasksModal] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedCategoryMode, setSelectedCategoryMode] = useState<'ITEMS' | 'PHOTOS' | null>(null);
+  const [selectedBrandKey, setSelectedBrandKey] = useState<string | null>(null);
+  const [selectedBrandLabel, setSelectedBrandLabel] = useState<string | null>(null);
+  const [selectedCategoryKey, setSelectedCategoryKey] = useState<string | null>(null);
+  const [selectedCategoryLabel, setSelectedCategoryLabel] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const todayDate = new Date();
@@ -556,6 +558,10 @@ const RouteDetailsView = () => {
     const product = p.product;
     return product.checklistTemplate || product.brand?.checklistTemplate;
   };
+    const getBrandKey = (p: any) => p?.product?.brand?.id || (p?.product?.brand?.name || 'SEM_MARCA');
+    const getBrandLabel = (p: any) => p?.product?.brand?.name || 'Sem Marca';
+    const getCatLabel = (p: any) => p?.product?.categoryRef?.name || p?.product?.category || 'Geral';
+    const getBrandCategoryKey = (p: any) => `${getBrandKey(p)}::${getCatLabel(p)}`;
     const isProductComplete = (p: any) => {
       if (!p?.checked) return false;
       if (p.isStockout) return !!(p.ruptureReason && String(p.ruptureReason).trim());
@@ -581,21 +587,23 @@ const RouteDetailsView = () => {
     const validateRouteItemCompletion = (item: any) => {
       if (!item?.products) return { valid: false, message: 'Dados inválidos' };
   
-      const getCat = (p: any) => p.product?.categoryRef?.name || p.product?.category || 'Geral';
-      const categories = Array.from(new Set(item.products.map((p: any) => getCat(p))));
+      const groups = Array.from(new Set(item.products.map((p: any) => getBrandCategoryKey(p))));
   
-      for (const cat of categories) {
-        const catProducts = item.products.filter((p: any) => getCat(p) === cat);
+      for (const key of groups) {
+        const groupProducts = item.products.filter((p: any) => getBrandCategoryKey(p) === key);
+        const brandLabel = getBrandLabel(groupProducts[0]);
+        const catLabel = getCatLabel(groupProducts[0]);
   
-        const photos = item.categoryPhotos?.[cat] || {};
-        const hasBefore = Array.isArray(photos.before) ? photos.before.length > 0 : !!photos.before;
+        const photos = item.categoryPhotos?.[key] || {};
+        const beforeCount = Array.isArray(photos.before) ? photos.before.length : (photos.before ? 1 : 0);
+        const hasBefore = beforeCount >= 3;
         const hasAfter = Array.isArray(photos.after) ? photos.after.length > 0 : !!photos.after;
   
-        if (!hasBefore) return { valid: false, message: `Foto de 'Antes' pendente na categoria ${cat}.` };
-        if (!hasAfter) return { valid: false, message: `Foto de 'Depois' pendente na categoria ${cat}.` };
+        if (!hasBefore) return { valid: false, message: `Foto de 'Antes' pendente (mín. 3) em ${brandLabel} • ${catLabel}.` };
+        if (!hasAfter) return { valid: false, message: `Foto de 'Depois' pendente em ${brandLabel} • ${catLabel}.` };
   
-        const p = catProducts.find((p: any) => !isProductComplete(p));
-        if (p) return { valid: false, message: `Pendência em ${p.product?.name || 'Produto'} (${cat}).` };
+        const p = groupProducts.find((p: any) => !isProductComplete(p));
+        if (p) return { valid: false, message: `Pendência em ${p.product?.name || 'Produto'} (${brandLabel} • ${catLabel}).` };
       }
   
       return { valid: true };
@@ -949,16 +957,16 @@ const RouteDetailsView = () => {
 
       {/* Tasks Modal */}
       {showTasksModal && activeItem && (
-        selectedCategory && selectedCategoryMode ? (
+        selectedCategoryKey && selectedCategoryLabel && selectedBrandKey && selectedBrandLabel ? (
           <CategoryTaskFlow
             routeItem={activeItem}
-            category={selectedCategory}
-            products={activeItem.products.filter(
-              (p: any) => (p.product?.category || 'Geral') === selectedCategory
-            )}
+            categoryKey={selectedCategoryKey}
+            categoryLabel={selectedCategoryLabel}
+            brandLabel={selectedBrandLabel}
+            products={activeItem.products.filter((p: any) => getBrandKey(p) === selectedBrandKey && getCatLabel(p) === selectedCategoryLabel)}
             photoConfig={
               activeItem.products.find(
-                (p: any) => (p.product?.category || 'Geral') === selectedCategory
+                (p: any) => getBrandKey(p) === selectedBrandKey && getCatLabel(p) === selectedCategoryLabel
               )?.product?.client?.photoConfig
             }
             onUpdateItem={async (itemId, data, skipSync) => {
@@ -989,20 +997,18 @@ const RouteDetailsView = () => {
               );
             }}
             onFinish={() => {
-              setSelectedCategory(null);
-              setSelectedCategoryMode(null);
+              setSelectedBrandKey(null);
+              setSelectedBrandLabel(null);
+              setSelectedCategoryKey(null);
+              setSelectedCategoryLabel(null);
             }}
             onBack={() => {
-              setSelectedCategory(null);
-              setSelectedCategoryMode(null);
+              setSelectedBrandKey(null);
+              setSelectedBrandLabel(null);
+              setSelectedCategoryKey(null);
+              setSelectedCategoryLabel(null);
             }}
-            mode={
-              selectedCategoryMode === 'ITEMS'
-                ? 'ITEMS'
-                : selectedCategoryMode === 'PHOTOS'
-                ? 'PHOTOS'
-                : 'FULL'
-            }
+            mode="FULL"
             readOnly={isPastRoute || activeItem.status === 'CHECKOUT' || activeItem.status === 'COMPLETED'}
           />
         ) : (
@@ -1094,93 +1100,108 @@ const RouteDetailsView = () => {
                             </div>
                         </div>
 
-                        {Array.from(new Set(activeItem.products?.map((p: any) => p.product?.category || 'Geral') as string[])).sort().map((cat) => {
-                            const catProducts = activeItem.products.filter((p: any) => (p.product?.category || 'Geral') === cat);
-                            const total = catProducts.length;
-                            const completed = catProducts.filter((p: any) => isProductComplete(p)).length;
-                            const catPhotos = activeItem.categoryPhotos?.[cat] || {};
-                            const beforeOk = !!catPhotos.before;
-                            const afterOk = !!catPhotos.after;
-                            
-                            const isDone = completed === total && total > 0;
-                            const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+                        {(() => {
+                          const products = (activeItem.products || []) as any[];
+                          const brandMap = new Map<string, { brandKey: string; brandLabel: string; categories: Map<string, any[]> }>();
 
+                          for (const p of products) {
+                            const bKey = getBrandKey(p);
+                            const bLabel = getBrandLabel(p);
+                            const cLabel = getCatLabel(p);
+
+                            if (!brandMap.has(bKey)) {
+                              brandMap.set(bKey, { brandKey: bKey, brandLabel: bLabel, categories: new Map() });
+                            }
+                            const b = brandMap.get(bKey)!;
+                            if (!b.categories.has(cLabel)) b.categories.set(cLabel, []);
+                            b.categories.get(cLabel)!.push(p);
+                          }
+
+                          const brands = Array.from(brandMap.values()).sort((a, b) => a.brandLabel.localeCompare(b.brandLabel, 'pt-BR'));
+
+                          return brands.map((brand) => {
+                            const cats = Array.from(brand.categories.entries()).sort(([a], [b]) => a.localeCompare(b, 'pt-BR'));
                             return (
-                              <div 
-                                key={cat}
-                                className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm transition-colors"
-                              >
-                                <div className="flex justify-between items-start gap-3">
-                                  <div className="flex-1">
-                                    <h4 className="font-bold text-gray-800">{cat}</h4>
-                                    <div className="flex items-center gap-2 mt-1 mb-1">
-                                      <span className="text-xs text-gray-500">{completed}/{total} itens</span>
-                                      {isDone && (
-                                        <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                                          Concluído
-                                        </span>
-                                      )}
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                                      <span
-                                        className={`text-[10px] px-2 py-0.5 rounded-full ${
-                                          (Array.isArray(catPhotos.before) ? catPhotos.before.length > 0 : !!catPhotos.before)
-                                            ? 'bg-green-50 text-green-700'
-                                            : 'bg-gray-100 text-gray-500'
-                                        }`}
-                                      >
-                                        {(Array.isArray(catPhotos.before) ? catPhotos.before.length > 0 : !!catPhotos.before)
-                                          ? 'Foto Antes OK'
-                                          : 'Foto Antes pendente'}
-                                      </span>
-                                      <span
-                                        className={`text-[10px] px-2 py-0.5 rounded-full ${
-                                          (Array.isArray(catPhotos.after) ? catPhotos.after.length > 0 : !!catPhotos.after)
-                                            ? 'bg-green-50 text-green-700'
-                                            : 'bg-gray-100 text-gray-500'
-                                        }`}
-                                      >
-                                        {(Array.isArray(catPhotos.after) ? catPhotos.after.length > 0 : !!catPhotos.after)
-                                          ? 'Foto Depois OK'
-                                          : 'Foto Depois pendente'}
-                                      </span>
-                                    </div>
-                                    <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden mt-2">
-                                      <div
-                                        className={`h-full rounded-full ${
-                                          progress === 100 ? 'bg-green-500' : 'bg-blue-500'
-                                        }`}
-                                        style={{ width: `${progress}%` }}
-                                      />
-                                    </div>
-                                  </div>
+                              <div key={brand.brandKey} className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <h4 className="text-sm font-black text-slate-800">{brand.brandLabel}</h4>
+                                  <span className="text-[10px] text-slate-500 font-semibold">{cats.length} categorias</span>
                                 </div>
 
-                                <div className="mt-3 grid grid-cols-2 gap-2">
-                                  <button
-                                    onClick={() => {
-                                      setSelectedCategory(cat as string);
-                                      setSelectedCategoryMode('ITEMS');
-                                    }}
-                                    className="w-full py-2 px-3 rounded-lg border border-blue-500 text-blue-600 text-xs font-semibold flex items-center justify-center gap-1 active:scale-[0.98] transition-transform"
-                                  >
-                                    <ListTodo size={14} />
-                                    <span>Ver itens</span>
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setSelectedCategory(cat as string);
-                                      setSelectedCategoryMode('PHOTOS');
-                                    }}
-                                    className="w-full py-2 px-3 rounded-lg bg-blue-600 text-white text-xs font-semibold flex items-center justify-center gap-1 active:scale-[0.98] transition-transform"
-                                  >
-                                    <Camera size={14} />
-                                    <span>Fotos antes/depois</span>
-                                  </button>
+                                <div className="space-y-3">
+                                  {cats.map(([catLabel, catProducts]) => {
+                                    const groupKey = `${brand.brandKey}::${catLabel}`;
+                                    const total = catProducts.length;
+                                    const completed = catProducts.filter((p: any) => isProductComplete(p)).length;
+                                    const photos = activeItem.categoryPhotos?.[groupKey] || {};
+                                    const beforeCount = Array.isArray(photos.before) ? photos.before.length : (photos.before ? 1 : 0);
+                                    const afterCount = Array.isArray(photos.after) ? photos.after.length : (photos.after ? 1 : 0);
+
+                                    const beforeOk = beforeCount >= 3;
+                                    const afterOk = afterCount > 0;
+                                    const isDone = completed === total && total > 0 && beforeOk && afterOk;
+                                    const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+                                    return (
+                                      <button
+                                        key={groupKey}
+                                        onClick={() => {
+                                          setSelectedBrandKey(brand.brandKey);
+                                          setSelectedBrandLabel(brand.brandLabel);
+                                          setSelectedCategoryKey(groupKey);
+                                          setSelectedCategoryLabel(catLabel);
+                                        }}
+                                        className="w-full text-left bg-white p-4 rounded-xl border border-gray-200 shadow-sm active:scale-[0.99] transition-transform"
+                                      >
+                                        <div className="flex items-start justify-between gap-3">
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between gap-2">
+                                              <h5 className="font-bold text-gray-800 truncate">{catLabel}</h5>
+                                              <ChevronRight size={18} className="text-gray-300 flex-shrink-0" />
+                                            </div>
+
+                                            <div className="flex items-center gap-2 mt-1 mb-1">
+                                              <span className="text-xs text-gray-500">{completed}/{total} itens</span>
+                                              {isDone && (
+                                                <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                                                  Concluído
+                                                </span>
+                                              )}
+                                            </div>
+
+                                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                                              <span
+                                                className={`text-[10px] px-2 py-0.5 rounded-full ${
+                                                  beforeOk ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'
+                                                }`}
+                                              >
+                                                {beforeOk ? `Foto Antes OK (${beforeCount}/3)` : `Foto Antes ${beforeCount}/3`}
+                                              </span>
+                                              <span
+                                                className={`text-[10px] px-2 py-0.5 rounded-full ${
+                                                  afterOk ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'
+                                                }`}
+                                              >
+                                                {afterOk ? `Foto Final OK (${afterCount})` : 'Foto Final pendente'}
+                                              </span>
+                                            </div>
+
+                                            <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden mt-2">
+                                              <div
+                                                className={`h-full rounded-full ${progress === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+                                                style={{ width: `${progress}%` }}
+                                              />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
                                 </div>
                               </div>
                             );
-                        })}
+                          });
+                        })()}
                         {(!activeItem.products || activeItem.products.length === 0) && (
                             <div className="text-center py-8 text-gray-500">
                                 <ListTodo size={48} className="mx-auto mb-2 opacity-20" />

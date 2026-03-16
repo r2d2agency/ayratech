@@ -1955,28 +1955,50 @@ export class RoutesService {
     }
     
     // Validações de conclusão (categoria e produto)
-    // 1) Fotos por categoria: cada categoria presente nos produtos do item deve possuir fotos de 'before' e 'after'
-    const categorySet = new Set<string>();
-    for (const ip of item.products || []) {
-      const cat = (ip.product?.categoryRef?.name) || (ip.product as any)?.category || 'Sem Categoria';
-      categorySet.add(cat);
-    }
+    // 1) Fotos por Marca+Categoria: cada grupo presente nos produtos do item deve possuir fotos 'before' (mín 3) e 'after' (mín 1)
     const categoryPhotos: Record<string, any> = (item as any).categoryPhotos || {};
+    const hasAnyBrandCategoryKey = Object.keys(categoryPhotos).some(k => k.includes('::'));
+
+    const groups = new Map<string, { brandLabel: string; categoryLabel: string }>();
+    const categoryToBrands = new Map<string, Set<string>>();
+
+    for (const ip of item.products || []) {
+      const categoryLabel = (ip.product?.categoryRef?.name) || (ip.product as any)?.category || 'Sem Categoria';
+      const brandKey = ip.product?.brand?.id || ip.product?.brand?.name || 'SEM_MARCA';
+      const brandLabel = ip.product?.brand?.name || 'Sem Marca';
+
+      if (!categoryToBrands.has(categoryLabel)) categoryToBrands.set(categoryLabel, new Set());
+      categoryToBrands.get(categoryLabel)!.add(String(brandKey));
+
+      const groupKey = `${brandKey}::${categoryLabel}`;
+      groups.set(groupKey, { brandLabel, categoryLabel });
+    }
+
     let categoryPhotoMissing = false;
-    let missingCategory = '';
-    for (const cat of categorySet) {
-      const photos = categoryPhotos[cat] || {};
-      if (!photos.before || !photos.after) {
+    let missingGroupLabel = '';
+
+    for (const [groupKey, meta] of groups.entries()) {
+      const fallbackOk = (() => {
+        const brandsForCategory = categoryToBrands.get(meta.categoryLabel);
+        return brandsForCategory ? brandsForCategory.size === 1 : true;
+      })();
+
+      const photos = (categoryPhotos[groupKey] ?? ((!hasAnyBrandCategoryKey && fallbackOk) ? categoryPhotos[meta.categoryLabel] : undefined)) || {};
+
+      const beforeCount = Array.isArray(photos.before) ? photos.before.length : (photos.before ? 1 : 0);
+      const afterCount = Array.isArray(photos.after) ? photos.after.length : (photos.after ? 1 : 0);
+
+      if (beforeCount < 3 || afterCount < 1) {
         categoryPhotoMissing = true;
-        missingCategory = cat;
-        console.warn(`Missing photos for category: ${cat}. Photos:`, JSON.stringify(photos));
+        missingGroupLabel = `${meta.brandLabel} • ${meta.categoryLabel}`;
         break;
       }
     }
+
     if (categoryPhotoMissing) {
       if (item.status === 'CHECKIN') item.status = 'PENDING';
       await this.routeItemsRepository.save(item);
-      throw new BadRequestException(`Faltam fotos obrigatórias por categoria (Antes/Depois) na categoria "${missingCategory}". Verifique todas as categorias.`);
+      throw new BadRequestException(`Faltam fotos obrigatórias (Antes mín. 3 / Depois) em "${missingGroupLabel}". Verifique todas as marcas e categorias.`);
     }
 
     // Pre-calculate inventory requirements

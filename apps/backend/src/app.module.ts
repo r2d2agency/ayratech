@@ -37,6 +37,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { AiModule } from './ai/ai.module';
 import { CompetitorsModule } from './competitors/competitors.module';
 import { SettingsModule } from './settings/settings.module';
+import { IncidentReasonsModule } from './incident-reasons/incident-reasons.module';
 import { UPLOAD_ROOT } from './config/upload.config';
 
 @Module({
@@ -106,6 +107,7 @@ import { UPLOAD_ROOT } from './config/upload.config';
     CompetitorsModule,
     SettingsModule,
     BreakagesModule,
+    IncidentReasonsModule,
   ],
   controllers: [AppController],
   providers: [
