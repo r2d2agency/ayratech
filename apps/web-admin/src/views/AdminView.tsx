@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useBranding } from '../context/BrandingContext';
-import { Save, Shield, Palette, Users, Trash2, Edit, Upload } from 'lucide-react';
+import { Save, Shield, Palette, Users, Trash2, Edit, Upload, AlertTriangle } from 'lucide-react';
 import SectionHeader from '../components/SectionHeader';
 import api from '../api/client';
 import { getImageUrl } from '../utils/image';
 
 const AdminView: React.FC = () => {
   const { settings, updateSettings } = useBranding();
-  const [activeTab, setActiveTab] = useState<'branding' | 'users' | 'permissions'>('branding');
+  const [activeTab, setActiveTab] = useState<'branding' | 'users' | 'permissions' | 'reasons'>('branding');
 
   // Local state for branding form
   const [brandingForm, setBrandingForm] = useState(settings);
@@ -33,6 +33,15 @@ const AdminView: React.FC = () => {
   // Permissions state
   const [editingPermissions, setEditingPermissions] = useState<string | null>(null);
   const [roles, setRoles] = useState<any[]>([]);
+  const [incidentReasons, setIncidentReasons] = useState<any[]>([]);
+  const [loadingIncidentReasons, setLoadingIncidentReasons] = useState(false);
+  const [incidentReasonTypeFilter, setIncidentReasonTypeFilter] = useState<'ALL' | 'RUPTURE' | 'BREAKAGE'>('ALL');
+  const [editingIncidentReason, setEditingIncidentReason] = useState<any | null>(null);
+  const [incidentReasonForm, setIncidentReasonForm] = useState<{ type: 'RUPTURE' | 'BREAKAGE'; label: string; isActive: boolean }>({
+    type: 'RUPTURE',
+    label: '',
+    isActive: true,
+  });
 
   useEffect(() => {
     fetchRoles();
@@ -67,6 +76,12 @@ const AdminView: React.FC = () => {
       fetchUsers();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'reasons') {
+      fetchIncidentReasons();
+    }
+  }, [activeTab, incidentReasonTypeFilter]);
 
   const fetchUsers = async () => {
     setLoadingUsers(true);
@@ -138,6 +153,81 @@ const AdminView: React.FC = () => {
       fetchUsers();
     } catch (err) {
       alert('Erro ao excluir usuário');
+    }
+  };
+
+  const fetchIncidentReasons = async () => {
+    setLoadingIncidentReasons(true);
+    try {
+      const params: any = { all: 'true' };
+      if (incidentReasonTypeFilter !== 'ALL') params.type = incidentReasonTypeFilter;
+      const res = await api.get('/incident-reasons', { params });
+      setIncidentReasons(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error('Erro ao buscar motivos:', err);
+      setIncidentReasons([]);
+    } finally {
+      setLoadingIncidentReasons(false);
+    }
+  };
+
+  const handleIncidentReasonSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!incidentReasonForm.label.trim()) {
+      alert('Informe o rótulo do motivo.');
+      return;
+    }
+
+    try {
+      const payload = {
+        type: incidentReasonForm.type,
+        label: incidentReasonForm.label.trim(),
+        isActive: incidentReasonForm.isActive,
+      };
+
+      if (editingIncidentReason) {
+        await api.patch(`/incident-reasons/${editingIncidentReason.id}`, payload);
+        alert('Motivo atualizado com sucesso!');
+      } else {
+        await api.post('/incident-reasons', payload);
+        alert('Motivo criado com sucesso!');
+      }
+
+      resetIncidentReasonForm();
+      fetchIncidentReasons();
+    } catch (err: any) {
+      console.error(err);
+      alert('Erro ao salvar motivo: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleEditIncidentReason = (reason: any) => {
+    setEditingIncidentReason(reason);
+    setIncidentReasonForm({
+      type: reason.type === 'BREAKAGE' ? 'BREAKAGE' : 'RUPTURE',
+      label: reason.label || '',
+      isActive: reason.isActive !== false,
+    });
+  };
+
+  const resetIncidentReasonForm = () => {
+    setEditingIncidentReason(null);
+    setIncidentReasonForm({
+      type: 'RUPTURE',
+      label: '',
+      isActive: true,
+    });
+  };
+
+  const handleDeleteIncidentReason = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este motivo?')) return;
+    try {
+      await api.delete(`/incident-reasons/${id}`);
+      fetchIncidentReasons();
+    } catch (err: any) {
+      console.error(err);
+      alert('Erro ao excluir motivo: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -244,6 +334,12 @@ const AdminView: React.FC = () => {
           className={`pb-4 px-4 font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'permissions' ? 'text-[var(--primary-color)] border-b-2 border-[var(--primary-color)]' : 'text-slate-400 hover:text-slate-600'}`}
         >
           Permissões & Cargos
+        </button>
+        <button
+          onClick={() => setActiveTab('reasons')}
+          className={`pb-4 px-4 font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'reasons' ? 'text-[var(--primary-color)] border-b-2 border-[var(--primary-color)]' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          Motivos
         </button>
       </div>
 
@@ -379,6 +475,143 @@ const AdminView: React.FC = () => {
                     </tr>
                   )}
                   {loadingUsers && (
+                    <tr>
+                      <td colSpan={4} className="py-8 text-center text-slate-400 font-medium">Carregando...</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'reasons' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1 bg-white rounded-3xl border border-slate-200 p-8 shadow-sm h-fit">
+            <SectionHeader icon={<AlertTriangle className="text-[var(--primary-color)]" size={22} />} title={editingIncidentReason ? 'Editar Motivo' : 'Novo Motivo'} />
+            <form onSubmit={handleIncidentReasonSubmit} className="mt-6 space-y-4">
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Tipo</label>
+                <select
+                  value={incidentReasonForm.type}
+                  onChange={(e) => setIncidentReasonForm({ ...incidentReasonForm, type: e.target.value as any })}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                >
+                  <option value="RUPTURE">Ruptura</option>
+                  <option value="BREAKAGE">Avaria</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Rótulo</label>
+                <input
+                  type="text"
+                  value={incidentReasonForm.label}
+                  onChange={(e) => setIncidentReasonForm({ ...incidentReasonForm, label: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  placeholder="Ex.: Sem reposição"
+                />
+              </div>
+
+              <label className="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={incidentReasonForm.isActive}
+                  onChange={(e) => setIncidentReasonForm({ ...incidentReasonForm, isActive: e.target.checked })}
+                  className="rounded text-[var(--primary-color)] focus:ring-[var(--primary-color)] w-4 h-4"
+                />
+                Ativo
+              </label>
+
+              <div className="flex gap-2">
+                <button type="submit" className="flex-1 py-3 bg-[var(--primary-color)] text-white rounded-xl font-black shadow-lg hover:opacity-90 transition-all mt-4">
+                  {editingIncidentReason ? 'Atualizar' : 'Criar'}
+                </button>
+                {editingIncidentReason && (
+                  <button
+                    type="button"
+                    onClick={resetIncidentReasonForm}
+                    className="flex-1 py-3 border border-slate-200 text-slate-600 rounded-xl font-black hover:bg-slate-50 transition-all mt-4"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+
+          <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
+              <div>
+                <h2 className="text-xl font-black text-slate-900">Motivos</h2>
+                <p className="text-slate-500 text-sm font-medium">Ruptura e Avaria (pré-cadastrado).</p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <select
+                  value={incidentReasonTypeFilter}
+                  onChange={(e) => setIncidentReasonTypeFilter(e.target.value as any)}
+                  className="px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                >
+                  <option value="ALL">Todos</option>
+                  <option value="RUPTURE">Ruptura</option>
+                  <option value="BREAKAGE">Avaria</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-left text-xs font-black text-slate-400 uppercase">
+                    <th className="pb-3 px-4">Tipo</th>
+                    <th className="pb-3 px-4">Motivo</th>
+                    <th className="pb-3 px-4">Status</th>
+                    <th className="pb-3 px-4 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {incidentReasons.map((r: any) => (
+                    <tr key={r.id} className="group hover:bg-slate-50 transition-colors">
+                      <td className="py-4 px-4">
+                        <span className="px-3 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-black uppercase">
+                          {r.type === 'BREAKAGE' ? 'Avaria' : 'Ruptura'}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 font-bold text-slate-700">{r.label}</td>
+                      <td className="py-4 px-4">
+                        <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase ${r.isActive ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                          {r.isActive ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleEditIncidentReason(r)}
+                            className="p-2 text-slate-400 hover:text-[var(--primary-color)] hover:bg-blue-50 rounded-lg transition-all"
+                            title="Editar motivo"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteIncidentReason(r.id)}
+                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                            title="Excluir motivo"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+
+                  {incidentReasons.length === 0 && !loadingIncidentReasons && (
+                    <tr>
+                      <td colSpan={4} className="py-8 text-center text-slate-400 font-medium">Nenhum motivo encontrado.</td>
+                    </tr>
+                  )}
+                  {loadingIncidentReasons && (
                     <tr>
                       <td colSpan={4} className="py-8 text-center text-slate-400 font-medium">Carregando...</td>
                     </tr>
