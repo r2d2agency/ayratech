@@ -333,6 +333,50 @@ const RouteDetailsView = () => {
               timestamp: new Date().toISOString(),
               entryPhoto
             });
+            const promoterId = user?.employee?.id || user?.id;
+            const nowIso = new Date().toISOString();
+
+            const updatedItems = route.items.map((i: any) => {
+              if (i.id !== itemId) return i;
+
+              const existingCheckins = i.checkins || [];
+              const updatedCheckins = (() => {
+                const hasOpen = existingCheckins.some((c: any) => {
+                  const cPid = c.promoterId || c.promoter?.id;
+                  return cPid === promoterId && !c.checkOutTime;
+                });
+
+                if (!hasOpen) {
+                  return [
+                    ...existingCheckins,
+                    {
+                      id: 'temp-' + Date.now(),
+                      promoterId,
+                      checkInTime: nowIso,
+                      checkOutTime: null,
+                      entryPhoto: entryPhoto || null
+                    }
+                  ];
+                }
+
+                return existingCheckins.map((c: any) => {
+                  const cPid = c.promoterId || c.promoter?.id;
+                  if (cPid === promoterId && !c.checkOutTime) {
+                    return {
+                      ...c,
+                      checkInTime: c.checkInTime || nowIso,
+                      entryPhoto: entryPhoto || c.entryPhoto || null
+                    };
+                  }
+                  return c;
+                });
+              })();
+
+              return { ...i, status: 'CHECKIN', checkins: updatedCheckins };
+            });
+
+            setRoute({ ...route, items: updatedItems });
+            setActiveItem(updatedItems.find((i: any) => i.id === itemId) || null);
             toast.success('Check-in realizado!');
             fetchRoute();
         } catch (err: any) {
@@ -359,7 +403,8 @@ const RouteDetailsView = () => {
                         id: 'temp-' + Date.now(),
                         promoterId: promoterId,
                         checkInTime: new Date().toISOString(),
-                        checkOutTime: null
+                        checkOutTime: null,
+                        entryPhoto: entryPhoto || null
                     };
                     const existingCheckins = i.checkins || [];
                     return { ...i, status: 'CHECKIN', checkins: [...existingCheckins, newCheckin] };

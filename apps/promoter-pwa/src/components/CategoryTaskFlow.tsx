@@ -387,7 +387,58 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     onFinish();
   };
 
+  useEffect(() => {
+    if (mode === 'ITEMS') return;
+
+    const beforeOk = getBeforeCount() >= 3;
+    const productsOk = mode === 'FULL' ? areAllProductsComplete() : true;
+
+    if (step === STEPS.PRODUCTS && !beforeOk) {
+      setStep(STEPS.BEFORE_PHOTO);
+      return;
+    }
+
+    if (step === STEPS.AFTER_PHOTO && (!beforeOk || !productsOk)) {
+      setStep(beforeOk ? STEPS.PRODUCTS : STEPS.BEFORE_PHOTO);
+    }
+  }, [mode, step, routeItem.categoryPhotos, products]);
+
   const renderPhotoStep = (type: 'before' | 'after', title: string, description: string) => {
+    const beforeOk = getBeforeCount() >= 3;
+    const productsOk = mode === 'FULL' ? areAllProductsComplete() : true;
+
+    if (type === 'after' && (!beforeOk || !productsOk)) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full p-6 text-center gap-3">
+          <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
+            <AlertTriangle size={28} />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-lg font-bold text-gray-900">Etapa bloqueada</h2>
+            <p className="text-sm text-gray-600">
+              Envie as 3 fotos de antes e conclua os produtos para liberar a Foto Depois.
+            </p>
+          </div>
+          <div className="w-full max-w-sm flex gap-3">
+            <button
+              type="button"
+              onClick={() => setStep(STEPS.BEFORE_PHOTO)}
+              className="flex-1 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl font-bold shadow-sm hover:bg-gray-50 transition-colors"
+            >
+              Foto Antes
+            </button>
+            <button
+              type="button"
+              onClick={() => setStep(beforeOk ? STEPS.PRODUCTS : STEPS.BEFORE_PHOTO)}
+              className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-sm hover:bg-blue-700 transition-colors"
+            >
+              Produtos
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     const photos = getCategoryPhotos();
     const currentUrl = photos[type];
     const urls = Array.isArray(currentUrl) ? currentUrl : (currentUrl ? [currentUrl] : []);
@@ -448,15 +499,43 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={() => setStep(STEPS.PRODUCTS)}
-            className="flex-1 py-4 bg-white text-gray-700 border border-gray-200 rounded-xl font-bold text-lg shadow-sm flex items-center justify-center gap-2 transition-all hover:bg-gray-50 active:scale-[0.99]"
+            onClick={() => {
+              if (!beforeOk) {
+                toast.error('Faça 3 fotos de antes para liberar os produtos.');
+                return;
+              }
+              setStep(STEPS.PRODUCTS);
+            }}
+            disabled={type === 'before' && !beforeOk}
+            className={`flex-1 py-4 border rounded-xl font-bold text-lg shadow-sm flex items-center justify-center gap-2 transition-all active:scale-[0.99] ${
+              type === 'before' && !beforeOk
+                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+            }`}
           >
             Produtos
           </button>
           <button
             type="button"
-            onClick={() => (type === 'after' ? finalizeCategory() : setStep(STEPS.PRODUCTS))}
-            className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all hover:bg-blue-700 active:scale-[0.99]"
+            onClick={() => {
+              if (type === 'after') {
+                finalizeCategory();
+                return;
+              }
+
+              if (!beforeOk) {
+                toast.error('Faça 3 fotos de antes para continuar.');
+                return;
+              }
+
+              setStep(STEPS.PRODUCTS);
+            }}
+            disabled={type === 'before' && !beforeOk}
+            className={`flex-1 py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all active:scale-[0.99] ${
+              type === 'before' && !beforeOk
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
           >
             {type === 'after' ? 'Finalizar Categoria' : 'Continuar'}
           </button>
@@ -471,6 +550,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     const completed = products.filter(isProductCountComplete).length;
     const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
     const productsOk = mode === 'FULL' ? total > 0 && completed === total : true;
+    const beforeOk = getBeforeCount() >= 3;
 
     return (
       <div className="flex flex-col h-full">
@@ -583,6 +663,15 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
                   onBack();
                   return;
                 }
+                if (!beforeOk) {
+                  toast.error('Faça 3 fotos de antes para liberar os produtos.');
+                  setStep(STEPS.BEFORE_PHOTO);
+                  return;
+                }
+                if (!productsOk) {
+                  toast.error('Conclua os produtos antes de ir para a Foto Depois.');
+                  return;
+                }
                 setStep(STEPS.AFTER_PHOTO);
               }}
               className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700"
@@ -616,6 +705,11 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     );
   };
 
+  const beforeOkNow = getBeforeCount() >= 3;
+  const productsOkNow = mode === 'FULL' ? areAllProductsComplete() : true;
+  const canGoProductsNow = beforeOkNow;
+  const canGoAfterNow = beforeOkNow && productsOkNow;
+
   return (
     <div className="fixed inset-0 bg-gray-50 z-[100] flex flex-col animate-slideUp">
       <div className="bg-white border-b p-4 shadow-sm z-20">
@@ -642,22 +736,40 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => setStep(STEPS.PRODUCTS)}
+              onClick={() => {
+                if (!canGoProductsNow) {
+                  toast.error('Faça 3 fotos de antes para liberar os produtos.');
+                  return;
+                }
+                setStep(STEPS.PRODUCTS);
+              }}
+              disabled={!canGoProductsNow}
               className={`py-2 rounded-lg text-xs font-bold border ${
-                step === STEPS.PRODUCTS
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                !canGoProductsNow
+                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                  : step === STEPS.PRODUCTS
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
               }`}
             >
               Produtos
             </button>
             <button
               type="button"
-              onClick={() => setStep(STEPS.AFTER_PHOTO)}
+              onClick={() => {
+                if (!canGoAfterNow) {
+                  toast.error('Conclua as 3 fotos de antes e os produtos para liberar a Foto Depois.');
+                  return;
+                }
+                setStep(STEPS.AFTER_PHOTO);
+              }}
+              disabled={!canGoAfterNow}
               className={`py-2 rounded-lg text-xs font-bold border ${
-                step === STEPS.AFTER_PHOTO
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                !canGoAfterNow
+                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                  : step === STEPS.AFTER_PHOTO
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
               }`}
             >
               Foto Depois
