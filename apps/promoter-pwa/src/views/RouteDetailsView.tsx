@@ -554,10 +554,6 @@ const RouteDetailsView = () => {
     }
   };
 
-  const getChecklistTemplate = (p: any) => {
-    const product = p.product;
-    return product.checklistTemplate || product.brand?.checklistTemplate;
-  };
     const getBrandKey = (p: any) => p?.product?.brand?.id || (p?.product?.brand?.name || 'SEM_MARCA');
     const getBrandLabel = (p: any) => p?.product?.brand?.name || 'Sem Marca';
     const getCatLabel = (p: any) => p?.product?.categoryRef?.name || p?.product?.category || 'Geral';
@@ -569,8 +565,7 @@ const RouteDetailsView = () => {
       const cl = Array.isArray(p.checklists) ? p.checklists : [];
       const n = cl.filter((c: any) => c?.type === 'STOCK_COUNT').length;
   
-      const tpl = getChecklistTemplate(p);
-      const needsG = n >= 1 || (!cl.length && Array.isArray(tpl?.items) && tpl.items.some((i: any) => i?.type === 'STOCK_COUNT'));
+      const needsG = n >= 1;
       if (needsG && p.gondolaCount == null) return false;
   
       const invPolicy = !!p.product?.client?.requiresInventoryCount;
