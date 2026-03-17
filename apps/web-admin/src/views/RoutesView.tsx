@@ -83,43 +83,97 @@ const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts
             
             <div className="space-y-4">
               {(() => {
-                const groupedProducts: Record<string, any[]> = {};
+                const getBrandKey = (p: any) => p?.brand?.id || p?.brandId || (p?.brand?.name ? `NAME:${p.brand.name}` : 'SEM_MARCA');
+                const getBrandLabel = (p: any) => p?.brand?.name || 'Sem Marca';
+                const getCategoryLabel = (p: any) => p?.categoryRef?.name || p?.category || 'Sem Categoria';
+
+                const brandMap = new Map<string, { brandKey: string; brandLabel: string; categories: Map<string, any[]> }>();
                 item.productIds?.forEach((pid: string) => {
                   const product = products.find((p: any) => p.id === pid);
                   if (product) {
-                    const categoryName = product.categoryRef?.name || product.category || 'Sem Categoria';
-                    if (!groupedProducts[categoryName]) groupedProducts[categoryName] = [];
-                    groupedProducts[categoryName].push(product);
+                    const bKey = getBrandKey(product);
+                    const bLabel = getBrandLabel(product);
+                    const cLabel = getCategoryLabel(product);
+
+                    if (!brandMap.has(bKey)) {
+                      brandMap.set(bKey, { brandKey: bKey, brandLabel: bLabel, categories: new Map() });
+                    }
+                    const b = brandMap.get(bKey)!;
+                    if (!b.categories.has(cLabel)) b.categories.set(cLabel, []);
+                    b.categories.get(cLabel)!.push(product);
                   }
                 });
 
-                if (Object.keys(groupedProducts).length === 0) {
+                const brands = Array.from(brandMap.values()).sort((a, b) => a.brandLabel.localeCompare(b.brandLabel, 'pt-BR'));
+
+                if (brands.length === 0) {
                   return (
                     <p className="text-xs text-slate-400 italic">Nenhum produto selecionado para este ponto.</p>
                   );
                 }
 
-                return Object.entries(groupedProducts).map(([categoryName, categoryProducts], gIndex) => (
-                  <div key={categoryName} className="border-l-2 border-slate-200 pl-3">
-                    <h6 className="text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">{categoryName}</h6>
-                    <div className="space-y-2">
-                      {categoryProducts.map((product, pIndex) => {
-                        const isCompleted = completedProductIds.includes(product.id);
-                        return (
-                        <div key={product.id} className={`flex items-center gap-3 p-2 rounded-lg border ${isCompleted ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'}`}>
-                          <span className={`text-xs font-bold w-6 ${isCompleted ? 'text-green-600' : 'text-slate-400'}`}>{(gIndex + 1)}.{pIndex + 1}</span>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                                <p className={`text-sm font-bold ${isCompleted ? 'text-green-800' : 'text-slate-700'}`}>{product.name}</p>
-                                {isCompleted && <CheckCircle size={14} className="text-green-600" />}
+                return brands.map((brand, bIndex) => {
+                  const categories = Array.from(brand.categories.entries()).sort(([a], [b]) => a.localeCompare(b, 'pt-BR'));
+                  return (
+                    <div key={brand.brandKey} className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h6 className="text-xs font-black text-slate-700 uppercase tracking-wide">{brand.brandLabel}</h6>
+                        <span className="text-[10px] text-slate-400 font-bold">{categories.length} categorias</span>
+                      </div>
+
+                      <div className="space-y-4">
+                        {categories.map(([categoryName, categoryProducts], cIndex) => (
+                          <div key={`${brand.brandKey}::${categoryName}`} className="border-l-2 border-slate-200 pl-3">
+                            <h6 className="text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">{categoryName}</h6>
+                            <div className="space-y-2">
+                              {categoryProducts
+                                .slice()
+                                .sort((a: any, b: any) => String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR'))
+                                .map((product: any, pIndex: number) => {
+                                  const isCompleted = completedProductIds.includes(product.id);
+                                  const canRemove = !disabled && !isCompleted;
+                                  return (
+                                    <div
+                                      key={product.id}
+                                      className={`flex items-center gap-3 p-2 rounded-lg border ${isCompleted ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'}`}
+                                    >
+                                      <span className={`text-xs font-bold w-10 ${isCompleted ? 'text-green-600' : 'text-slate-400'}`}>
+                                        {bIndex + 1}.{cIndex + 1}.{pIndex + 1}
+                                      </span>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                          <p className={`text-sm font-bold truncate ${isCompleted ? 'text-green-800' : 'text-slate-700'}`}>{product.name}</p>
+                                          {isCompleted && <CheckCircle size={14} className="text-green-600 flex-shrink-0" />}
+                                        </div>
+                                        <p className={`text-xs ${isCompleted ? 'text-green-600' : 'text-slate-400'}`}>{product.ean || product.barcode || ''}</p>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (disabled) return;
+                                          if (isCompleted) {
+                                            alert('Este produto já foi iniciado/concluído e não pode ser removido.');
+                                            return;
+                                          }
+                                          const nextIds = (item.productIds || []).filter((id: string) => id !== product.id);
+                                          onUpdate(index, 'productIds', nextIds);
+                                        }}
+                                        disabled={!canRemove}
+                                        title={isCompleted ? 'Produto já realizado/iniciado' : disabled ? 'Edição bloqueada' : 'Remover produto'}
+                                        className={`${canRemove ? 'text-red-300 hover:text-red-500' : 'text-slate-300 cursor-not-allowed'}`}
+                                      >
+                                        <XCircle size={16} />
+                                      </button>
+                                    </div>
+                                  );
+                                })}
                             </div>
-                            <p className={`text-xs ${isCompleted ? 'text-green-600' : 'text-slate-400'}`}>{product.ean || ''}</p>
                           </div>
-                        </div>
-                      )})}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ));
+                  );
+                });
               })()}
             </div>
           </div>
@@ -562,6 +616,16 @@ const RoutesView: React.FC = () => {
   const handleUpdateItem = (index: number, field: string, value: any) => {
     const newItems = [...routeItems];
     const newItem = { ...newItems[index], [field]: value };
+
+    if (field === 'productIds') {
+      const nextIds: string[] = Array.isArray(value) ? value : [];
+      const existingProducts = Array.isArray(newItem.products) ? newItem.products : [];
+      const existingMap = new Map(existingProducts.map((p: any) => [p.productId, p]));
+      newItem.products = nextIds.map((productId: string) => {
+        const existing = existingMap.get(productId);
+        return existing ? existing : { productId };
+      });
+    }
 
     // Check for time conflict if time fields are changing
     if ((field === 'startTime' || field === 'estimatedDuration') && newItem.startTime && newItem.estimatedDuration) {

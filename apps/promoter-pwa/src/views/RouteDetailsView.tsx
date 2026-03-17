@@ -1141,6 +1141,15 @@ const RouteDetailsView = () => {
                                     const afterOk = afterCount > 0;
                                     const isDone = completed === total && total > 0 && beforeOk && afterOk;
                                     const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+                                    const productNames = catProducts
+                                      .slice()
+                                      .sort((a: any, b: any) =>
+                                        String(a?.product?.name || '').localeCompare(String(b?.product?.name || ''), 'pt-BR')
+                                      )
+                                      .map((p: any) => String(p?.product?.name || '').trim())
+                                      .filter(Boolean);
+                                    const previewNames = productNames.slice(0, 4);
+                                    const remainingCount = Math.max(0, productNames.length - previewNames.length);
 
                                     return (
                                       <button
@@ -1185,6 +1194,13 @@ const RouteDetailsView = () => {
                                                 {afterOk ? `Foto Final OK (${afterCount})` : 'Foto Final pendente'}
                                               </span>
                                             </div>
+
+                                            {previewNames.length > 0 && (
+                                              <div className="mt-2 text-[11px] text-gray-500 line-clamp-2">
+                                                {previewNames.join(' • ')}
+                                                {remainingCount > 0 ? ` • +${remainingCount}` : ''}
+                                              </div>
+                                            )}
 
                                             <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden mt-2">
                                               <div
