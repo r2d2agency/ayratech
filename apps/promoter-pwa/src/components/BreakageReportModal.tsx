@@ -87,26 +87,20 @@ export const BreakageReportModal: React.FC<BreakageReportModalProps> = ({
       toast.error('Informe a quantidade de itens com avaria.');
       return;
     }
-    if (photos.length === 0) {
-      toast.error('Adicione pelo menos uma foto da avaria.');
+    if (!description.trim()) {
+      toast.error('Informe a descrição da avaria.');
       return;
     }
 
     const composedDescription = (() => {
-      if (!selectedReasonId) return description.trim() || undefined;
-      if (selectedReasonId === '__OTHER__') return description.trim() || undefined;
+      const details = description.trim();
+      if (!selectedReasonId) return details;
+      if (selectedReasonId === '__OTHER__') return details;
 
       const selected = reasons.find(r => r.id === selectedReasonId);
-      if (!selected?.label) return description.trim() || undefined;
-
-      const details = description.trim();
-      return details.length > 0 ? `${selected.label} - ${details}` : selected.label;
+      if (!selected?.label) return details;
+      return `${selected.label} - ${details}`;
     })();
-
-    if (!selectedReasonId && reasons.length > 0) {
-      toast.error('Selecione o motivo da avaria.');
-      return;
-    }
 
     setLoading(true);
 
@@ -154,12 +148,13 @@ export const BreakageReportModal: React.FC<BreakageReportModalProps> = ({
     try {
       // 1. Upload photos
       const photoUrls: string[] = [];
-      for (const photo of photos) {
-        const formData = new FormData();
-        formData.append('file', photo.blob, 'breakage.jpg');
-        const uploadRes = await api.post('/upload', formData);
-        // Use path instead of full URL to avoid hardcoded domains in DB
-        photoUrls.push(uploadRes.data.path || uploadRes.data.url);
+      if (photos.length > 0) {
+        for (const photo of photos) {
+          const formData = new FormData();
+          formData.append('file', photo.blob, 'breakage.jpg');
+          const uploadRes = await api.post('/upload', formData);
+          photoUrls.push(uploadRes.data.path || uploadRes.data.url);
+        }
       }
 
       // 2. Create Breakage Report
@@ -209,7 +204,7 @@ export const BreakageReportModal: React.FC<BreakageReportModalProps> = ({
               type="number"
               min="1"
               value={quantity}
-              onChange={(e) => setQuantity(Number(e.target.value))}
+              onChange={(e) => setQuantity(e.target.value === '' ? '' : Number(e.target.value))}
               className="w-full border rounded-lg p-3 text-lg font-bold text-center focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
               placeholder="0"
             />
@@ -225,7 +220,7 @@ export const BreakageReportModal: React.FC<BreakageReportModalProps> = ({
               className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none bg-white disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-500"
               disabled={loading}
             >
-              <option value="">Selecionar motivo...</option>
+              <option value="">Selecionar motivo (opcional)...</option>
               {reasons.map(r => (
                 <option key={r.id} value={r.id}>
                   {r.label}
@@ -237,7 +232,7 @@ export const BreakageReportModal: React.FC<BreakageReportModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Descrição (opcional)
+              Descrição
             </label>
             <textarea
               value={description}

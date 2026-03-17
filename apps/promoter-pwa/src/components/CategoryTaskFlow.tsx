@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, ChevronRight, AlertTriangle, ArrowLeft, X, ListChecks, Image as ImageIcon, CheckCircle } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Camera, CheckCircle, Circle, MoreVertical, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { ProductCountModal } from './ProductCountModal';
+import { BreakageReportModal } from './BreakageReportModal';
 import { offlineService } from '../services/offline.service';
 import client from '../api/client';
 import { processImage } from '../utils/image-processor';
@@ -43,12 +44,9 @@ interface CategoryTaskFlowProps {
 }
 
 const STEPS = {
-  MENU: -1,
   BEFORE_PHOTO: 0,
-  GONDOLA_COUNT: 1,
-  INVENTORY_COUNT: 2,
-  AFTER_PHOTO: 3,
-  SUMMARY: 4
+  PRODUCTS: 1,
+  AFTER_PHOTO: 2
 };
 
 export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
@@ -66,9 +64,8 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   mode = 'FULL',
   readOnly = false
 }) => {
-  const [step, setStep] = useState(mode === 'ITEMS' ? STEPS.GONDOLA_COUNT : STEPS.MENU);
+  const [step, setStep] = useState(mode === 'ITEMS' ? STEPS.PRODUCTS : STEPS.BEFORE_PHOTO);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const [countMode, setCountMode] = useState<'GONDOLA' | 'INVENTORY'>('GONDOLA');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
@@ -76,20 +73,20 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   const [validationError, setValidationError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const initializedRef = useRef<string | null>(null);
+  const [actionProduct, setActionProduct] = useState<any>(null);
+  const [breakageProduct, setBreakageProduct] = useState<any>(null);
 
   useEffect(() => {
     const key = `${categoryKey || ''}-${categoryLabel || category || ''}-${mode}`;
     if (initializedRef.current === key) return;
     initializedRef.current = key;
 
-    // Se for modo ITEMS, vai direto para contagem
     if (mode === 'ITEMS') {
-      setStep(STEPS.GONDOLA_COUNT);
+      setStep(STEPS.PRODUCTS);
       return;
     }
-    
-    // Para FULL e PHOTOS, exibe o menu principal
-    setStep(STEPS.MENU);
+
+    setStep(STEPS.BEFORE_PHOTO);
   }, [category, categoryKey, categoryLabel, mode]);
 
   const categoryTitle = (() => {
@@ -139,6 +136,12 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   };
 
   const hasAnyStockCountRequired = (products || []).some(isStockCountRequired);
+
+  const hasAnyChecklistAction = (p: any) =>
+    Array.isArray(p?.checklists) &&
+    p.checklists.some((c: any) => c && c.type && c.type !== 'STOCK_COUNT');
+
+  const shouldOpenProduct = (p: any) => isStockCountRequired(p) || hasAnyChecklistAction(p);
 
   const isProductCountComplete = (p: any) => {
     const required = isStockCountRequired(p);
@@ -291,56 +294,74 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     }
   };
 
-  const nextStep = () => {
-    if (mode === 'ITEMS') {
-      if (step === STEPS.GONDOLA_COUNT) {
-        if (hasAnyStockCountRequired) setStep(STEPS.INVENTORY_COUNT);
-        else onBack();
-      } else if (step === STEPS.INVENTORY_COUNT) {
-        onBack();
-      }
-      return;
-    }
-
-    if (mode === 'PHOTOS') {
-       // Modo legado apenas fotos
-       if (step === STEPS.BEFORE_PHOTO) setStep(STEPS.AFTER_PHOTO);
-       else if (step === STEPS.AFTER_PHOTO) setStep(STEPS.MENU);
-       else onBack();
-       return;
-    }
-
-    // Fluxo HUB
-    if (step === STEPS.GONDOLA_COUNT) {
-        if (hasAnyStockCountRequired) setStep(STEPS.INVENTORY_COUNT);
-        else setStep(STEPS.MENU);
-        return;
-    }
-    
-    // Qualquer outro passo volta para o menu
-    setStep(STEPS.MENU);
-  };
-
   const prevStep = () => {
     if (mode === 'ITEMS') {
-      if (step === STEPS.GONDOLA_COUNT) onBack();
-      else if (step === STEPS.INVENTORY_COUNT) setStep(STEPS.GONDOLA_COUNT);
+      onBack();
       return;
     }
 
-    if (step === STEPS.MENU) {
-        onBack();
-        return;
+    if (step === STEPS.BEFORE_PHOTO) {
+      onBack();
+      return;
     }
 
-    if (step === STEPS.INVENTORY_COUNT) {
-        if (hasAnyStockCountRequired) setStep(STEPS.GONDOLA_COUNT);
-        else setStep(STEPS.MENU);
-        return;
+    if (step === STEPS.PRODUCTS) {
+      setStep(STEPS.BEFORE_PHOTO);
+      return;
     }
 
-    // Qualquer outro sub-passo volta para o menu
-    setStep(STEPS.MENU);
+    setStep(STEPS.PRODUCTS);
+  };
+
+  const goNext = () => {
+    if (mode === 'ITEMS') {
+      onBack();
+      return;
+    }
+
+    const beforeOk = getBeforeCount() >= 3;
+    const productsOk = mode === 'FULL' ? areAllProductsComplete() : true;
+    const afterOk = getAfterCount() > 0;
+
+    if (step === STEPS.BEFORE_PHOTO) {
+      if (!beforeOk) {
+        toast.error('Faça 3 fotos de antes para continuar.');
+        return;
+      }
+      setStep(STEPS.PRODUCTS);
+      return;
+    }
+
+    if (step === STEPS.PRODUCTS) {
+      if (!beforeOk) {
+        setStep(STEPS.BEFORE_PHOTO);
+        toast.error('Faça 3 fotos de antes para continuar.');
+        return;
+      }
+      if (!productsOk) {
+        toast.error('Conclua os produtos antes de ir para a Foto Depois.');
+        return;
+      }
+      setStep(STEPS.AFTER_PHOTO);
+      return;
+    }
+
+    if (!beforeOk) {
+      setStep(STEPS.BEFORE_PHOTO);
+      toast.error('Faça 3 fotos de antes para finalizar.');
+      return;
+    }
+    if (mode === 'FULL' && !productsOk) {
+      setStep(STEPS.PRODUCTS);
+      toast.error('Conclua os produtos para finalizar.');
+      return;
+    }
+    if (!afterOk) {
+      toast.error('Registre a Foto Depois para finalizar.');
+      return;
+    }
+
+    onFinish();
   };
 
   const renderPhotoStep = (type: 'before' | 'after', title: string, description: string) => {
@@ -356,16 +377,15 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
             <h2 className="text-lg font-bold text-gray-900">Etapa bloqueada</h2>
             <p className="text-sm text-gray-600">
               {mode === 'FULL'
-                ? 'Conclua 3 fotos de antes e a checklist/contagem para liberar a Foto Final.'
-                : 'Conclua 3 fotos de antes para liberar a Foto Final.'}
+                ? 'Conclua 3 fotos de antes e os produtos para liberar a Foto Depois.'
+                : 'Conclua 3 fotos de antes para liberar a Foto Depois.'}
             </p>
           </div>
           <button
-            onClick={() => setStep(STEPS.MENU)}
+            onClick={() => setStep(beforeOk ? STEPS.PRODUCTS : STEPS.BEFORE_PHOTO)}
             className="w-full max-w-sm py-3 bg-white text-gray-700 border border-gray-300 rounded-xl font-medium shadow-sm hover:bg-gray-50 transition-colors flex items-center justify-center"
           >
-            <ListChecks className="mr-2" size={20} />
-            Voltar ao Menu
+            Voltar
           </button>
         </div>
       );
@@ -428,139 +448,127 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
       </div>
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-lg z-50 pb-8">
-          <button 
-            onClick={() => setStep(STEPS.MENU)}
-            className="w-full py-3 bg-white text-gray-700 border border-gray-300 rounded-xl font-medium shadow-sm hover:bg-gray-50 transition-colors flex items-center justify-center"
-          >
-            <ListChecks className="mr-2" size={20} />
-            Voltar ao Menu
-          </button>
+        <button
+          onClick={goNext}
+          className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all hover:bg-blue-700 active:scale-[0.99]"
+        >
+          {type === 'before' ? 'Ir para Produtos' : 'Finalizar Categoria'}
+        </button>
       </div>
       </>
     );
   };
 
-  const renderMenu = () => {
-    const photos = getCategoryPhotos();
-    const beforeCount = Array.isArray(photos.before) ? photos.before.length : (photos.before ? 1 : 0);
-    const afterCount = Array.isArray(photos.after) ? photos.after.length : (photos.after ? 1 : 0);
-    const totalProducts = products.length;
-    const completedProducts = products.filter(isProductCountComplete).length;
-    const beforeOk = beforeCount >= 3;
-    const productsOk = mode === 'FULL' ? (totalProducts > 0 && completedProducts === totalProducts) : true;
-    const afterOk = afterCount > 0;
-    const canFinish = beforeOk && afterOk && productsOk;
+  const renderProductsStep = () => {
+    const total = products.length;
+    const completed = products.filter(isProductCountComplete).length;
+    const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const productsOk = mode === 'FULL' ? total > 0 && completed === total : true;
 
     return (
-      <div className="flex flex-col h-full bg-gray-50 p-4 space-y-4 overflow-y-auto pb-48">
-        <div className="text-center mb-2">
-          <h2 className="text-lg font-bold text-gray-800">{categoryTitle}</h2>
-          <p className="text-xs text-gray-500">Selecione uma etapa para realizar</p>
+      <div className="flex flex-col h-full">
+        <div className="p-4 bg-white shadow-sm z-10">
+          <h2 className="text-xl font-bold text-gray-800 mb-1">Produtos</h2>
+          <div className="flex items-center justify-between text-sm text-gray-500">
+            <span>{categoryTitle}</span>
+            <span>{completed} / {total} concluídos</span>
+          </div>
+          <div className="w-full bg-gray-200 h-2 rounded-full mt-2">
+            <div
+              className="bg-green-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
         </div>
 
-        <button
-          onClick={() => setStep(STEPS.BEFORE_PHOTO)}
-          className="w-full bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between active:scale-[0.98] transition-transform"
-        >
-          <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-full ${beforeOk ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
-              <Camera size={24} />
-            </div>
-            <div className="text-left">
-              <h3 className="font-bold text-gray-900">{getLabel('before')}</h3>
-              <p className="text-xs text-gray-500">{beforeCount} / 3 fotos</p>
-            </div>
-          </div>
-          {beforeOk ? <CheckCircle className="text-green-500" size={24} /> : <ChevronRight className="text-gray-400" />}
-        </button>
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-20">
+          {products.map(p => {
+            const required = isStockCountRequired(p);
+            const checked = !!p.checked;
+            const rowCompleted = isProductCountComplete(p);
+            const openModal = shouldOpenProduct(p);
 
-        {mode !== 'PHOTOS' && (
-          <button
-            onClick={() => {
-              if (!beforeOk) {
-                toast.error('Faça 3 fotos de antes para liberar a checklist/contagem.');
-                return;
-              }
-              setStep(STEPS.GONDOLA_COUNT);
-            }}
-            className={`w-full p-4 rounded-xl shadow-sm border flex items-center justify-between active:scale-[0.98] transition-transform ${
-              beforeOk ? 'bg-white border-gray-100' : 'bg-gray-50 border-gray-200'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className={`p-3 rounded-full ${productsOk ? 'bg-green-100 text-green-600' : (beforeOk ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-500')}`}>
-                <ListChecks size={24} />
-              </div>
-              <div className="text-left">
-                <h3 className="font-bold text-gray-900">{hasAnyStockCountRequired ? 'Contagem de Produtos' : 'Checklist de Produtos'}</h3>
-                <div className="w-32 h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 rounded-full" 
-                    style={{ width: `${(completedProducts / Math.max(1, totalProducts)) * 100}%` }}
-                  />
+            return (
+              <div
+                key={p.productId}
+                onClick={async () => {
+                  if (readOnly) return;
+                  if (openModal) {
+                    setSelectedProduct(p);
+                    return;
+                  }
+                  try {
+                    await onUpdateProduct(p.productId, { checked: !checked });
+                  } catch (e) {
+                    console.error(e);
+                    toast.error('Erro ao atualizar o produto.');
+                  }
+                }}
+                className="bg-white p-4 rounded-lg shadow border border-gray-100 flex items-start gap-3 active:scale-[0.98] transition-transform"
+              >
+                <div className="pt-0.5">
+                  {rowCompleted ? (
+                    <CheckCircle size={20} className="text-green-600" />
+                  ) : (
+                    <Circle size={20} className="text-gray-300" />
+                  )}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">{completedProducts} / {totalProducts} concluídos</p>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="font-medium text-gray-900 truncate">{p.product.name}</h3>
+                      <p className="text-xs text-gray-500 truncate">{p.product.ean || 'Sem EAN'}</p>
+                      {!required && !hasAnyChecklistAction(p) && (
+                        <span className="text-[10px] bg-gray-100 text-gray-500 px-1 rounded">Sem contagem</span>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActionProduct(p);
+                      }}
+                      className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50"
+                      disabled={readOnly}
+                      title="Ações"
+                    >
+                      <MoreVertical size={18} />
+                    </button>
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-between text-xs">
+                    <span className={rowCompleted ? 'text-green-700 font-medium' : 'text-orange-600 font-medium'}>
+                      {rowCompleted ? 'Concluído' : openModal ? 'Toque para abrir' : 'Toque para marcar OK'}
+                    </span>
+                    {!readOnly && !openModal && (
+                      <span className="text-gray-400">{checked ? 'OK' : 'Pendente'}</span>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-            {productsOk ? <CheckCircle className="text-green-500" size={24} /> : <ChevronRight className="text-gray-400" />}
-          </button>
-        )}
+            );
+          })}
+        </div>
 
-        <button
-          onClick={() => {
-            if (!beforeOk) {
-              toast.error('Faça 3 fotos de antes para liberar a Foto Final.');
-              return;
-            }
-            if (mode === 'FULL' && !productsOk) {
-              toast.error('Conclua a checklist/contagem para liberar a Foto Final.');
-              return;
-            }
-            setStep(STEPS.AFTER_PHOTO);
-          }}
-          className={`w-full p-4 rounded-xl shadow-sm border flex items-center justify-between active:scale-[0.98] transition-transform ${
-            beforeOk && (mode !== 'FULL' || productsOk) ? 'bg-white border-gray-100' : 'bg-gray-50 border-gray-200'
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-full ${afterOk ? 'bg-green-100 text-green-600' : (beforeOk && (mode !== 'FULL' || productsOk) ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-500')}`}>
-              <ImageIcon size={24} />
-            </div>
-            <div className="text-left">
-              <h3 className="font-bold text-gray-900">{getLabel('after')}</h3>
-              <p className="text-xs text-gray-500">{afterCount} fotos registradas</p>
-            </div>
-          </div>
-          {afterOk ? <CheckCircle className="text-green-500" size={24} /> : <ChevronRight className="text-gray-400" />}
-        </button>
-
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-lg z-50 pb-8">
-          {!canFinish && (
+        <div className="p-4 bg-white border-t">
+          {!productsOk && mode === 'FULL' && (
             <div className="mb-3 text-xs text-orange-600 bg-orange-50 p-2 rounded flex items-center gap-2">
               <AlertTriangle size={14} />
-              <span>
-                {mode === 'FULL'
-                  ? 'Complete Foto Antes (3), checklist/contagem e Foto Final para finalizar.'
-                  : 'Complete Foto Antes (3) e Foto Final para finalizar.'}
-              </span>
+              <span>Conclua os produtos para liberar a Foto Depois.</span>
             </div>
           )}
-          <button 
-            onClick={onFinish}
-            disabled={!canFinish}
-            className={`w-full py-4 text-white rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all ${
-              !canFinish 
-                ? 'bg-gray-300 cursor-not-allowed text-gray-500' 
-                : 'bg-green-600 hover:bg-green-700 animate-pulse'
-            }`}
+          <button
+            onClick={goNext}
+            className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700"
           >
-            <CheckCircle size={20} />
-            {mode === 'PHOTOS' ? 'Concluir Fotos' : 'Finalizar Categoria'}
+            {mode === 'ITEMS' ? 'Concluir' : 'Ir para Foto Depois'}
           </button>
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   const renderPreviewModal = () => {
     if (!previewUrl) return null;
@@ -583,105 +591,6 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     );
   };
 
-  const renderCountStep = (mode: 'GONDOLA' | 'INVENTORY', title: string) => {
-    const total = products.length;
-    const counted = products.filter(p => {
-      const required = isStockCountRequired(p);
-      const checked = !!p.checked;
-
-      if (!required) return checked;
-
-      if (mode === 'GONDOLA') return p.gondolaCount !== null && p.gondolaCount !== undefined;
-
-      const inv = p.inventoryCount;
-      const hasRupture = !!p.ruptureReason || !!p.isStockout;
-      if (inv === null || inv === undefined) return false;
-      if (inv === 0) return hasRupture;
-      return inv > 0;
-    }).length;
-
-    return (
-      <div className="flex flex-col h-full">
-        <div className="p-4 bg-white shadow-sm z-10">
-          <h2 className="text-xl font-bold text-gray-800 mb-1">{title}</h2>
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <span>{categoryTitle}</span>
-            <span>{counted} / {total} Concluídos</span>
-          </div>
-          <div className="w-full bg-gray-200 h-2 rounded-full mt-2">
-            <div 
-              className="bg-green-500 h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${(counted / Math.max(1,total)) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-20">
-          {products.map(p => {
-            const required = isStockCountRequired(p);
-            const gDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
-            const inv = p.inventoryCount;
-            const hasRupture = !!p.ruptureReason || !!p.isStockout;
-            const iDone = (() => {
-              if (inv === null || inv === undefined) return false;
-              if (inv === 0) return hasRupture;
-              return inv > 0;
-            })();
-            const checked = !!p.checked;
-
-            let progress = 0;
-            if (!required) {
-               if (checked) progress = 100;
-            } else {
-               if (gDone) progress += 40;
-               if (iDone) progress += 40;
-               if (checked) progress += 20;
-            }
-
-            return (
-              <div 
-                key={p.productId}
-                onClick={() => { setCountMode(mode); setSelectedProduct(p); }}
-                className="bg-white p-4 rounded-lg shadow border border-gray-100 flex flex-col gap-2 active:scale-[0.98] transition-transform"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900">{p.product.name}</h3>
-                    <p className="text-xs text-gray-500">{p.product.ean || 'Sem EAN'}</p>
-                    {!required && <span className="text-[10px] bg-gray-100 text-gray-500 px-1 rounded">Estoque Opcional</span>}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {checked ? <span className="text-green-600">Concluído</span> : <span className="text-orange-600">Pendente</span>}
-                  </div>
-                </div>
-                <div className="w-full flex items-center gap-2">
-                  <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full ${progress === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                  <span className="text-[10px] font-medium text-gray-400">{progress}%</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="p-4 bg-white border-t">
-          <button 
-            onClick={nextStep}
-            className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700"
-          >
-            {mode === 'GONDOLA'
-              ? (hasAnyStockCountRequired ? 'Ir para Estoque' : 'Concluir')
-              : 'Concluir Contagem'}
-          </button>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="fixed inset-0 bg-gray-50 z-[100] flex flex-col animate-slideUp">
       <div className="bg-white border-b p-4 flex items-center justify-between shadow-sm z-20">
@@ -693,12 +602,9 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
       </div>
 
       <div className="flex-1 overflow-hidden relative">
-        {step === STEPS.MENU && renderMenu()}
         {step === STEPS.BEFORE_PHOTO && renderPhotoStep('before', getLabel('before'), 'Registre o estado inicial.')}
-        {step === STEPS.GONDOLA_COUNT && renderCountStep('GONDOLA', hasAnyStockCountRequired ? 'Contagem: Loja (Frente)' : 'Checklist de Produtos')}
-        {step === STEPS.INVENTORY_COUNT && renderCountStep('INVENTORY', 'Contagem: Estoque')}
         {step === STEPS.AFTER_PHOTO && renderPhotoStep('after', getLabel('after'), 'Registre o resultado final.')}
-        {/* SUMMARY was replaced by MENU */}
+        {step === STEPS.PRODUCTS && renderProductsStep()}
       </div>
 
       {selectedProduct && (
@@ -707,9 +613,70 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
           onClose={() => setSelectedProduct(null)}
           product={selectedProduct}
           onSave={handleProductSave}
-          mode={countMode}
+          mode="BOTH"
           readOnly={readOnly}
           requireStockCount={isStockCountRequired(selectedProduct)}
+          routeItemId={routeItem?.id}
+          supermarketId={routeItem?.supermarket?.id || routeItem?.supermarketId}
+        />
+      )}
+
+      {actionProduct && (
+        <div
+          className="fixed inset-0 z-[70] bg-black bg-opacity-40 flex items-end justify-center p-4"
+          onClick={() => setActionProduct(null)}
+        >
+          <div
+            className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b flex items-center justify-between">
+              <div className="min-w-0">
+                <div className="text-sm font-bold text-gray-900 truncate">Ações</div>
+                <div className="text-xs text-gray-500 truncate">{actionProduct.product?.name}</div>
+              </div>
+              <button onClick={() => setActionProduct(null)} className="text-gray-500">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-2">
+              <button
+                type="button"
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-50 text-left"
+                onClick={() => {
+                  setBreakageProduct(actionProduct);
+                  setActionProduct(null);
+                }}
+                disabled={readOnly}
+              >
+                <div className="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center">
+                  <AlertTriangle size={20} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-gray-900">Avaria</div>
+                  <div className="text-xs text-gray-500">Registrar quantidade e descrição</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                className="w-full p-3 rounded-xl text-gray-600 font-medium hover:bg-gray-50"
+                onClick={() => setActionProduct(null)}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {breakageProduct && (
+        <BreakageReportModal
+          isOpen={!!breakageProduct}
+          onClose={() => setBreakageProduct(null)}
+          product={{
+            ...breakageProduct,
+            supermarketName: routeItem?.supermarket?.fantasyName || routeItem?.supermarket?.name || 'Supermercado'
+          }}
           routeItemId={routeItem?.id}
           supermarketId={routeItem?.supermarket?.id || routeItem?.supermarketId}
         />
