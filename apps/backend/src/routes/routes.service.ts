@@ -1429,7 +1429,7 @@ export class RoutesService {
           return { url, categoryPhotos: item.categoryPhotos };
         }
 
-  async checkProduct(routeItemId: string, productId: string, data: { checked?: boolean, observation?: string, isStockout?: boolean, stockoutType?: string, photos?: string[], checkInTime?: string, checkOutTime?: string, validityDate?: string, validityQuantity?: number, stockCount?: number, gondolaCount?: number, inventoryCount?: number, ruptureReason?: string, checklists?: { id: string, isChecked: boolean, value?: string }[] }, userId?: string) {
+  async checkProduct(routeItemId: string, productId: string, data: { checked?: boolean, observation?: string, isStockout?: boolean, stockoutType?: string, photos?: string[], checkInTime?: string, checkOutTime?: string, validityDate?: string, validityQuantity?: number, validityStoreDate?: string, validityStoreQuantity?: number, validityStockDate?: string, validityStockQuantity?: number, stockCount?: number, gondolaCount?: number, inventoryCount?: number, ruptureReason?: string, checklists?: { id: string, isChecked: boolean, value?: string }[] }, userId?: string) {
     console.log(`RoutesService.checkProduct: Item ${routeItemId}, Product ${productId}`);
     console.log('Payload:', JSON.stringify(data));
 
@@ -1503,7 +1503,40 @@ export class RoutesService {
       if (data.checkOutTime !== undefined) itemProduct.checkOutTime = new Date(data.checkOutTime);
       if (data.validityDate !== undefined) itemProduct.validityDate = data.validityDate;
       if (data.validityQuantity !== undefined) itemProduct.validityQuantity = data.validityQuantity;
+      if (data.validityStoreDate !== undefined) itemProduct.validityStoreDate = data.validityStoreDate;
+      if (data.validityStoreQuantity !== undefined) itemProduct.validityStoreQuantity = data.validityStoreQuantity;
+      if (data.validityStockDate !== undefined) itemProduct.validityStockDate = data.validityStockDate;
+      if (data.validityStockQuantity !== undefined) itemProduct.validityStockQuantity = data.validityStockQuantity;
       if (data.ruptureReason !== undefined) itemProduct.ruptureReason = data.ruptureReason;
+
+      if (
+        data.validityStoreDate !== undefined ||
+        data.validityStoreQuantity !== undefined ||
+        data.validityStockDate !== undefined ||
+        data.validityStockQuantity !== undefined
+      ) {
+        const storeDate = itemProduct.validityStoreDate ? String(itemProduct.validityStoreDate) : '';
+        const storeQty = itemProduct.validityStoreQuantity !== null && itemProduct.validityStoreQuantity !== undefined ? Number(itemProduct.validityStoreQuantity) : 0;
+        const stockDate = itemProduct.validityStockDate ? String(itemProduct.validityStockDate) : '';
+        const stockQty = itemProduct.validityStockQuantity !== null && itemProduct.validityStockQuantity !== undefined ? Number(itemProduct.validityStockQuantity) : 0;
+
+        const hasStore = !!(storeDate && storeQty > 0);
+        const hasStock = !!(stockDate && stockQty > 0);
+
+        const overall = (() => {
+          if (hasStore && hasStock) {
+            return storeDate <= stockDate ? { date: storeDate, qty: storeQty } : { date: stockDate, qty: stockQty };
+          }
+          if (hasStore) return { date: storeDate, qty: storeQty };
+          if (hasStock) return { date: stockDate, qty: stockQty };
+          return null;
+        })();
+
+        if (overall) {
+          itemProduct.validityDate = overall.date;
+          itemProduct.validityQuantity = overall.qty;
+        }
+      }
       
       // Handle Counts
       if (data.gondolaCount !== undefined) itemProduct.gondolaCount = data.gondolaCount;
@@ -1601,7 +1634,10 @@ export class RoutesService {
         itemProduct.checklists.forEach(c => {
             // For VALIDITY_CHECK, only auto-check if data is present
             if (c.type === ChecklistItemType.VALIDITY_CHECK) {
-                 if (itemProduct.validityDate && (itemProduct.validityQuantity !== null && itemProduct.validityQuantity !== undefined)) {
+                 const hasValidityLegacy = !!(itemProduct.validityDate && (itemProduct.validityQuantity !== null && itemProduct.validityQuantity !== undefined));
+                 const hasValidityStore = !!(itemProduct.validityStoreDate && itemProduct.validityStoreQuantity !== null && itemProduct.validityStoreQuantity !== undefined);
+                 const hasValidityStock = !!(itemProduct.validityStockDate && itemProduct.validityStockQuantity !== null && itemProduct.validityStockQuantity !== undefined);
+                 if (hasValidityLegacy || hasValidityStore || hasValidityStock) {
                      c.isChecked = true;
                      if (employee) c.completedBy = employee;
                  }
@@ -1646,6 +1682,10 @@ export class RoutesService {
       photos?: string[];
       validityDate?: string;
       validityQuantity?: number;
+      validityStoreDate?: string;
+      validityStoreQuantity?: number;
+      validityStockDate?: string;
+      validityStockQuantity?: number;
       stockCount?: number;
       checklists?: Array<{
         description: string;
@@ -1701,6 +1741,10 @@ export class RoutesService {
         productRel.photos = p.photos;
         if ((p as any).validityDate) productRel.validityDate = (p as any).validityDate;
         if ((p as any).validityQuantity !== undefined) productRel.validityQuantity = (p as any).validityQuantity;
+        if ((p as any).validityStoreDate) productRel.validityStoreDate = (p as any).validityStoreDate;
+        if ((p as any).validityStoreQuantity !== undefined) productRel.validityStoreQuantity = (p as any).validityStoreQuantity;
+        if ((p as any).validityStockDate) productRel.validityStockDate = (p as any).validityStockDate;
+        if ((p as any).validityStockQuantity !== undefined) productRel.validityStockQuantity = (p as any).validityStockQuantity;
         if ((p as any).stockCount) productRel.stockCount = (p as any).stockCount;
         
         // Checklist Handling
@@ -2092,8 +2136,10 @@ export class RoutesService {
       // Validade: se existir checklist de validade no produto, exigir preenchimento
       const hasValidityChecklist = checklists.some(c => c.type === ChecklistItemType.VALIDITY_CHECK);
       if (hasValidityChecklist) {
-        if (!ip.validityDate) return true;
-        if (ip.validityQuantity === null || ip.validityQuantity === undefined || ip.validityQuantity <= 0) return true;
+        const hasLegacy = !!(ip.validityDate && ip.validityQuantity !== null && ip.validityQuantity !== undefined && ip.validityQuantity > 0);
+        const hasStore = !!(ip.validityStoreDate && ip.validityStoreQuantity !== null && ip.validityStoreQuantity !== undefined && ip.validityStoreQuantity > 0);
+        const hasStock = !!(ip.validityStockDate && ip.validityStockQuantity !== null && ip.validityStockQuantity !== undefined && ip.validityStockQuantity > 0);
+        if (!hasLegacy && !hasStore && !hasStock) return true;
       }
 
       return false;

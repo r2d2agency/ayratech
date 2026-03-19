@@ -36,8 +36,10 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
   const [selectedRuptureReasonId, setSelectedRuptureReasonId] = useState<string>('');
   const [ruptureDetails, setRuptureDetails] = useState<string>('');
 
-  const [validityDate, setValidityDate] = useState('');
-  const [validityQuantity, setValidityQuantity] = useState<number | ''>('');
+  const [validityStoreDate, setValidityStoreDate] = useState('');
+  const [validityStoreQuantity, setValidityStoreQuantity] = useState<number | ''>('');
+  const [validityStockDate, setValidityStockDate] = useState('');
+  const [validityStockQuantity, setValidityStockQuantity] = useState<number | ''>('');
   const [isBreakageModalOpen, setIsBreakageModalOpen] = useState(false);
 
   const isValidityChecklistItem = (item: any) => {
@@ -57,10 +59,16 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
       setIsStockout(product.isStockout || false);
       setSelectedRuptureReasonId('');
       setRuptureDetails(product.ruptureReason || '');
-      setValidityDate(product.validityDate || '');
-      setValidityQuantity(
-        product.validityQuantity !== null && product.validityQuantity !== undefined
-          ? product.validityQuantity
+      setValidityStoreDate(product.validityStoreDate || '');
+      setValidityStoreQuantity(
+        product.validityStoreQuantity !== null && product.validityStoreQuantity !== undefined
+          ? product.validityStoreQuantity
+          : ''
+      );
+      setValidityStockDate(product.validityStockDate || '');
+      setValidityStockQuantity(
+        product.validityStockQuantity !== null && product.validityStockQuantity !== undefined
+          ? product.validityStockQuantity
           : ''
       );
       
@@ -139,15 +147,36 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
         product.checklists.some((c: any) => isValidityChecklistItem(c));
 
       if (hasValidityChecklist) {
-        if (!validityDate) {
-          toast.error('Informe a data de validade.');
+        const storeFilled = !!validityStoreDate || validityStoreQuantity !== '';
+        const stockFilled = !!validityStockDate || validityStockQuantity !== '';
+        if (!storeFilled && !stockFilled) {
+          toast.error('Informe ao menos uma validade (Loja ou Estoque).');
           setSaving(false);
           return;
         }
-        if (!validityQuantity || validityQuantity <= 0) {
-          toast.error('Informe a quantidade de itens com esta validade.');
-          setSaving(false);
-          return;
+        if (storeFilled) {
+          if (!validityStoreDate) {
+            toast.error('Informe a data de validade (Loja).');
+            setSaving(false);
+            return;
+          }
+          if (!validityStoreQuantity || validityStoreQuantity <= 0) {
+            toast.error('Informe a quantidade (Loja).');
+            setSaving(false);
+            return;
+          }
+        }
+        if (stockFilled) {
+          if (!validityStockDate) {
+            toast.error('Informe a data de validade (Estoque).');
+            setSaving(false);
+            return;
+          }
+          if (!validityStockQuantity || validityStockQuantity <= 0) {
+            toast.error('Informe a quantidade (Estoque).');
+            setSaving(false);
+            return;
+          }
         }
       }
 
@@ -179,23 +208,40 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
         return;
       }
 
+      const overallValidity = (() => {
+        const storeOk = !!(validityStoreDate && validityStoreQuantity && validityStoreQuantity > 0);
+        const stockOk = !!(validityStockDate && validityStockQuantity && validityStockQuantity > 0);
+        if (storeOk && stockOk) {
+          return validityStoreDate <= validityStockDate
+            ? { date: validityStoreDate, qty: Number(validityStoreQuantity) }
+            : { date: validityStockDate, qty: Number(validityStockQuantity) };
+        }
+        if (storeOk) return { date: validityStoreDate, qty: Number(validityStoreQuantity) };
+        if (stockOk) return { date: validityStockDate, qty: Number(validityStockQuantity) };
+        return null;
+      })();
+
       const payload = {
         gondolaCount: gondolaCount === '' ? 0 : gondolaCount,
         inventoryCount: inventoryCount === '' ? 0 : inventoryCount,
         ruptureReason: composedRuptureReason, // Clear reason if stock > 0
         isStockout: requireStockCount && total === 0,
         stockCount: total,
-        validityDate: validityDate || null,
-        validityQuantity: validityQuantity === '' ? null : validityQuantity,
+        validityStoreDate: validityStoreDate || null,
+        validityStoreQuantity: validityStoreQuantity === '' ? null : validityStoreQuantity,
+        validityStockDate: validityStockDate || null,
+        validityStockQuantity: validityStockQuantity === '' ? null : validityStockQuantity,
+        validityDate: overallValidity?.date || null,
+        validityQuantity: overallValidity?.qty ?? null,
         checked: true, // Mark as checked/counted
         checklists: Array.isArray(product.checklists) 
           ? product.checklists.map((c: any) => {
               // Auto-check validity items if date is provided
-              if (isValidityChecklistItem(c) && validityDate) {
+              if (isValidityChecklistItem(c) && overallValidity?.date) {
                 return {
                   id: c.id,
                   isChecked: true,
-                  value: validityDate
+                  value: overallValidity.date
                 };
               }
 
@@ -322,34 +368,64 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
           {Array.isArray(product.checklists) &&
            product.checklists.some((c: any) => isValidityChecklistItem(c)) && (
             <div className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">
-                  Data de Validade
-                </label>
-                <input
-                  type="date"
-                  value={validityDate}
-                  onChange={(e) => setValidityDate(e.target.value)}
-                  className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
-                  disabled={readOnly}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">
-                  Quantidade de itens com esta validade
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  value={validityQuantity}
-                  onChange={(e) =>
-                    setValidityQuantity(
-                      e.target.value === '' ? '' : parseInt(e.target.value) || 0
-                    )
-                  }
-                  className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
-                  disabled={readOnly}
-                />
+              <div className="grid grid-cols-1 gap-3">
+                <div className="rounded-lg border border-slate-200 p-3 space-y-3">
+                  <div className="text-sm font-bold text-slate-800">Validade (Loja)</div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-gray-600">Data</label>
+                      <input
+                        type="date"
+                        value={validityStoreDate}
+                        onChange={(e) => setValidityStoreDate(e.target.value)}
+                        className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                        disabled={readOnly}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-gray-600">Quantidade</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={validityStoreQuantity}
+                        onChange={(e) =>
+                          setValidityStoreQuantity(e.target.value === '' ? '' : parseInt(e.target.value) || 0)
+                        }
+                        className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                        disabled={readOnly}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-slate-200 p-3 space-y-3">
+                  <div className="text-sm font-bold text-slate-800">Validade (Estoque)</div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-gray-600">Data</label>
+                      <input
+                        type="date"
+                        value={validityStockDate}
+                        onChange={(e) => setValidityStockDate(e.target.value)}
+                        className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                        disabled={readOnly}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-gray-600">Quantidade</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={validityStockQuantity}
+                        onChange={(e) =>
+                          setValidityStockQuantity(e.target.value === '' ? '' : parseInt(e.target.value) || 0)
+                        }
+                        className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                        disabled={readOnly}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

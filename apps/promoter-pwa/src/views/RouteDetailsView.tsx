@@ -591,8 +591,10 @@ const RouteDetailsView = () => {
       }
   
       if (hasValidity) {
-        if (!p.validityDate) return false;
-        if (!p.validityQuantity || p.validityQuantity <= 0) return false;
+        const legacyOk = !!(p.validityDate && p.validityQuantity && p.validityQuantity > 0);
+        const storeOk = !!(p.validityStoreDate && p.validityStoreQuantity && p.validityStoreQuantity > 0);
+        const stockOk = !!(p.validityStockDate && p.validityStockQuantity && p.validityStockQuantity > 0);
+        if (!legacyOk && !storeOk && !stockOk) return false;
       }
   
       return true;

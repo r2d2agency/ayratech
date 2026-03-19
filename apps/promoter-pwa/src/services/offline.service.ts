@@ -3,6 +3,39 @@ import client from '../api/client';
 import toast from 'react-hot-toast';
 
 class OfflineService {
+  private normalizePayload(action: PendingAction) {
+    if (action.type === 'PRODUCT_CHECK' && action.method === 'PATCH') {
+      const payload = action.payload || {};
+
+      const hasSplit =
+        Object.prototype.hasOwnProperty.call(payload, 'validityStoreDate') ||
+        Object.prototype.hasOwnProperty.call(payload, 'validityStoreQuantity') ||
+        Object.prototype.hasOwnProperty.call(payload, 'validityStockDate') ||
+        Object.prototype.hasOwnProperty.call(payload, 'validityStockQuantity');
+
+      if (!hasSplit) {
+        const legacyDate = payload.validityDate ? String(payload.validityDate) : '';
+        const legacyQtyRaw = payload.validityQuantity;
+        const legacyQty =
+          legacyQtyRaw !== null && legacyQtyRaw !== undefined ? Number(legacyQtyRaw) : undefined;
+
+        if (legacyDate) {
+          return {
+            ...payload,
+            validityStoreDate: legacyDate,
+            validityStoreQuantity: legacyQty,
+            validityStockDate: payload.validityStockDate ?? null,
+            validityStockQuantity: payload.validityStockQuantity ?? null,
+          };
+        }
+      }
+
+      return payload;
+    }
+
+    return action.payload;
+  }
+
   async saveRoute(route: any) {
     try {
       await db.routes.put({
@@ -91,6 +124,12 @@ class OfflineService {
     for (const action of pendingActions) {
       try {
         await db.pendingActions.update(action.id!, { status: 'SYNCING' });
+
+        const normalizedPayload = this.normalizePayload(action);
+        if (normalizedPayload !== action.payload) {
+          await db.pendingActions.update(action.id!, { payload: normalizedPayload });
+          action.payload = normalizedPayload;
+        }
 
         console.log(`Syncing action ${action.type}: ${action.url}`, action.payload);
 

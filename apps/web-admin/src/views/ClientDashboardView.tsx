@@ -139,6 +139,31 @@ const ClientDashboardView: React.FC = () => {
     filterData();
   }, [routes, selectedPdv, selectedBrand, startDate, endDate, clientInfo]);
 
+  const getOverallValidity = (p: any) => {
+    const storeDate = p?.validityStoreDate ? String(p.validityStoreDate) : '';
+    const storeQty =
+      p?.validityStoreQuantity !== null && p?.validityStoreQuantity !== undefined
+        ? Number(p.validityStoreQuantity)
+        : 0;
+    const stockDate = p?.validityStockDate ? String(p.validityStockDate) : '';
+    const stockQty =
+      p?.validityStockQuantity !== null && p?.validityStockQuantity !== undefined
+        ? Number(p.validityStockQuantity)
+        : 0;
+    const legacyDate = p?.validityDate ? String(p.validityDate) : '';
+    const legacyQty =
+      p?.validityQuantity !== null && p?.validityQuantity !== undefined ? Number(p.validityQuantity) : 0;
+
+    const hasStore = !!(storeDate && storeQty > 0);
+    const hasStock = !!(stockDate && stockQty > 0);
+
+    if (hasStore && hasStock) return storeDate <= stockDate ? { date: storeDate, qty: storeQty } : { date: stockDate, qty: stockQty };
+    if (hasStore) return { date: storeDate, qty: storeQty };
+    if (hasStock) return { date: stockDate, qty: stockQty };
+    if (legacyDate) return { date: legacyDate, qty: legacyQty };
+    return null;
+  };
+
   const fetchClientInfo = async () => {
     try {
       const response = await api.get('/auth/profile');
@@ -281,10 +306,11 @@ const ClientDashboardView: React.FC = () => {
           if (p.photos) photosCount += p.photos.length;
           if (p.stockCount !== undefined && p.stockCount !== null) totalStock += p.stockCount;
 
-          if (p.validityDate) {
+          const overall = getOverallValidity(p);
+          if (overall?.date) {
             const today = new Date();
             today.setHours(0,0,0,0);
-            const valDate = new Date(p.validityDate);
+            const valDate = new Date(overall.date);
             const diffTime = valDate.getTime() - today.getTime();
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
@@ -327,9 +353,10 @@ const ClientDashboardView: React.FC = () => {
              item.products.forEach(p => {
                if (p.isStockout) rupturas++;
                // Check validity
-               if (p.validityDate) {
+               const overall = getOverallValidity(p);
+               if (overall?.date) {
                  const today = new Date();
-                 const valDate = new Date(p.validityDate);
+                 const valDate = new Date(overall.date);
                  const diffTime = valDate.getTime() - today.getTime();
                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                  if (diffDays <= 30) vencidos++;
@@ -369,9 +396,10 @@ const ClientDashboardView: React.FC = () => {
         
         item.products.forEach(p => {
           if (p.isStockout) pdv.rupturas++;
-           if (p.validityDate) {
+           const overall = getOverallValidity(p);
+           if (overall?.date) {
               const today = new Date();
-              const valDate = new Date(p.validityDate);
+              const valDate = new Date(overall.date);
               const diffTime = valDate.getTime() - today.getTime();
               const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
               if (diffDays <= 30) pdv.vencidos++;
@@ -664,7 +692,7 @@ const ClientDashboardView: React.FC = () => {
                      .flatMap(p => p.photos?.map(photo => ({ 
                        url: photo, 
                        productName: p.product.name,
-                       date: p.validityDate 
+                       date: getOverallValidity(p)?.date 
                      })))
                      .slice(0, 6)
                      .map((photo, idx) => (
@@ -801,31 +829,34 @@ const ClientDashboardView: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredRoutes.flatMap(r => r.items.flatMap(item => 
-                    item.products.filter(p => p.validityDate).map(p => {
+                    item.products
+                      .map(p => ({ p, overall: getOverallValidity(p) }))
+                      .filter(({ overall }) => !!overall?.date)
+                      .map(({ p, overall }) => {
                       const today = new Date();
                       today.setHours(0,0,0,0);
-                      const valDate = new Date(p.validityDate!);
+                      const valDate = new Date(String(overall!.date));
                       const diffTime = valDate.getTime() - today.getTime();
                       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                      return { route: r, item, product: p, diffDays };
+                      return { route: r, item, product: p, overall, diffDays };
                     })
                   ))
                   .sort((a, b) => a.diffDays - b.diffDays)
-                  .map(({ route, item, product, diffDays }, idx) => (
+                  .map(({ route, item, product, overall, diffDays }, idx) => (
                     <tr key={idx} className="hover:bg-slate-50">
                       <td className="px-4 py-3 font-medium text-slate-700">{product.product.name}</td>
                       <td className="px-4 py-3 text-slate-500">{product.product.brand?.name || '-'}</td>
                       <td className="px-4 py-3">{item.supermarket.fantasyName}</td>
-                      <td className="px-4 py-3">{new Date(product.validityDate!).toLocaleDateString()}</td>
+                      <td className="px-4 py-3">{new Date(String(overall!.date)).toLocaleDateString()}</td>
                       <td className="px-4 py-3">
                          {diffDays < 0 ? (
                            <span className="flex flex-col gap-1">
                              <span className="inline-flex items-center gap-1 text-red-600 bg-red-50 px-2 py-1 rounded-full text-xs font-bold w-fit">
                                Vencido
                              </span>
-                             {product.validityQuantity && (
+                             {overall?.qty && overall.qty > 0 && (
                                <span className="text-[10px] text-slate-500 font-normal pl-1">
-                                 Qtd: {product.validityQuantity}
+                                 Qtd: {overall.qty}
                                </span>
                              )}
                            </span>
@@ -834,9 +865,9 @@ const ClientDashboardView: React.FC = () => {
                              <span className="inline-flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-1 rounded-full text-xs font-bold w-fit">
                                Próx. Vencimento
                              </span>
-                             {product.validityQuantity && (
+                             {overall?.qty && overall.qty > 0 && (
                                <span className="text-[10px] text-slate-500 font-normal pl-1">
-                                 Qtd: {product.validityQuantity}
+                                 Qtd: {overall.qty}
                                </span>
                              )}
                            </span>
@@ -845,9 +876,9 @@ const ClientDashboardView: React.FC = () => {
                              <span className="inline-flex items-center gap-1 text-green-600 bg-green-50 px-2 py-1 rounded-full text-xs font-medium w-fit">
                                Em Dia
                              </span>
-                             {product.validityQuantity && (
+                             {overall?.qty && overall.qty > 0 && (
                                <span className="text-[10px] text-slate-500 font-normal pl-1">
-                                 Qtd: {product.validityQuantity}
+                                 Qtd: {overall.qty}
                                </span>
                              )}
                            </span>
@@ -929,10 +960,11 @@ const ClientDashboardView: React.FC = () => {
                 if (p.product.brand?.id === brand.id) {
                   if (p.checked) brandChecked++;
                   if (p.isStockout) brandStockouts++;
-                  if (p.validityDate) {
+                  const overall = getOverallValidity(p);
+                  if (overall?.date) {
                      const today = new Date();
                      today.setHours(0,0,0,0);
-                     const valDate = new Date(p.validityDate);
+                     const valDate = new Date(overall.date);
                      if (valDate < today) brandExpiry++;
                   }
                 }
@@ -979,10 +1011,11 @@ const ClientDashboardView: React.FC = () => {
                   if (i.status === 'COMPLETED' || i.checkInTime) pdvVisits++;
                   i.products.forEach(p => {
                     if (p.isStockout) pdvStockouts++;
-                    if (p.validityDate) {
+                    const overall = getOverallValidity(p);
+                    if (overall?.date) {
                        const today = new Date();
                        today.setHours(0,0,0,0);
-                       const valDate = new Date(p.validityDate);
+                       const valDate = new Date(overall.date);
                        if (valDate < today) pdvExpiry++;
                     }
                   });

@@ -107,6 +107,10 @@ interface RouteReportItem {
       checkOutTime?: string;
       validityDate?: string;
       validityQuantity?: number;
+      validityStoreDate?: string;
+      validityStoreQuantity?: number;
+      validityStockDate?: string;
+      validityStockQuantity?: number;
       stockCount?: number;
       gondolaCount?: number;
       inventoryCount?: number;
@@ -131,6 +135,10 @@ interface RouteReportItem {
       };
       validityDate?: string;
       validityQuantity?: number;
+      validityStoreDate?: string;
+      validityStoreQuantity?: number;
+      validityStockDate?: string;
+      validityStockQuantity?: number;
       stockCount?: number | '';
       gondolaCount?: number | '';
       inventoryCount?: number | '';
@@ -209,6 +217,10 @@ const RoutesReportView: React.FC = () => {
       productName: string;
       validityDate?: string;
       validityQuantity?: number;
+      validityStoreDate?: string;
+      validityStoreQuantity?: number;
+      validityStockDate?: string;
+      validityStockQuantity?: number;
       stockCount?: number;
       checklists?: Array<{
         description: string;
@@ -239,6 +251,83 @@ const RoutesReportView: React.FC = () => {
     checkAdmin();
     fetchRoutes();
   }, [startDate, endDate]);
+
+  const getOverallValidity = (p: any) => {
+    const storeDate = p?.validityStoreDate ? String(p.validityStoreDate) : '';
+    const storeQty =
+      p?.validityStoreQuantity !== null && p?.validityStoreQuantity !== undefined
+        ? Number(p.validityStoreQuantity)
+        : 0;
+    const stockDate = p?.validityStockDate ? String(p.validityStockDate) : '';
+    const stockQty =
+      p?.validityStockQuantity !== null && p?.validityStockQuantity !== undefined
+        ? Number(p.validityStockQuantity)
+        : 0;
+    const legacyDate = p?.validityDate ? String(p.validityDate) : '';
+    const legacyQty =
+      p?.validityQuantity !== null && p?.validityQuantity !== undefined ? Number(p.validityQuantity) : 0;
+
+    const hasStore = !!(storeDate && storeQty > 0);
+    const hasStock = !!(stockDate && stockQty > 0);
+
+    if (hasStore && hasStock) {
+      return storeDate <= stockDate ? { date: storeDate, qty: storeQty } : { date: stockDate, qty: stockQty };
+    }
+    if (hasStore) return { date: storeDate, qty: storeQty };
+    if (hasStock) return { date: stockDate, qty: stockQty };
+    if (legacyDate && legacyQty > 0) return { date: legacyDate, qty: legacyQty };
+    if (legacyDate) return { date: legacyDate, qty: legacyQty };
+    return null;
+  };
+
+  const getValidityMeta = (dateStr: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const valDate = new Date(dateStr);
+    const userTimezoneOffset = valDate.getTimezoneOffset() * 60000;
+    const adjustedDate = new Date(valDate.getTime() + userTimezoneOffset);
+    const diffTime = adjustedDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return { adjustedDate, diffDays };
+  };
+
+  const renderValidityLine = (label: string, date?: string, qty?: number) => {
+    if (!date) {
+      return (
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] text-slate-400">{label}</span>
+          <span className="text-slate-300">-</span>
+        </div>
+      );
+    }
+
+    const { adjustedDate, diffDays } = getValidityMeta(date);
+    const color =
+      diffDays < 0 ? 'text-red-600' : diffDays <= 30 ? 'text-amber-600' : 'text-slate-600';
+    const headline =
+      diffDays < 0 ? 'VENCIDO' : diffDays <= 30 ? `Vence em ${diffDays}d` : adjustedDate.toLocaleDateString('pt-BR');
+
+    return (
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="text-[10px] text-slate-400">{label}</div>
+          <div className={`font-bold ${color}`}>
+            {diffDays <= 30 ? (
+              <span className="flex items-center gap-1">
+                <AlertTriangle size={12} />
+                {headline} ({adjustedDate.toLocaleDateString('pt-BR')})
+              </span>
+            ) : (
+              <span>{headline}</span>
+            )}
+          </div>
+        </div>
+        <div className="text-[10px] text-slate-500 whitespace-nowrap">
+          Qtd: {qty && qty > 0 ? qty : '-'}
+        </div>
+      </div>
+    );
+  };
 
   // Extract unique values for filters
   const uniqueOptions = useMemo(() => {
@@ -421,6 +510,10 @@ const RoutesReportView: React.FC = () => {
         brandName: string;
         validityDate?: string;
         validityQuantity?: number;
+        validityStoreDate?: string;
+        validityStoreQuantity?: number;
+        validityStockDate?: string;
+        validityStockQuantity?: number;
         checked: boolean;
         checkInTime?: string;
         promoterName: string;
@@ -440,8 +533,9 @@ const RoutesReportView: React.FC = () => {
 
             // Apply validity filter if set
             if (validityStart || validityEnd) {
-                 if (!p.validityDate) return;
-                 const vDate = p.validityDate;
+                 const overall = getOverallValidity(p);
+                 if (!overall?.date) return;
+                 const vDate = overall.date;
                  if (validityStart && vDate < validityStart) return;
                  if (validityEnd && vDate > validityEnd) return;
             }
@@ -460,8 +554,12 @@ const RoutesReportView: React.FC = () => {
                 productName: p.product.name,
                 productImage: p.product.image,
                 brandName: p.product.brand?.name || '-',
-                validityDate: p.validityDate,
-                validityQuantity: p.validityQuantity,
+                validityDate: getOverallValidity(p)?.date,
+                validityQuantity: getOverallValidity(p)?.qty,
+                validityStoreDate: p.validityStoreDate,
+                validityStoreQuantity: p.validityStoreQuantity,
+                validityStockDate: p.validityStockDate,
+                validityStockQuantity: p.validityStockQuantity,
                 checked: p.checked,
                 checkInTime: p.checkInTime,
                 promoterName: p.completedBy?.fullName || r.promoter.fullName || 'N/A',
@@ -646,6 +744,10 @@ const RoutesReportView: React.FC = () => {
             productName: p.product.name,
             validityDate: p.validityDate || '',
             validityQuantity: (p as any).validityQuantity || undefined,
+            validityStoreDate: (p as any).validityStoreDate || '',
+            validityStoreQuantity: (p as any).validityStoreQuantity || undefined,
+            validityStockDate: (p as any).validityStockDate || '',
+            validityStockQuantity: (p as any).validityStockQuantity || undefined,
             stockCount: p.stockCount || '',
             checklistTemplate: p.product.checklistTemplate,
             checklists: initialChecklists
@@ -711,10 +813,11 @@ const RoutesReportView: React.FC = () => {
       if (hasIssues) issuesCount++;
 
       const hasNearExpiry = route.items.some(i => i.products.some(p => {
-        if (!p.validityDate) return false;
+        const overall = getOverallValidity(p);
+        if (!overall?.date) return false;
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const valDate = new Date(p.validityDate);
+        const valDate = new Date(overall.date);
         // Fix timezone offset issue for calculation
         const userTimezoneOffset = valDate.getTimezoneOffset() * 60000;
         const adjustedDate = new Date(valDate.getTime() + userTimezoneOffset);
@@ -914,6 +1017,7 @@ const RoutesReportView: React.FC = () => {
           if (selectedProduct && p.product.name !== selectedProduct) return;
           if (selectedClient && p.product.brand?.name !== selectedClient) return;
 
+          const overall = getOverallValidity(p);
           const row = {
             'Data': date,
             'Promotor(es)': promoterStr,
@@ -929,8 +1033,12 @@ const RoutesReportView: React.FC = () => {
             'Check-out': item.checkOutTime ? new Date(item.checkOutTime).toLocaleTimeString('pt-BR') : '-',
             'Ruptura': p.isStockout ? 'Sim' : 'Não',
             'Verificado': p.checked ? 'Sim' : 'Não',
-            'Validade': p.validityDate ? formatRouteDate(p.validityDate) : '-',
-            'Qtd. Validade': p.validityQuantity || '-',
+            'Validade': overall?.date ? formatRouteDate(overall.date) : '-',
+            'Qtd. Validade': overall?.qty && overall.qty > 0 ? overall.qty : '-',
+            'Validade (Loja)': (p as any).validityStoreDate ? formatRouteDate((p as any).validityStoreDate) : '-',
+            'Qtd. Validade (Loja)': (p as any).validityStoreQuantity && (p as any).validityStoreQuantity > 0 ? (p as any).validityStoreQuantity : '-',
+            'Validade (Estoque)': (p as any).validityStockDate ? formatRouteDate((p as any).validityStockDate) : '-',
+            'Qtd. Validade (Estoque)': (p as any).validityStockQuantity && (p as any).validityStockQuantity > 0 ? (p as any).validityStockQuantity : '-',
             'Loja': p.gondolaCount !== undefined && p.gondolaCount !== null ? p.gondolaCount : '-',
             'Estoque': p.inventoryCount !== undefined && p.inventoryCount !== null ? p.inventoryCount : '-',
             'Total Estoque': p.stockCount !== undefined && p.stockCount !== null ? p.stockCount : '-',
@@ -1402,56 +1510,15 @@ const RoutesReportView: React.FC = () => {
                                {item.brandName}
                              </td>
                              <td className="p-3 text-sm">
-                                {item.validityDate ? (() => {
-                                     const today = new Date();
-                                     today.setHours(0, 0, 0, 0);
-                                     const valDate = new Date(item.validityDate);
-                                     const userTimezoneOffset = valDate.getTimezoneOffset() * 60000;
-                                     const adjustedDate = new Date(valDate.getTime() + userTimezoneOffset);
-                                     const diffTime = adjustedDate.getTime() - today.getTime();
-                                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                                     
-                                     if (diffDays < 0) {
-                                      return (
-                                        <span className="flex flex-col gap-1">
-                                          <span className="flex items-center gap-2 text-red-600 font-bold">
-                                            <AlertTriangle size={14}/> 
-                                            VENCIDO ({adjustedDate.toLocaleDateString('pt-BR')})
-                                          </span>
-                                          {item.validityQuantity && (
-                                            <span className="text-xs text-slate-500 pl-6">
-                                              Qtd: {item.validityQuantity}
-                                            </span>
-                                          )}
-                                        </span>
-                                      );
-                                    }
-                                    if (diffDays <= 30) {
-                                      return (
-                                        <span className="flex flex-col gap-1">
-                                          <span className="flex items-center gap-2 text-amber-600 font-bold">
-                                            <AlertTriangle size={14}/> 
-                                            Vence em {diffDays}d ({adjustedDate.toLocaleDateString('pt-BR')})
-                                          </span>
-                                          {item.validityQuantity && (
-                                            <span className="text-xs text-slate-500 pl-6">
-                                              Qtd: {item.validityQuantity}
-                                            </span>
-                                          )}
-                                        </span>
-                                      );
-                                    }
-                                    return (
-                                      <span className="flex flex-col gap-1">
-                                        <span className="text-slate-600">{adjustedDate.toLocaleDateString('pt-BR')}</span>
-                                        {item.validityQuantity && (
-                                            <span className="text-xs text-slate-500">
-                                              Qtd: {item.validityQuantity}
-                                            </span>
-                                        )}
-                                      </span>
-                                    );
-                                  })() : <span className="text-slate-300">-</span>}
+                                <div className="space-y-1.5">
+                                  {renderValidityLine('Loja', (item as any).validityStoreDate, (item as any).validityStoreQuantity)}
+                                  {renderValidityLine('Estoque', (item as any).validityStockDate, (item as any).validityStockQuantity)}
+                                  {!(item as any).validityStoreDate && !(item as any).validityStockDate && (
+                                    <div className="pt-1 border-t border-slate-100">
+                                      {renderValidityLine('Geral', item.validityDate, item.validityQuantity)}
+                                    </div>
+                                  )}
+                                </div>
                              </td>
                              <td className="p-3 text-sm text-slate-500">
                                {item.promoterName}
@@ -1784,55 +1851,15 @@ const RoutesReportView: React.FC = () => {
                                 )}
                             </td>
                             <td className="p-3 text-xs">
-                              {p.validityDate ? (() => {
-                                const today = new Date();
-                                today.setHours(0, 0, 0, 0);
-                                const valDate = new Date(p.validityDate);
-                                const userTimezoneOffset = valDate.getTimezoneOffset() * 60000;
-                                const adjustedDate = new Date(valDate.getTime() + userTimezoneOffset);
-                                
-                                const diffTime = adjustedDate.getTime() - today.getTime();
-                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                                
-                                if (diffDays < 0) {
-                                  return (
-                                    <span className="flex flex-col text-red-600 font-bold">
-                                      <span className="flex items-center gap-1"><AlertTriangle size={12}/> VENCIDO</span>
-                                      <span>{adjustedDate.toLocaleDateString('pt-BR')}</span>
-                                      {(p as any).validityQuantity && (
-                                        <span className="text-[10px] text-slate-500 font-normal mt-0.5">
-                                          Qtd: {(p as any).validityQuantity}
-                                        </span>
-                                      )}
-                                    </span>
-                                  );
-                                }
-                                if (diffDays <= 30) {
-                                  return (
-                                    <span className="flex flex-col text-amber-600 font-bold">
-                                      <span className="flex items-center gap-1"><AlertTriangle size={12}/> Vence em {diffDays}d</span>
-                                      <span>{adjustedDate.toLocaleDateString('pt-BR')}</span>
-                                      {(p as any).validityQuantity && (
-                                        <span className="text-[10px] text-slate-500 font-normal mt-0.5">
-                                          Qtd: {(p as any).validityQuantity}
-                                        </span>
-                                      )}
-                                    </span>
-                                  );
-                                }
-                                return (
-                                  <span className="flex flex-col">
-                                    <span className="text-slate-600 font-medium">{adjustedDate.toLocaleDateString('pt-BR')}</span>
-                                    {(p as any).validityQuantity && (
-                                        <span className="text-[10px] text-slate-500 font-normal mt-0.5">
-                                          Qtd: {(p as any).validityQuantity}
-                                        </span>
-                                    )}
-                                  </span>
-                                );
-                              })() : (
-                                <span className="text-slate-300">-</span>
-                              )}
+                              <div className="space-y-1.5">
+                                {renderValidityLine('Loja', (p as any).validityStoreDate, (p as any).validityStoreQuantity)}
+                                {renderValidityLine('Estoque', (p as any).validityStockDate, (p as any).validityStockQuantity)}
+                                {!(p as any).validityStoreDate && !(p as any).validityStockDate && (
+                                  <div className="pt-1 border-t border-slate-100">
+                                    {renderValidityLine('Geral', p.validityDate, (p as any).validityQuantity ?? p.validityQuantity)}
+                                  </div>
+                                )}
+                              </div>
                             </td>
                             <td className="p-3 text-xs">
                               <div className="space-y-1.5">
@@ -1950,29 +1977,67 @@ const RoutesReportView: React.FC = () => {
                         <span className="font-bold text-slate-700">{prod.productName}</span>
                         <div className="flex items-center gap-4">
                          <div className="flex items-center gap-2">
-                           <label className="text-xs font-bold text-slate-500">Validade:</label>
-                           <input 
-                             type="date" 
-                             value={prod.validityDate || ''}
+                           <label className="text-xs font-bold text-slate-500">Validade Loja:</label>
+                           <input
+                             type="date"
+                             value={(prod as any).validityStoreDate || ''}
                              onChange={e => {
                                const newProds = [...manualForm.products];
-                               newProds[idx].validityDate = e.target.value;
-                               setManualForm({...manualForm, products: newProds});
+                               (newProds[idx] as any).validityStoreDate = e.target.value;
+                               const overall = getOverallValidity(newProds[idx] as any);
+                               newProds[idx].validityDate = overall?.date || '';
+                               newProds[idx].validityQuantity = overall?.qty || undefined;
+                               setManualForm({ ...manualForm, products: newProds });
                              }}
                              className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 w-32"
                            />
                            <span className="text-xs font-bold text-slate-500 ml-2">Qtd:</span>
                            <input
-                              type="number"
-                              min={0}
-                              value={prod.validityQuantity ?? ''}
-                              onChange={e => {
-                                const newProds = [...manualForm.products];
-                                const val = parseInt(e.target.value || '0') || 0;
-                                newProds[idx].validityQuantity = val;
-                                setManualForm({...manualForm, products: newProds});
-                              }}
-                              className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 w-20"
+                             type="number"
+                             min={0}
+                             value={(prod as any).validityStoreQuantity ?? ''}
+                             onChange={e => {
+                               const newProds = [...manualForm.products];
+                               const val = e.target.value === '' ? undefined : parseInt(e.target.value || '0') || 0;
+                               (newProds[idx] as any).validityStoreQuantity = val;
+                               const overall = getOverallValidity(newProds[idx] as any);
+                               newProds[idx].validityDate = overall?.date || '';
+                               newProds[idx].validityQuantity = overall?.qty || undefined;
+                               setManualForm({ ...manualForm, products: newProds });
+                             }}
+                             className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 w-20"
+                           />
+                         </div>
+                         <div className="flex items-center gap-2">
+                           <label className="text-xs font-bold text-slate-500">Validade Estoque:</label>
+                           <input
+                             type="date"
+                             value={(prod as any).validityStockDate || ''}
+                             onChange={e => {
+                               const newProds = [...manualForm.products];
+                               (newProds[idx] as any).validityStockDate = e.target.value;
+                               const overall = getOverallValidity(newProds[idx] as any);
+                               newProds[idx].validityDate = overall?.date || '';
+                               newProds[idx].validityQuantity = overall?.qty || undefined;
+                               setManualForm({ ...manualForm, products: newProds });
+                             }}
+                             className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 w-32"
+                           />
+                           <span className="text-xs font-bold text-slate-500 ml-2">Qtd:</span>
+                           <input
+                             type="number"
+                             min={0}
+                             value={(prod as any).validityStockQuantity ?? ''}
+                             onChange={e => {
+                               const newProds = [...manualForm.products];
+                               const val = e.target.value === '' ? undefined : parseInt(e.target.value || '0') || 0;
+                               (newProds[idx] as any).validityStockQuantity = val;
+                               const overall = getOverallValidity(newProds[idx] as any);
+                               newProds[idx].validityDate = overall?.date || '';
+                               newProds[idx].validityQuantity = overall?.qty || undefined;
+                               setManualForm({ ...manualForm, products: newProds });
+                             }}
+                             className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 w-20"
                            />
                          </div>
                          <div className="flex items-center gap-2">

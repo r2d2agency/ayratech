@@ -53,6 +53,10 @@ interface RouteItemProduct {
   checkOutTime?: string;
   validityDate?: string;
   validityQuantity?: number;
+  validityStoreDate?: string;
+  validityStoreQuantity?: number;
+  validityStockDate?: string;
+  validityStockQuantity?: number;
   checklists?: Checklist[];
   completedBy?: {
     id: string;
@@ -329,6 +333,10 @@ const ProductCheckView: React.FC = () => {
           checkOutTime: productData.checkOutTime,
           validityDate: productData.validityDate,
           validityQuantity: productData.validityQuantity,
+          validityStoreDate: (productData as any).validityStoreDate,
+          validityStoreQuantity: (productData as any).validityStoreQuantity,
+          validityStockDate: (productData as any).validityStockDate,
+          validityStockQuantity: (productData as any).validityStockQuantity,
           stockCount: productData.stockCount,
           gondolaCount: productData.gondolaCount,
           inventoryCount: productData.inventoryCount,
@@ -351,6 +359,10 @@ const ProductCheckView: React.FC = () => {
              checkOutTime: productData.checkOutTime,
              validityDate: productData.validityDate,
              validityQuantity: productData.validityQuantity,
+             validityStoreDate: (productData as any).validityStoreDate,
+             validityStoreQuantity: (productData as any).validityStoreQuantity,
+             validityStockDate: (productData as any).validityStockDate,
+             validityStockQuantity: (productData as any).validityStockQuantity,
              stockCount: productData.stockCount,
              gondolaCount: productData.gondolaCount,
              inventoryCount: productData.inventoryCount,
@@ -397,6 +409,10 @@ const ProductCheckView: React.FC = () => {
              photos: productData.photos,
              validityDate: productData.validityDate,
              validityQuantity: productData.validityQuantity,
+             validityStoreDate: (productData as any).validityStoreDate,
+             validityStoreQuantity: (productData as any).validityStoreQuantity,
+             validityStockDate: (productData as any).validityStockDate,
+             validityStockQuantity: (productData as any).validityStockQuantity,
              checklists: productData.checklists,
              completedBy: productData.completedBy
           }
@@ -452,13 +468,31 @@ const ProductCheckView: React.FC = () => {
       // Validation: Validity requires date and quantity
       const validityRequired = selectedProduct.checklists?.some(c => isValidityChecklistItem(c) && c.isChecked);
       if (validityRequired) {
-        if (!selectedProduct.validityDate) {
-          toast.error('Informe a data de validade.');
+        const storeFilled = !!selectedProduct.validityStoreDate || selectedProduct.validityStoreQuantity !== undefined;
+        const stockFilled = !!selectedProduct.validityStockDate || selectedProduct.validityStockQuantity !== undefined;
+        if (!storeFilled && !stockFilled) {
+          toast.error('Informe ao menos uma validade (Loja ou Estoque).');
           return;
         }
-        if (!selectedProduct.validityQuantity || selectedProduct.validityQuantity <= 0) {
-          toast.error('Informe a quantidade de itens com esta validade.');
-          return;
+        if (storeFilled) {
+          if (!selectedProduct.validityStoreDate) {
+            toast.error('Informe a data de validade (Loja).');
+            return;
+          }
+          if (!selectedProduct.validityStoreQuantity || selectedProduct.validityStoreQuantity <= 0) {
+            toast.error('Informe a quantidade (Loja).');
+            return;
+          }
+        }
+        if (stockFilled) {
+          if (!selectedProduct.validityStockDate) {
+            toast.error('Informe a data de validade (Estoque).');
+            return;
+          }
+          if (!selectedProduct.validityStockQuantity || selectedProduct.validityStockQuantity <= 0) {
+            toast.error('Informe a quantidade (Estoque).');
+            return;
+          }
         }
       }
 
@@ -473,10 +507,35 @@ const ProductCheckView: React.FC = () => {
       setSaving(true);
       try {
         const startTime = productStartTimeRef.current || new Date();
+        const overallValidity = (() => {
+          const storeOk = !!(selectedProduct.validityStoreDate && selectedProduct.validityStoreQuantity && selectedProduct.validityStoreQuantity > 0);
+          const stockOk = !!(selectedProduct.validityStockDate && selectedProduct.validityStockQuantity && selectedProduct.validityStockQuantity > 0);
+          if (storeOk && stockOk) {
+            return selectedProduct.validityStoreDate! <= selectedProduct.validityStockDate!
+              ? { date: selectedProduct.validityStoreDate!, qty: selectedProduct.validityStoreQuantity! }
+              : { date: selectedProduct.validityStockDate!, qty: selectedProduct.validityStockQuantity! };
+          }
+          if (storeOk) return { date: selectedProduct.validityStoreDate!, qty: selectedProduct.validityStoreQuantity! };
+          if (stockOk) return { date: selectedProduct.validityStockDate!, qty: selectedProduct.validityStockQuantity! };
+          return null;
+        })();
+
+        const nextChecklists = Array.isArray(selectedProduct.checklists)
+          ? selectedProduct.checklists.map((c) => {
+              if (isValidityChecklistItem(c) && c.isChecked && overallValidity?.date) {
+                return { ...c, value: overallValidity.date };
+              }
+              return c;
+            })
+          : selectedProduct.checklists;
+
         const updatedProduct = {
             ...selectedProduct,
             checkInTime: startTime.toISOString(),
             checkOutTime: new Date().toISOString(),
+            validityDate: overallValidity?.date,
+            validityQuantity: overallValidity?.qty,
+            checklists: nextChecklists,
             completedBy: user?.employee ? { id: user.employee.id, name: user.name } : undefined
         };
 
@@ -999,28 +1058,90 @@ const ProductCheckView: React.FC = () => {
                   ? 'opacity-50 pointer-events-none' 
                   : ''
               }`}>
-                <label className="text-sm font-medium text-gray-700">Data de Validade</label>
-                <input 
-                  type="date"
-                  className="w-full border rounded-lg p-2 text-sm focus:border-blue-500 outline-none"
-                  value={selectedProduct.validityDate || ''}
-                  onChange={(e) => setSelectedProduct({...selectedProduct, validityDate: e.target.value})}
-                  disabled={!selectedProduct.checklists?.some(c => isValidityChecklistItem(c) && c.isChecked)}
-                />
-                <label className="text-sm font-medium text-gray-700">Quantidade de Itens com esta validade</label>
-                <input
-                  type="number"
-                  min={0}
-                  className="w-full border rounded-lg p-2 text-sm focus:border-blue-500 outline-none"
-                  value={selectedProduct.validityQuantity ?? ''}
-                  onChange={(e) => setSelectedProduct({...selectedProduct, validityQuantity: parseInt(e.target.value || '0') || 0})}
-                  disabled={!selectedProduct.checklists?.some(c => isValidityChecklistItem(c) && c.isChecked)}
-                />
-                {selectedProduct.validityDate && (
-                  (() => {
+                <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-3">
+                  <div className="text-sm font-bold text-gray-800">Validade (Loja)</div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-gray-600">Data</label>
+                      <input
+                        type="date"
+                        className="w-full border rounded-lg p-2 text-sm focus:border-blue-500 outline-none"
+                        value={selectedProduct.validityStoreDate || ''}
+                        onChange={(e) => setSelectedProduct({ ...selectedProduct, validityStoreDate: e.target.value })}
+                        disabled={!selectedProduct.checklists?.some(c => isValidityChecklistItem(c) && c.isChecked)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-gray-600">Quantidade</label>
+                      <input
+                        type="number"
+                        min={0}
+                        className="w-full border rounded-lg p-2 text-sm focus:border-blue-500 outline-none"
+                        value={selectedProduct.validityStoreQuantity ?? ''}
+                        onChange={(e) =>
+                          setSelectedProduct({
+                            ...selectedProduct,
+                            validityStoreQuantity: e.target.value === '' ? undefined : parseInt(e.target.value || '0') || 0
+                          })
+                        }
+                        disabled={!selectedProduct.checklists?.some(c => isValidityChecklistItem(c) && c.isChecked)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-3">
+                  <div className="text-sm font-bold text-gray-800">Validade (Estoque)</div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-gray-600">Data</label>
+                      <input
+                        type="date"
+                        className="w-full border rounded-lg p-2 text-sm focus:border-blue-500 outline-none"
+                        value={selectedProduct.validityStockDate || ''}
+                        onChange={(e) => setSelectedProduct({ ...selectedProduct, validityStockDate: e.target.value })}
+                        disabled={!selectedProduct.checklists?.some(c => isValidityChecklistItem(c) && c.isChecked)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-gray-600">Quantidade</label>
+                      <input
+                        type="number"
+                        min={0}
+                        className="w-full border rounded-lg p-2 text-sm focus:border-blue-500 outline-none"
+                        value={selectedProduct.validityStockQuantity ?? ''}
+                        onChange={(e) =>
+                          setSelectedProduct({
+                            ...selectedProduct,
+                            validityStockQuantity: e.target.value === '' ? undefined : parseInt(e.target.value || '0') || 0
+                          })
+                        }
+                        disabled={!selectedProduct.checklists?.some(c => isValidityChecklistItem(c) && c.isChecked)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {(() => {
+                  const storeOk = !!(selectedProduct.validityStoreDate && selectedProduct.validityStoreQuantity && selectedProduct.validityStoreQuantity > 0);
+                  const stockOk = !!(selectedProduct.validityStockDate && selectedProduct.validityStockQuantity && selectedProduct.validityStockQuantity > 0);
+                  const overall = (() => {
+                    if (storeOk && stockOk) {
+                      return selectedProduct.validityStoreDate! <= selectedProduct.validityStockDate!
+                        ? { date: selectedProduct.validityStoreDate!, qty: selectedProduct.validityStoreQuantity! }
+                        : { date: selectedProduct.validityStockDate!, qty: selectedProduct.validityStockQuantity! };
+                    }
+                    if (storeOk) return { date: selectedProduct.validityStoreDate!, qty: selectedProduct.validityStoreQuantity! };
+                    if (stockOk) return { date: selectedProduct.validityStockDate!, qty: selectedProduct.validityStockQuantity! };
+                    return null;
+                  })();
+
+                  if (!overall?.date) return null;
+
+                  return (() => {
                     const today = new Date();
                     today.setHours(0,0,0,0);
-                    const valDate = new Date(selectedProduct.validityDate);
+                    const valDate = new Date(overall.date);
                     // Calculate diff in days
                     const diffTime = valDate.getTime() - today.getTime();
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -1042,7 +1163,7 @@ const ProductCheckView: React.FC = () => {
                     }
                     return null;
                   })()
-                )}
+                })()}
               </div>
             )}
 

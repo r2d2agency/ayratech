@@ -1324,21 +1324,59 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
                     }
 
                     if (incidentType === 'VALIDITY') {
-                      const byDate = new Map<string, number>();
-                      for (const a of actions) {
-                        const d = String(a.validityDate || '');
-                        const q = Number(a.quantity || 0);
-                        if (!d || q <= 0) continue;
-                        byDate.set(d, (byDate.get(d) || 0) + q);
+                      const prevStoreDate = String((incidentProduct as any)?.validityStoreDate || '');
+                      const prevStoreQty = Number((incidentProduct as any)?.validityStoreQuantity || 0);
+                      const prevStockDate = String((incidentProduct as any)?.validityStockDate || '');
+                      const prevStockQty = Number((incidentProduct as any)?.validityStockQuantity || 0);
+
+                      const computeNext = (prevDate: string, prevQty: number, nextDate: string, nextQty: number) => {
+                        if (!nextDate || nextQty <= 0) return { date: prevDate, qty: prevQty };
+                        if (!prevDate || prevQty <= 0) return { date: nextDate, qty: nextQty };
+                        if (nextDate < prevDate) return { date: nextDate, qty: nextQty };
+                        if (nextDate === prevDate) return { date: prevDate, qty: prevQty + nextQty };
+                        return { date: prevDate, qty: prevQty };
+                      };
+
+                      const storeAction = actions.find((a) => a.location === 'STORE');
+                      const stockAction = actions.find((a) => a.location === 'STOCK');
+
+                      const nextStore = computeNext(
+                        prevStoreDate,
+                        prevStoreQty,
+                        String(storeAction?.validityDate || ''),
+                        Number(storeAction?.quantity || 0)
+                      );
+                      const nextStock = computeNext(
+                        prevStockDate,
+                        prevStockQty,
+                        String(stockAction?.validityDate || ''),
+                        Number(stockAction?.quantity || 0)
+                      );
+
+                      const overall = (() => {
+                        const hasStore = !!(nextStore.date && nextStore.qty > 0);
+                        const hasStock = !!(nextStock.date && nextStock.qty > 0);
+                        if (hasStore && hasStock) return nextStore.date <= nextStock.date ? { date: nextStore.date, qty: nextStore.qty } : { date: nextStock.date, qty: nextStock.qty };
+                        if (hasStore) return { date: nextStore.date, qty: nextStore.qty };
+                        if (hasStock) return { date: nextStock.date, qty: nextStock.qty };
+                        return null;
+                      })();
+
+                      const update: any = {};
+                      if (nextStore.date && nextStore.qty > 0) {
+                        update.validityStoreDate = nextStore.date;
+                        update.validityStoreQuantity = nextStore.qty;
                       }
-                      const sortedDates = Array.from(byDate.keys()).sort();
-                      const closest = sortedDates[0] || '';
-                      const qty = closest ? byDate.get(closest) || 0 : 0;
-                      if (closest && qty > 0) {
-                        await onUpdateProduct(incidentProduct.productId, {
-                          validityDate: closest,
-                          validityQuantity: qty,
-                        });
+                      if (nextStock.date && nextStock.qty > 0) {
+                        update.validityStockDate = nextStock.date;
+                        update.validityStockQuantity = nextStock.qty;
+                      }
+                      if (overall) {
+                        update.validityDate = overall.date;
+                        update.validityQuantity = overall.qty;
+                      }
+                      if (Object.keys(update).length > 0) {
+                        await onUpdateProduct(incidentProduct.productId, update);
                       }
                     }
 

@@ -1509,9 +1509,24 @@ const RoutesView: React.FC = () => {
                           const cname = client?.nomeFantasia || client?.fantasyName || client?.razaoSocial || client?.nome || '';
                           if (cname) clientsSet.add(cname);
                           if (p.isStockout) rupturas += 1;
-                          if (p.validityDate) {
+                          const overallValidity = (() => {
+                            const storeDate = (p as any).validityStoreDate ? String((p as any).validityStoreDate) : '';
+                            const storeQty = (p as any).validityStoreQuantity !== null && (p as any).validityStoreQuantity !== undefined ? Number((p as any).validityStoreQuantity) : 0;
+                            const stockDate = (p as any).validityStockDate ? String((p as any).validityStockDate) : '';
+                            const stockQty = (p as any).validityStockQuantity !== null && (p as any).validityStockQuantity !== undefined ? Number((p as any).validityStockQuantity) : 0;
+                            const legacyDate = (p as any).validityDate ? String((p as any).validityDate) : '';
+                            const legacyQty = (p as any).validityQuantity !== null && (p as any).validityQuantity !== undefined ? Number((p as any).validityQuantity) : 0;
+                            const hasStore = !!(storeDate && storeQty > 0);
+                            const hasStock = !!(stockDate && stockQty > 0);
+                            if (hasStore && hasStock) return storeDate <= stockDate ? storeDate : stockDate;
+                            if (hasStore) return storeDate;
+                            if (hasStock) return stockDate;
+                            if (legacyDate && legacyQty > 0) return legacyDate;
+                            return legacyDate || '';
+                          })();
+                          if (overallValidity) {
                             const today = new Date();
-                            const valDate = new Date(String(p.validityDate) + 'T00:00:00');
+                            const valDate = new Date(String(overallValidity) + 'T00:00:00');
                             const diffDays = Math.ceil((valDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
                             if (diffDays >= 0 && diffDays <= 7) validadeProx += 1;
                           }
