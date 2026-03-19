@@ -3,6 +3,8 @@ import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateCol
 export enum IncidentReasonType {
   BREAKAGE = 'BREAKAGE',
   RUPTURE = 'RUPTURE',
+  DEGUSTATION = 'DEGUSTATION',
+  VALIDITY = 'VALIDITY',
 }
 
 @Entity()

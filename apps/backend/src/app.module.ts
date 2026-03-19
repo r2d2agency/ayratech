@@ -39,6 +39,7 @@ import { CompetitorsModule } from './competitors/competitors.module';
 import { SettingsModule } from './settings/settings.module';
 import { IncidentReasonsModule } from './incident-reasons/incident-reasons.module';
 import { UPLOAD_ROOT } from './config/upload.config';
+import { ProductIncidentsModule } from './product-incidents/product-incidents.module';
 
 @Module({
   imports: [
@@ -108,6 +109,7 @@ import { UPLOAD_ROOT } from './config/upload.config';
     SettingsModule,
     BreakagesModule,
     IncidentReasonsModule,
+    ProductIncidentsModule,
   ],
   controllers: [AppController],
   providers: [

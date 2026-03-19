@@ -1955,7 +1955,7 @@ export class RoutesService {
     }
     
     // Validações de conclusão (categoria e produto)
-    // 1) Fotos por Marca+Categoria: cada grupo presente nos produtos do item deve possuir fotos 'before' (mín 3) e 'after' (mín 1)
+    // 1) Fotos por Marca+Categoria: cada grupo presente nos produtos do item deve possuir fotos 'before' (mín 1) e 'after' (mín 1)
     const categoryPhotos: Record<string, any> = (item as any).categoryPhotos || {};
     const hasAnyBrandCategoryKey = Object.keys(categoryPhotos).some(k => k.includes('::'));
 
@@ -1976,6 +1976,7 @@ export class RoutesService {
 
     let categoryPhotoMissing = false;
     let missingGroupLabel = '';
+    const minBeforePhotos = 1;
 
     for (const [groupKey, meta] of groups.entries()) {
       const fallbackOk = (() => {
@@ -1988,9 +1989,20 @@ export class RoutesService {
       const beforeCount = Array.isArray(photos.before) ? photos.before.length : (photos.before ? 1 : 0);
       const afterCount = Array.isArray(photos.after) ? photos.after.length : (photos.after ? 1 : 0);
 
-      if (beforeCount < 3 || afterCount < 1) {
+      if (beforeCount < minBeforePhotos || afterCount < 1) {
         categoryPhotoMissing = true;
         missingGroupLabel = `${meta.brandLabel} • ${meta.categoryLabel}`;
+        break;
+      }
+
+      const extraKey = `${groupKey}::EXTRA`;
+      const extra = categoryPhotos[extraKey] || {};
+      const extraProducts = Array.isArray(extra.extraProducts) ? extra.extraProducts : [];
+      const extraAfterCount = Array.isArray(extra.after) ? extra.after.length : (extra.after ? 1 : 0);
+
+      if (extraProducts.length > 0 && extraAfterCount < 1) {
+        categoryPhotoMissing = true;
+        missingGroupLabel = `${meta.brandLabel} • ${meta.categoryLabel} (Ponto Extra)`;
         break;
       }
     }
@@ -1998,7 +2010,7 @@ export class RoutesService {
     if (categoryPhotoMissing) {
       if (item.status === 'CHECKIN') item.status = 'PENDING';
       await this.routeItemsRepository.save(item);
-      throw new BadRequestException(`Faltam fotos obrigatórias (Antes mín. 3 / Depois) em "${missingGroupLabel}". Verifique todas as marcas e categorias.`);
+      throw new BadRequestException(`Faltam fotos obrigatórias (Antes / Depois) em "${missingGroupLabel}". Verifique todas as marcas e categorias.`);
     }
 
     // Pre-calculate inventory requirements
@@ -2069,19 +2081,17 @@ export class RoutesService {
         if (!hasInventory) return true;
       }
 
-      // Checklist: todos itens devem estar marcados
-      const requiredChecklists = checklists.filter(c => c.type !== 'STOCK_COUNT');
-      const allChecked = requiredChecklists.every(c => !!c.isChecked);
-      if (!allChecked) return true;
+      // Checklist: não bloquear a finalização para checklists "simples".
+      // Só validar regras realmente obrigatórias (Estoque/Validade).
 
       // Fotos: Pelo menos uma foto por produto é obrigatória (exceto se for ruptura, talvez? Mas geralmente precisa provar a ruptura também).
       // Assumindo rigoroso: sem foto = pendência.
       // REMOVIDO: A validação de fotos agora é feita por categoria (categoryPhotos).
       // if (!ip.photos || ip.photos.length === 0) return true;
 
-      // Validade: se algum item de tipo VALIDITY_CHECK estiver marcado, exigir validityDate e quantidade
-      const hasValidityRequired = checklists.some(c => c.type === 'VALIDITY_CHECK' && !!c.isChecked);
-      if (hasValidityRequired) {
+      // Validade: se existir checklist de validade no produto, exigir preenchimento
+      const hasValidityChecklist = checklists.some(c => c.type === ChecklistItemType.VALIDITY_CHECK);
+      if (hasValidityChecklist) {
         if (!ip.validityDate) return true;
         if (ip.validityQuantity === null || ip.validityQuantity === undefined || ip.validityQuantity <= 0) return true;
       }

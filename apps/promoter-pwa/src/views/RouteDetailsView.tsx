@@ -327,63 +327,33 @@ const RouteDetailsView = () => {
 
   const executeCheckIn = async (itemId: string, lat: number, lng: number, entryPhoto?: string) => {
         try {
-            await client.post(`/routes/items/${itemId}/check-in`, {
+            const res = await client.post(`/routes/items/${itemId}/check-in`, {
               lat,
               lng,
               timestamp: new Date().toISOString(),
               entryPhoto
             });
-            const promoterId = user?.employee?.id || user?.id;
-            const nowIso = new Date().toISOString();
+            const apiItem = res.data;
 
             const updatedItems = route.items.map((i: any) => {
               if (i.id !== itemId) return i;
-
-              const existingCheckins = i.checkins || [];
-              const updatedCheckins = (() => {
-                const hasOpen = existingCheckins.some((c: any) => {
-                  const cPid = c.promoterId || c.promoter?.id;
-                  return cPid === promoterId && !c.checkOutTime;
-                });
-
-                if (!hasOpen) {
-                  return [
-                    ...existingCheckins,
-                    {
-                      id: 'temp-' + Date.now(),
-                      promoterId,
-                      checkInTime: nowIso,
-                      checkOutTime: null,
-                      entryPhoto: entryPhoto || null
-                    }
-                  ];
-                }
-
-                return existingCheckins.map((c: any) => {
-                  const cPid = c.promoterId || c.promoter?.id;
-                  if (cPid === promoterId && !c.checkOutTime) {
-                    return {
-                      ...c,
-                      checkInTime: c.checkInTime || nowIso,
-                      entryPhoto: entryPhoto || c.entryPhoto || null
-                    };
-                  }
-                  return c;
-                });
-              })();
-
-              return { ...i, status: 'CHECKIN', checkins: updatedCheckins };
+              return {
+                ...i,
+                ...apiItem,
+                supermarket: i.supermarket || apiItem?.supermarket,
+                products: apiItem?.products || i.products,
+                checkins: apiItem?.checkins || i.checkins,
+              };
             });
 
-            setRoute({ ...route, items: updatedItems });
-            setActiveItem(updatedItems.find((i: any) => i.id === itemId) || null);
+            const nextRoute = { ...route, items: updatedItems };
+            setRoute(nextRoute);
+            offlineService.saveRoute(nextRoute);
             toast.success('Check-in realizado!');
-            fetchRoute();
         } catch (err: any) {
             if (err.response && err.response.status >= 400 && err.response.status < 500) {
                  console.error('Check-in failed with 4xx:', err.response.data);
                  toast.error(`Erro: ${err.response.data?.message || 'Check-in não permitido'}`);
-                 setProcessing(false);
                  return;
             }
 
@@ -412,9 +382,9 @@ const RouteDetailsView = () => {
                 return i;
             });
 
-            setRoute({ ...route, items: updatedItems });
-            const updatedActiveItem = updatedItems.find((i: any) => i.id === itemId);
-            setActiveItem(updatedActiveItem);
+            const nextRoute = { ...route, items: updatedItems };
+            setRoute(nextRoute);
+            offlineService.saveRoute(nextRoute);
             updatePendingCount();
         } finally {
             setProcessing(false);
@@ -423,37 +393,37 @@ const RouteDetailsView = () => {
 
   const executeCheckOut = async (itemId: string, lat: number, lng: number, exitPhoto?: string) => {
         try {
-          await client.post(`/routes/items/${itemId}/check-out`, {
+          const res = await client.post(`/routes/items/${itemId}/check-out`, {
             lat,
             lng,
             timestamp: new Date().toISOString(),
             exitPhoto
           });
           toast.success('Visita finalizada!');
+          const apiItem = res.data;
           
           const updatedItems = route.items.map((i: any) => {
-            if (i.id === itemId) {
-                const promoterId = user?.employee?.id || user?.id;
-                const updatedCheckins = (i.checkins || []).map((c: any) => {
-                    const cPid = c.promoterId || c.promoter?.id;
-                    if (cPid === promoterId && !c.checkOutTime) {
-                        return { ...c, checkOutTime: new Date().toISOString() };
-                    }
-                    return c;
-                });
-                return { ...i, status: 'CHECKOUT', checkOutTime: new Date().toISOString(), checkins: updatedCheckins };
-            }
-            return i;
+            if (i.id !== itemId) return i;
+            return {
+              ...i,
+              ...apiItem,
+              supermarket: i.supermarket || apiItem?.supermarket,
+              products: apiItem?.products || i.products,
+              checkins: apiItem?.checkins || i.checkins,
+            };
           });
           
           const allDone = updatedItems.every((i: any) => i.status === 'CHECKOUT' || i.status === 'COMPLETED');
-          setRoute({ ...route, status: allDone ? 'COMPLETED' : route.status, items: updatedItems });
-          setActiveItem(null);
-          fetchRoute();
+          const nextRoute = { ...route, status: allDone ? 'COMPLETED' : route.status, items: updatedItems };
+          setRoute(nextRoute);
+          offlineService.saveRoute(nextRoute);
         } catch (err: any) {
           if (err.response && err.response.status >= 400 && err.response.status < 500) {
-               console.error('Checkout failed with 4xx:', err.response.data); const item = route.items.find((i: any) => i.id === itemId); const v = validateRouteItemCompletion(item); const msg = !v.valid && v.message ? v.message : `Erro: ${err.response.data?.message || 'Erro ao finalizar visita'}`; toast.error(msg);
-               setProcessing(false);
+               console.error('Checkout failed with 4xx:', err.response.data);
+               const item = route.items.find((i: any) => i.id === itemId);
+               const v = validateRouteItemCompletion(item);
+               const msg = !v.valid && v.message ? v.message : `Erro: ${err.response.data?.message || 'Erro ao finalizar visita'}`;
+               toast.error(msg);
                return;
           }
 
@@ -481,8 +451,9 @@ const RouteDetailsView = () => {
           });
           
           const allDone = updatedItems.every((i: any) => i.status === 'CHECKOUT' || i.status === 'COMPLETED');
-          setRoute({ ...route, status: allDone ? 'COMPLETED' : route.status, items: updatedItems });
-          setActiveItem(null);
+          const nextRoute = { ...route, status: allDone ? 'COMPLETED' : route.status, items: updatedItems };
+          setRoute(nextRoute);
+          offlineService.saveRoute(nextRoute);
           updatePendingCount();
         } finally {
           setProcessing(false);
@@ -604,22 +575,25 @@ const RouteDetailsView = () => {
     const getCatLabel = (p: any) => p?.product?.categoryRef?.name || p?.product?.category || 'Geral';
     const getBrandCategoryKey = (p: any) => `${getBrandKey(p)}::${getCatLabel(p)}`;
     const isProductComplete = (p: any) => {
-      if (!p?.checked) return false;
       if (p.isStockout) return !!(p.ruptureReason && String(p.ruptureReason).trim());
   
       const cl = Array.isArray(p.checklists) ? p.checklists : [];
-      const n = cl.filter((c: any) => c?.type === 'STOCK_COUNT').length;
+      const stockCountItems = cl.filter((c: any) => c?.type === 'STOCK_COUNT').length;
+      const hasStockCount = stockCountItems > 0;
+      const hasValidity = cl.some((c: any) => c?.type === 'VALIDITY_CHECK');
   
-      const needsG = n >= 1;
-      if (needsG && p.gondolaCount == null) return false;
+      if (!hasStockCount && !hasValidity) return true;
   
       const invPolicy = !!p.product?.client?.requiresInventoryCount;
-      if ((n >= 2 || (needsG && invPolicy)) && p.inventoryCount == null) return false;
+      if (hasStockCount) {
+        if (p.gondolaCount == null) return false;
+        if ((stockCountItems >= 2 || invPolicy) && p.inventoryCount == null) return false;
+      }
   
-      if (cl.some((c: any) => c?.type !== 'STOCK_COUNT' && !c?.isChecked)) return false;
-  
-      const needsV = cl.some((c: any) => c?.type === 'VALIDITY_CHECK' && !!c?.isChecked);
-      if (needsV && (!p.validityDate || !p.validityQuantity || p.validityQuantity <= 0)) return false;
+      if (hasValidity) {
+        if (!p.validityDate) return false;
+        if (!p.validityQuantity || p.validityQuantity <= 0) return false;
+      }
   
       return true;
     };
@@ -636,11 +610,18 @@ const RouteDetailsView = () => {
   
         const photos = item.categoryPhotos?.[key] || {};
         const beforeCount = Array.isArray(photos.before) ? photos.before.length : (photos.before ? 1 : 0);
-        const hasBefore = beforeCount >= 3;
+        const hasBefore = beforeCount >= 1;
         const hasAfter = Array.isArray(photos.after) ? photos.after.length > 0 : !!photos.after;
   
-        if (!hasBefore) return { valid: false, message: `Foto de 'Antes' pendente (mín. 3) em ${brandLabel} • ${catLabel}.` };
+        if (!hasBefore) return { valid: false, message: `Foto de 'Antes' pendente em ${brandLabel} • ${catLabel}.` };
         if (!hasAfter) return { valid: false, message: `Foto de 'Depois' pendente em ${brandLabel} • ${catLabel}.` };
+
+        const extra = item.categoryPhotos?.[`${key}::EXTRA`] || {};
+        const extraProducts = Array.isArray(extra.extraProducts) ? extra.extraProducts : [];
+        const extraAfter = Array.isArray(extra.after) ? extra.after.length > 0 : !!extra.after;
+        if (extraProducts.length > 0 && !extraAfter) {
+          return { valid: false, message: `Foto de 'Depois' pendente no Ponto Extra em ${brandLabel} • ${catLabel}.` };
+        }
   
         const p = groupProducts.find((p: any) => !isProductComplete(p));
         if (p) return { valid: false, message: `Pendência em ${p.product?.name || 'Produto'} (${brandLabel} • ${catLabel}).` };
@@ -1176,10 +1157,14 @@ const RouteDetailsView = () => {
                                     const photos = activeItem.categoryPhotos?.[groupKey] || {};
                                     const beforeCount = Array.isArray(photos.before) ? photos.before.length : (photos.before ? 1 : 0);
                                     const afterCount = Array.isArray(photos.after) ? photos.after.length : (photos.after ? 1 : 0);
+                                    const extra = activeItem.categoryPhotos?.[`${groupKey}::EXTRA`] || {};
+                                    const extraProducts = Array.isArray(extra.extraProducts) ? extra.extraProducts : [];
+                                    const extraAfterCount = Array.isArray(extra.after) ? extra.after.length : (extra.after ? 1 : 0);
 
-                                    const beforeOk = beforeCount >= 3;
+                                    const beforeOk = beforeCount >= 1;
                                     const afterOk = afterCount > 0;
-                                    const isDone = completed === total && total > 0 && beforeOk && afterOk;
+                                    const extraOk = extraProducts.length === 0 || extraAfterCount > 0;
+                                    const isDone = completed === total && total > 0 && beforeOk && afterOk && extraOk;
                                     const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
                                     const productNames = catProducts
                                       .slice()

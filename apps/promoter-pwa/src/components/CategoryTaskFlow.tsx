@@ -11,6 +11,8 @@ import { useBranding } from '../context/BrandingContext';
 import { resolveImageUrl } from '../utils/image';
 
 type CategoryFlowMode = 'FULL' | 'ITEMS' | 'PHOTOS';
+type PointType = 'natural' | 'extra';
+type IncidentType = 'RUPTURE' | 'DEGUSTATION' | 'VALIDITY';
 
 interface CategoryTaskFlowProps {
   routeItem: any;
@@ -64,6 +66,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   mode = 'FULL',
   readOnly = false
 }) => {
+  const MIN_BEFORE_PHOTOS = 1;
   const [step, setStep] = useState(mode === 'ITEMS' ? STEPS.PRODUCTS : STEPS.BEFORE_PHOTO);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
@@ -75,16 +78,38 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   const initializedRef = useRef<string | null>(null);
   const [actionProduct, setActionProduct] = useState<any>(null);
   const [breakageProduct, setBreakageProduct] = useState<any>(null);
-  const [ruptureProduct, setRuptureProduct] = useState<any>(null);
-  const [ruptureReasons, setRuptureReasons] = useState<Array<{ id: string; label: string }>>([]);
-  const [selectedRuptureReasonId, setSelectedRuptureReasonId] = useState<string>('');
-  const [ruptureDetails, setRuptureDetails] = useState<string>('');
-  const [ruptureLoading, setRuptureLoading] = useState(false);
+  const [incidentProduct, setIncidentProduct] = useState<any>(null);
+  const [incidentType, setIncidentType] = useState<IncidentType | null>(null);
+  const [incidentReasons, setIncidentReasons] = useState<Array<{ id: string; label: string }>>([]);
+  const [incidentReasonId, setIncidentReasonId] = useState<string>('');
+  const [incidentQuantity, setIncidentQuantity] = useState<number | ''>('');
+  const [incidentDescription, setIncidentDescription] = useState<string>('');
+  const [incidentLoading, setIncidentLoading] = useState(false);
+  const [validityStoreDate, setValidityStoreDate] = useState<string>('');
+  const [validityStoreQuantity, setValidityStoreQuantity] = useState<number | ''>('');
+  const [validityStockDate, setValidityStockDate] = useState<string>('');
+  const [validityStockQuantity, setValidityStockQuantity] = useState<number | ''>('');
+
+  const [pointType, setPointType] = useState<PointType>('natural');
+  const [extraSearch, setExtraSearch] = useState('');
+  const [extraSelectedProductIds, setExtraSelectedProductIds] = useState<string[]>([]);
+
+  const photosKey = categoryKey || categoryLabel || category || 'Categoria';
+  const extraPhotosKey = `${photosKey}::EXTRA`;
 
   useEffect(() => {
     const key = `${categoryKey || ''}-${categoryLabel || category || ''}-${mode}`;
     if (initializedRef.current === key) return;
     initializedRef.current = key;
+
+    setPointType('natural');
+    setExtraSearch('');
+    const storedExtra = routeItem?.categoryPhotos?.[`${photosKey}::EXTRA`]?.extraProducts;
+    if (Array.isArray(storedExtra)) {
+      setExtraSelectedProductIds(storedExtra.map((x: any) => String(x)));
+    } else {
+      setExtraSelectedProductIds([]);
+    }
 
     if (mode === 'ITEMS') {
       setStep(STEPS.PRODUCTS);
@@ -92,60 +117,39 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     }
 
     setStep(STEPS.BEFORE_PHOTO);
-  }, [category, categoryKey, categoryLabel, mode]);
+  }, [category, categoryKey, categoryLabel, mode, routeItem?.id]);
 
   useEffect(() => {
-    if (!ruptureProduct || readOnly) return;
+    if (!incidentProduct || !incidentType || readOnly) return;
 
     let cancelled = false;
-    setRuptureLoading(true);
 
     (async () => {
       try {
-        const res = await client.get('/incident-reasons', { params: { type: 'RUPTURE' } });
+        const res = await client.get('/incident-reasons', { params: { type: incidentType } });
         const list = Array.isArray(res.data) ? res.data : [];
         const normalized = list
           .filter((r: any) => r && r.id && r.label)
           .map((r: any) => ({ id: String(r.id), label: String(r.label) }));
 
         if (cancelled) return;
-        setRuptureReasons(normalized);
-
-        const existing = String(ruptureProduct?.ruptureReason || '').trim();
-        if (!existing) return;
-
-        const match = normalized.find(r => existing === r.label || existing.startsWith(`${r.label} - `));
-        if (match) {
-          setSelectedRuptureReasonId(match.id);
-          if (existing !== match.label) {
-            setRuptureDetails(existing.slice(`${match.label} - `.length));
-          } else {
-            setRuptureDetails('');
-          }
-        } else {
-          setSelectedRuptureReasonId('__OTHER__');
-          setRuptureDetails(existing);
-        }
+        setIncidentReasons(normalized);
       } catch {
         if (cancelled) return;
-        setRuptureReasons([]);
-      } finally {
-        if (!cancelled) setRuptureLoading(false);
+        setIncidentReasons([]);
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [ruptureProduct, readOnly]);
+  }, [incidentProduct, incidentType, readOnly]);
 
   const categoryTitle = (() => {
     const label = categoryLabel || category || 'Categoria';
     if (brandLabel) return `${brandLabel} • ${label}`;
     return label;
   })();
-
-  const photosKey = categoryKey || categoryLabel || category || 'Categoria';
 
   const getLabel = (type: 'before' | 'after') => {
     const categoryConfig = photoConfig?.categories?.[categoryLabel || category || ''];
@@ -161,9 +165,9 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     }
   };
 
-  // Helper to get current photos for this category
-  const getCategoryPhotos = () => {
-    return routeItem.categoryPhotos?.[photosKey] || {};
+  const getCategoryPhotos = (keyOverride?: string) => {
+    const key = keyOverride || photosKey;
+    return routeItem.categoryPhotos?.[key] || {};
   };
 
   const isStockCountRequired = (p: any) => {
@@ -194,43 +198,53 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   const shouldOpenProduct = (p: any) => isStockCountRequired(p) || hasInteractiveChecklist(p);
 
   const isProductCountComplete = (p: any) => {
-    const required = isStockCountRequired(p);
-    const checked = !!p.checked;
+    const cl = Array.isArray(p?.checklists) ? p.checklists : [];
+    const requiresStockCount = cl.some((c: any) => c?.type === 'STOCK_COUNT');
 
-    if (!required) {
-      // If stock count not required, just need to be checked (saved)
-      // Unless validity is required? 
-      // Validity check is usually inside the modal logic too.
-      // If validity is required, the modal won't let you save without it.
-      // So 'checked' implies validity was done if required.
-      return checked;
+    if (!requiresStockCount && cl.length === 0) return true;
+
+    if (requiresStockCount) {
+      const gDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
+      const inv = p.inventoryCount;
+      const hasInv = inv !== null && inv !== undefined;
+      const hasRupture = !!p.ruptureReason || !!p.isStockout;
+      const iDone = (() => {
+        if (!hasInv) return false;
+        if (inv === 0) return hasRupture;
+        return inv > 0;
+      })();
+      return gDone && iDone;
     }
 
-    const gDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
-    const inv = p.inventoryCount;
-    const hasRupture = !!p.ruptureReason || !!p.isStockout;
-    const iDone = (() => {
-      if (inv === null || inv === undefined) return false;
-      if (inv === 0) return hasRupture;
-      return inv > 0;
-    })();
-    
-    return gDone && iDone && checked;
+    const requiredChecklists = cl.filter((c: any) => c?.type !== 'STOCK_COUNT');
+    const allChecked = requiredChecklists.every((c: any) => !!c?.isChecked);
+    if (!allChecked) return false;
+
+    const needsValidity = cl.some((c: any) => isValidityChecklistItem(c));
+    if (needsValidity) {
+      if (!p.validityDate) return false;
+      if (p.validityQuantity === null || p.validityQuantity === undefined || p.validityQuantity <= 0) return false;
+    }
+
+    return true;
   };
 
   const areAllProductsComplete = () => {
     const catProducts = products || [];
-    if (!catProducts.length) return false;
-    return catProducts.every(isProductCountComplete);
+    if (!catProducts.length) return true;
+    return catProducts.every((p: any) => {
+      if (!shouldOpenProduct(p)) return true;
+      return isProductCountComplete(p);
+    });
   };
 
-  const getBeforeCount = () => {
-    const photos = getCategoryPhotos();
+  const getBeforeCount = (keyOverride?: string) => {
+    const photos = getCategoryPhotos(keyOverride);
     return Array.isArray(photos.before) ? photos.before.length : (photos.before ? 1 : 0);
   };
 
-  const getAfterCount = () => {
-    const photos = getCategoryPhotos();
+  const getAfterCount = (keyOverride?: string) => {
+    const photos = getCategoryPhotos(keyOverride);
     return Array.isArray(photos.after) ? photos.after.length : (photos.after ? 1 : 0);
   };
 
@@ -240,6 +254,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     
     setUploading(true);
     const file = e.target.files[0];
+    const storageKey = pointType === 'extra' ? extraPhotosKey : photosKey;
 
     try {
       const supermarketName = routeItem.supermarket?.fantasyName || routeItem.supermarket?.name || 'PDV';
@@ -254,7 +269,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
       const formData = new FormData();
             formData.append('type', type);
-            formData.append('category', photosKey);
+            formData.append('category', storageKey);
             formData.append('file', blob, 'photo.jpg');
 
       try {
@@ -264,15 +279,22 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
         
         const photoUrl = res.data.url || res.data.path || previewUrl;
 
-        const currentPhotos = getCategoryPhotos();
+        const currentPhotos = getCategoryPhotos(storageKey);
         const currentList = Array.isArray(currentPhotos[type]) ? currentPhotos[type] : (currentPhotos[type] ? [currentPhotos[type]] : []);
         const updatedPhotos = {
           ...routeItem.categoryPhotos,
-          [photosKey]: {
+          [storageKey]: {
             ...currentPhotos,
             [type]: [...currentList, photoUrl]
           }
         };
+
+        if (storageKey === extraPhotosKey) {
+          updatedPhotos[extraPhotosKey] = {
+            ...updatedPhotos[extraPhotosKey],
+            extraProducts: extraSelectedProductIds
+          };
+        }
 
         await onUpdateItem(routeItem.id, { categoryPhotos: updatedPhotos });
         toast.success('Foto salva!');
@@ -281,16 +303,23 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
         reader.readAsDataURL(blob);
         reader.onloadend = async () => {
           const base64data = String(reader.result);
-          const currentPhotos = getCategoryPhotos();
+          const currentPhotos = getCategoryPhotos(storageKey);
           const currentList = Array.isArray(currentPhotos[type]) ? currentPhotos[type] : (currentPhotos[type] ? [currentPhotos[type]] : []);
           const updatedPhotos = {
             ...routeItem.categoryPhotos,
-            [photosKey]: {
+            [storageKey]: {
               ...currentPhotos,
               [type]: [...currentList, base64data]
             }
           };
           await onUpdateItem(routeItem.id, { categoryPhotos: updatedPhotos }, true);
+          if (storageKey === extraPhotosKey) {
+            updatedPhotos[extraPhotosKey] = {
+              ...updatedPhotos[extraPhotosKey],
+              extraProducts: extraSelectedProductIds
+            };
+          }
+
           await offlineService.addPendingAction(
             'PHOTO',
             `/routes/items/${routeItem.id}/photos`,
@@ -300,7 +329,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
               filename: 'photo.jpg',
               photoType: type,
               category: photosKey
-            }
+              category: storageKey
           );
           // Toast feedback is handled by offlineService
         };
@@ -319,16 +348,23 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   };
   
   const handlePhotoRemove = async (type: 'before' | 'after', index: number) => {
-    const currentPhotos = getCategoryPhotos();
+    const storageKey = pointType === 'extra' ? extraPhotosKey : photosKey;
+    const currentPhotos = getCategoryPhotos(storageKey);
     const currentList = Array.isArray(currentPhotos[type]) ? currentPhotos[type] : (currentPhotos[type] ? [currentPhotos[type]] : []);
     const newList = currentList.filter((_: string, i: number) => i !== index);
     const updatedPhotos = {
       ...routeItem.categoryPhotos,
-      [photosKey]: {
+      [storageKey]: {
         ...currentPhotos,
         [type]: newList
       }
     };
+    if (storageKey === extraPhotosKey) {
+      updatedPhotos[extraPhotosKey] = {
+        ...updatedPhotos[extraPhotosKey],
+        extraProducts: extraSelectedProductIds
+      };
+    }
     await onUpdateItem(routeItem.id, { categoryPhotos: updatedPhotos });
     toast.success('Foto removida.');
   };
@@ -364,12 +400,14 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   };
 
   const finalizeCategory = () => {
-    const beforeOk = getBeforeCount() >= 3;
+    const beforeOk = getBeforeCount(photosKey) >= MIN_BEFORE_PHOTOS;
     const productsOk = mode === 'FULL' ? areAllProductsComplete() : true;
-    const afterOk = getAfterCount() > 0;
+    const afterOk = getAfterCount(photosKey) > 0;
+    const extraActive = extraSelectedProductIds.length > 0;
+    const extraAfterOk = !extraActive ? true : getAfterCount(extraPhotosKey) > 0;
 
     if (!beforeOk) {
-      toast.error('Faça 3 fotos de antes para finalizar.');
+      toast.error('Faça a Foto Antes para finalizar.');
       setStep(STEPS.BEFORE_PHOTO);
       return;
     }
@@ -383,6 +421,12 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
       setStep(STEPS.AFTER_PHOTO);
       return;
     }
+    if (!extraAfterOk) {
+      toast.error('Registre a Foto Depois do Ponto Extra para finalizar.');
+      setPointType('extra');
+      setStep(STEPS.AFTER_PHOTO);
+      return;
+    }
 
     onFinish();
   };
@@ -390,7 +434,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   useEffect(() => {
     if (mode === 'ITEMS') return;
 
-    const beforeOk = getBeforeCount() >= 3;
+    const beforeOk = getBeforeCount(photosKey) >= MIN_BEFORE_PHOTOS;
     const productsOk = mode === 'FULL' ? areAllProductsComplete() : true;
 
     if (step === STEPS.PRODUCTS && !beforeOk) {
@@ -404,7 +448,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   }, [mode, step, routeItem.categoryPhotos, products]);
 
   const renderPhotoStep = (type: 'before' | 'after', title: string, description: string) => {
-    const beforeOk = getBeforeCount() >= 3;
+    const beforeOk = getBeforeCount(photosKey) >= MIN_BEFORE_PHOTOS;
     const productsOk = mode === 'FULL' ? areAllProductsComplete() : true;
 
     if (type === 'after' && (!beforeOk || !productsOk)) {
@@ -416,7 +460,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
           <div className="space-y-1">
             <h2 className="text-lg font-bold text-gray-900">Etapa bloqueada</h2>
             <p className="text-sm text-gray-600">
-              Envie as 3 fotos de antes e conclua os produtos para liberar a Foto Depois.
+              Envie a Foto Antes e conclua os produtos obrigatórios para liberar a Foto Depois.
             </p>
           </div>
           <div className="w-full max-w-sm flex gap-3">
@@ -439,7 +483,9 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
       );
     }
 
-    const photos = getCategoryPhotos();
+    const storageKey = pointType === 'extra' ? extraPhotosKey : photosKey;
+    const isExtra = pointType === 'extra';
+    const photos = getCategoryPhotos(storageKey);
     const currentUrl = photos[type];
     const urls = Array.isArray(currentUrl) ? currentUrl : (currentUrl ? [currentUrl] : []);
 
@@ -449,6 +495,108 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
         <div className="text-center space-y-1">
           <h2 className="text-xl font-bold text-gray-800">{title}</h2>
           <p className="text-sm text-gray-500">{description}</p>
+        </div>
+
+        <div className="w-full bg-white rounded-xl border border-gray-200 p-3 space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setPointType('natural')}
+              disabled={readOnly}
+              className={`py-2 rounded-lg text-xs font-bold border ${
+                pointType === 'natural'
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              Ponto Natural
+            </button>
+            <button
+              type="button"
+              onClick={() => setPointType('extra')}
+              disabled={readOnly}
+              className={`py-2 rounded-lg text-xs font-bold border ${
+                pointType === 'extra'
+                  ? 'bg-orange-600 text-white border-orange-600'
+                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              Ponto Extra
+            </button>
+          </div>
+
+          {isExtra && (
+            <div className="space-y-2">
+              <div className="text-xs font-bold text-gray-700">Produtos no Ponto Extra</div>
+              <input
+                value={extraSearch}
+                onChange={(e) => setExtraSearch(e.target.value)}
+                placeholder="Pesquisar produto..."
+                disabled={readOnly}
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 outline-none disabled:bg-gray-100"
+              />
+              <div className="max-h-48 overflow-y-auto border rounded-lg divide-y">
+                {(products || [])
+                  .slice()
+                  .sort((a: any, b: any) =>
+                    String(a?.product?.name || '').localeCompare(String(b?.product?.name || ''), 'pt-BR')
+                  )
+                  .filter((p: any) => {
+                    const q = extraSearch.trim().toLowerCase();
+                    if (!q) return true;
+                    const name = String(p?.product?.name || '').toLowerCase();
+                    const ean = String(p?.product?.ean || p?.product?.barcode || '');
+                    return name.includes(q) || ean.includes(q);
+                  })
+                  .map((p: any) => {
+                    const pid = String(p.productId);
+                    const selected = extraSelectedProductIds.includes(pid);
+                    return (
+                      <button
+                        key={pid}
+                        type="button"
+                        disabled={readOnly}
+                        onClick={async () => {
+                          if (readOnly) return;
+                          const next = selected
+                            ? extraSelectedProductIds.filter((x) => x !== pid)
+                            : [...extraSelectedProductIds, pid];
+                          setExtraSelectedProductIds(next);
+
+                          const currentExtra = getCategoryPhotos(extraPhotosKey);
+                          const updatedPhotos = {
+                            ...routeItem.categoryPhotos,
+                            [extraPhotosKey]: {
+                              ...currentExtra,
+                              extraProducts: next
+                            }
+                          };
+                          await onUpdateItem(routeItem.id, { categoryPhotos: updatedPhotos });
+                        }}
+                        className="w-full text-left px-3 py-2 flex items-center justify-between gap-2 hover:bg-gray-50"
+                      >
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">{p?.product?.name}</div>
+                          <div className="text-[10px] text-gray-500 truncate">{p?.product?.ean || p?.product?.barcode || 'Sem EAN'}</div>
+                        </div>
+                        <div className="text-xs font-bold">
+                          {selected ? (
+                            <span className="text-orange-700">Selecionado</span>
+                          ) : (
+                            <span className="text-gray-400">Selecionar</span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+              </div>
+              <div className="text-[11px] text-gray-500">
+                {extraSelectedProductIds.length > 0
+                  ? `${extraSelectedProductIds.length} selecionados`
+                  : 'Selecione os produtos que estão no ponto extra.'}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="w-full grid grid-cols-2 gap-3">
@@ -501,7 +649,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
             type="button"
             onClick={() => {
               if (!beforeOk) {
-                toast.error('Faça 3 fotos de antes para liberar os produtos.');
+                toast.error('Faça a Foto Antes para liberar os produtos.');
                 return;
               }
               setStep(STEPS.PRODUCTS);
@@ -524,7 +672,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
               }
 
               if (!beforeOk) {
-                toast.error('Faça 3 fotos de antes para continuar.');
+                toast.error('Faça a Foto Antes para continuar.');
                 return;
               }
 
@@ -549,8 +697,8 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     const total = products.length;
     const completed = products.filter(isProductCountComplete).length;
     const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
-    const productsOk = mode === 'FULL' ? total > 0 && completed === total : true;
-    const beforeOk = getBeforeCount() >= 3;
+    const productsOk = mode === 'FULL' ? areAllProductsComplete() : true;
+    const beforeOk = getBeforeCount(photosKey) >= MIN_BEFORE_PHOTOS;
 
     return (
       <div className="flex flex-col h-full">
@@ -571,7 +719,6 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
         <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-20">
           {products.map(p => {
             const required = isStockCountRequired(p);
-            const checked = !!p.checked;
             const rowCompleted = isProductCountComplete(p);
             const openModal = shouldOpenProduct(p);
 
@@ -583,12 +730,6 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
                   if (openModal) {
                     setSelectedProduct(p);
                     return;
-                  }
-                  try {
-                    await onUpdateProduct(p.productId, { checked: !checked });
-                  } catch (e) {
-                    console.error(e);
-                    toast.error('Erro ao atualizar o produto.');
                   }
                 }}
                 className="bg-white p-4 rounded-lg shadow border border-gray-100 flex items-start gap-3 active:scale-[0.98] transition-transform"
@@ -607,7 +748,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
                       <h3 className="font-medium text-gray-900 truncate">{p.product.name}</h3>
                       <p className="text-xs text-gray-500 truncate">{p.product.ean || 'Sem EAN'}</p>
                       {!required && !hasInteractiveChecklist(p) && (
-                        <span className="text-[10px] bg-gray-100 text-gray-500 px-1 rounded">Somente OK</span>
+                        <span className="text-[10px] bg-gray-100 text-gray-500 px-1 rounded">Sem obrigatoriedade</span>
                       )}
                     </div>
 
@@ -627,11 +768,9 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
                   <div className="mt-2 flex items-center justify-between text-xs">
                     <span className={rowCompleted ? 'text-green-700 font-medium' : 'text-orange-600 font-medium'}>
-                      {rowCompleted ? 'Concluído' : openModal ? 'Toque para abrir' : 'Toque para marcar OK'}
+                      {rowCompleted ? 'Concluído' : openModal ? 'Toque para abrir' : 'Sem obrigatoriedade'}
                     </span>
-                    {!readOnly && !openModal && (
-                      <span className="text-gray-400">{checked ? 'OK' : 'Pendente'}</span>
-                    )}
+                    {!readOnly && openModal && <span className="text-gray-400">Pendente</span>}
                   </div>
                 </div>
               </div>
@@ -664,7 +803,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
                   return;
                 }
                 if (!beforeOk) {
-                  toast.error('Faça 3 fotos de antes para liberar os produtos.');
+                  toast.error('Faça a Foto Antes para liberar os produtos.');
                   setStep(STEPS.BEFORE_PHOTO);
                   return;
                 }
@@ -705,7 +844,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     );
   };
 
-  const beforeOkNow = getBeforeCount() >= 3;
+  const beforeOkNow = getBeforeCount(photosKey) >= MIN_BEFORE_PHOTOS;
   const productsOkNow = mode === 'FULL' ? areAllProductsComplete() : true;
   const canGoProductsNow = beforeOkNow;
   const canGoAfterNow = beforeOkNow && productsOkNow;
@@ -738,7 +877,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
               type="button"
               onClick={() => {
                 if (!canGoProductsNow) {
-                  toast.error('Faça 3 fotos de antes para liberar os produtos.');
+                  toast.error('Faça a Foto Antes para liberar os produtos.');
                   return;
                 }
                 setStep(STEPS.PRODUCTS);
@@ -758,7 +897,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
               type="button"
               onClick={() => {
                 if (!canGoAfterNow) {
-                  toast.error('Conclua as 3 fotos de antes e os produtos para liberar a Foto Depois.');
+                  toast.error('Conclua a Foto Antes e os produtos obrigatórios para liberar a Foto Depois.');
                   return;
                 }
                 setStep(STEPS.AFTER_PHOTO);
@@ -831,16 +970,39 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-bold text-gray-900">Avaria</div>
-                  <div className="text-xs text-gray-500">Registrar quantidade e descrição</div>
+                  <div className="text-xs text-gray-500">Registrar motivo, quantidade e descrição</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-purple-50 text-left"
+                onClick={() => {
+                  setIncidentType('DEGUSTATION');
+                  setIncidentProduct(actionProduct);
+                  setIncidentReasonId('');
+                  setIncidentQuantity('');
+                  setIncidentDescription('');
+                  setActionProduct(null);
+                }}
+                disabled={readOnly}
+              >
+                <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center">
+                  <AlertTriangle size={20} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-gray-900">Degustação</div>
+                  <div className="text-xs text-gray-500">Registrar motivo, quantidade e descrição</div>
                 </div>
               </button>
               <button
                 type="button"
                 className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-orange-50 text-left"
                 onClick={() => {
-                  setSelectedRuptureReasonId('');
-                  setRuptureDetails('');
-                  setRuptureProduct(actionProduct);
+                  setIncidentType('RUPTURE');
+                  setIncidentProduct(actionProduct);
+                  setIncidentReasonId('');
+                  setIncidentQuantity('');
+                  setIncidentDescription('');
                   setActionProduct(null);
                 }}
                 disabled={readOnly}
@@ -850,7 +1012,32 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-bold text-gray-900">Ruptura</div>
-                  <div className="text-xs text-gray-500">Registrar motivo</div>
+                  <div className="text-xs text-gray-500">Registrar motivo, quantidade e descrição</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 text-left"
+                onClick={() => {
+                  setIncidentType('VALIDITY');
+                  setIncidentProduct(actionProduct);
+                  setIncidentReasonId('');
+                  setIncidentQuantity('');
+                  setIncidentDescription('');
+                  setValidityStoreDate('');
+                  setValidityStoreQuantity('');
+                  setValidityStockDate('');
+                  setValidityStockQuantity('');
+                  setActionProduct(null);
+                }}
+                disabled={readOnly}
+              >
+                <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <AlertTriangle size={20} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-gray-900">Validade do Produto</div>
+                  <div className="text-xs text-gray-500">Registrar loja/estoque, data e quantidade</div>
                 </div>
               </button>
               <button
@@ -878,17 +1065,26 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
         />
       )}
 
-      {ruptureProduct && (
+      {incidentProduct && incidentType && (
         <div className="fixed inset-0 z-[75] bg-black bg-opacity-50 p-4 flex items-center justify-center">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
             <div className="p-4 border-b flex items-center justify-between">
               <div className="min-w-0">
-                <div className="text-sm font-black text-gray-900 truncate">Ruptura</div>
-                <div className="text-xs text-gray-500 truncate">{ruptureProduct.product?.name}</div>
+                <div className="text-sm font-black text-gray-900 truncate">
+                  {incidentType === 'RUPTURE'
+                    ? 'Ruptura'
+                    : incidentType === 'DEGUSTATION'
+                      ? 'Degustação'
+                      : 'Validade do Produto'}
+                </div>
+                <div className="text-xs text-gray-500 truncate">{incidentProduct.product?.name}</div>
               </div>
               <button
                 type="button"
-                onClick={() => setRuptureProduct(null)}
+                onClick={() => {
+                  setIncidentProduct(null);
+                  setIncidentType(null);
+                }}
                 className="text-gray-500"
               >
                 <X size={20} />
@@ -899,17 +1095,13 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
               <div className="space-y-1">
                 <div className="text-xs font-bold text-gray-700">Motivo</div>
                 <select
-                  value={selectedRuptureReasonId}
-                  onChange={(e) => {
-                    const next = e.target.value;
-                    setSelectedRuptureReasonId(next);
-                    if (next !== '__OTHER__') setRuptureDetails('');
-                  }}
-                  disabled={readOnly || ruptureLoading}
-                  className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none disabled:bg-gray-100"
+                  value={incidentReasonId}
+                  onChange={(e) => setIncidentReasonId(e.target.value)}
+                  disabled={readOnly || incidentLoading}
+                  className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
                 >
                   <option value="">Selecionar motivo...</option>
-                  {ruptureReasons.map((r) => (
+                  {incidentReasons.map((r) => (
                     <option key={r.id} value={r.id}>
                       {r.label}
                     </option>
@@ -918,19 +1110,79 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
                 </select>
               </div>
 
+              {incidentType !== 'VALIDITY' && (
+                <div className="space-y-1">
+                  <div className="text-xs font-bold text-gray-700">Quantidade</div>
+                  <input
+                    type="number"
+                    min={0}
+                    value={incidentQuantity}
+                    onChange={(e) =>
+                      setIncidentQuantity(e.target.value === '' ? '' : parseInt(e.target.value) || 0)
+                    }
+                    disabled={readOnly || incidentLoading}
+                    className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                  />
+                </div>
+              )}
+
+              {incidentType === 'VALIDITY' && (
+                <div className="space-y-3">
+                  <div className="text-xs font-bold text-gray-700">Loja</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="date"
+                      value={validityStoreDate}
+                      onChange={(e) => setValidityStoreDate(e.target.value)}
+                      disabled={readOnly || incidentLoading}
+                      className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                    />
+                    <input
+                      type="number"
+                      min={0}
+                      value={validityStoreQuantity}
+                      onChange={(e) =>
+                        setValidityStoreQuantity(e.target.value === '' ? '' : parseInt(e.target.value) || 0)
+                      }
+                      disabled={readOnly || incidentLoading}
+                      placeholder="Qtd"
+                      className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                    />
+                  </div>
+
+                  <div className="text-xs font-bold text-gray-700">Estoque</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="date"
+                      value={validityStockDate}
+                      onChange={(e) => setValidityStockDate(e.target.value)}
+                      disabled={readOnly || incidentLoading}
+                      className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                    />
+                    <input
+                      type="number"
+                      min={0}
+                      value={validityStockQuantity}
+                      onChange={(e) =>
+                        setValidityStockQuantity(e.target.value === '' ? '' : parseInt(e.target.value) || 0)
+                      }
+                      disabled={readOnly || incidentLoading}
+                      placeholder="Qtd"
+                      className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-1">
                 <div className="text-xs font-bold text-gray-700">Descrição</div>
                 <textarea
-                  value={ruptureDetails}
-                  onChange={(e) => setRuptureDetails(e.target.value)}
+                  value={incidentDescription}
+                  onChange={(e) => setIncidentDescription(e.target.value)}
                   rows={3}
-                  disabled={readOnly}
-                  placeholder={
-                    selectedRuptureReasonId && selectedRuptureReasonId !== '__OTHER__'
-                      ? 'Complemento (opcional)...'
-                      : 'Descreva o motivo...'
-                  }
-                  className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none disabled:bg-gray-100"
+                  disabled={readOnly || incidentLoading}
+                  placeholder="Descreva..."
+                  className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
                 />
               </div>
             </div>
@@ -938,51 +1190,177 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
             <div className="p-4 border-t bg-white flex gap-3">
               <button
                 type="button"
-                onClick={() => setRuptureProduct(null)}
+                onClick={() => {
+                  setIncidentProduct(null);
+                  setIncidentType(null);
+                }}
                 className="flex-1 py-3 bg-white text-gray-700 border border-gray-200 rounded-lg font-bold hover:bg-gray-50"
+                disabled={incidentLoading}
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={async () => {
-                  const composed = (() => {
-                    if (!selectedRuptureReasonId) {
-                      const freeText = ruptureDetails.trim();
-                      return freeText.length > 0 ? freeText : null;
-                    }
-
-                    if (selectedRuptureReasonId === '__OTHER__') {
-                      const freeText = ruptureDetails.trim();
-                      return freeText.length > 0 ? freeText : null;
-                    }
-
-                    const selected = ruptureReasons.find(r => r.id === selectedRuptureReasonId);
-                    if (!selected?.label) return null;
-                    const details = ruptureDetails.trim();
-                    return details.length > 0 ? `${selected.label} - ${details}` : selected.label;
-                  })();
-
-                  if (!composed) {
-                    toast.error('Informe o motivo da ruptura.');
+                  if (incidentReasons.length > 0 && !incidentReasonId) {
+                    toast.error('Selecione o motivo.');
+                    return;
+                  }
+                  if (!incidentDescription.trim()) {
+                    toast.error('Informe a descrição.');
                     return;
                   }
 
+                  if (incidentType !== 'VALIDITY') {
+                    if (!incidentQuantity || incidentQuantity <= 0) {
+                      toast.error('Informe a quantidade.');
+                      return;
+                    }
+                  } else {
+                    const storeFilled = !!validityStoreDate || validityStoreQuantity !== '';
+                    const stockFilled = !!validityStockDate || validityStockQuantity !== '';
+                    if (!storeFilled && !stockFilled) {
+                      toast.error('Informe ao menos uma validade (Loja ou Estoque).');
+                      return;
+                    }
+                    if (storeFilled) {
+                      if (!validityStoreDate) {
+                        toast.error('Informe a data de validade (Loja).');
+                        return;
+                      }
+                      if (!validityStoreQuantity || validityStoreQuantity <= 0) {
+                        toast.error('Informe a quantidade (Loja).');
+                        return;
+                      }
+                    }
+                    if (stockFilled) {
+                      if (!validityStockDate) {
+                        toast.error('Informe a data de validade (Estoque).');
+                        return;
+                      }
+                      if (!validityStockQuantity || validityStockQuantity <= 0) {
+                        toast.error('Informe a quantidade (Estoque).');
+                        return;
+                      }
+                    }
+                  }
+
+                  const selectedReasonLabel = (() => {
+                    if (!incidentReasonId) return null;
+                    if (incidentReasonId === '__OTHER__') return 'Outro';
+                    const found = incidentReasons.find((r) => r.id === incidentReasonId);
+                    return found?.label || null;
+                  })();
+
+                  const createdBy = user?.id || user?.employee?.id || null;
+                  const basePayload = {
+                    type: incidentType,
+                    productId: incidentProduct.productId,
+                    routeItemId: routeItem?.id,
+                    supermarketId: routeItem?.supermarket?.id || routeItem?.supermarketId,
+                    quantity: incidentType === 'VALIDITY' ? null : Number(incidentQuantity),
+                    description: incidentDescription.trim(),
+                    reasonId: incidentReasonId && incidentReasonId !== '__OTHER__' ? incidentReasonId : null,
+                    reasonLabel: selectedReasonLabel,
+                    createdBy,
+                    createdAt: new Date().toISOString(),
+                  };
+
+                  const actions: any[] = [];
+
+                  if (incidentType === 'VALIDITY') {
+                    if (validityStoreDate && validityStoreQuantity) {
+                      actions.push({
+                        ...basePayload,
+                        location: 'STORE',
+                        validityDate: validityStoreDate,
+                        quantity: Number(validityStoreQuantity),
+                      });
+                    }
+                    if (validityStockDate && validityStockQuantity) {
+                      actions.push({
+                        ...basePayload,
+                        location: 'STOCK',
+                        validityDate: validityStockDate,
+                        quantity: Number(validityStockQuantity),
+                      });
+                    }
+                  } else {
+                    actions.push(basePayload);
+                  }
+
                   try {
-                    await onUpdateProduct(ruptureProduct.productId, {
-                      isStockout: true,
-                      ruptureReason: composed,
-                      checked: true
-                    });
-                    toast.success('Ruptura registrada!');
-                    setRuptureProduct(null);
+                    setIncidentLoading(true);
+
+                    for (const payload of actions) {
+                      if (!navigator.onLine) {
+                        await offlineService.addPendingAction('FORM', '/product-incidents', 'POST', payload);
+                      } else {
+                        await client.post('/product-incidents', payload);
+                      }
+                    }
+
+                    if (incidentType === 'RUPTURE') {
+                      const composedReason = (() => {
+                        const label = selectedReasonLabel && selectedReasonLabel !== 'Outro' ? selectedReasonLabel : null;
+                        const details = incidentDescription.trim();
+                        const qty = Number(incidentQuantity);
+                        if (label) return `${label} - ${details} (Qtd: ${qty})`;
+                        return `${details} (Qtd: ${qty})`;
+                      })();
+
+                      const required = isStockCountRequired(incidentProduct);
+                      const update: any = {
+                        isStockout: true,
+                        ruptureReason: composedReason,
+                        checked: true,
+                      };
+                      if (required) {
+                        update.gondolaCount = 0;
+                        update.inventoryCount = 0;
+                        update.stockCount = 0;
+                      }
+                      await onUpdateProduct(incidentProduct.productId, update);
+                    }
+
+                    if (incidentType === 'VALIDITY') {
+                      const byDate = new Map<string, number>();
+                      for (const a of actions) {
+                        const d = String(a.validityDate || '');
+                        const q = Number(a.quantity || 0);
+                        if (!d || q <= 0) continue;
+                        byDate.set(d, (byDate.get(d) || 0) + q);
+                      }
+                      const sortedDates = Array.from(byDate.keys()).sort();
+                      const closest = sortedDates[0] || '';
+                      const qty = closest ? byDate.get(closest) || 0 : 0;
+                      if (closest && qty > 0) {
+                        await onUpdateProduct(incidentProduct.productId, {
+                          validityDate: closest,
+                          validityQuantity: qty,
+                        });
+                      }
+                    }
+
+                    toast.success(
+                      incidentType === 'RUPTURE'
+                        ? 'Ruptura registrada!'
+                        : incidentType === 'DEGUSTATION'
+                          ? 'Degustação registrada!'
+                          : 'Validade registrada!'
+                    );
+
+                    setIncidentProduct(null);
+                    setIncidentType(null);
                   } catch (e) {
                     console.error(e);
-                    toast.error('Erro ao salvar a ruptura.');
+                    toast.error('Erro ao salvar.');
+                  } finally {
+                    setIncidentLoading(false);
                   }
                 }}
-                disabled={readOnly}
-                className="flex-1 py-3 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 disabled:opacity-50"
+                disabled={readOnly || incidentLoading}
+                className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50"
               >
                 Salvar
               </button>
