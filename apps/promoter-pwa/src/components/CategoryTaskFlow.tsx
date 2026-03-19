@@ -328,8 +328,8 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
               fileBase64: base64data,
               filename: 'photo.jpg',
               photoType: type,
-              category: photosKey
               category: storageKey
+            }
           );
           // Toast feedback is handled by offlineService
         };
