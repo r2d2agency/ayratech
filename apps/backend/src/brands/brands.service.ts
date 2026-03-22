@@ -5,6 +5,9 @@ import { Brand } from '../entities/brand.entity';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
 import { Client } from '../entities/client.entity';
+import { BrandAvailabilityWindow } from './entities/brand-availability-window.entity';
+import { Product } from '../entities/product.entity';
+import { Supermarket } from '../entities/supermarket.entity';
 
 @Injectable()
 export class BrandsService {
@@ -13,41 +16,75 @@ export class BrandsService {
     private brandsRepository: Repository<Brand>,
     @InjectRepository(Client)
     private clientsRepository: Repository<Client>,
+    @InjectRepository(BrandAvailabilityWindow)
+    private brandAvailabilityRepository: Repository<BrandAvailabilityWindow>,
+    @InjectRepository(Product)
+    private productsRepository: Repository<Product>,
+    @InjectRepository(Supermarket)
+    private supermarketsRepository: Repository<Supermarket>,
   ) {}
 
-  create(createBrandDto: CreateBrandDto) {
-    const { clientId, ...brandData } = createBrandDto;
+  async create(createBrandDto: CreateBrandDto) {
+    const { clientId, promoterIds, supermarketIds, availabilityWindows, ...brandData } = createBrandDto as any;
     if (!clientId) {
       throw new BadRequestException('clientId é obrigatório');
     }
-    return this.clientsRepository.findOne({ where: { id: clientId } }).then(client => {
-      if (!client) throw new NotFoundException('Cliente não encontrado');
-      const brand = this.brandsRepository.create({
-        ...brandData,
-        client,
-      });
-      return this.brandsRepository.save(brand);
-    }).catch(err => {
-      throw new BadRequestException(err.message || 'Erro ao criar marca');
+    const client = await this.clientsRepository.findOne({ where: { id: clientId } });
+    if (!client) throw new NotFoundException('Cliente não encontrado');
+
+    const brand = this.brandsRepository.create({
+      ...brandData,
+      client,
+      promoters: Array.isArray(promoterIds) ? promoterIds.map((id: string) => ({ id } as any)) : undefined,
+      supermarkets: Array.isArray(supermarketIds) ? supermarketIds.map((id: string) => ({ id } as any)) : undefined,
     });
+
+    try {
+      const saved = await this.brandsRepository.save(brand);
+
+      if (Array.isArray(availabilityWindows)) {
+        await this.brandAvailabilityRepository.delete({ brandId: saved.id } as any);
+        const windows = availabilityWindows.map((w: any) =>
+          this.brandAvailabilityRepository.create({
+            brandId: saved.id,
+            dayOfWeek: Number(w.dayOfWeek),
+            active: w.active !== false,
+            startTime: String(w.startTime),
+            endTime: String(w.endTime),
+          }),
+        );
+        if (windows.length > 0) {
+          await this.brandAvailabilityRepository.save(windows);
+        }
+      }
+
+      return this.findOne(saved.id);
+    } catch (err) {
+      throw new BadRequestException(err.message || 'Erro ao criar marca');
+    }
   }
 
   findAll() {
-    return this.brandsRepository.find({ relations: ['client', 'products', 'checklistTemplate'] });
+    return this.brandsRepository.find({
+      relations: ['client', 'products', 'checklistTemplate', 'availabilityWindows', 'promoters', 'supermarkets'],
+    });
   }
 
   findOne(id: string) {
     return this.brandsRepository.findOne({ 
       where: { id },
-      relations: ['client', 'products', 'checklistTemplate']
+      relations: ['client', 'products', 'checklistTemplate', 'availabilityWindows', 'promoters', 'supermarkets']
     });
   }
 
   async update(id: string, updateBrandDto: UpdateBrandDto) {
-    const { clientId, ...brandData } = updateBrandDto;
+    const { clientId, promoterIds, supermarketIds, availabilityWindows, ...brandData } = updateBrandDto as any;
     
     try {
-      const brand = await this.brandsRepository.findOne({ where: { id } });
+      const brand = await this.brandsRepository.findOne({
+        where: { id },
+        relations: ['promoters', 'supermarkets', 'availabilityWindows'],
+      });
       if (!brand) throw new NotFoundException('Marca não encontrada');
 
       // 1. If there are simple fields to update, update them
@@ -69,6 +106,32 @@ export class BrandsService {
             `UPDATE "${this.brandsRepository.metadata.tableName}" SET "clientId" = $1 WHERE id = $2`,
             [clientId, id]
         );
+      }
+
+      if (Array.isArray(promoterIds)) {
+        brand.promoters = promoterIds.map((pid: string) => ({ id: pid } as any));
+        await this.brandsRepository.save(brand);
+      }
+
+      if (Array.isArray(supermarketIds)) {
+        brand.supermarkets = supermarketIds.map((sid: string) => ({ id: sid } as any));
+        await this.brandsRepository.save(brand);
+      }
+
+      if (Array.isArray(availabilityWindows)) {
+        await this.brandAvailabilityRepository.delete({ brandId: id } as any);
+        const windows = availabilityWindows.map((w: any) =>
+          this.brandAvailabilityRepository.create({
+            brandId: id,
+            dayOfWeek: Number(w.dayOfWeek),
+            active: w.active !== false,
+            startTime: String(w.startTime),
+            endTime: String(w.endTime),
+          }),
+        );
+        if (windows.length > 0) {
+          await this.brandAvailabilityRepository.save(windows);
+        }
       }
 
       // 3. Return the updated entity
@@ -97,5 +160,41 @@ export class BrandsService {
     }).catch(err => {
       throw new BadRequestException(err.message || 'Erro ao excluir marca');
     });
+  }
+
+  async getSchedulingContext(brandId: string, supermarketId?: string) {
+    const brand = await this.brandsRepository.findOne({
+      where: { id: brandId },
+      relations: ['client', 'checklistTemplate', 'availabilityWindows', 'promoters', 'supermarkets'],
+    });
+    if (!brand) throw new NotFoundException('Marca não encontrada');
+
+    let products: any[] = [];
+    if (supermarketId) {
+      const supermarket = await this.supermarketsRepository.findOne({
+        where: { id: supermarketId },
+        relations: ['group'],
+      });
+      if (!supermarket) throw new BadRequestException('PDV não encontrado');
+
+      const groupId = (supermarket as any).group?.id || null;
+
+      const allBrandProducts = await this.productsRepository.find({
+        where: { brandId },
+        relations: ['supermarketGroups', 'brand', 'client', 'categoryRef', 'categoryRef.parent', 'checklistTemplate'],
+      });
+
+      products = allBrandProducts.filter(p => {
+        const groups = (p as any).supermarketGroups || [];
+        if (!Array.isArray(groups) || groups.length === 0) return true;
+        if (!groupId) return false;
+        return groups.some((g: any) => g.id === groupId);
+      });
+    }
+
+    return {
+      brand,
+      products,
+    };
   }
 }

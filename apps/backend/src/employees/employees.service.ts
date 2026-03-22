@@ -172,17 +172,22 @@ export class EmployeesService {
     return savedEmployee;
   }
 
-  async findAll(search?: string) {
+  async findAll(filters?: { search?: string; supervisorId?: string; role?: string }) {
     const where: any = {};
+    const search = filters?.search;
     if (search) {
-        where.fullName = ILike(`%${search}%`);
+      where.fullName = ILike(`%${search}%`);
     }
 
-    const employees = await this.employeesRepository.find({ 
-        where,
-        relations: ['role', 'supervisor'],
-        order: { fullName: 'ASC' },
-        take: search ? 50 : undefined // Limit results if searching
+    if (filters?.supervisorId) {
+      where.supervisorId = filters.supervisorId;
+    }
+
+    const employees = await this.employeesRepository.find({
+      where,
+      relations: ['role', 'supervisor'],
+      order: { fullName: 'ASC' },
+      take: search ? 50 : undefined,
     });
     
     // Populate appAccessEnabled for all employees
@@ -191,9 +196,20 @@ export class EmployeesService {
     const users = await this.usersService.findAll(); // Assuming findAll exists and returns all users
     const userEmployeeIds = new Set(users.map(u => u.employee?.id || u.employeeId).filter(id => !!id));
 
-    return employees.map(emp => ({
+    const roleFilter = (filters?.role || '').toLowerCase().trim();
+    const filtered = roleFilter
+      ? employees.filter(emp => {
+          const roleName = (emp as any).role?.name?.toLowerCase?.() || '';
+          if (roleFilter === 'promotor' || roleFilter === 'promoter') {
+            return roleName.includes('promotor') || roleName.includes('promoter') || roleName.includes('app_user');
+          }
+          return roleName.includes(roleFilter);
+        })
+      : employees;
+
+    return filtered.map(emp => ({
       ...emp,
-      appAccessEnabled: userEmployeeIds.has(emp.id)
+      appAccessEnabled: userEmployeeIds.has(emp.id),
     }));
   }
 

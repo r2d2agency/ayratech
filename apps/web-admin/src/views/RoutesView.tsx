@@ -336,6 +336,7 @@ const RoutesView: React.FC = () => {
   const [supermarkets, setSupermarkets] = useState<any[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [brands, setBrands] = useState<any[]>([]);
   
   // Filters
   const [filterPromoterId, setFilterPromoterId] = useState<string>('');
@@ -346,10 +347,16 @@ const RoutesView: React.FC = () => {
   // Editor State
   const [selectedPromoters, setSelectedPromoters] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [editorBrandId, setEditorBrandId] = useState<string>('');
+  const [editorChecklistTemplateId, setEditorChecklistTemplateId] = useState<string>('');
   const [routeItems, setRouteItems] = useState<any[]>([]);
   const [routeStatus, setRouteStatus] = useState<string>('DRAFT');
   const [loading, setLoading] = useState(false);
   const [editingRouteId, setEditingRouteId] = useState<string | null>(null);
+
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [calendarSelectedDates, setCalendarSelectedDates] = useState<string[]>([]);
+  const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
 
   // Recurrence Edit State
   const [editingRecurrenceGroup, setEditingRecurrenceGroup] = useState<string | null>(null);
@@ -392,6 +399,8 @@ const RoutesView: React.FC = () => {
   const [currentDateInput, setCurrentDateInput] = useState('');
   const [weeklySupervisorId, setWeeklySupervisorId] = useState<string>('');
   const [weeklyMonths, setWeeklyMonths] = useState<number>(1);
+  const [weeklyBrandId, setWeeklyBrandId] = useState<string>('');
+  const [weeklyChecklistTemplateId, setWeeklyChecklistTemplateId] = useState<string>('');
   const [weeklyWeekdays, setWeeklyWeekdays] = useState<Record<number, boolean>>({
     1: true, 2: false, 3: true, 4: false, 5: true, 6: false, 0: false
   });
@@ -423,6 +432,43 @@ const RoutesView: React.FC = () => {
     }
     return dates;
   };
+
+  const timeToMinutes = (timeStr: string) => {
+    const [h, m] = String(timeStr || '').split(':').map(Number);
+    const hh = Number.isFinite(h) ? h : 0;
+    const mm = Number.isFinite(m) ? m : 0;
+    return hh * 60 + mm;
+  };
+
+  const validateAvailabilityForDate = (brand: any, dateStr: string, items: any[]) => {
+    const windows = Array.isArray(brand?.availabilityWindows) ? brand.availabilityWindows : [];
+    const activeWindows = windows.filter((w: any) => w && w.active !== false);
+    if (activeWindows.length === 0) return null;
+
+    const dayOfWeek = new Date(`${dateStr}T12:00:00`).getDay();
+    const dayWindow = activeWindows.find((w: any) => Number(w.dayOfWeek) === dayOfWeek);
+    if (!dayWindow) return `A marca não atende em ${new Date(`${dateStr}T12:00:00`).toLocaleDateString('pt-BR')}.`;
+
+    const windowStart = timeToMinutes(dayWindow.startTime);
+    const windowEnd = timeToMinutes(dayWindow.endTime);
+
+    for (const item of items || []) {
+      if (!item?.startTime) continue;
+      const start = timeToMinutes(item.startTime);
+      const end = item.endTime
+        ? timeToMinutes(item.endTime)
+        : typeof item.estimatedDuration === 'number'
+          ? start + Number(item.estimatedDuration)
+          : start;
+
+      if (end < start) return 'Horário inválido no agendamento.';
+      if (start < windowStart || end > windowEnd) {
+        return `Horário fora do atendimento da marca (${String(dayWindow.startTime)} - ${String(dayWindow.endTime)}).`;
+      }
+    }
+
+    return null;
+  };
   const handleRecurrenceOption = (option: 'single' | 'future') => {
     if (!pendingRouteEdit) return;
 
@@ -435,6 +481,8 @@ const RoutesView: React.FC = () => {
       // Edit future series
       setEditingRecurrenceGroup(pendingRouteEdit.recurrenceGroup);
       setRecurrenceReplaceFrom(pendingRouteEdit.date);
+      setWeeklyBrandId(pendingRouteEdit.brandId || '');
+      setWeeklyChecklistTemplateId(pendingRouteEdit.checklistTemplateId || '');
       
       // Pre-fill Weekly Modal
       const date = new Date(pendingRouteEdit.date);
@@ -459,11 +507,27 @@ const RoutesView: React.FC = () => {
       alert('Selecione ao menos um dia da semana e um período válido.');
       return;
     }
+
+    if (weeklyBrandId) {
+      const brand = brands.find((b: any) => b.id === weeklyBrandId);
+      if (brand) {
+        for (const d of dates) {
+          const err = validateAvailabilityForDate(brand, d, routeItems);
+          if (err) {
+            alert(err);
+            return;
+          }
+        }
+      }
+    }
+
     setLoading(true);
     try {
       await api.post('/routes/batch', {
         dates,
         promoterIds: selectedPromoters,
+        brandId: weeklyBrandId || undefined,
+        checklistTemplateId: weeklyChecklistTemplateId || undefined,
         items: routeItems.map((item, index) => ({
           supermarketId: item.supermarketId,
           order: index + 1,
@@ -525,13 +589,14 @@ const RoutesView: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const [employeesRes, supermarketsRes, productsRes, templatesRes, groupsRes, checklistsRes] = await Promise.all([
+      const [employeesRes, supermarketsRes, productsRes, templatesRes, groupsRes, checklistsRes, brandsRes] = await Promise.all([
         api.get('/employees'),
         api.get('/supermarkets'),
         api.get('/products'),
         api.get('/routes/templates/all'),
         api.get('/supermarket-groups'),
-        api.get('/checklists')
+        api.get('/checklists'),
+        api.get('/brands'),
       ]);
       
       const promotersList = employeesRes.data.filter((e: any) => 
@@ -550,6 +615,7 @@ const RoutesView: React.FC = () => {
       setTemplates(templatesRes.data);
       setGroups(groupsRes.data);
       setChecklistTemplates(checklistsRes.data);
+      setBrands(Array.isArray(brandsRes.data) ? brandsRes.data : []);
       fetchRules();
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -576,17 +642,33 @@ const RoutesView: React.FC = () => {
 
   // --- Editor Logic ---
 
-  const handleAddSupermarket = (supermarketId: string) => {
+  const handleAddSupermarket = async (supermarketId: string) => {
     if (routeItems.find(item => item.supermarketId === supermarketId)) return;
     const supermarket = supermarkets.find(s => s.id === supermarketId);
     if (supermarket) {
-      setRouteItems([...routeItems, { 
-        supermarketId, 
-        supermarket, 
-        startTime: '', 
-        estimatedDuration: 30,
-        productIds: [] 
-      }]);
+      let productIds: string[] = [];
+      const brandIdForMix = activeTab === 'editor' ? editorBrandId : weeklyBrandId;
+      if (brandIdForMix) {
+        try {
+          const res = await api.get(`/brands/${brandIdForMix}/scheduling`, { params: { supermarketId } });
+          const list = Array.isArray(res.data?.products) ? res.data.products : [];
+          productIds = list.map((p: any) => p.id).filter(Boolean);
+        } catch (e) {
+          console.error('Error preloading brand mix:', e);
+        }
+      }
+
+      setRouteItems(prev => [
+        ...prev,
+        {
+          supermarketId,
+          supermarket,
+          startTime: '',
+          estimatedDuration: 30,
+          productIds,
+          products: productIds.map((id: string) => ({ productId: id })),
+        },
+      ]);
     }
   };
 
@@ -779,11 +861,24 @@ const RoutesView: React.FC = () => {
       return;
     }
 
+    if (editorBrandId) {
+      const brand = brands.find((b: any) => b.id === editorBrandId);
+      if (brand) {
+        const err = validateAvailabilityForDate(brand, selectedDate, routeItems);
+        if (err) {
+          alert(err);
+          return;
+        }
+      }
+    }
+
     setLoading(true);
     try {
       const payload = {
         promoterIds: selectedPromoters,
         promoterId: selectedPromoters[0],
+        brandId: editorBrandId || undefined,
+        checklistTemplateId: editorChecklistTemplateId || undefined,
         date: selectedDate,
         status: status,
         items: routeItems.map((item, index) => ({
@@ -827,6 +922,8 @@ const RoutesView: React.FC = () => {
         isTemplate: true,
         templateName: templateName,
         status: 'DRAFT',
+        brandId: editorBrandId || undefined,
+        checklistTemplateId: editorChecklistTemplateId || undefined,
         promoterIds: selectedPromoters, // Optional for template
         promoterId: selectedPromoters[0] || null, // Optional for template
         date: selectedDate, // Optional/Dummy
@@ -852,6 +949,9 @@ const RoutesView: React.FC = () => {
 
   const handleLoadTemplate = (template: any) => {
     // Load template items into editor
+    setEditorBrandId(template.brandId || template.brand?.id || '');
+    setEditorChecklistTemplateId(template.checklistTemplateId || template.checklistTemplate?.id || '');
+    setCompletedProductIds([]);
     const items = template.items.map((item: any) => ({
       supermarketId: item.supermarket.id,
       supermarket: item.supermarket,
@@ -952,11 +1052,27 @@ const RoutesView: React.FC = () => {
       alert('Selecione promotor(es), itens e datas no calendário.');
       return;
     }
+
+    if (editorBrandId) {
+      const brand = brands.find((b: any) => b.id === editorBrandId);
+      if (brand) {
+        for (const d of calendarSelectedDates) {
+          const err = validateAvailabilityForDate(brand, d, routeItems);
+          if (err) {
+            alert(err);
+            return;
+          }
+        }
+      }
+    }
+
     setLoading(true);
     try {
       await api.post('/routes/batch', {
         dates: calendarSelectedDates,
         promoterIds: selectedPromoters,
+        brandId: editorBrandId || undefined,
+        checklistTemplateId: editorChecklistTemplateId || undefined,
         items: routeItems.map((item, index) => ({
           supermarketId: item.supermarketId,
           order: index + 1,
@@ -1162,6 +1278,8 @@ const RoutesView: React.FC = () => {
       setSelectedPromoters([]);
     }
     setSelectedDate(route.date.split('T')[0]);
+    setEditorBrandId(route.brandId || route.brand?.id || '');
+    setEditorChecklistTemplateId(route.checklistTemplateId || route.checklistTemplate?.id || '');
     
     // Identify completed/started products to prevent removal
     const completedIds: string[] = [];
@@ -1472,6 +1590,17 @@ const RoutesView: React.FC = () => {
                   style={{ backgroundColor: settings.primaryColor }}
                 >
                   Criar por Semana
+                </button>
+                <button 
+                  onClick={() => {
+                    setCalendarMonth(new Date(plannerMonth.getFullYear(), plannerMonth.getMonth(), 1));
+                    setCalendarSelectedDates([]);
+                    setShowCalendarModal(true);
+                  }}
+                  className="px-4 py-2 rounded-lg font-bold text-white"
+                  style={{ backgroundColor: settings.primaryColor }}
+                >
+                  Criar por Calendário
                 </button>
                 <button 
                   onClick={handleClearRoutes}
@@ -2533,6 +2662,41 @@ const RoutesView: React.FC = () => {
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6 p-6 max-h-[75vh] overflow-y-auto">
               <div className="space-y-6">
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 block mb-1">Marca</label>
+                    <select
+                      value={weeklyBrandId}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setWeeklyBrandId(val);
+                        const b = brands.find((x: any) => x.id === val);
+                        setWeeklyChecklistTemplateId(b?.checklistTemplateId || '');
+                        setSelectedPromoters([]);
+                        setRouteItems([]);
+                      }}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    >
+                      <option value="">(Opcional) Sem marca</option>
+                      {brands.map((b: any) => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 block mb-1">Checklist (padrão da marca)</label>
+                    <select
+                      value={weeklyChecklistTemplateId}
+                      onChange={(e) => setWeeklyChecklistTemplateId(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    >
+                      <option value="">(Auto)</option>
+                      {checklistTemplates.map((t: any) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Dias da Semana</label>
                   <div className="flex flex-wrap gap-2">
@@ -2594,6 +2758,11 @@ const RoutesView: React.FC = () => {
                       .filter(p => {
                         const matchesSearch = p.name.toLowerCase().includes(promoterSearch.toLowerCase());
                         if (!matchesSearch) return false;
+                        if (weeklyBrandId) {
+                          const brand = brands.find((b: any) => b.id === weeklyBrandId);
+                          const allowed = new Set((brand?.promoters || []).map((x: any) => x.id));
+                          if (allowed.size > 0 && !allowed.has(p.id)) return false;
+                        }
                         if (!weeklySupervisorId) return true;
                         const full = allEmployees.find(e => e.id === p.id);
                         return full && (full.supervisorId === weeklySupervisorId || (full.supervisor && full.supervisor.id === weeklySupervisorId));
@@ -2637,6 +2806,13 @@ const RoutesView: React.FC = () => {
                         (s.fantasyName || '').toLowerCase().includes(supermarketSearch.toLowerCase()) ||
                         (s.city || '').toLowerCase().includes(supermarketSearch.toLowerCase())
                       )
+                      .filter(s => {
+                        if (!weeklyBrandId) return true;
+                        const brand = brands.find((b: any) => b.id === weeklyBrandId);
+                        const allowed = new Set((brand?.supermarkets || []).map((x: any) => x.id));
+                        if (allowed.size === 0) return true;
+                        return allowed.has(s.id);
+                      })
                       .map(s => (
                       <button 
                         key={s.id}
@@ -2714,6 +2890,298 @@ const RoutesView: React.FC = () => {
                 style={{ backgroundColor: settings.primaryColor }}
               >
                 {editingRecurrenceGroup ? 'Atualizar Série' : 'Criar Rotas'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCalendarModal && !showProductModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
+          <div className="bg-white rounded-2xl w-full max-w-5xl shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+              <h3 className="text-xl font-bold text-slate-900">Criar Rotas por Calendário</h3>
+              <button
+                onClick={() => {
+                  setShowCalendarModal(false);
+                  setCalendarSelectedDates([]);
+                }}
+                className="px-3 py-1 rounded-lg font-bold text-slate-500 hover:bg-slate-100"
+              >
+                Fechar
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-6 p-6 max-h-[75vh] overflow-y-auto">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 block mb-1">Marca</label>
+                    <select
+                      value={editorBrandId}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEditorBrandId(val);
+                        const b = brands.find((x: any) => x.id === val);
+                        setEditorChecklistTemplateId(b?.checklistTemplateId || '');
+                        setSelectedPromoters([]);
+                        setRouteItems([]);
+                      }}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    >
+                      <option value="">(Opcional) Sem marca</option>
+                      {brands.map((b: any) => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 block mb-1">Checklist (padrão da marca)</label>
+                    <select
+                      value={editorChecklistTemplateId}
+                      onChange={(e) => setEditorChecklistTemplateId(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    >
+                      <option value="">(Auto)</option>
+                      {checklistTemplates.map((t: any) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Promotores</label>
+                  <div className="mb-2">
+                    <input
+                      type="text"
+                      placeholder="Buscar promotor..."
+                      value={promoterSearch}
+                      onChange={(e) => setPromoterSearch(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="h-44 overflow-y-auto space-y-2 pr-2 border border-slate-100 rounded-xl p-2">
+                    {promoters
+                      .filter(p => {
+                        const matchesSearch = p.name.toLowerCase().includes(promoterSearch.toLowerCase());
+                        if (!matchesSearch) return false;
+                        if (editorBrandId) {
+                          const brand = brands.find((b: any) => b.id === editorBrandId);
+                          const allowed = new Set((brand?.promoters || []).map((x: any) => x.id));
+                          if (allowed.size > 0 && !allowed.has(p.id)) return false;
+                        }
+                        return true;
+                      })
+                      .map(promoter => {
+                        const isSelected = selectedPromoters.includes(promoter.id);
+                        return (
+                          <button
+                            key={promoter.id}
+                            onClick={() => handleTogglePromoter(promoter.id)}
+                            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${isSelected ? 'bg-blue-600 text-white' : 'bg-white border border-slate-100 text-slate-600'}`}
+                          >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                              {promoter.name.charAt(0)}
+                            </div>
+                            <div className="text-left">
+                              <p className="text-sm font-bold">{promoter.name}</p>
+                              <p className={`text-[10px] ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>{promoter.email}</p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Adicionar PDVs</label>
+                  <div className="mb-2">
+                    <input
+                      type="text"
+                      placeholder="Buscar supermercado..."
+                      value={supermarketSearch}
+                      onChange={(e) => setSupermarketSearch(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="h-44 overflow-y-auto space-y-2 pr-2 border border-slate-100 rounded-xl p-2">
+                    {supermarkets
+                      .filter(s =>
+                        (s.fantasyName || '').toLowerCase().includes(supermarketSearch.toLowerCase()) ||
+                        (s.city || '').toLowerCase().includes(supermarketSearch.toLowerCase())
+                      )
+                      .filter(s => {
+                        if (!editorBrandId) return true;
+                        const brand = brands.find((b: any) => b.id === editorBrandId);
+                        const allowed = new Set((brand?.supermarkets || []).map((x: any) => x.id));
+                        if (allowed.size === 0) return true;
+                        return allowed.has(s.id);
+                      })
+                      .map(s => (
+                        <button
+                          key={s.id}
+                          onClick={() => handleAddSupermarket(s.id)}
+                          disabled={!!routeItems.find(i => i.supermarketId === s.id)}
+                          className="w-full flex justify-between items-center p-3 rounded-xl hover:bg-slate-50 border border-slate-100 disabled:opacity-50 text-left"
+                        >
+                          <div>
+                            <p className="text-sm font-bold text-slate-800">{s.fantasyName}</p>
+                            <p className="text-[10px] text-slate-400">{s.city}</p>
+                          </div>
+                          <Plus size={16} className="text-slate-400" />
+                        </button>
+                      ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700">PDVs Selecionados</label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto border border-slate-100 rounded-xl p-2">
+                    {routeItems.length === 0 ? (
+                      <div className="text-center py-6 text-slate-400 text-sm">Nenhum PDV selecionado</div>
+                    ) : routeItems.map((item, index) => (
+                      <div key={item.supermarketId} className="border border-slate-100 rounded-xl p-3 bg-white">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-sm font-bold text-slate-800">{item.supermarket?.fantasyName || 'PDV'}</div>
+                            <div className="text-[10px] text-slate-400">{item.supermarket?.city}</div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => handleOpenProductModal(index)} className="px-3 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100">Produtos</button>
+                            <button onClick={() => handleRemoveItem(index)} className="px-3 py-1 rounded-lg text-xs font-bold bg-red-50 text-red-700 border border-red-100 hover:bg-red-100">Remover</button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-500 block mb-1">Início</label>
+                            <input
+                              type="time"
+                              value={item.startTime || ''}
+                              onChange={(e) => handleUpdateItem(index, 'startTime', e.target.value)}
+                              className="w-full px-2 py-1 rounded-lg border border-slate-200 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-500 block mb-1">Fim</label>
+                            <input
+                              type="time"
+                              value={item.endTime || ''}
+                              onChange={(e) => handleUpdateItem(index, 'endTime', e.target.value)}
+                              className="w-full px-2 py-1 rounded-lg border border-slate-200 text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="font-bold text-slate-800">
+                    {calendarMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}
+                      className="px-3 py-2 border rounded-lg text-sm"
+                    >
+                      ◀
+                    </button>
+                    <button
+                      onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}
+                      className="px-3 py-2 border rounded-lg text-sm"
+                    >
+                      ▶
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-7 gap-2">
+                  {['Dom','Seg','Ter','Qua','Qui','Sex','Sab'].map(d => (
+                    <div key={d} className="text-[11px] text-slate-400 text-center font-bold">{d}</div>
+                  ))}
+                  {(() => {
+                    const days = getMonthDays(calendarMonth);
+                    const startWeekday = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1).getDay();
+                    const blanks = Array.from({ length: startWeekday }).map((_, i) => <div key={`cb-${i}`} />);
+                    return [
+                      ...blanks,
+                      ...days.map(day => {
+                        const dateStr = day.toISOString().split('T')[0];
+                        const isSelected = calendarSelectedDates.includes(dateStr);
+                        return (
+                          <button
+                            key={dateStr}
+                            onClick={() => toggleSelectCalendarDate(day)}
+                            className={`border rounded-lg p-2 text-center text-sm font-bold transition ${isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:border-blue-300'}`}
+                            title={day.toLocaleDateString('pt-BR')}
+                          >
+                            {day.getDate()}
+                          </button>
+                        );
+                      })
+                    ];
+                  })()}
+                </div>
+
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs font-black text-slate-500 uppercase">Datas Selecionadas</div>
+                    <button
+                      onClick={() => setCalendarSelectedDates([])}
+                      className="text-xs font-bold text-slate-500 hover:text-slate-700"
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                  {calendarSelectedDates.length === 0 ? (
+                    <div className="text-sm text-slate-400">Nenhuma data selecionada</div>
+                  ) : (
+                    <div className="max-h-40 overflow-y-auto space-y-2">
+                      {[...calendarSelectedDates]
+                        .sort()
+                        .map(d => (
+                          <div key={d} className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-100">
+                            <span className="text-sm font-bold text-slate-700">{new Date(d + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
+                            <button onClick={() => setCalendarSelectedDates(prev => prev.filter(x => x !== d))} className="text-red-400 hover:text-red-600 p-1">
+                              <XCircle size={16} />
+                            </button>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-xs font-bold text-slate-500">Promotores Selecionados</div>
+                  <div className="text-sm">{selectedPromoters.length} promotor(es)</div>
+                  <div className="text-xs font-bold text-slate-500">PDVs Selecionados</div>
+                  <div className="text-sm">{routeItems.length} PDV(s)</div>
+                  <div className="text-xs font-bold text-slate-500">Datas Selecionadas</div>
+                  <div className="text-sm">{calendarSelectedDates.length} dia(s)</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 justify-end px-6 py-4 border-t border-slate-200">
+              <button
+                onClick={() => {
+                  setShowCalendarModal(false);
+                  setCalendarSelectedDates([]);
+                }}
+                className="px-6 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateCalendarRoutes}
+                className="px-6 py-2 rounded-lg font-bold text-white"
+                style={{ backgroundColor: settings.primaryColor }}
+              >
+                Criar Rotas ({calendarSelectedDates.length})
               </button>
             </div>
           </div>

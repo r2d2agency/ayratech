@@ -3,12 +3,19 @@ import { Plus, Edit, Trash2, X, Search, Tag } from 'lucide-react';
 import { useBranding } from '../context/BrandingContext';
 import api from '../api/client';
 import { SearchableSelect } from '../components/SearchableSelect';
+import { SearchableMultiSelect } from '../components/SearchableMultiSelect';
 
 const BrandsView: React.FC = () => {
   const { settings } = useBranding();
   const [brands, setBrands] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [checklistTemplates, setChecklistTemplates] = useState<any[]>([]);
+  const [supermarkets, setSupermarkets] = useState<any[]>([]);
+  const [supervisors, setSupervisors] = useState<any[]>([]);
+  const [promoters, setPromoters] = useState<any[]>([]);
+  const [selectedSupervisorId, setSelectedSupervisorId] = useState('');
+  const [availablePromoterSearch, setAvailablePromoterSearch] = useState('');
+  const [selectedPromoterSearch, setSelectedPromoterSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingBrand, setEditingBrand] = useState<any | null>(null);
@@ -20,13 +27,22 @@ const BrandsView: React.FC = () => {
     waitForStockCount: false,
     stockNotificationContact: '',
     inventoryFrequency: '',
-    checklistTemplateId: ''
+    inventoryFrequencyDays: '' as any,
+    inventoryPostponeUntilWeekEnd: true,
+    inventoryPostponeRequiresJustification: true,
+    inventoryMaxPostponesPerWeek: 10 as any,
+    checklistTemplateId: '',
+    promoterIds: [] as string[],
+    supermarketIds: [] as string[],
+    availabilityWindows: [] as any[],
   });
 
   useEffect(() => {
     fetchBrands();
     fetchClients();
     fetchChecklistTemplates();
+    fetchSupermarkets();
+    fetchSupervisors();
   }, []);
 
   const fetchBrands = async () => {
@@ -58,6 +74,60 @@ const BrandsView: React.FC = () => {
     }
   };
 
+  const fetchSupermarkets = async () => {
+    try {
+      const response = await api.get('/supermarkets');
+      setSupermarkets(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error("Error fetching supermarkets:", error);
+    }
+  };
+
+  const fetchSupervisors = async () => {
+    try {
+      const response = await api.get('/employees', { params: { role: 'supervisor' } });
+      setSupervisors(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error("Error fetching supervisors:", error);
+    }
+  };
+
+  const fetchPromoters = async (supervisorId: string) => {
+    try {
+      if (!supervisorId) {
+        setPromoters([]);
+        return;
+      }
+      const response = await api.get('/employees', { params: { role: 'promotor', supervisorId } });
+      const list = Array.isArray(response.data) ? response.data : [];
+      setPromoters(list.filter((p: any) => !p.status || p.status === 'active'));
+    } catch (error) {
+      console.error("Error fetching promoters:", error);
+      setPromoters([]);
+    }
+  };
+
+  const normalizeAvailabilityWindows = (windows: any[] | undefined) => {
+    const base = Array.from({ length: 7 }).map((_, dayOfWeek) => ({
+      dayOfWeek,
+      active: false,
+      startTime: '08:00',
+      endTime: '18:00',
+    }));
+    if (!Array.isArray(windows)) return base;
+    const byDay = new Map(windows.map(w => [Number(w.dayOfWeek), w]));
+    return base.map(w => {
+      const existing = byDay.get(w.dayOfWeek);
+      if (!existing) return w;
+      return {
+        dayOfWeek: w.dayOfWeek,
+        active: existing.active !== false,
+        startTime: existing.startTime || w.startTime,
+        endTime: existing.endTime || w.endTime,
+      };
+    });
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -71,6 +141,9 @@ const BrandsView: React.FC = () => {
       
       // Ensure waitForStockCount is boolean
       payload.waitForStockCount = !!payload.waitForStockCount;
+
+      if (payload.inventoryFrequencyDays === '') payload.inventoryFrequencyDays = undefined;
+      if (payload.inventoryMaxPostponesPerWeek === '') payload.inventoryMaxPostponesPerWeek = undefined;
       
       if (payload.name) {
         payload.name = payload.name.trim();
@@ -133,9 +206,21 @@ const BrandsView: React.FC = () => {
       waitForStockCount: false,
       stockNotificationContact: '',
       inventoryFrequency: '',
+      inventoryFrequencyDays: '' as any,
+      inventoryPostponeUntilWeekEnd: true,
+      inventoryPostponeRequiresJustification: true,
+      inventoryMaxPostponesPerWeek: 10 as any,
       checklistTemplateId: ''
+      ,
+      promoterIds: [],
+      supermarketIds: [],
+      availabilityWindows: normalizeAvailabilityWindows([]),
     });
     setEditingBrand(null);
+    setSelectedSupervisorId('');
+    setPromoters([]);
+    setAvailablePromoterSearch('');
+    setSelectedPromoterSearch('');
   };
 
   const openEditModal = (brand: any) => {
@@ -150,9 +235,19 @@ const BrandsView: React.FC = () => {
       waitForStockCount: brand.waitForStockCount || false,
       stockNotificationContact: brand.stockNotificationContact || '',
       inventoryFrequency: brand.inventoryFrequency || '',
+      inventoryFrequencyDays: brand.inventoryFrequencyDays ?? '' as any,
+      inventoryPostponeUntilWeekEnd: brand.inventoryPostponeUntilWeekEnd !== false,
+      inventoryPostponeRequiresJustification: brand.inventoryPostponeRequiresJustification !== false,
+      inventoryMaxPostponesPerWeek: brand.inventoryMaxPostponesPerWeek ?? 10,
       checklistTemplateId: brand.checklistTemplateId || (brand.checklistTemplate ? brand.checklistTemplate.id : '')
+      ,
+      promoterIds: Array.isArray(brand.promoters) ? brand.promoters.map((p: any) => p.id) : [],
+      supermarketIds: Array.isArray(brand.supermarkets) ? brand.supermarkets.map((s: any) => s.id) : [],
+      availabilityWindows: normalizeAvailabilityWindows(brand.availabilityWindows),
     });
     setShowModal(true);
+    setAvailablePromoterSearch('');
+    setSelectedPromoterSearch('');
   };
 
   const filteredBrands = brands.filter(b => 
@@ -272,7 +367,7 @@ const BrandsView: React.FC = () => {
               </button>
             </div>
             
-            <form onSubmit={handleSave} className="p-6 space-y-4">
+            <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Nome da Marca</label>
                 <input
@@ -364,6 +459,213 @@ const BrandsView: React.FC = () => {
                     </p>
                   </div>
                 )}
+              </div>
+
+              <div className="bg-white border border-slate-200 p-4 rounded-xl space-y-4">
+                <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Regras de Inventário</h4>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Dias (semanal/quizenal)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium"
+                    value={formData.inventoryFrequencyDays}
+                    onChange={e => setFormData({ ...formData, inventoryFrequencyDays: e.target.value === '' ? '' : parseInt(e.target.value, 10) })}
+                    placeholder="Ex: 15"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  <label className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      checked={formData.inventoryPostponeUntilWeekEnd}
+                      onChange={e => setFormData({ ...formData, inventoryPostponeUntilWeekEnd: e.target.checked })}
+                    />
+                    <span className="text-sm font-bold text-slate-700">Permitir prorrogar apenas até o fim da semana</span>
+                  </label>
+
+                  <label className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      checked={formData.inventoryPostponeRequiresJustification}
+                      onChange={e => setFormData({ ...formData, inventoryPostponeRequiresJustification: e.target.checked })}
+                    />
+                    <span className="text-sm font-bold text-slate-700">Exigir justificativa ao prorrogar</span>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Máx. prorrogações por semana</label>
+                  <input
+                    type="number"
+                    min={0}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium"
+                    value={formData.inventoryMaxPostponesPerWeek}
+                    onChange={e => setFormData({ ...formData, inventoryMaxPostponesPerWeek: e.target.value === '' ? '' : parseInt(e.target.value, 10) })}
+                    placeholder="Ex: 10"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-white border border-slate-200 p-4 rounded-xl space-y-3">
+                <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">PDVs da Marca</h4>
+                <SearchableMultiSelect
+                  label="Selecionar PDVs"
+                  value={formData.supermarketIds}
+                  onChange={(vals) => setFormData({ ...formData, supermarketIds: vals })}
+                  options={supermarkets.map((s: any) => ({
+                    value: s.id,
+                    label: `${s.fantasyName || s.name || 'PDV'} - ${s.city || ''}`,
+                  }))}
+                  placeholder="Selecione..."
+                />
+              </div>
+
+              <div className="bg-white border border-slate-200 p-4 rounded-xl space-y-3">
+                <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Horários da Marca</h4>
+                <div className="space-y-2">
+                  {(formData.availabilityWindows || []).map((w: any) => {
+                    const labels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+                    return (
+                      <div key={w.dayOfWeek} className="flex items-center gap-3">
+                        <label className="flex items-center gap-2 w-16">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                            checked={!!w.active}
+                            onChange={e => {
+                              const next = (formData.availabilityWindows || []).map((x: any) =>
+                                x.dayOfWeek === w.dayOfWeek ? { ...x, active: e.target.checked } : x,
+                              );
+                              setFormData({ ...formData, availabilityWindows: next });
+                            }}
+                          />
+                          <span className="text-xs font-bold text-slate-700">{labels[w.dayOfWeek] || w.dayOfWeek}</span>
+                        </label>
+                        <input
+                          type="time"
+                          className="px-3 py-2 rounded-lg border border-slate-200 text-sm font-bold text-slate-700 w-28"
+                          value={w.startTime || '08:00'}
+                          disabled={!w.active}
+                          onChange={e => {
+                            const next = (formData.availabilityWindows || []).map((x: any) =>
+                              x.dayOfWeek === w.dayOfWeek ? { ...x, startTime: e.target.value } : x,
+                            );
+                            setFormData({ ...formData, availabilityWindows: next });
+                          }}
+                        />
+                        <span className="text-xs text-slate-400 font-bold">até</span>
+                        <input
+                          type="time"
+                          className="px-3 py-2 rounded-lg border border-slate-200 text-sm font-bold text-slate-700 w-28"
+                          value={w.endTime || '18:00'}
+                          disabled={!w.active}
+                          onChange={e => {
+                            const next = (formData.availabilityWindows || []).map((x: any) =>
+                              x.dayOfWeek === w.dayOfWeek ? { ...x, endTime: e.target.value } : x,
+                            );
+                            setFormData({ ...formData, availabilityWindows: next });
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="bg-white border border-slate-200 p-4 rounded-xl space-y-4">
+                <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Promotores da Marca</h4>
+                <SearchableSelect
+                  label="Supervisor (para filtrar)"
+                  placeholder="Selecione..."
+                  value={selectedSupervisorId}
+                  onChange={(val) => {
+                    setSelectedSupervisorId(val);
+                    fetchPromoters(val);
+                  }}
+                  options={supervisors.map((s: any) => ({
+                    value: s.id,
+                    label: s.fullName || s.name || s.email || 'Supervisor',
+                  }))}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border border-slate-200 rounded-xl overflow-hidden">
+                    <div className="p-3 bg-slate-50 border-b border-slate-100 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-black text-slate-600 uppercase">Disponíveis</p>
+                        <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full">
+                          {promoters.filter((p: any) => !formData.promoterIds.includes(p.id)).length}
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-medium outline-none focus:ring-4 focus:ring-blue-50"
+                        placeholder="Buscar..."
+                        value={availablePromoterSearch}
+                        onChange={e => setAvailablePromoterSearch(e.target.value)}
+                      />
+                    </div>
+                    <div className="max-h-56 overflow-y-auto p-2 space-y-1 bg-white">
+                      {promoters
+                        .filter((p: any) => !formData.promoterIds.includes(p.id))
+                        .filter((p: any) => (p.fullName || p.name || '').toLowerCase().includes(availablePromoterSearch.toLowerCase()))
+                        .map((p: any) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, promoterIds: [...formData.promoterIds, p.id] })}
+                            className="w-full text-left px-3 py-2 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                          >
+                            <p className="text-xs font-bold text-slate-800 truncate">{p.fullName || p.name}</p>
+                            <p className="text-[10px] text-slate-400 truncate">{p.email || ''}</p>
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+
+                  <div className="border border-slate-200 rounded-xl overflow-hidden">
+                    <div className="p-3 bg-slate-50 border-b border-slate-100 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-black text-slate-600 uppercase">Selecionados</p>
+                        <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full">
+                          {formData.promoterIds.length}
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-medium outline-none focus:ring-4 focus:ring-blue-50"
+                        placeholder="Buscar..."
+                        value={selectedPromoterSearch}
+                        onChange={e => setSelectedPromoterSearch(e.target.value)}
+                      />
+                    </div>
+                    <div className="max-h-56 overflow-y-auto p-2 space-y-1 bg-white">
+                      {formData.promoterIds
+                        .map((id: string) => {
+                          const fromLoaded = promoters.find((p: any) => p.id === id);
+                          const fromBrand = editingBrand?.promoters?.find((p: any) => p.id === id);
+                          return fromLoaded || fromBrand || { id, fullName: id };
+                        })
+                        .filter((p: any) => (p.fullName || p.name || '').toLowerCase().includes(selectedPromoterSearch.toLowerCase()))
+                        .map((p: any) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, promoterIds: formData.promoterIds.filter(pid => pid !== p.id) })}
+                            className="w-full text-left px-3 py-2 rounded-lg border border-slate-200 hover:border-red-300 hover:bg-red-50 transition-colors"
+                          >
+                            <p className="text-xs font-bold text-slate-800 truncate">{p.fullName || p.name}</p>
+                            <p className="text-[10px] text-slate-400 truncate">{p.email || ''}</p>
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="flex justify-end pt-4 gap-3">

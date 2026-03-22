@@ -373,3 +373,32 @@ Date:   Thu Mar 5 16:17:33 2026 -0300
  TAB ...................................... Complete filename & cycle.
  SHIFT-TAB ...................... ESC-TAB   Complete filename & reverse cycle.
  ctrl-L ................................... Complete filename, list all.
+warning: in the working copy of 'apps/backend/src/brands/brands.controller.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/brands/brands.module.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/brands/brands.service.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/brands/dto/create-brand.dto.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/employees/employees.controller.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/employees/employees.service.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/entities/brand.entity.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/routes/dto/create-route.dto.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/routes/entities/route.entity.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/routes/route-factory.service.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/routes/routes.controller.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/routes/routes.service.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/web-admin/src/views/BrandsView.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/web-admin/src/views/RoutesView.tsx', LF will be replaced by CRLF the next time Git touches it
+ apps/backend/src/brands/brands.controller.ts       |   7 [32m+[m[31m-[m
+ apps/backend/src/brands/brands.module.ts           |   6 [32m+[m[31m-[m
+ apps/backend/src/brands/brands.service.ts          | 129 [32m+++++[m[31m-[m
+ apps/backend/src/brands/dto/create-brand.dto.ts    |  52 [32m++[m[31m-[m
+ apps/backend/src/employees/employees.controller.ts |   8 [32m+[m[31m-[m
+ apps/backend/src/employees/employees.service.ts    |  34 [32m+[m[31m-[m
+ apps/backend/src/entities/brand.entity.ts          |  28 [32m+[m[31m-[m
+ apps/backend/src/routes/dto/create-route.dto.ts    |   8 [32m+[m
+ apps/backend/src/routes/entities/route.entity.ts   |  16 [32m+[m
+ apps/backend/src/routes/route-factory.service.ts   |   5 [32m+[m
+ apps/backend/src/routes/routes.controller.ts       |  28 [32m+[m[31m-[m
+ apps/backend/src/routes/routes.service.ts          | 248 [32m++++++++++[m[31m-[m
+ apps/web-admin/src/views/BrandsView.tsx            | 306 [32m++++++++++++[m[31m-[m
+ apps/web-admin/src/views/RoutesView.tsx            | 488 [32m++++++++++++++++++++[m[31m-[m
+ 14 files changed, 1319 insertions(+), 44 deletions(-)

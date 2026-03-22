@@ -1,6 +1,8 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany, JoinColumn, ManyToMany, JoinTable } from 'typeorm';
 import { Employee } from '../../employees/entities/employee.entity';
 import { RouteItem } from './route-item.entity';
+import { Brand } from '../../entities/brand.entity';
+import { ChecklistTemplate } from '../../checklists/entities/checklist-template.entity';
 
 @Entity()
 export class Route {
@@ -30,6 +32,20 @@ export class Route {
 
   @Column({ default: 'VISIT' })
   type: string;
+
+  @Column({ nullable: true })
+  brandId: string;
+
+  @ManyToOne(() => Brand, { nullable: true })
+  @JoinColumn({ name: 'brandId' })
+  brand: Brand;
+
+  @Column({ nullable: true })
+  checklistTemplateId: string;
+
+  @ManyToOne(() => ChecklistTemplate, { nullable: true })
+  @JoinColumn({ name: 'checklistTemplateId' })
+  checklistTemplate: ChecklistTemplate;
 
   @Column({ default: false })
   isTemplate: boolean;

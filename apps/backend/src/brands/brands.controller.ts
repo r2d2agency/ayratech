@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { BrandsService } from './brands.service';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
@@ -15,6 +15,11 @@ export class BrandsController {
   @Get()
   findAll() {
     return this.brandsService.findAll();
+  }
+
+  @Get(':id/scheduling')
+  getSchedulingContext(@Param('id') id: string, @Query('supermarketId') supermarketId?: string) {
+    return this.brandsService.getSchedulingContext(id, supermarketId);
   }
 
   @Get(':id')

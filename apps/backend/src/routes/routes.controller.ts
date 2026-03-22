@@ -28,7 +28,20 @@ export class RoutesController {
   }
 
   @Post('batch')
-  createBatch(@Body() body: { dates: string[]; promoterIds?: string[]; items: CreateRouteDto['items']; status?: string; recurrenceGroup?: string; replaceFrom?: string }) {
+  createBatch(
+    @Body()
+    body: {
+      dates: string[];
+      promoterIds?: string[];
+      items: CreateRouteDto['items'];
+      status?: string;
+      type?: string;
+      brandId?: string;
+      checklistTemplateId?: string;
+      recurrenceGroup?: string;
+      replaceFrom?: string;
+    },
+  ) {
     return this.routesService.createBatch(body);
   }
   @Get()
@@ -56,6 +69,19 @@ export class RoutesController {
   @Get('templates/all')
   findTemplates() {
     return this.routesService.findTemplates();
+  }
+
+  @Get('inventory-due')
+  getInventoryDue(
+    @Query('brandId') brandId?: string,
+    @Query('supermarketId') supermarketId?: string,
+    @Query('dates') dates?: string,
+  ) {
+    const parsedDates = (dates || '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+    return this.routesService.getInventoryDueDates({ brandId, supermarketId, dates: parsedDates });
   }
 
   @Get(':id/report')

@@ -17,6 +17,7 @@ import { RouteRule } from './entities/route-rule.entity';
 import { ChecklistTemplate } from '../checklists/entities/checklist-template.entity';
 import { ChecklistItemType } from '../checklists/entities/checklist-template-item.entity';
 import { Client } from '../entities/client.entity';
+import { Brand } from '../entities/brand.entity';
 import { Product } from '../entities/product.entity';
 import { Supermarket } from '../entities/supermarket.entity';
 import { User } from '../users/entities/user.entity';
@@ -151,6 +152,21 @@ export class RoutesService {
 
     try {
       const { items, ...routeData } = createRouteDto;
+
+      let brand: Brand | null = null;
+      if (routeData.brandId) {
+        brand = await queryRunner.manager.findOne(Brand, {
+          where: { id: routeData.brandId },
+          relations: ['promoters', 'supermarkets', 'availabilityWindows'],
+        });
+        if (!brand) {
+          throw new BadRequestException('Marca não encontrada');
+        }
+
+        if (!routeData.checklistTemplateId && brand.checklistTemplateId) {
+          routeData.checklistTemplateId = brand.checklistTemplateId;
+        }
+      }
       
       // Handle promoters
       let promoters: { id: string }[] = [];
@@ -158,6 +174,22 @@ export class RoutesService {
         promoters = routeData.promoterIds.map(id => ({ id }));
       } else if (routeData.promoterId) {
         promoters = [{ id: routeData.promoterId }];
+      }
+
+      if (brand && promoters.length > 0 && Array.isArray(brand.promoters) && brand.promoters.length > 0) {
+        const allowed = new Set((brand.promoters || []).map((p: any) => p.id));
+        const invalid = promoters.map(p => p.id).filter(pid => !allowed.has(pid));
+        if (invalid.length > 0) {
+          throw new BadRequestException('Um ou mais promotores selecionados não estão vinculados à marca.');
+        }
+      }
+
+      if (brand && Array.isArray(items) && items.length > 0 && Array.isArray(brand.supermarkets) && brand.supermarkets.length > 0) {
+        const allowedSm = new Set((brand.supermarkets || []).map((s: any) => s.id));
+        const invalid = items.map(i => i.supermarketId).filter(id => !allowedSm.has(id));
+        if (invalid.length > 0) {
+          throw new BadRequestException('Um ou mais PDVs selecionados não estão vinculados à marca.');
+        }
       }
 
       const route = this.routesRepository.create({
@@ -172,6 +204,44 @@ export class RoutesService {
       console.log('RoutesService.create saved entity:', JSON.stringify(savedRoute));
 
       if (items && items.length > 0) {
+        if (brand) {
+          const allSupermarketIdsForBrand = Array.from(new Set(items.map(i => i.supermarketId)));
+          const supermarketsForBrand = await queryRunner.manager.find(Supermarket, {
+            where: { id: In(allSupermarketIdsForBrand) },
+            relations: ['group'],
+          });
+          const supermarketById = new Map(supermarketsForBrand.map(s => [s.id, s]));
+
+          const brandProducts = await queryRunner.manager.find(Product, {
+            where: { brandId: brand.id },
+            relations: ['supermarketGroups'],
+          });
+
+          for (const item of items) {
+            const hasExplicitProducts =
+              (Array.isArray(item.products) && item.products.length > 0) ||
+              (Array.isArray(item.productIds) && item.productIds.length > 0);
+            if (hasExplicitProducts) continue;
+
+            const supermarket = supermarketById.get(item.supermarketId) as any;
+            const groupId = supermarket?.group?.id || null;
+
+            const allowedProducts = brandProducts.filter(p => {
+              const groups = (p as any).supermarketGroups || [];
+              if (!Array.isArray(groups) || groups.length === 0) return true;
+              if (!groupId) return false;
+              return groups.some((g: any) => g.id === groupId);
+            });
+
+            item.productIds = allowedProducts.map(p => p.id);
+            item.products = item.productIds.map((pid: string) => ({ productId: pid }));
+          }
+        }
+
+        if (brand && savedRoute.date) {
+          this.validateBrandAvailability(brand, savedRoute.date, items);
+        }
+
         // Validate promoter availability for all items first
         if (savedRoute.promoters && savedRoute.promoters.length > 0) {
           for (const promoter of savedRoute.promoters) {
@@ -299,6 +369,7 @@ export class RoutesService {
                const checklistTemplate = this.routeFactoryService.resolveChecklistTemplate(
                    product,
                    prodData.checklistTemplateId,
+                   savedRoute.checklistTemplateId,
                    checklistTemplatesMap,
                    savedRoute.type
                );
@@ -604,10 +675,12 @@ export class RoutesService {
     items: CreateRouteDto['items']; 
     status?: string; 
     type?: string;
+    brandId?: string;
+    checklistTemplateId?: string;
     recurrenceGroup?: string;
     replaceFrom?: string;
   }) {
-    const { dates, promoterIds, items, status, type, replaceFrom } = body;
+    const { dates, promoterIds, items, status, type, replaceFrom, brandId, checklistTemplateId } = body;
     let { recurrenceGroup } = body;
 
     if (!dates || dates.length === 0) {
@@ -637,6 +710,8 @@ export class RoutesService {
         isTemplate: false,
         items,
         type: type || 'VISIT',
+        brandId,
+        checklistTemplateId,
         recurrenceGroup
       };
       const created = await this.create(dto);
@@ -648,6 +723,8 @@ export class RoutesService {
     return this.routesRepository.findOne({
       where: { id },
       relations: [
+        'brand',
+        'checklistTemplate',
         'promoters', 
         'items', 
         'items.supermarket', 
@@ -712,6 +789,21 @@ export class RoutesService {
       }
 
       const { items, promoterId, ...routeData } = updateRouteDto;
+      const effectiveBrandId = (routeData as any).brandId ?? (route as any).brandId;
+      let brand: Brand | null = null;
+      if (effectiveBrandId) {
+        brand = await queryRunner.manager.findOne(Brand, {
+          where: { id: effectiveBrandId },
+          relations: ['promoters', 'supermarkets', 'availabilityWindows'],
+        });
+        if (!brand) {
+          throw new BadRequestException('Marca não encontrada');
+        }
+
+        if ((routeData as any).brandId && !('checklistTemplateId' in updateRouteDto) && brand.checklistTemplateId) {
+          (routeData as any).checklistTemplateId = brand.checklistTemplateId;
+        }
+      }
       
       // Track added promoters for availability check
       let addedPromoters: any[] = [];
@@ -762,6 +854,34 @@ export class RoutesService {
          } else {
              route.promoters = [];
          }
+      }
+
+      if (brand && Array.isArray(brand.promoters) && brand.promoters.length > 0) {
+        const allowedPromoters = new Set((brand.promoters || []).map((p: any) => p.id));
+        const routePromoterIds = (route.promoters || []).map((p: any) => p.id).filter(Boolean);
+        const invalid = routePromoterIds.filter((pid: string) => !allowedPromoters.has(pid));
+        if (invalid.length > 0) {
+          throw new BadRequestException('Um ou mais promotores selecionados não estão vinculados à marca.');
+        }
+      }
+
+      if (brand && Array.isArray(brand.supermarkets) && brand.supermarkets.length > 0) {
+        const supermarketsToValidate = Array.isArray(items) ? items : (route.items || []);
+        const allowedSm = new Set((brand.supermarkets || []).map((s: any) => s.id));
+        const invalid = supermarketsToValidate
+          .map((i: any) => i.supermarketId)
+          .filter((sid: string) => sid && !allowedSm.has(sid));
+        if (invalid.length > 0) {
+          throw new BadRequestException('Um ou mais PDVs selecionados não estão vinculados à marca.');
+        }
+      }
+
+      if (brand) {
+        const scheduleItems = Array.isArray(items) ? items : (route.items || []);
+        const targetDate = (route as any).date;
+        if (targetDate) {
+          this.validateBrandAvailability(brand, targetDate, scheduleItems as any);
+        }
       }
 
       await queryRunner.manager.save(Route, route);
@@ -1903,6 +2023,91 @@ export class RoutesService {
     });
   }
 
+  async getInventoryDueDates(params: { brandId?: string; supermarketId?: string; dates: string[] }) {
+    const { brandId, supermarketId, dates } = params;
+    if (!brandId || !supermarketId) return { dueDates: [] };
+    if (!Array.isArray(dates) || dates.length === 0) return { dueDates: [] };
+
+    const brand = await this.dataSource.getRepository(Brand).findOne({ where: { id: brandId } });
+    if (!brand) throw new BadRequestException('Marca não encontrada');
+
+    const frequencyDays =
+      Number((brand as any).inventoryFrequencyDays) ||
+      (brand.inventoryFrequency === 'weekly'
+        ? 7
+        : brand.inventoryFrequency === 'biweekly'
+          ? 15
+          : brand.inventoryFrequency === 'monthly'
+            ? 30
+            : 0);
+
+    if (!frequencyDays || frequencyDays <= 0) {
+      return { dueDates: [] };
+    }
+
+    const last = await this.routeItemProductsRepository
+      .createQueryBuilder('rip')
+      .innerJoin('rip.product', 'p')
+      .innerJoin('rip.routeItem', 'ri')
+      .where('p.brandId = :brandId', { brandId })
+      .andWhere('ri.supermarketId = :supermarketId', { supermarketId })
+      .andWhere('rip.inventoryCount IS NOT NULL')
+      .andWhere('rip.checkOutTime IS NOT NULL')
+      .orderBy('rip.checkOutTime', 'DESC')
+      .select(['rip.id', 'rip.checkOutTime'])
+      .getOne();
+
+    const toBrtDateString = (d: Date) => {
+      const brazilOffsetMs = 3 * 60 * 60 * 1000;
+      const brt = new Date(d.getTime() - brazilOffsetMs);
+      return `${brt.getUTCFullYear()}-${String(brt.getUTCMonth() + 1).padStart(2, '0')}-${String(brt.getUTCDate()).padStart(2, '0')}`;
+    };
+
+    const parseBrtDate = (dateStr: string) => new Date(`${dateStr}T03:00:00.000Z`);
+    const addDays = (dateStr: string, days: number) => {
+      const dt = parseBrtDate(dateStr);
+      dt.setUTCDate(dt.getUTCDate() + days);
+      return dt.toISOString().slice(0, 10);
+    };
+
+    const startOfWeekMonday = (dateStr: string) => {
+      const dt = parseBrtDate(dateStr);
+      const dow = dt.getUTCDay();
+      const diff = (dow + 6) % 7;
+      dt.setUTCDate(dt.getUTCDate() - diff);
+      return dt.toISOString().slice(0, 10);
+    };
+
+    const endOfWeekSunday = (weekStart: string) => {
+      const dt = parseBrtDate(weekStart);
+      dt.setUTCDate(dt.getUTCDate() + 6);
+      return dt.toISOString().slice(0, 10);
+    };
+
+    const lastDateStr = last?.checkOutTime ? toBrtDateString(new Date(last.checkOutTime as any)) : null;
+    const dueAt = lastDateStr ? addDays(lastDateStr, frequencyDays) : null;
+
+    if (!dueAt) {
+      const first = dates.slice().sort().find(Boolean);
+      return { dueDates: first ? [first] : [] };
+    }
+
+    const weekStart = startOfWeekMonday(dueAt);
+    const weekEnd = endOfWeekSunday(weekStart);
+    const firstInWeek = dates
+      .slice()
+      .sort()
+      .find(d => d >= weekStart && d <= weekEnd);
+
+    return {
+      lastInventoryDate: lastDateStr,
+      dueAt,
+      dueWeekStart: weekStart,
+      dueWeekEnd: weekEnd,
+      dueDates: firstInWeek ? [firstInWeek] : [],
+    };
+  }
+
   private async checkRecentInventory(scopeType: 'client' | 'brand', scopeId: string, supermarketId: string, frequency: string): Promise<boolean> {
     if (!scopeId || !supermarketId || !frequency || frequency === 'daily') return false;
     
@@ -2308,6 +2513,47 @@ export class RoutesService {
   private timeToMinutes(time: string): number {
     const [hours, minutes] = time.split(':').map(Number);
     return hours * 60 + minutes;
+  }
+
+  private validateBrandAvailability(
+    brand: Brand,
+    date: string,
+    items: Array<{ startTime?: string; endTime?: string; estimatedDuration?: number }>,
+  ) {
+    const windows = Array.isArray((brand as any).availabilityWindows) ? (brand as any).availabilityWindows : [];
+    const activeWindows = windows.filter((w: any) => w && w.active !== false);
+    if (activeWindows.length === 0) return;
+
+    const dt = new Date(`${date}T03:00:00.000Z`);
+    const dayOfWeek = dt.getUTCDay();
+    const dayWindow = activeWindows.find((w: any) => Number(w.dayOfWeek) === dayOfWeek);
+    if (!dayWindow) {
+      throw new BadRequestException('A marca não atende neste dia da semana.');
+    }
+
+    const windowStart = this.timeToMinutes(String(dayWindow.startTime));
+    const windowEnd = this.timeToMinutes(String(dayWindow.endTime));
+
+    for (const item of items || []) {
+      if (!item?.startTime) continue;
+
+      const start = this.timeToMinutes(String(item.startTime));
+      const end = item.endTime
+        ? this.timeToMinutes(String(item.endTime))
+        : typeof item.estimatedDuration === 'number'
+          ? start + Number(item.estimatedDuration)
+          : start;
+
+      if (end < start) {
+        throw new BadRequestException('Horário inválido no agendamento.');
+      }
+
+      if (start < windowStart || end > windowEnd) {
+        throw new BadRequestException(
+          `Horário fora do atendimento da marca (${String(dayWindow.startTime)} - ${String(dayWindow.endTime)}).`,
+        );
+      }
+    }
   }
 
   private minutesToTime(minutes: number): string {

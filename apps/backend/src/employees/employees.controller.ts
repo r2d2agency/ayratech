@@ -91,8 +91,12 @@ export class EmployeesController {
   }
 
   @Get()
-  findAll(@Query('search') search?: string) {
-    return this.employeesService.findAll(search);
+  findAll(
+    @Query('search') search?: string,
+    @Query('supervisorId') supervisorId?: string,
+    @Query('role') role?: string,
+  ) {
+    return this.employeesService.findAll({ search, supervisorId, role });
   }
 
   @Get(':id/documents')

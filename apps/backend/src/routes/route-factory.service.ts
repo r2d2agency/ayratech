@@ -37,6 +37,7 @@ export class RouteFactoryService {
     resolveChecklistTemplate(
         product: Product, 
         explicitTemplateId?: string, 
+        routeChecklistTemplateId?: string,
         templatesMap?: Map<string, ChecklistTemplate>,
         routeType: string = 'VISIT'
     ): ChecklistTemplate | null {
@@ -45,6 +46,10 @@ export class RouteFactoryService {
         }
         
         if (!product) return null;
+
+        if (routeChecklistTemplateId && templatesMap) {
+            return templatesMap.get(routeChecklistTemplateId) || null;
+        }
 
         if (product.checklistTemplate) {
             return product.checklistTemplate as any;

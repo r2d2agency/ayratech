@@ -67,6 +67,14 @@ export class CreateRouteDto {
   type?: string;
 
   @IsOptional()
+  @IsString()
+  brandId?: string;
+
+  @IsOptional()
+  @IsString()
+  checklistTemplateId?: string;
+
+  @IsOptional()
   isTemplate?: boolean;
 
   @IsOptional()

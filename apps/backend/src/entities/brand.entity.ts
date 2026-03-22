@@ -1,8 +1,11 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn, ManyToMany, JoinTable } from 'typeorm';
 import { Client } from './client.entity';
 import { Product } from './product.entity';
 
 import { ChecklistTemplate } from '../checklists/entities/checklist-template.entity';
+import { Employee } from '../employees/entities/employee.entity';
+import { Supermarket } from './supermarket.entity';
+import { BrandAvailabilityWindow } from '../brands/entities/brand-availability-window.entity';
 
 @Entity()
 export class Brand {
@@ -34,6 +37,29 @@ export class Brand {
 
   @Column({ nullable: true })
   inventoryFrequency: string; // 'daily', 'weekly', 'biweekly', 'monthly'
+
+  @Column({ type: 'int', nullable: true })
+  inventoryFrequencyDays: number;
+
+  @Column({ default: true })
+  inventoryPostponeUntilWeekEnd: boolean;
+
+  @Column({ default: true })
+  inventoryPostponeRequiresJustification: boolean;
+
+  @Column({ type: 'int', default: 10 })
+  inventoryMaxPostponesPerWeek: number;
+
+  @OneToMany(() => BrandAvailabilityWindow, (w) => w.brand, { cascade: true })
+  availabilityWindows: BrandAvailabilityWindow[];
+
+  @ManyToMany(() => Employee, { cascade: false })
+  @JoinTable({ name: 'brand_promoters' })
+  promoters: Employee[];
+
+  @ManyToMany(() => Supermarket, { cascade: false })
+  @JoinTable({ name: 'brand_supermarkets' })
+  supermarkets: Supermarket[];
 
   @OneToMany(() => Product, product => product.brand)
   products: Product[];
