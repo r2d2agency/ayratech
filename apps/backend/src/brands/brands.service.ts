@@ -32,15 +32,15 @@ export class BrandsService {
     const client = await this.clientsRepository.findOne({ where: { id: clientId } });
     if (!client) throw new NotFoundException('Cliente não encontrado');
 
-    const brand = this.brandsRepository.create({
+    const brand: Brand = this.brandsRepository.create({
       ...brandData,
       client,
       promoters: Array.isArray(promoterIds) ? promoterIds.map((id: string) => ({ id } as any)) : undefined,
       supermarkets: Array.isArray(supermarketIds) ? supermarketIds.map((id: string) => ({ id } as any)) : undefined,
-    });
+    } as any);
 
     try {
-      const saved = await this.brandsRepository.save(brand);
+      const saved: Brand = await this.brandsRepository.save(brand);
 
       if (Array.isArray(availabilityWindows)) {
         await this.brandAvailabilityRepository.delete({ brandId: saved.id } as any);
