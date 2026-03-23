@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DeepPartial, Repository } from 'typeorm';
 import { Brand } from '../entities/brand.entity';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
@@ -32,12 +32,12 @@ export class BrandsService {
     const client = await this.clientsRepository.findOne({ where: { id: clientId } });
     if (!client) throw new NotFoundException('Cliente não encontrado');
 
-    const brand: Brand = this.brandsRepository.create({
+    const brand = this.brandsRepository.create({
       ...brandData,
       client,
       promoters: Array.isArray(promoterIds) ? promoterIds.map((id: string) => ({ id } as any)) : undefined,
       supermarkets: Array.isArray(supermarketIds) ? supermarketIds.map((id: string) => ({ id } as any)) : undefined,
-    } as any);
+    } as DeepPartial<Brand>);
 
     try {
       const saved: Brand = await this.brandsRepository.save(brand);
