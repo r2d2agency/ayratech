@@ -598,43 +598,36 @@ export class RoutesService {
       .where('route.isTemplate IS NOT TRUE')
       .orderBy('route.date', 'DESC');
 
-    qb.select([
-      'route.id AS route_id',
-      'route.date AS route_date',
-      'route.status AS route_status',
-      'route.type AS route_type',
-      'route.isTemplate AS route_isTemplate',
-      'route.recurrenceGroup AS route_recurrenceGroup',
-
-      'promoter.id AS promoter_id',
-      'promoter.fullName AS promoter_fullName',
-
-      'promoters.id AS promoters_id',
-      'promoters.fullName AS promoters_fullName',
-
-      'items.id AS item_id',
-      'items.status AS item_status',
-      'items.\"order\" AS item_order',
-      'items.startTime AS item_startTime',
-      'items.endTime AS item_endTime',
-      'items.estimatedDuration AS item_estimatedDuration',
-      'items.\"checkInTime\" AS item_checkInTime',
-      'items.\"checkOutTime\" AS item_checkOutTime',
-
-      'supermarket.id AS supermarket_id',
-      'supermarket.fantasyName AS supermarket_fantasyName',
-      'supermarket.street AS supermarket_street',
-      'supermarket.\"number\" AS supermarket_number',
-      'supermarket.neighborhood AS supermarket_neighborhood',
-      'supermarket.city AS supermarket_city',
-      'supermarket.state AS supermarket_state',
-      'supermarket.zipCode AS supermarket_zipCode',
-
-      'checkins.id AS checkin_id',
-      'checkins.\"promoterId\" AS checkin_promoterId',
-      'checkins.\"checkInTime\" AS checkin_checkInTime',
-      'checkins.\"checkOutTime\" AS checkin_checkOutTime',
-    ]);
+    qb.select('route.id', 'route_id')
+      .addSelect('route.date', 'route_date')
+      .addSelect('route.status', 'route_status')
+      .addSelect('route.type', 'route_type')
+      .addSelect('route.isTemplate', 'route_isTemplate')
+      .addSelect('route.recurrenceGroup', 'route_recurrenceGroup')
+      .addSelect('promoter.id', 'promoter_id')
+      .addSelect('promoter.fullName', 'promoter_fullName')
+      .addSelect('promoters.id', 'promoters_id')
+      .addSelect('promoters.fullName', 'promoters_fullName')
+      .addSelect('items.id', 'item_id')
+      .addSelect('items.status', 'item_status')
+      .addSelect('items.order', 'item_order')
+      .addSelect('items.startTime', 'item_startTime')
+      .addSelect('items.endTime', 'item_endTime')
+      .addSelect('items.estimatedDuration', 'item_estimatedDuration')
+      .addSelect('items.checkInTime', 'item_checkInTime')
+      .addSelect('items.checkOutTime', 'item_checkOutTime')
+      .addSelect('supermarket.id', 'supermarket_id')
+      .addSelect('supermarket.fantasyName', 'supermarket_fantasyName')
+      .addSelect('supermarket.street', 'supermarket_street')
+      .addSelect('supermarket.number', 'supermarket_number')
+      .addSelect('supermarket.neighborhood', 'supermarket_neighborhood')
+      .addSelect('supermarket.city', 'supermarket_city')
+      .addSelect('supermarket.state', 'supermarket_state')
+      .addSelect('supermarket.zipCode', 'supermarket_zipCode')
+      .addSelect('checkins.id', 'checkin_id')
+      .addSelect('checkins.promoterId', 'checkin_promoterId')
+      .addSelect('checkins.checkInTime', 'checkin_checkInTime')
+      .addSelect('checkins.checkOutTime', 'checkin_checkOutTime');
 
     if (date) {
       qb.andWhere('route.date = :date', { date });
