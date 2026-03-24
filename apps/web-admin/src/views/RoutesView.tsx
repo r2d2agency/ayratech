@@ -344,6 +344,7 @@ const RoutesView: React.FC = () => {
   const [groups, setGroups] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
   
   // Filters
   const [filterPromoterId, setFilterPromoterId] = useState<string>('');
@@ -406,8 +407,11 @@ const RoutesView: React.FC = () => {
   const [currentDateInput, setCurrentDateInput] = useState('');
   const [weeklySupervisorId, setWeeklySupervisorId] = useState<string>('');
   const [weeklyMonths, setWeeklyMonths] = useState<number>(1);
+  const [weeklyWizardStep, setWeeklyWizardStep] = useState<number>(1);
+  const [weeklyClientId, setWeeklyClientId] = useState<string>('');
   const [weeklyBrandId, setWeeklyBrandId] = useState<string>('');
   const [weeklyChecklistTemplateId, setWeeklyChecklistTemplateId] = useState<string>('');
+  const [weeklyChecklistOverrides, setWeeklyChecklistOverrides] = useState<Record<string, string>>({});
   const [weeklyWeekdays, setWeeklyWeekdays] = useState<Record<number, boolean>>({
     1: true, 2: false, 3: true, 4: false, 5: true, 6: false, 0: false
   });
@@ -447,6 +451,13 @@ const RoutesView: React.FC = () => {
     return hh * 60 + mm;
   };
 
+  const minutesToTime = (totalMinutes: number) => {
+    const safe = Number.isFinite(totalMinutes) ? Math.max(0, Math.floor(totalMinutes)) : 0;
+    const hh = Math.floor(safe / 60) % 24;
+    const mm = safe % 60;
+    return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+  };
+
   const validateAvailabilityForDate = (brand: any, dateStr: string, items: any[]) => {
     const windows = Array.isArray(brand?.availabilityWindows) ? brand.availabilityWindows : [];
     const activeWindows = windows.filter((w: any) => w && w.active !== false);
@@ -476,6 +487,58 @@ const RoutesView: React.FC = () => {
 
     return null;
   };
+
+  const getClientDisplayName = (c: any) => {
+    return c?.nomeFantasia || c?.fantasyName || c?.razaoSocial || c?.nome || 'Cliente';
+  };
+
+  const getBrandsForClient = (clientId: string) => {
+    if (!clientId) return [];
+    return (brands || []).filter((b: any) => (b?.client?.id || b?.clientId) === clientId);
+  };
+
+  const getAvailabilityWindowForDay = (brand: any, dayOfWeek: number) => {
+    const windows = Array.isArray(brand?.availabilityWindows) ? brand.availabilityWindows : [];
+    const activeWindows = windows.filter((w: any) => w && w.active !== false);
+    return activeWindows.find((w: any) => Number(w.dayOfWeek) === Number(dayOfWeek)) || null;
+  };
+
+  const buildWeekdaysFromBrand = (brand: any) => {
+    const next: Record<number, boolean> = { 0: false, 1: false, 2: false, 3: false, 4: false, 5: false, 6: false };
+    const windows = Array.isArray(brand?.availabilityWindows) ? brand.availabilityWindows : [];
+    const activeWindows = windows.filter((w: any) => w && w.active !== false);
+    activeWindows.forEach((w: any) => {
+      const d = Number(w.dayOfWeek);
+      if (Number.isFinite(d) && d >= 0 && d <= 6) next[d] = true;
+    });
+    return next;
+  };
+
+  const generateRecurrenceGroupId = () => {
+    const anyCrypto: any = (globalThis as any).crypto;
+    if (anyCrypto?.randomUUID) return anyCrypto.randomUUID();
+    return `grp_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
+  };
+
+  const openWeeklyWizard = (mode: 'new' | 'edit' = 'new') => {
+    setWeeklyWizardStep(1);
+    setWeeklyChecklistOverrides({});
+    setPromoterSearch('');
+    setSupermarketSearch('');
+    setWeeklySupervisorId('');
+    if (mode === 'new') {
+      setEditingRecurrenceGroup(null);
+      setRecurrenceReplaceFrom(null);
+      setWeeklyClientId('');
+      setWeeklyBrandId('');
+      setWeeklyChecklistTemplateId('');
+      setSelectedPromoters([]);
+      setRouteItems([]);
+      setWeeklyMonths(1);
+      setWeeklyWeekdays({ 0: false, 1: true, 2: false, 3: true, 4: false, 5: true, 6: false });
+    }
+    setShowWeeklyModal(true);
+  };
   const handleRecurrenceOption = (option: 'single' | 'future') => {
     if (!pendingRouteEdit) return;
 
@@ -497,7 +560,7 @@ const RoutesView: React.FC = () => {
       setWeeklyWeekdays({ 0: false, 1: false, 2: false, 3: false, 4: false, 5: false, 6: false, [dayOfWeek]: true });
       setWeeklyMonths(1); 
       
-      setShowWeeklyModal(true);
+      openWeeklyWizard('edit');
     }
     
     setShowRecurrenceChoiceModal(false);
@@ -515,38 +578,69 @@ const RoutesView: React.FC = () => {
       return;
     }
 
-    if (weeklyBrandId) {
-      const brand = brands.find((b: any) => b.id === weeklyBrandId);
-      if (brand) {
-        for (const d of dates) {
-          const err = validateAvailabilityForDate(brand, d, routeItems);
-          if (err) {
-            alert(err);
-            return;
-          }
-        }
-      }
-    }
-
     setLoading(true);
     try {
-      await api.post('/routes/batch', {
-        dates,
-        promoterIds: selectedPromoters,
-        brandId: weeklyBrandId || undefined,
-        checklistTemplateId: weeklyChecklistTemplateId || undefined,
-        items: routeItems.map((item, index) => ({
-          supermarketId: item.supermarketId,
-          order: index + 1,
-          startTime: item.startTime || undefined,
-          endTime: item.endTime || undefined,
-          estimatedDuration: item.estimatedDuration ? parseInt(String(item.estimatedDuration)) : undefined,
-          productIds: item.productIds || [],
-          products: item.products || item.productIds?.map((id: string) => ({ productId: id })) || []
-        })),
-        recurrenceGroup: editingRecurrenceGroup || undefined,
-        replaceFrom: recurrenceReplaceFrom || undefined
-      });
+      const brand = weeklyBrandId ? brands.find((b: any) => b.id === weeklyBrandId) : null;
+      const recurrenceGroup = editingRecurrenceGroup || generateRecurrenceGroupId();
+
+      const batchesByKey = new Map<string, string[]>();
+      for (const date of dates) {
+        const dayOfWeek = new Date(`${date}T12:00:00`).getDay();
+        const overrideTemplateId = weeklyChecklistOverrides?.[date] || '';
+        const templateId = overrideTemplateId || weeklyChecklistTemplateId || '';
+        const key = `${templateId}__${dayOfWeek}`;
+        const prev = batchesByKey.get(key) || [];
+        batchesByKey.set(key, [...prev, date]);
+      }
+
+      for (const [key, batchDates] of batchesByKey.entries()) {
+        const [templateId, dayStr] = key.split('__');
+        const dayOfWeek = Number(dayStr);
+
+        const itemsForDay = routeItems.map((item, index) => {
+          const window = brand ? getAvailabilityWindowForDay(brand, dayOfWeek) : null;
+          const startTime =
+            item.startTime ||
+            (window?.startTime ? String(window.startTime) : '');
+          const estimatedDuration = item.estimatedDuration ? parseInt(String(item.estimatedDuration), 10) : undefined;
+
+          let endTime = item.endTime || '';
+          if (!endTime && startTime && typeof estimatedDuration === 'number' && Number.isFinite(estimatedDuration)) {
+            endTime = minutesToTime(timeToMinutes(startTime) + estimatedDuration);
+          }
+
+          return {
+            supermarketId: item.supermarketId,
+            order: index + 1,
+            startTime: startTime || undefined,
+            endTime: endTime || undefined,
+            estimatedDuration,
+            productIds: item.productIds || [],
+            products: item.products || item.productIds?.map((id: string) => ({ productId: id })) || [],
+          };
+        });
+
+        if (brand) {
+          for (const d of batchDates) {
+            const err = validateAvailabilityForDate(brand, d, itemsForDay);
+            if (err) {
+              alert(err);
+              return;
+            }
+          }
+        }
+
+        await api.post('/routes/batch', {
+          dates: batchDates,
+          promoterIds: selectedPromoters,
+          brandId: weeklyBrandId || undefined,
+          checklistTemplateId: templateId ? templateId : undefined,
+          items: itemsForDay,
+          recurrenceGroup,
+          replaceFrom: recurrenceReplaceFrom || undefined,
+        });
+      }
+
       alert(editingRecurrenceGroup ? 'Série de rotas atualizada com sucesso!' : 'Rotas criadas com sucesso!');
       setShowWeeklyModal(false);
       setEditingRecurrenceGroup(null);
@@ -596,7 +690,7 @@ const RoutesView: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const [employeesRes, supermarketsRes, productsRes, templatesRes, groupsRes, checklistsRes, brandsRes] = await Promise.all([
+      const [employeesRes, supermarketsRes, productsRes, templatesRes, groupsRes, checklistsRes, brandsRes, clientsRes] = await Promise.all([
         api.get('/employees'),
         api.get('/supermarkets'),
         api.get('/products'),
@@ -604,6 +698,7 @@ const RoutesView: React.FC = () => {
         api.get('/supermarket-groups'),
         api.get('/checklists'),
         api.get('/brands'),
+        api.get('/clients'),
       ]);
       
       const promotersList = employeesRes.data.filter((e: any) => 
@@ -623,6 +718,7 @@ const RoutesView: React.FC = () => {
       setGroups(groupsRes.data);
       setChecklistTemplates(checklistsRes.data);
       setBrands(Array.isArray(brandsRes.data) ? brandsRes.data : []);
+      setClients(Array.isArray(clientsRes.data) ? clientsRes.data : []);
       fetchRules();
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -654,7 +750,7 @@ const RoutesView: React.FC = () => {
     const supermarket = supermarkets.find(s => s.id === supermarketId);
     if (supermarket) {
       let productIds: string[] = [];
-      const brandIdForMix = activeTab === 'editor' ? editorBrandId : weeklyBrandId;
+      const brandIdForMix = (activeTab === 'editor' || showCalendarModal) ? editorBrandId : weeklyBrandId;
       if (brandIdForMix) {
         try {
           const res = await api.get(`/brands/${brandIdForMix}/scheduling`, { params: { supermarketId } });
@@ -665,12 +761,24 @@ const RoutesView: React.FC = () => {
         }
       }
 
+      let startTime = '';
+      if (showWeeklyModal && weeklyBrandId) {
+        const brand = brands.find((b: any) => b.id === weeklyBrandId);
+        const previewDates = generateWeeklyDates();
+        const firstDate = previewDates.length > 0 ? previewDates[0] : null;
+        if (brand && firstDate) {
+          const dayOfWeek = new Date(`${firstDate}T12:00:00`).getDay();
+          const w = getAvailabilityWindowForDay(brand, dayOfWeek);
+          if (w?.startTime) startTime = String(w.startTime);
+        }
+      }
+
       setRouteItems(prev => [
         ...prev,
         {
           supermarketId,
           supermarket,
-          startTime: '',
+          startTime,
           estimatedDuration: 30,
           productIds,
           products: productIds.map((id: string) => ({ productId: id })),
@@ -1593,7 +1701,7 @@ const RoutesView: React.FC = () => {
                   ▶
                 </button>
                 <button 
-                  onClick={() => setShowWeeklyModal(true)}
+                  onClick={() => openWeeklyWizard('new')}
                   className="px-4 py-2 rounded-lg font-bold text-white"
                   style={{ backgroundColor: settings.primaryColor }}
                 >
@@ -2668,237 +2776,421 @@ const RoutesView: React.FC = () => {
               <h3 className="text-xl font-bold text-slate-900">Criar Rotas por Semana</h3>
               <button onClick={() => { setShowWeeklyModal(false); }} className="px-3 py-1 rounded-lg font-bold text-slate-500 hover:bg-slate-100">Fechar</button>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6 p-6 max-h-[75vh] overflow-y-auto">
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 gap-3">
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 block mb-1">Marca</label>
-                    <select
-                      value={weeklyBrandId}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setWeeklyBrandId(val);
-                        const b = brands.find((x: any) => x.id === val);
-                        setWeeklyChecklistTemplateId(b?.checklistTemplateId || '');
-                        setSelectedPromoters([]);
-                        setRouteItems([]);
-                      }}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                    >
-                      <option value="">(Opcional) Sem marca</option>
-                      {brands.map((b: any) => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 block mb-1">Checklist (padrão da marca)</label>
-                    <select
-                      value={weeklyChecklistTemplateId}
-                      onChange={(e) => setWeeklyChecklistTemplateId(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                    >
-                      <option value="">(Auto)</option>
-                      {checklistTemplates.map((t: any) => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Dias da Semana</label>
-                  <div className="flex flex-wrap gap-2">
-                    {[{d:1,t:'Seg'},{d:2,t:'Ter'},{d:3,t:'Qua'},{d:4,t:'Qui'},{d:5,t:'Sex'},{d:6,t:'Sáb'},{d:0,t:'Dom'}].map(({d,t}) => (
-                      <button
-                        key={d}
-                        onClick={() => toggleWeeklyDay(d)}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold ${weeklyWeekdays[d] ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 block mb-1">Meses de Recorrência</label>
-                    <input 
-                      type="number" 
-                      min={1}
-                      value={weeklyMonths}
-                      onChange={(e) => setWeeklyMonths(parseInt(e.target.value || '1'))}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 block mb-1">Supervisor</label>
-                    <select
-                      value={weeklySupervisorId}
-                      onChange={(e) => setWeeklySupervisorId(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                    >
-                      <option value="">Todos</option>
-                      {allEmployees
-                        .filter(e => e.role && (
-                          e.role.name.toLowerCase().includes('supervisor') ||
-                          e.role.name.toLowerCase().includes('gerente')
-                        ))
-                        .map(s => (
-                          <option key={s.id} value={s.id}>{s.fullName || s.name}</option>
-                        ))
-                      }
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Promotores</label>
-                  <div className="mb-2">
-                    <input
-                      type="text"
-                      placeholder="Buscar promotor..."
-                      value={promoterSearch}
-                      onChange={(e) => setPromoterSearch(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                    />
-                  </div>
-                  <div className="h-40 overflow-y-auto space-y-2 pr-2 border border-slate-100 rounded-xl p-2">
-                    {promoters
-                      .filter(p => {
-                        const matchesSearch = p.name.toLowerCase().includes(promoterSearch.toLowerCase());
-                        if (!matchesSearch) return false;
-                        if (weeklyBrandId) {
-                          const brand = brands.find((b: any) => b.id === weeklyBrandId);
-                          const allowed = new Set((brand?.promoters || []).map((x: any) => x.id));
-                          if (allowed.size > 0 && !allowed.has(p.id)) return false;
-                        }
-                        if (!weeklySupervisorId) return true;
-                        const full = allEmployees.find(e => e.id === p.id);
-                        return full && (full.supervisorId === weeklySupervisorId || (full.supervisor && full.supervisor.id === weeklySupervisorId));
-                      })
-                      .map(promoter => {
-                        const isSelected = selectedPromoters.includes(promoter.id);
-                        return (
-                          <button 
-                            key={promoter.id}
-                            onClick={() => handleTogglePromoter(promoter.id)}
-                            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${isSelected ? 'bg-blue-600 text-white' : 'bg-white border border-slate-100 text-slate-600'}`}
-                          >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                              {promoter.name.charAt(0)}
-                            </div>
-                            <div className="text-left">
-                              <p className="text-sm font-bold">{promoter.name}</p>
-                              <p className={`text-[10px] ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>{promoter.email}</p>
-                            </div>
-                          </button>
-                        );
-                      })}
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Adicionar PDVs</label>
-                  <div className="mb-2">
-                    <input
-                      type="text"
-                      placeholder="Buscar supermercado..."
-                      value={supermarketSearch}
-                      onChange={(e) => setSupermarketSearch(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                    />
-                  </div>
-                  <div className="h-40 overflow-y-auto space-y-2 pr-2 border border-slate-100 rounded-xl p-2">
-                    {supermarkets
-                      .filter(s => 
-                        (s.fantasyName || '').toLowerCase().includes(supermarketSearch.toLowerCase()) ||
-                        (s.city || '').toLowerCase().includes(supermarketSearch.toLowerCase())
-                      )
-                      .filter(s => {
-                        if (!weeklyBrandId) return true;
-                        const brand = brands.find((b: any) => b.id === weeklyBrandId);
-                        const allowed = new Set((brand?.supermarkets || []).map((x: any) => x.id));
-                        if (allowed.size === 0) return true;
-                        return allowed.has(s.id);
-                      })
-                      .map(s => (
-                      <button 
-                        key={s.id}
-                        onClick={() => handleAddSupermarket(s.id)}
-                        disabled={!!routeItems.find(i => i.supermarketId === s.id)}
-                        className="w-full flex justify-between items-center p-3 rounded-xl hover:bg-slate-50 border border-slate-100 disabled:opacity-50 text-left"
-                      >
-                        <div>
-                          <p className="text-sm font-bold text-slate-800">{s.fantasyName}</p>
-                          <p className="text-[10px] text-slate-400">{s.city}</p>
-                        </div>
-                        <Plus size={16} className="text-slate-400" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700">PDVs Selecionados</label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto border border-slate-100 rounded-xl p-2">
-                    {routeItems.length === 0 ? (
-                      <div className="text-center py-6 text-slate-400 text-sm">Nenhum PDV selecionado</div>
-                    ) : routeItems.map((item, index) => (
-                      <div key={item.supermarketId} className="border border-slate-100 rounded-xl p-3 bg-white">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-sm font-bold text-slate-800">{item.supermarket?.fantasyName || 'PDV'}</div>
-                            <div className="text-[10px] text-slate-400">{item.supermarket?.city}</div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => handleOpenProductModal(index)} className="px-3 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100">Produtos</button>
-                            <button onClick={() => handleRemoveItem(index)} className="px-3 py-1 rounded-lg text-xs font-bold bg-red-50 text-red-700 border border-red-100 hover:bg-red-100">Remover</button>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                          <div>
-                            <label className="text-[10px] font-bold text-slate-500 block mb-1">Início</label>
-                            <input 
-                              type="time" 
-                              value={item.startTime || ''} 
-                              onChange={(e) => handleUpdateItem(index, 'startTime', e.target.value)} 
-                              className="w-full px-2 py-1 rounded-lg border border-slate-200 text-xs"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-bold text-slate-500 block mb-1">Fim</label>
-                            <input 
-                              type="time" 
-                              value={item.endTime || ''} 
-                              onChange={(e) => handleUpdateItem(index, 'endTime', e.target.value)} 
-                              className="w-full px-2 py-1 rounded-lg border border-slate-200 text-xs"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <div className="text-xs font-bold text-slate-500">Promotores Selecionados</div>
-                  <div className="text-sm">{selectedPromoters.length} promotor(es)</div>
-                  <div className="text-xs font-bold text-slate-500">PDVs Selecionados</div>
-                  <div className="text-sm">{routeItems.length} PDV(s)</div>
-                  <div className="text-xs font-bold text-slate-500">Dias Selecionados</div>
-                  <div className="text-sm">
-                    {Object.entries(weeklyWeekdays).filter(([,v])=>v).map(([d]) => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][parseInt(d,10)]).join(', ') || 'Nenhum'}
-                  </div>
-                </div>
+            <div className="px-6 pt-4">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+                <div className={`px-2 py-1 rounded-lg border ${weeklyWizardStep === 1 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-slate-200'}`}>1. Cliente</div>
+                <div className={`px-2 py-1 rounded-lg border ${weeklyWizardStep === 2 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-slate-200'}`}>2. Promotor</div>
+                <div className={`px-2 py-1 rounded-lg border ${weeklyWizardStep === 3 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-slate-200'}`}>3. Agenda</div>
+                <div className={`px-2 py-1 rounded-lg border ${weeklyWizardStep === 4 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-slate-200'}`}>4. PDVs</div>
               </div>
             </div>
-            <div className="flex gap-3 justify-end px-6 py-4 border-t border-slate-200">
-              <button onClick={() => { setShowWeeklyModal(false); }} className="px-6 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100">Cancelar</button>
-              <button 
-                onClick={handleCreateWeeklyRoutes}
-                className="px-6 py-2 rounded-lg font-bold text-white"
-                style={{ backgroundColor: settings.primaryColor }}
+
+            <div className="p-6 max-h-[75vh] overflow-y-auto">
+              {weeklyWizardStep === 1 && (
+                <div className="space-y-5">
+                  <div className="grid grid-cols-1 gap-3">
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 block mb-1">Cliente</label>
+                      <select
+                        value={weeklyClientId}
+                        onChange={(e) => {
+                          const clientId = e.target.value;
+                          setWeeklyClientId(clientId);
+                          setSelectedPromoters([]);
+                          setRouteItems([]);
+                          setWeeklyChecklistOverrides({});
+
+                          const client = clients.find((c: any) => c.id === clientId);
+                          const clientBrands = getBrandsForClient(clientId);
+                          if (clientBrands.length === 1) {
+                            const b = clientBrands[0];
+                            setWeeklyBrandId(b.id);
+                            setWeeklyChecklistTemplateId(b?.checklistTemplateId || client?.defaultVisitChecklistTemplateId || '');
+                            setWeeklyWeekdays(buildWeekdaysFromBrand(b));
+                          } else {
+                            setWeeklyBrandId('');
+                            setWeeklyChecklistTemplateId(client?.defaultVisitChecklistTemplateId || '');
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      >
+                        <option value="">Selecione...</option>
+                        {[...clients]
+                          .sort((a: any, b: any) => getClientDisplayName(a).localeCompare(getClientDisplayName(b), 'pt-BR'))
+                          .map((c: any) => (
+                            <option key={c.id} value={c.id}>{getClientDisplayName(c)}</option>
+                          ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 block mb-1">Marca (do cliente)</label>
+                      <select
+                        value={weeklyBrandId}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setWeeklyBrandId(val);
+                          const client = clients.find((c: any) => c.id === weeklyClientId);
+                          const b = brands.find((x: any) => x.id === val);
+                          setWeeklyChecklistTemplateId(b?.checklistTemplateId || client?.defaultVisitChecklistTemplateId || '');
+                          setWeeklyWeekdays(buildWeekdaysFromBrand(b));
+                          setSelectedPromoters([]);
+                          setRouteItems([]);
+                          setWeeklyChecklistOverrides({});
+                        }}
+                        disabled={!weeklyClientId}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm disabled:bg-slate-50"
+                      >
+                        <option value="">Selecione...</option>
+                        {getBrandsForClient(weeklyClientId).map((b: any) => (
+                          <option key={b.id} value={b.id}>{b.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 block mb-1">Checklist (padrão)</label>
+                      <select
+                        value={weeklyChecklistTemplateId}
+                        onChange={(e) => setWeeklyChecklistTemplateId(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      >
+                        <option value="">(Auto)</option>
+                        {checklistTemplates.map((t: any) => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {weeklyWizardStep === 2 && (
+                <div className="space-y-5">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 block mb-1">Supervisor</label>
+                      <select
+                        value={weeklySupervisorId}
+                        onChange={(e) => setWeeklySupervisorId(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      >
+                        <option value="">Todos</option>
+                        {allEmployees
+                          .filter(e => e.role && (
+                            e.role.name.toLowerCase().includes('supervisor') ||
+                            e.role.name.toLowerCase().includes('gerente')
+                          ))
+                          .map(s => (
+                            <option key={s.id} value={s.id}>{s.fullName || s.name}</option>
+                          ))
+                        }
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 block mb-1">Buscar</label>
+                      <input
+                        type="text"
+                        placeholder="Buscar promotor..."
+                        value={promoterSearch}
+                        onChange={(e) => setPromoterSearch(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Promotores (vinculados ao cliente)</label>
+                    <div className="h-72 overflow-y-auto space-y-2 pr-2 border border-slate-100 rounded-xl p-2">
+                      {promoters
+                        .filter(p => {
+                          const matchesSearch = p.name.toLowerCase().includes(promoterSearch.toLowerCase());
+                          if (!matchesSearch) return false;
+                          if (weeklyBrandId) {
+                            const brand = brands.find((b: any) => b.id === weeklyBrandId);
+                            const allowed = new Set((brand?.promoters || []).map((x: any) => x.id));
+                            if (allowed.size > 0 && !allowed.has(p.id)) return false;
+                          }
+                          if (!weeklySupervisorId) return true;
+                          const full = allEmployees.find(e => e.id === p.id);
+                          return full && (full.supervisorId === weeklySupervisorId || (full.supervisor && full.supervisor.id === weeklySupervisorId));
+                        })
+                        .map(promoter => {
+                          const isSelected = selectedPromoters.includes(promoter.id);
+                          return (
+                            <button
+                              key={promoter.id}
+                              onClick={() => handleTogglePromoter(promoter.id)}
+                              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${isSelected ? 'bg-blue-600 text-white' : 'bg-white border border-slate-100 text-slate-600'}`}
+                            >
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                                {promoter.name.charAt(0)}
+                              </div>
+                              <div className="text-left">
+                                <p className="text-sm font-bold">{promoter.name}</p>
+                                <p className={`text-[10px] ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>{promoter.email}</p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {weeklyWizardStep === 3 && (
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6">
+                  <div className="space-y-5">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Dias da Semana</label>
+                      <div className="flex flex-wrap gap-2">
+                        {[{d:1,t:'Seg'},{d:2,t:'Ter'},{d:3,t:'Qua'},{d:4,t:'Qui'},{d:5,t:'Sex'},{d:6,t:'Sáb'},{d:0,t:'Dom'}].map(({d,t}) => (
+                          <button
+                            key={d}
+                            onClick={() => toggleWeeklyDay(d)}
+                            className={`px-3 py-1 rounded-lg text-xs font-bold ${weeklyWeekdays[d] ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 block mb-1">Meses de Recorrência</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={weeklyMonths}
+                        onChange={(e) => setWeeklyMonths(parseInt(e.target.value || '1', 10))}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      />
+                    </div>
+
+                    {weeklyBrandId && (() => {
+                      const b = brands.find((x: any) => x.id === weeklyBrandId);
+                      const windows = Array.isArray(b?.availabilityWindows) ? b.availabilityWindows : [];
+                      const activeWindows = windows.filter((w: any) => w && w.active !== false);
+                      if (!b || activeWindows.length === 0) return null;
+                      return (
+                        <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                          <div className="text-xs font-black text-slate-500 uppercase mb-2">Horários do Cliente</div>
+                          <div className="space-y-1 text-sm">
+                            {activeWindows
+                              .sort((a: any, b: any) => Number(a.dayOfWeek) - Number(b.dayOfWeek))
+                              .map((w: any) => (
+                                <div key={`${w.dayOfWeek}-${w.startTime}-${w.endTime}`} className="flex items-center justify-between">
+                                  <span className="font-bold text-slate-700">{['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][Number(w.dayOfWeek)]}</span>
+                                  <span className="text-slate-600">{String(w.startTime)} - {String(w.endTime)}</span>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-xs font-black text-slate-500 uppercase">Datas Geradas</div>
+                        <button
+                          onClick={() => setWeeklyChecklistOverrides({})}
+                          className="text-xs font-bold text-slate-500 hover:text-slate-700"
+                        >
+                          Limpar Overrides
+                        </button>
+                      </div>
+                      {(() => {
+                        const previewDates = generateWeeklyDates();
+                        if (previewDates.length === 0) {
+                          return <div className="text-sm text-slate-400">Selecione os dias para ver as datas.</div>;
+                        }
+                        return (
+                          <div className="max-h-72 overflow-y-auto space-y-2">
+                            {previewDates.slice(0, 90).map((d) => (
+                              <div key={d} className="bg-white border border-slate-100 rounded-lg p-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="text-sm font-bold text-slate-700">
+                                    {new Date(d + 'T12:00:00').toLocaleDateString('pt-BR')}
+                                  </div>
+                                  <div className="w-64">
+                                    <select
+                                      value={weeklyChecklistOverrides[d] || ''}
+                                      onChange={(e) => setWeeklyChecklistOverrides(prev => ({ ...prev, [d]: e.target.value }))}
+                                      className="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs bg-slate-50"
+                                    >
+                                      <option value="">Padrão</option>
+                                      {checklistTemplates.map((t: any) => (
+                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            {previewDates.length > 90 && (
+                              <div className="text-xs text-slate-400">
+                                Mostrando 90 datas (o restante será criado normalmente).
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="text-xs font-bold text-slate-500">Promotores Selecionados</div>
+                      <div className="text-sm">{selectedPromoters.length} promotor(es)</div>
+                      <div className="text-xs font-bold text-slate-500">Dias Selecionados</div>
+                      <div className="text-sm">
+                        {Object.entries(weeklyWeekdays).filter(([,v])=>v).map(([d]) => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][parseInt(d,10)]).join(', ') || 'Nenhum'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {weeklyWizardStep === 4 && (
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6">
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Adicionar PDVs</label>
+                      <div className="mb-2">
+                        <input
+                          type="text"
+                          placeholder="Buscar supermercado..."
+                          value={supermarketSearch}
+                          onChange={(e) => setSupermarketSearch(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                        />
+                      </div>
+                      <div className="h-56 overflow-y-auto space-y-2 pr-2 border border-slate-100 rounded-xl p-2">
+                        {supermarkets
+                          .filter(s =>
+                            (s.fantasyName || '').toLowerCase().includes(supermarketSearch.toLowerCase()) ||
+                            (s.city || '').toLowerCase().includes(supermarketSearch.toLowerCase())
+                          )
+                          .filter(s => {
+                            if (!weeklyBrandId) return true;
+                            const brand = brands.find((b: any) => b.id === weeklyBrandId);
+                            const allowed = new Set((brand?.supermarkets || []).map((x: any) => x.id));
+                            if (allowed.size === 0) return true;
+                            return allowed.has(s.id);
+                          })
+                          .map(s => (
+                            <button
+                              key={s.id}
+                              onClick={() => handleAddSupermarket(s.id)}
+                              disabled={!!routeItems.find(i => i.supermarketId === s.id)}
+                              className="w-full flex justify-between items-center p-3 rounded-xl hover:bg-slate-50 border border-slate-100 disabled:opacity-50 text-left"
+                            >
+                              <div>
+                                <p className="text-sm font-bold text-slate-800">{s.fantasyName}</p>
+                                <p className="text-[10px] text-slate-400">{s.city}</p>
+                              </div>
+                              <Plus size={16} className="text-slate-400" />
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700">PDVs Selecionados</label>
+                      <div className="space-y-2 max-h-64 overflow-y-auto border border-slate-100 rounded-xl p-2">
+                        {routeItems.length === 0 ? (
+                          <div className="text-center py-6 text-slate-400 text-sm">Nenhum PDV selecionado</div>
+                        ) : routeItems.map((item, index) => (
+                          <div key={item.supermarketId} className="border border-slate-100 rounded-xl p-3 bg-white">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-sm font-bold text-slate-800">{item.supermarket?.fantasyName || 'PDV'}</div>
+                                <div className="text-[10px] text-slate-400">{item.supermarket?.city}</div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button onClick={() => handleOpenProductModal(index)} className="px-3 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100">Produtos</button>
+                                <button onClick={() => handleRemoveItem(index)} className="px-3 py-1 rounded-lg text-xs font-bold bg-red-50 text-red-700 border border-red-100 hover:bg-red-100">Remover</button>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                              <div>
+                                <label className="text-[10px] font-bold text-slate-500 block mb-1">Início</label>
+                                <input
+                                  type="time"
+                                  value={item.startTime || ''}
+                                  onChange={(e) => handleUpdateItem(index, 'startTime', e.target.value)}
+                                  className="w-full px-2 py-1 rounded-lg border border-slate-200 text-xs"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-bold text-slate-500 block mb-1">Fim</label>
+                                <input
+                                  type="time"
+                                  value={item.endTime || ''}
+                                  onChange={(e) => handleUpdateItem(index, 'endTime', e.target.value)}
+                                  className="w-full px-2 py-1 rounded-lg border border-slate-200 text-xs"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="text-xs font-bold text-slate-500">Promotores Selecionados</div>
+                      <div className="text-sm">{selectedPromoters.length} promotor(es)</div>
+                      <div className="text-xs font-bold text-slate-500">PDVs Selecionados</div>
+                      <div className="text-sm">{routeItems.length} PDV(s)</div>
+                      <div className="text-xs font-bold text-slate-500">Datas (prévia)</div>
+                      <div className="text-sm">{generateWeeklyDates().length} dia(s)</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 justify-between px-6 py-4 border-t border-slate-200">
+              <button
+                onClick={() => { setShowWeeklyModal(false); }}
+                className="px-6 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100"
               >
-                {editingRecurrenceGroup ? 'Atualizar Série' : 'Criar Rotas'}
+                Cancelar
               </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setWeeklyWizardStep((s) => Math.max(1, s - 1))}
+                  disabled={weeklyWizardStep === 1}
+                  className="px-6 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-50"
+                >
+                  Voltar
+                </button>
+                {weeklyWizardStep < 4 ? (
+                  <button
+                    onClick={() => setWeeklyWizardStep((s) => Math.min(4, s + 1))}
+                    disabled={
+                      (weeklyWizardStep === 1 && (!weeklyClientId || (getBrandsForClient(weeklyClientId).length > 0 && !weeklyBrandId))) ||
+                      (weeklyWizardStep === 2 && selectedPromoters.length === 0) ||
+                      (weeklyWizardStep === 3 && generateWeeklyDates().length === 0)
+                    }
+                    className="px-6 py-2 rounded-lg font-bold text-white disabled:opacity-50"
+                    style={{ backgroundColor: settings.primaryColor }}
+                  >
+                    Próximo
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleCreateWeeklyRoutes}
+                    disabled={selectedPromoters.length === 0 || routeItems.length === 0 || generateWeeklyDates().length === 0}
+                    className="px-6 py-2 rounded-lg font-bold text-white disabled:opacity-50"
+                    style={{ backgroundColor: settings.primaryColor }}
+                  >
+                    {editingRecurrenceGroup ? 'Atualizar Série' : 'Criar Rotas'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
