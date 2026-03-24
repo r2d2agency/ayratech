@@ -615,11 +615,20 @@ export class RoutesService {
       'items.id AS item_id',
       'items.status AS item_status',
       'items.\"order\" AS item_order',
+      'items.startTime AS item_startTime',
+      'items.endTime AS item_endTime',
+      'items.estimatedDuration AS item_estimatedDuration',
       'items.\"checkInTime\" AS item_checkInTime',
       'items.\"checkOutTime\" AS item_checkOutTime',
 
       'supermarket.id AS supermarket_id',
-      'supermarket.\"fantasyName\" AS supermarket_fantasyName',
+      'supermarket.fantasyName AS supermarket_fantasyName',
+      'supermarket.street AS supermarket_street',
+      'supermarket.\"number\" AS supermarket_number',
+      'supermarket.neighborhood AS supermarket_neighborhood',
+      'supermarket.city AS supermarket_city',
+      'supermarket.state AS supermarket_state',
+      'supermarket.zipCode AS supermarket_zipCode',
 
       'checkins.id AS checkin_id',
       'checkins.\"promoterId\" AS checkin_promoterId',
@@ -701,10 +710,22 @@ export class RoutesService {
             id: r.item_id,
             status: r.item_status,
             order: r.item_order,
+            startTime: r.item_startTime,
+            endTime: r.item_endTime,
+            estimatedDuration: r.item_estimatedDuration,
             checkInTime: r.item_checkInTime,
             checkOutTime: r.item_checkOutTime,
             supermarket: r.supermarket_id
-              ? { id: r.supermarket_id, fantasyName: r.supermarket_fantasyName }
+              ? {
+                  id: r.supermarket_id,
+                  fantasyName: r.supermarket_fantasyName,
+                  street: r.supermarket_street,
+                  number: r.supermarket_number,
+                  neighborhood: r.supermarket_neighborhood,
+                  city: r.supermarket_city,
+                  state: r.supermarket_state,
+                  zipCode: r.supermarket_zipCode,
+                }
               : null,
             checkins: [],
           };
