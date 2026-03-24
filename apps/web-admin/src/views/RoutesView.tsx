@@ -328,6 +328,13 @@ const DroppableDayColumn = ({ dateStr, children, isToday, onAddRoute }: any) => 
 
 const RoutesView: React.FC = () => {
   const { settings } = useBranding();
+
+  const formatDateYMD = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
   
   const [activeTab, setActiveTab] = useState<'planner' | 'editor' | 'templates' | 'rules'>('planner');
   const [isAdmin, setIsAdmin] = useState(false);
@@ -346,7 +353,7 @@ const RoutesView: React.FC = () => {
 
   // Editor State
   const [selectedPromoters, setSelectedPromoters] = useState<string[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(formatDateYMD(new Date()));
   const [editorBrandId, setEditorBrandId] = useState<string>('');
   const [editorChecklistTemplateId, setEditorChecklistTemplateId] = useState<string>('');
   const [routeItems, setRouteItems] = useState<any[]>([]);
@@ -426,7 +433,7 @@ const RoutesView: React.FC = () => {
     const cursor = new Date(start);
     while (cursor <= end) {
       if (selectedDays.includes(cursor.getDay())) {
-        dates.push(cursor.toISOString().split('T')[0]);
+        dates.push(formatDateYMD(cursor));
       }
       cursor.setDate(cursor.getDate() + 1);
     }
@@ -1009,7 +1016,7 @@ const RoutesView: React.FC = () => {
     const cursor = new Date(start);
     while (cursor <= end) {
       if (selectedDays.includes(cursor.getDay())) {
-        const iso = cursor.toISOString().split('T')[0];
+        const iso = formatDateYMD(cursor);
         if (!duplicateTargetDates.includes(iso)) dates.push(iso);
       }
       cursor.setDate(cursor.getDate() + 1);
@@ -1044,7 +1051,7 @@ const RoutesView: React.FC = () => {
     return days;
   };
   const toggleSelectCalendarDate = (d: Date) => {
-    const iso = d.toISOString().split('T')[0];
+    const iso = formatDateYMD(d);
     setCalendarSelectedDates(prev => prev.includes(iso) ? prev.filter(x => x !== iso) : [...prev, iso]);
   };
   const handleCreateCalendarRoutes = async () => {
@@ -1076,9 +1083,9 @@ const RoutesView: React.FC = () => {
         items: routeItems.map((item, index) => ({
           supermarketId: item.supermarketId,
           order: index + 1,
-          startTime: item.startTime,
-          endTime: item.endTime,
-          estimatedDuration: item.estimatedDuration ? parseInt(item.estimatedDuration) : undefined,
+          startTime: item.startTime || undefined,
+          endTime: item.endTime || undefined,
+          estimatedDuration: item.estimatedDuration ? parseInt(String(item.estimatedDuration), 10) : undefined,
           productIds: item.productIds || [],
           products: item.products || item.productIds?.map((id: string) => ({ productId: id })) || []
         }))
@@ -1090,7 +1097,8 @@ const RoutesView: React.FC = () => {
     } catch (error: any) {
       console.error('Error creating calendar routes:', error);
       if (error.response?.status === 401) return;
-      alert('Erro ao criar rotas.');
+      const msg = error.response?.data?.message || error.message || 'Erro desconhecido';
+      alert(`Erro ao criar rotas: ${Array.isArray(msg) ? msg.join(', ') : msg}`);
     } finally {
       setLoading(false);
     }
@@ -1226,7 +1234,7 @@ const RoutesView: React.FC = () => {
     
     setLoading(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = formatDateYMD(new Date());
       await api.delete(`/routes/batch?startDate=${today}`);
       alert('Rotas futuras apagadas com sucesso!');
       fetchRoutesForWeek();
@@ -1524,9 +1532,9 @@ const RoutesView: React.FC = () => {
 
           <div className="grid grid-cols-7 gap-4 overflow-x-auto min-w-[1000px]">
             {weekDays.map(day => {
-              const dateStr = day.toISOString().split('T')[0];
+              const dateStr = formatDateYMD(day);
               const dayRoutes = getRoutesForDay(dateStr);
-              const isToday = new Date().toISOString().split('T')[0] === dateStr;
+              const isToday = formatDateYMD(new Date()) === dateStr;
 
               return (
                 <DroppableDayColumn 
@@ -1622,7 +1630,7 @@ const RoutesView: React.FC = () => {
                 return [
                   ...blanks,
                   ...days.map(day => {
-                    const dateStr = day.toISOString().split('T')[0];
+                    const dateStr = formatDateYMD(day);
                     const dayRoutes = getRoutesForDay(dateStr);
                     // Aggregate PDVs and Clients
                     const pdvEntries = [];
@@ -2600,7 +2608,7 @@ const RoutesView: React.FC = () => {
                         // Generate for next 4 weeks
                         for (let i = 0; i < 4; i++) {
                             current.setDate(current.getDate() + 7);
-                            dates.push(current.toISOString().split('T')[0]);
+                            dates.push(formatDateYMD(current));
                         }
                         const newDates = dates.filter(d => !duplicateTargetDates.includes(d));
                         setDuplicateTargetDates([...duplicateTargetDates, ...newDates]);
@@ -3110,7 +3118,7 @@ const RoutesView: React.FC = () => {
                     return [
                       ...blanks,
                       ...days.map(day => {
-                        const dateStr = day.toISOString().split('T')[0];
+                        const dateStr = formatDateYMD(day);
                         const isSelected = calendarSelectedDates.includes(dateStr);
                         return (
                           <button
