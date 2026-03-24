@@ -876,7 +876,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     const productsOk = mode === 'FULL' ? areAllProductsComplete() : true;
     const beforeOk = getBeforeCount(photosKey) >= MIN_BEFORE_PHOTOS;
     const extraProducts = products.filter(isExtraSelected);
-    const naturalProducts = products.filter((p: any) => !isExtraSelected(p));
+    const naturalProducts = products;
 
     const renderProductRow = (p: any) => {
       const required = isStockCountRequired(p);
@@ -971,7 +971,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
           <div className="pt-1">
             <div className="text-[11px] font-bold text-slate-700 px-1 mb-2">
-              {extraProducts.length > 0 ? 'Ponto Natural' : 'Lista de Produtos'}
+              {extraProducts.length > 0 ? 'Ponto Natural (Todos)' : 'Lista de Produtos'}
             </div>
             <div className="space-y-3">{naturalProducts.map(renderProductRow)}</div>
           </div>
