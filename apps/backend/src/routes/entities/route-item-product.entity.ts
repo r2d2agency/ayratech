@@ -96,6 +96,12 @@ export class RouteItemProduct {
   @Column({ nullable: true })
   checklistTemplateId: string;
 
+  @Column('text', { array: true, nullable: true })
+  checklistTypes: string[];
+
+  @Column({ default: false })
+  requiresStockPhotos: boolean;
+
   @OneToMany(() => RouteItemProductChecklist, (checklist) => checklist.routeItemProduct, { cascade: true, eager: true })
   checklists: RouteItemProductChecklist[];
 }

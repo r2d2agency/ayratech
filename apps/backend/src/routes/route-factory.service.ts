@@ -111,4 +111,43 @@ export class RouteFactoryService {
             await manager.save(RouteItemProductChecklist, checklists);
         }
     }
+
+    async createChecklistsFromTypes(
+        manager: EntityManager,
+        routeItemProduct: RouteItemProduct,
+        types: ChecklistItemType[]
+    ) {
+        const normalized = Array.from(new Set((types || []).filter(Boolean)));
+        if (normalized.length === 0) return;
+
+        const checklists: RouteItemProductChecklist[] = [];
+
+        if (normalized.includes(ChecklistItemType.STOCK_COUNT)) {
+            checklists.push(manager.create(RouteItemProductChecklist, {
+                routeItemProduct,
+                description: 'Contagem (Loja)',
+                type: ChecklistItemType.STOCK_COUNT,
+                isChecked: false
+            }));
+            checklists.push(manager.create(RouteItemProductChecklist, {
+                routeItemProduct,
+                description: 'Contagem (Estoque)',
+                type: ChecklistItemType.STOCK_COUNT,
+                isChecked: false
+            }));
+        }
+
+        if (normalized.includes(ChecklistItemType.VALIDITY_CHECK)) {
+            checklists.push(manager.create(RouteItemProductChecklist, {
+                routeItemProduct,
+                description: 'Validade',
+                type: ChecklistItemType.VALIDITY_CHECK,
+                isChecked: false
+            }));
+        }
+
+        if (checklists.length > 0) {
+            await manager.save(RouteItemProductChecklist, checklists);
+        }
+    }
 }

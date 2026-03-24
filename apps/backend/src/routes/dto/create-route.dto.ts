@@ -1,4 +1,4 @@
-import { IsString, IsDateString, IsOptional, IsArray, ValidateNested } from 'class-validator';
+import { IsString, IsDateString, IsOptional, IsArray, ValidateNested, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class RouteItemProductDto {
@@ -8,6 +8,15 @@ class RouteItemProductDto {
   @IsOptional()
   @IsString()
   checklistTemplateId?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  checklistTypes?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  requiresStockPhotos?: boolean;
 }
 
 class RouteItemDto {

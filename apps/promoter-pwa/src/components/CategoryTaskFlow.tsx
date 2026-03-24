@@ -48,7 +48,8 @@ interface CategoryTaskFlowProps {
 const STEPS = {
   BEFORE_PHOTO: 0,
   PRODUCTS: 1,
-  AFTER_PHOTO: 2
+  STOCK_PHOTOS: 2,
+  AFTER_PHOTO: 3
 };
 
 export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
@@ -96,6 +97,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
   const photosKey = categoryKey || categoryLabel || category || 'Categoria';
   const extraPhotosKey = `${photosKey}::EXTRA`;
+  const stockPhotosRequired = (products || []).some((p: any) => !!p?.requiresStockPhotos);
 
   useEffect(() => {
     const key = `${categoryKey || ''}-${categoryLabel || category || ''}-${mode}`;
@@ -151,7 +153,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     return label;
   })();
 
-  const getLabel = (type: 'before' | 'after') => {
+  const getLabel = (type: 'before' | 'storage' | 'after') => {
     const categoryConfig = photoConfig?.categories?.[categoryLabel || category || ''];
     const defaultLabels = photoConfig?.labels;
     
@@ -160,6 +162,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     
     switch(type) {
       case 'before': return 'Foto Antes';
+      case 'storage': return 'Fotos do Estoque';
       case 'after': return 'Foto Depois';
       default: return 'Foto';
     }
@@ -248,7 +251,13 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     return Array.isArray(photos.after) ? photos.after.length : (photos.after ? 1 : 0);
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'before' | 'after') => {
+  const getStorageCount = (keyOverride?: string) => {
+    const photos = getCategoryPhotos(keyOverride);
+    const storage = (photos as any).storage;
+    return Array.isArray(storage) ? storage.length : (storage ? 1 : 0);
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'before' | 'after' | 'storage') => {
     if (readOnly) return;
     if (!e.target.files || !e.target.files[0]) return;
     
@@ -347,7 +356,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     }
   };
   
-  const handlePhotoRemove = async (type: 'before' | 'after', index: number) => {
+  const handlePhotoRemove = async (type: 'before' | 'after' | 'storage', index: number) => {
     const storageKey = pointType === 'extra' ? extraPhotosKey : photosKey;
     const currentPhotos = getCategoryPhotos(storageKey);
     const currentList = Array.isArray(currentPhotos[type]) ? currentPhotos[type] : (currentPhotos[type] ? [currentPhotos[type]] : []);
@@ -396,12 +405,18 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
       return;
     }
 
-    setStep(STEPS.PRODUCTS);
+    if (step === STEPS.STOCK_PHOTOS) {
+      setStep(STEPS.PRODUCTS);
+      return;
+    }
+
+    setStep(stockPhotosRequired ? STEPS.STOCK_PHOTOS : STEPS.PRODUCTS);
   };
 
   const finalizeCategory = () => {
     const beforeOk = getBeforeCount(photosKey) >= MIN_BEFORE_PHOTOS;
     const productsOk = mode === 'FULL' ? areAllProductsComplete() : true;
+    const storageOk = !stockPhotosRequired ? true : getStorageCount(photosKey) >= 2;
     const afterOk = getAfterCount(photosKey) > 0;
     const extraActive = extraSelectedProductIds.length > 0;
     const extraAfterOk = !extraActive ? true : getAfterCount(extraPhotosKey) > 0;
@@ -414,6 +429,11 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     if (mode === 'FULL' && !productsOk) {
       toast.error('Conclua os produtos para finalizar.');
       setStep(STEPS.PRODUCTS);
+      return;
+    }
+    if (!storageOk) {
+      toast.error('Registre as Fotos do Estoque (Antes / Depois) para finalizar.');
+      setStep(STEPS.STOCK_PHOTOS);
       return;
     }
     if (!afterOk) {
@@ -436,16 +456,22 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
     const beforeOk = getBeforeCount(photosKey) >= MIN_BEFORE_PHOTOS;
     const productsOk = mode === 'FULL' ? areAllProductsComplete() : true;
+    const storageOk = !stockPhotosRequired ? true : getStorageCount(photosKey) >= 2;
 
     if (step === STEPS.PRODUCTS && !beforeOk) {
       setStep(STEPS.BEFORE_PHOTO);
       return;
     }
 
-    if (step === STEPS.AFTER_PHOTO && (!beforeOk || !productsOk)) {
+    if (step === STEPS.STOCK_PHOTOS && (!beforeOk || !productsOk)) {
       setStep(beforeOk ? STEPS.PRODUCTS : STEPS.BEFORE_PHOTO);
+      return;
     }
-  }, [mode, step, routeItem.categoryPhotos, products]);
+
+    if (step === STEPS.AFTER_PHOTO && (!beforeOk || !productsOk || !storageOk)) {
+      setStep(!beforeOk ? STEPS.BEFORE_PHOTO : !productsOk ? STEPS.PRODUCTS : STEPS.STOCK_PHOTOS);
+    }
+  }, [mode, step, routeItem.categoryPhotos, products, stockPhotosRequired]);
 
   const renderPhotoStep = (type: 'before' | 'after', title: string, description: string) => {
     const beforeOk = getBeforeCount(photosKey) >= MIN_BEFORE_PHOTOS;
@@ -696,6 +722,140 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     );
   };
 
+  const renderStockPhotosStep = () => {
+    const beforeOk = getBeforeCount(photosKey) >= MIN_BEFORE_PHOTOS;
+    const productsOk = mode === 'FULL' ? areAllProductsComplete() : true;
+
+    if (!beforeOk || !productsOk) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full p-6 text-center gap-3">
+          <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
+            <AlertTriangle size={28} />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-lg font-bold text-gray-900">Etapa bloqueada</h2>
+            <p className="text-sm text-gray-600">
+              Envie a Foto Antes e conclua os produtos obrigatórios para liberar as Fotos do Estoque.
+            </p>
+          </div>
+          <div className="w-full max-w-sm flex gap-3">
+            <button
+              type="button"
+              onClick={() => setStep(STEPS.BEFORE_PHOTO)}
+              className="flex-1 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl font-bold shadow-sm hover:bg-gray-50 transition-colors"
+            >
+              Foto Antes
+            </button>
+            <button
+              type="button"
+              onClick={() => setStep(beforeOk ? STEPS.PRODUCTS : STEPS.BEFORE_PHOTO)}
+              className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-sm hover:bg-blue-700 transition-colors"
+            >
+              Produtos
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    const photos = getCategoryPhotos(photosKey);
+    const current = (photos as any).storage;
+    const urls = Array.isArray(current) ? current : (current ? [current] : []);
+    const storageOk = urls.length >= 2;
+
+    return (
+      <>
+        <div className="flex flex-col items-center h-full p-4 space-y-4 pb-48 overflow-y-auto">
+          <div className="text-center space-y-1">
+            <h2 className="text-xl font-bold text-gray-800">{getLabel('storage')}</h2>
+            <p className="text-sm text-gray-500">Registre Estoque Antes e Depois.</p>
+          </div>
+
+          <div className="w-full grid grid-cols-2 gap-3">
+            {urls.map((u: string, i: number) => (
+              <div key={i} className="relative w-full aspect-square rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+                <img
+                  src={resolveImageUrl(u)}
+                  alt={`Fotos do Estoque ${i + 1}`}
+                  className="w-full h-full object-cover"
+                  onClick={() => setPreviewUrl(u)}
+                />
+                {!readOnly && (
+                  <button
+                    onClick={() => handlePhotoRemove('storage', i)}
+                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full shadow-md hover:bg-red-600"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            ))}
+
+            {!readOnly && (
+              <label
+                htmlFor="category-photo-storage"
+                className="flex flex-col items-center justify-center border-2 border-dashed border-blue-300 rounded-lg aspect-square text-blue-500 cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors"
+              >
+                {uploading ? (
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                ) : (
+                  <>
+                    <Camera size={32} className="mb-2" />
+                    <span className="text-xs font-bold">Adicionar Foto</span>
+                  </>
+                )}
+              </label>
+            )}
+          </div>
+
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            id="category-photo-storage"
+            ref={fileInputRef}
+            onChange={(e) => handlePhotoUpload(e, 'storage')}
+          />
+        </div>
+
+        <div
+          className="fixed left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-lg z-60"
+          style={{ bottom: 'calc(env(safe-area-inset-bottom) + 72px)' }}
+        >
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (!beforeOk) {
+                  toast.error('Faça a Foto Antes para liberar os produtos.');
+                  return;
+                }
+                setStep(STEPS.PRODUCTS);
+              }}
+              className="flex-1 py-4 border rounded-xl font-bold text-lg shadow-sm flex items-center justify-center gap-2 transition-all active:scale-[0.99] bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+            >
+              Produtos
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (!storageOk) {
+                  toast.error('Registre 2 fotos do estoque (Antes / Depois) para continuar.');
+                  return;
+                }
+                setStep(STEPS.AFTER_PHOTO);
+              }}
+              className="flex-1 py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all active:scale-[0.99] bg-blue-600 text-white hover:bg-blue-700"
+            >
+              Foto Depois
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  };
+
   const renderProductsStep = () => {
     const total = products.length;
     const completed = products.filter(isProductCountComplete).length;
@@ -814,11 +974,11 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
                   toast.error('Conclua os produtos antes de ir para a Foto Depois.');
                   return;
                 }
-                setStep(STEPS.AFTER_PHOTO);
+              setStep(stockPhotosRequired ? STEPS.STOCK_PHOTOS : STEPS.AFTER_PHOTO);
               }}
               className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700"
             >
-              {mode === 'ITEMS' ? 'Concluir' : 'Foto Depois'}
+              {mode === 'ITEMS' ? 'Concluir' : stockPhotosRequired ? 'Fotos Estoque' : 'Foto Depois'}
             </button>
           </div>
         </div>
@@ -849,8 +1009,10 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
   const beforeOkNow = getBeforeCount(photosKey) >= MIN_BEFORE_PHOTOS;
   const productsOkNow = mode === 'FULL' ? areAllProductsComplete() : true;
+  const storageOkNow = !stockPhotosRequired ? true : getStorageCount(photosKey) >= 2;
   const canGoProductsNow = beforeOkNow;
-  const canGoAfterNow = beforeOkNow && productsOkNow;
+  const canGoStockNow = beforeOkNow && productsOkNow;
+  const canGoAfterNow = beforeOkNow && productsOkNow && storageOkNow;
 
   return (
     <div className="fixed inset-0 bg-gray-50 z-[100] flex flex-col animate-slideUp">
@@ -864,7 +1026,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
         </div>
 
         {mode !== 'ITEMS' && (
-          <div className="mt-3 grid grid-cols-3 gap-2">
+          <div className={`mt-3 grid gap-2 ${stockPhotosRequired ? 'grid-cols-4' : 'grid-cols-3'}`}>
             <button
               type="button"
               onClick={() => setStep(STEPS.BEFORE_PHOTO)}
@@ -896,11 +1058,36 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
             >
               Produtos
             </button>
+            {stockPhotosRequired && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!canGoStockNow) {
+                    toast.error('Conclua a Foto Antes e os produtos obrigatórios para liberar as Fotos do Estoque.');
+                    return;
+                  }
+                  setStep(STEPS.STOCK_PHOTOS);
+                }}
+                disabled={!canGoStockNow}
+                className={`py-2 rounded-lg text-xs font-bold border ${
+                  !canGoStockNow
+                    ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                    : step === STEPS.STOCK_PHOTOS
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                Estoque
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {
                 if (!canGoAfterNow) {
-                  toast.error('Conclua a Foto Antes e os produtos obrigatórios para liberar a Foto Depois.');
+                  toast.error(stockPhotosRequired
+                    ? 'Conclua a Foto Antes, os produtos obrigatórios e as Fotos do Estoque para liberar a Foto Depois.'
+                    : 'Conclua a Foto Antes e os produtos obrigatórios para liberar a Foto Depois.'
+                  );
                   return;
                 }
                 setStep(STEPS.AFTER_PHOTO);
@@ -922,6 +1109,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
       <div className="flex-1 overflow-hidden relative">
         {step === STEPS.BEFORE_PHOTO && renderPhotoStep('before', getLabel('before'), 'Registre o estado inicial.')}
+        {step === STEPS.STOCK_PHOTOS && renderStockPhotosStep()}
         {step === STEPS.AFTER_PHOTO && renderPhotoStep('after', getLabel('after'), 'Registre o resultado final.')}
         {step === STEPS.PRODUCTS && renderProductsStep()}
       </div>

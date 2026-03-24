@@ -384,6 +384,8 @@ const RoutesView: React.FC = () => {
   const [currentRouteItemIndex, setCurrentRouteItemIndex] = useState<number | null>(null);
   const [tempSelectedProducts, setTempSelectedProducts] = useState<string[]>([]);
   const [tempProductChecklists, setTempProductChecklists] = useState<Record<string, string>>({});
+  const [tempProductChecklistTypes, setTempProductChecklistTypes] = useState<Record<string, string[]>>({});
+  const [tempProductRequiresStockPhotos, setTempProductRequiresStockPhotos] = useState<Record<string, boolean>>({});
   const [selectedClientForModal, setSelectedClientForModal] = useState<string | null>(null);
 
   // Planner State
@@ -862,12 +864,20 @@ const RoutesView: React.FC = () => {
     setTempSelectedProducts(item.productIds || []);
     
     const checklists: Record<string, string> = {};
+    const checklistTypes: Record<string, string[]> = {};
+    const requiresStockPhotos: Record<string, boolean> = {};
     
     // Initialize from existing route configuration if available
     if (item.products) {
       item.products.forEach((p: any) => {
         if (p.checklistTemplateId) {
           checklists[p.productId] = p.checklistTemplateId;
+        }
+        if (Array.isArray(p.checklistTypes) && p.checklistTypes.length > 0) {
+          checklistTypes[p.productId] = p.checklistTypes;
+        }
+        if (p.requiresStockPhotos) {
+          requiresStockPhotos[p.productId] = true;
         }
       });
     }
@@ -877,6 +887,8 @@ const RoutesView: React.FC = () => {
     // But for now, let's just show what's explicitly set for the route.
     
     setTempProductChecklists(checklists);
+    setTempProductChecklistTypes(checklistTypes);
+    setTempProductRequiresStockPhotos(requiresStockPhotos);
     setShowProductModal(true);
   };
 
@@ -919,6 +931,21 @@ const RoutesView: React.FC = () => {
     }
     if (tempSelectedProducts.includes(productId)) {
       setTempSelectedProducts(tempSelectedProducts.filter(id => id !== productId));
+      setTempProductChecklists(prev => {
+        const next = { ...prev };
+        delete next[productId];
+        return next;
+      });
+      setTempProductChecklistTypes(prev => {
+        const next = { ...prev };
+        delete next[productId];
+        return next;
+      });
+      setTempProductRequiresStockPhotos(prev => {
+        const next = { ...prev };
+        delete next[productId];
+        return next;
+      });
     } else {
       setTempSelectedProducts([...tempSelectedProducts, productId]);
     }
@@ -932,7 +959,11 @@ const RoutesView: React.FC = () => {
       // Save detailed product structure with checklist selection
       newItems[currentRouteItemIndex].products = tempSelectedProducts.map(productId => ({
         productId,
-        checklistTemplateId: tempProductChecklists[productId] || undefined
+        checklistTemplateId: tempProductChecklists[productId] || undefined,
+        checklistTypes: (tempProductChecklistTypes[productId] && tempProductChecklistTypes[productId].length > 0)
+          ? tempProductChecklistTypes[productId]
+          : undefined,
+        requiresStockPhotos: !!tempProductRequiresStockPhotos[productId] || undefined
       }));
 
       setRouteItems(newItems);
@@ -1077,7 +1108,9 @@ const RoutesView: React.FC = () => {
       productIds: item.products?.map((p: any) => p.productId) || [],
       products: item.products?.map((p: any) => ({
         productId: p.productId,
-        checklistTemplateId: p.checklistTemplateId
+        checklistTemplateId: p.checklistTemplateId,
+        checklistTypes: p.checklistTypes,
+        requiresStockPhotos: p.requiresStockPhotos
       })) || []
     }));
     setRouteItems(items);
@@ -1423,7 +1456,9 @@ const RoutesView: React.FC = () => {
       productIds: item.products?.map((p: any) => p.productId) || [],
       products: item.products?.map((p: any) => ({
         productId: p.productId,
-        checklistTemplateId: p.checklistTemplateId
+        checklistTemplateId: p.checklistTemplateId,
+        checklistTypes: p.checklistTypes,
+        requiresStockPhotos: p.requiresStockPhotos
       })) || []
     }));
     setRouteItems(items);
@@ -2402,7 +2437,12 @@ const RoutesView: React.FC = () => {
                             <div className="flex justify-between items-center">
                                 <span className="text-xs font-black text-slate-500 uppercase">Selecionados ({tempSelectedProducts.length})</span>
                                 <button 
-                                    onClick={() => setTempSelectedProducts([])}
+                                    onClick={() => {
+                                      setTempSelectedProducts([]);
+                                      setTempProductChecklists({});
+                                      setTempProductChecklistTypes({});
+                                      setTempProductRequiresStockPhotos({});
+                                    }}
                                     className="text-xs font-bold text-red-500 hover:text-red-600"
                                 >
                                     Remover Todos
@@ -2426,10 +2466,17 @@ const RoutesView: React.FC = () => {
                                 const search = selectedProductSearch.toLowerCase();
                                 return !search || p.name.toLowerCase().includes(search) || (p.sku && p.sku.toLowerCase().includes(search));
                              })
-                             .map(product => (
-                                <div 
-                                    key={product.id}
-                                    className="p-3 bg-white rounded-lg border border-blue-200 shadow-sm"
+                             .map(product => {
+                                const forcedTypes = tempProductChecklistTypes[product.id] || [];
+                                const hasForcedTypes = forcedTypes.length > 0;
+                                const stockCountChecked = forcedTypes.includes('STOCK_COUNT');
+                                const validityChecked = forcedTypes.includes('VALIDITY_CHECK');
+                                const stockPhotosChecked = !!tempProductRequiresStockPhotos[product.id];
+
+                                return (
+                                <div
+                                  key={product.id}
+                                  className="p-3 bg-white rounded-lg border border-blue-200 shadow-sm"
                                 >
                                     <div className="flex justify-between items-start mb-2">
                                         <div>
@@ -2455,6 +2502,7 @@ const RoutesView: React.FC = () => {
                                              ...tempProductChecklists,
                                              [product.id]: e.target.value
                                            })}
+                                           disabled={hasForcedTypes}
                                            className="w-full text-xs border border-slate-200 rounded p-1.5 outline-none focus:border-blue-400 bg-slate-50"
                                          >
                                            <option value="">
@@ -2466,9 +2514,83 @@ const RoutesView: React.FC = () => {
                                              <option key={t.id} value={t.id}>{t.name}</option>
                                            ))}
                                          </select>
+
+                                         <div className="mt-2 grid grid-cols-3 gap-2">
+                                           <label className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
+                                             <input
+                                               type="checkbox"
+                                               checked={stockCountChecked}
+                                               onChange={(e) => {
+                                                 const checked = e.target.checked;
+                                                 setTempProductChecklistTypes(prev => {
+                                                   const curr = prev[product.id] || [];
+                                                   const set = new Set(curr.map(x => String(x).toUpperCase()));
+                                                   if (checked) set.add('STOCK_COUNT');
+                                                   else set.delete('STOCK_COUNT');
+                                                   const nextArr = Array.from(set);
+                                                   if (nextArr.length === 0) {
+                                                     const next = { ...prev };
+                                                     delete next[product.id];
+                                                     return next;
+                                                   }
+                                                   return { ...prev, [product.id]: nextArr };
+                                                 });
+                                               }}
+                                               className="w-4 h-4"
+                                             />
+                                             Contagem
+                                           </label>
+
+                                           <label className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
+                                             <input
+                                               type="checkbox"
+                                               checked={validityChecked}
+                                               onChange={(e) => {
+                                                 const checked = e.target.checked;
+                                                 setTempProductChecklistTypes(prev => {
+                                                   const curr = prev[product.id] || [];
+                                                   const set = new Set(curr.map(x => String(x).toUpperCase()));
+                                                   if (checked) set.add('VALIDITY_CHECK');
+                                                   else set.delete('VALIDITY_CHECK');
+                                                   const nextArr = Array.from(set);
+                                                   if (nextArr.length === 0) {
+                                                     const next = { ...prev };
+                                                     delete next[product.id];
+                                                     return next;
+                                                   }
+                                                   return { ...prev, [product.id]: nextArr };
+                                                 });
+                                               }}
+                                               className="w-4 h-4"
+                                             />
+                                             Validade
+                                           </label>
+
+                                           <label className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
+                                             <input
+                                               type="checkbox"
+                                               checked={stockPhotosChecked}
+                                               onChange={(e) => {
+                                                 const checked = e.target.checked;
+                                                 setTempProductRequiresStockPhotos(prev => {
+                                                   const next = { ...prev };
+                                                   if (!checked) {
+                                                     delete next[product.id];
+                                                     return next;
+                                                   }
+                                                   next[product.id] = true;
+                                                   return next;
+                                                 });
+                                               }}
+                                               className="w-4 h-4"
+                                             />
+                                             Foto Estoque
+                                           </label>
+                                         </div>
                                     </div>
                                 </div>
-                             ))}
+                              );
+                             })}
                              {tempSelectedProducts.length === 0 && (
                                  <div className="text-center py-8 text-slate-400 text-xs">
                                      Nenhum produto selecionado.

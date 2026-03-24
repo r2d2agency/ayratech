@@ -338,7 +338,7 @@ export class RoutesService {
           const savedItem = await queryRunner.manager.save(RouteItem, routeItem);
           const currentSupermarket = supermarketsMap.get(item.supermarketId);
 
-          const itemProductsToProcess: { productId: string, checklistTemplateId?: string }[] = [];
+          const itemProductsToProcess: { productId: string; checklistTemplateId?: string; checklistTypes?: string[]; requiresStockPhotos?: boolean }[] = [];
           if (item.products) itemProductsToProcess.push(...item.products);
           if (item.productIds) {
              item.productIds.forEach(pid => {
@@ -351,6 +351,9 @@ export class RoutesService {
           if (itemProductsToProcess.length > 0) {
             for (const prodData of itemProductsToProcess) {
                const product = productsMap.get(prodData.productId);
+               const forcedTypes = Array.isArray(prodData.checklistTypes)
+                 ? Array.from(new Set(prodData.checklistTypes.map(t => String(t).toUpperCase()).filter(Boolean)))
+                 : [];
                
                // FILTERING LOGIC: Check Assortment (SupermarketGroup)
                if (!this.routeFactoryService.shouldAddProductToSupermarket(product, currentSupermarket)) {
@@ -362,20 +365,26 @@ export class RoutesService {
                    routeItemId: savedItem.id,
                    product: { id: prodData.productId },
                    productId: prodData.productId,
-                   checklistTemplateId: prodData.checklistTemplateId
+                   checklistTemplateId: prodData.checklistTemplateId,
+                   checklistTypes: forcedTypes.length > 0 ? forcedTypes : null,
+                   requiresStockPhotos: !!prodData.requiresStockPhotos
                });
                const savedRip = await queryRunner.manager.save(RouteItemProduct, rip);
-               
-               const checklistTemplate = this.routeFactoryService.resolveChecklistTemplate(
-                   product,
-                   prodData.checklistTemplateId,
-                   savedRoute.checklistTemplateId,
-                   checklistTemplatesMap,
-                   savedRoute.type
-               );
-               
-               if (checklistTemplate) {
-                   await this.routeFactoryService.createChecklists(queryRunner.manager, savedRip, checklistTemplate);
+
+               if (forcedTypes.length > 0) {
+                   await this.routeFactoryService.createChecklistsFromTypes(queryRunner.manager, savedRip, forcedTypes as any);
+               } else {
+                   const checklistTemplate = this.routeFactoryService.resolveChecklistTemplate(
+                       product,
+                       prodData.checklistTemplateId,
+                       savedRoute.checklistTemplateId,
+                       checklistTemplatesMap,
+                       savedRoute.type
+                   );
+                   
+                   if (checklistTemplate) {
+                       await this.routeFactoryService.createChecklists(queryRunner.manager, savedRip, checklistTemplate);
+                   }
                }
             }
           }
@@ -1180,9 +1189,12 @@ export class RoutesService {
           }
 
           // Helper function to add product to item
-          const addProductToItem = async (savedItem: RouteItem, prodData: { productId: string, checklistTemplateId?: string }) => {
+          const addProductToItem = async (savedItem: RouteItem, prodData: { productId: string; checklistTemplateId?: string; checklistTypes?: string[]; requiresStockPhotos?: boolean }) => {
                 const currentSupermarket = supermarketsMap.get(savedItem.supermarketId);
                 const product = productsMap.get(prodData.productId);
+                const forcedTypes = Array.isArray(prodData.checklistTypes)
+                  ? Array.from(new Set(prodData.checklistTypes.map(t => String(t).toUpperCase()).filter(Boolean)))
+                  : [];
                    
                 // FILTERING LOGIC: Check Assortment (SupermarketGroup)
                 if (product && product.supermarketGroups && product.supermarketGroups.length > 0) {
@@ -1197,60 +1209,27 @@ export class RoutesService {
                      product: { id: prodData.productId },
                      productId: prodData.productId,
                      checked: false,
-                     checklistTemplateId: prodData.checklistTemplateId
+                     checklistTemplateId: prodData.checklistTemplateId,
+                     checklistTypes: forcedTypes.length > 0 ? forcedTypes : null,
+                     requiresStockPhotos: !!prodData.requiresStockPhotos
                  });
                  const savedRip = await queryRunner.manager.save(RouteItemProduct, rip);
-                 
-                 let checklistTemplate: ChecklistTemplate | null = null;
-                 if (prodData.checklistTemplateId) {
-                     checklistTemplate = checklistTemplatesMap.get(prodData.checklistTemplateId) || null;
-                 } else {
-                     if (product) {
-                       if (product.checklistTemplate) {
-                         checklistTemplate = product.checklistTemplate as any;
-                       } else {
-                         const brand: any = (product as any).brand;
-                         if (brand?.checklistTemplateId) {
-                           checklistTemplate = checklistTemplatesMap.get(brand.checklistTemplateId) || null;
-                         }
 
-                         const client: any = (product as any).client || brand?.client;
-                         const routeType = (route as any).type || 'VISIT';
-                         const clientTemplateId =
-                           routeType === 'INVENTORY'
-                             ? client?.defaultInventoryChecklistTemplateId || client?.defaultVisitChecklistTemplateId
-                             : client?.defaultVisitChecklistTemplateId || client?.defaultInventoryChecklistTemplateId;
-                         if (!checklistTemplate && clientTemplateId) {
-                           checklistTemplate = checklistTemplatesMap.get(clientTemplateId) || null;
-                         }
-                       }
-                     }
+                 if (forcedTypes.length > 0) {
+                     await this.routeFactoryService.createChecklistsFromTypes(queryRunner.manager, savedRip, forcedTypes as any);
+                     return;
                  }
-                 
-                 if (checklistTemplate?.items?.length) {
-                     const checklists = [];
-                     for (const tplItem of checklistTemplate.items) {
-                        if (tplItem.type === ChecklistItemType.PRICE_CHECK && tplItem.competitors?.length > 0) {
-                            for (const comp of tplItem.competitors) {
-                                checklists.push(queryRunner.manager.create(RouteItemProductChecklist, {
-                                    routeItemProduct: savedRip,
-                                    description: tplItem.description,
-                                    type: tplItem.type,
-                                    isChecked: false,
-                                    competitorName: comp.name
-                                }));
-                            }
-                        } else {
-                            checklists.push(queryRunner.manager.create(RouteItemProductChecklist, {
-                                routeItemProduct: savedRip,
-                                description: tplItem.description,
-                                type: tplItem.type,
-                                isChecked: false,
-                                competitorName: tplItem.competitor?.name || null
-                            }));
-                        }
-                     }
-                     await queryRunner.manager.save(RouteItemProductChecklist, checklists);
+
+                 const checklistTemplate = this.routeFactoryService.resolveChecklistTemplate(
+                     product,
+                     prodData.checklistTemplateId,
+                     (route as any).checklistTemplateId,
+                     checklistTemplatesMap,
+                     (route as any).type || 'VISIT'
+                 );
+
+                 if (checklistTemplate) {
+                     await this.routeFactoryService.createChecklists(queryRunner.manager, savedRip, checklistTemplate);
                  }
           };
 
@@ -1288,7 +1267,7 @@ export class RoutesService {
                   const currentProductsMap = new Map(existingItem.products.map(p => [p.productId, p]));
                   const newProductIds = new Set<string>();
                   
-                  const itemProductsToProcess: { productId: string, checklistTemplateId?: string }[] = [];
+                  const itemProductsToProcess: { productId: string; checklistTemplateId?: string; checklistTypes?: string[]; requiresStockPhotos?: boolean }[] = [];
                   if (item.products) itemProductsToProcess.push(...item.products);
                   if (item.productIds) {
                      item.productIds.forEach(pid => {
@@ -1300,8 +1279,48 @@ export class RoutesService {
 
                   for (const prodData of itemProductsToProcess) {
                       newProductIds.add(prodData.productId);
-                      if (!currentProductsMap.has(prodData.productId)) {
-                          await addProductToItem(savedItem, prodData);
+                      const existingRip = currentProductsMap.get(prodData.productId);
+                      if (!existingRip) {
+                        await addProductToItem(savedItem, prodData);
+                        continue;
+                      }
+
+                      const oldTemplateId = existingRip.checklistTemplateId || null;
+                      const newTemplateId = prodData.checklistTemplateId || null;
+                      const newForcedTypes = Array.isArray(prodData.checklistTypes)
+                        ? Array.from(new Set(prodData.checklistTypes.map(t => String(t).toUpperCase()).filter(Boolean)))
+                        : [];
+                      const oldForcedTypes = Array.isArray((existingRip as any).checklistTypes)
+                        ? Array.from(new Set(((existingRip as any).checklistTypes as any[]).map(t => String(t).toUpperCase()).filter(Boolean)))
+                        : [];
+
+                      const oldForcedKey = oldForcedTypes.slice().sort().join('|');
+                      const newForcedKey = newForcedTypes.slice().sort().join('|');
+
+                      existingRip.checklistTemplateId = prodData.checklistTemplateId as any;
+                      (existingRip as any).checklistTypes = newForcedTypes.length > 0 ? newForcedTypes : null;
+                      (existingRip as any).requiresStockPhotos = !!prodData.requiresStockPhotos;
+                      await queryRunner.manager.save(RouteItemProduct, existingRip);
+
+                      const shouldRebuildChecklists = oldForcedKey !== newForcedKey || oldTemplateId !== newTemplateId;
+                      if (shouldRebuildChecklists) {
+                        await queryRunner.manager.delete(RouteItemProductChecklist, { routeItemProductId: existingRip.id } as any);
+
+                        if (newForcedTypes.length > 0) {
+                          await this.routeFactoryService.createChecklistsFromTypes(queryRunner.manager, existingRip, newForcedTypes as any);
+                        } else {
+                          const product = productsMap.get(prodData.productId);
+                          const checklistTemplate = this.routeFactoryService.resolveChecklistTemplate(
+                            product,
+                            prodData.checklistTemplateId,
+                            (route as any).checklistTemplateId,
+                            checklistTemplatesMap,
+                            (route as any).type || 'VISIT'
+                          );
+                          if (checklistTemplate) {
+                            await this.routeFactoryService.createChecklists(queryRunner.manager, existingRip, checklistTemplate);
+                          }
+                        }
                       }
                   }
 
@@ -1333,7 +1352,7 @@ export class RoutesService {
                   
                   savedItem = await queryRunner.manager.save(RouteItem, routeItem);
 
-                  const itemProductsToProcess: { productId: string, checklistTemplateId?: string }[] = [];
+                  const itemProductsToProcess: { productId: string; checklistTemplateId?: string; checklistTypes?: string[]; requiresStockPhotos?: boolean }[] = [];
                   if (item.products) itemProductsToProcess.push(...item.products);
                   if (item.productIds) {
                      item.productIds.forEach(pid => {
@@ -1709,7 +1728,7 @@ export class RoutesService {
 
     // If category and type are provided, update the route item categoryPhotos
           const normalizedType = type.replace('CATEGORY_', '').toLowerCase();
-          if (category && (normalizedType === 'before' || normalizedType === 'after')) {
+          if (category && (normalizedType === 'before' || normalizedType === 'after' || normalizedType === 'storage')) {
               console.log(`RoutesService.uploadPhoto: Updating categoryPhotos for category=${category}, type=${normalizedType}`);
               
               // Clone existing photos to ensure TypeORM detects the change
@@ -1723,7 +1742,7 @@ export class RoutesService {
               // But deeper levels need care if we mutate.
               // Let's create a new object for the category to be safe.
               const categoryObj = { ...newCategoryPhotos[category] };
-              const current = categoryObj[normalizedType as 'before' | 'after'];
+              const current = categoryObj[normalizedType as 'before' | 'after' | 'storage'];
 
               let updatedList: string[];
               if (Array.isArray(current)) {
@@ -1736,7 +1755,7 @@ export class RoutesService {
                    updatedList = [url];
               }
               
-              categoryObj[normalizedType as 'before' | 'after'] = updatedList;
+              categoryObj[normalizedType as 'before' | 'after' | 'storage'] = updatedList;
               newCategoryPhotos[category] = categoryObj;
 
               item.categoryPhotos = newCategoryPhotos;
@@ -2412,6 +2431,7 @@ export class RoutesService {
 
     const groups = new Map<string, { brandLabel: string; categoryLabel: string }>();
     const categoryToBrands = new Map<string, Set<string>>();
+    const groupRequiresStockPhotos = new Map<string, boolean>();
 
     for (const ip of item.products || []) {
       const categoryLabel = (ip.product?.categoryRef?.name) || (ip.product as any)?.category || 'Sem Categoria';
@@ -2423,6 +2443,7 @@ export class RoutesService {
 
       const groupKey = `${brandKey}::${categoryLabel}`;
       groups.set(groupKey, { brandLabel, categoryLabel });
+      groupRequiresStockPhotos.set(groupKey, (groupRequiresStockPhotos.get(groupKey) || false) || !!(ip as any)?.requiresStockPhotos);
     }
 
     let categoryPhotoMissing = false;
@@ -2444,6 +2465,16 @@ export class RoutesService {
         categoryPhotoMissing = true;
         missingGroupLabel = `${meta.brandLabel} • ${meta.categoryLabel}`;
         break;
+      }
+
+      const stockPhotosRequired = groupRequiresStockPhotos.get(groupKey) || false;
+      if (stockPhotosRequired) {
+        const storageCount = Array.isArray((photos as any).storage) ? (photos as any).storage.length : ((photos as any).storage ? 1 : 0);
+        if (storageCount < 2) {
+          categoryPhotoMissing = true;
+          missingGroupLabel = `${meta.brandLabel} • ${meta.categoryLabel} (Estoque Antes / Depois)`;
+          break;
+        }
       }
 
       const extraKey = `${groupKey}::EXTRA`;
