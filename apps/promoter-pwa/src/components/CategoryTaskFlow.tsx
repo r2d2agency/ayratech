@@ -208,7 +208,8 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
   const canOpenProduct = (p: any) => isStockCountRequired(p) || hasNonStockChecklist(p) || isExtraSelected(p);
 
-  const isProductRequiredForProgress = (p: any) => isStockCountRequired(p) || hasInteractiveChecklist(p);
+  const isProductRequiredForProgress = (p: any) =>
+    isStockCountRequired(p) || hasInteractiveChecklist(p) || isExtraSelected(p);
 
   const isProductCountComplete = (p: any) => {
     const cl = getChecklists(p);
@@ -874,6 +875,75 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
     const productsOk = mode === 'FULL' ? areAllProductsComplete() : true;
     const beforeOk = getBeforeCount(photosKey) >= MIN_BEFORE_PHOTOS;
+    const extraProducts = products.filter(isExtraSelected);
+    const naturalProducts = products.filter((p: any) => !isExtraSelected(p));
+
+    const renderProductRow = (p: any) => {
+      const required = isStockCountRequired(p);
+      const rowCompleted = isProductCountComplete(p);
+      const openModal = canOpenProduct(p);
+
+      return (
+        <div
+          key={p.productId}
+          onClick={async () => {
+            if (readOnly) return;
+            if (openModal) {
+              setSelectedProduct(p);
+              return;
+            }
+            try {
+              const nextChecked = !p.checked;
+              await onUpdateProduct(p.productId, { checked: nextChecked });
+              toast.success(nextChecked ? 'Marcado como concluído.' : 'Desmarcado.');
+            } catch {
+              toast.error('Não foi possível atualizar.');
+            }
+          }}
+          className="bg-white p-4 rounded-lg shadow border border-gray-100 flex items-start gap-3 active:scale-[0.98] transition-transform"
+        >
+          <div className="pt-0.5">
+            {rowCompleted ? (
+              <CheckCircle size={20} className="text-green-600" />
+            ) : (
+              <Circle size={20} className="text-gray-300" />
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <h3 className="font-medium text-gray-900 truncate">{p.product.name}</h3>
+                <p className="text-xs text-gray-500 truncate">{p.product.ean || 'Sem EAN'}</p>
+                {!required && !hasNonStockChecklist(p) && !isExtraSelected(p) && (
+                  <span className="text-[10px] bg-gray-100 text-gray-500 px-1 rounded">Sem obrigatoriedade</span>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActionProduct(p);
+                }}
+                className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50"
+                disabled={readOnly}
+                title="Ações"
+              >
+                <MoreVertical size={18} />
+              </button>
+            </div>
+
+            <div className="mt-2 flex items-center justify-between text-xs">
+              <span className={rowCompleted ? 'text-green-700 font-medium' : 'text-orange-600 font-medium'}>
+                {rowCompleted ? 'Concluído' : openModal ? 'Toque para abrir' : 'Toque para marcar'}
+              </span>
+              {!readOnly && openModal && <span className="text-gray-400">Pendente</span>}
+            </div>
+          </div>
+        </div>
+      );
+    };
 
     return (
       <div className="flex flex-col h-full">
@@ -892,72 +962,19 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-20">
-          {products.map(p => {
-            const required = isStockCountRequired(p);
-            const rowCompleted = isProductCountComplete(p);
-            const openModal = canOpenProduct(p);
+          {extraProducts.length > 0 && (
+            <div className="pt-1">
+              <div className="text-[11px] font-bold text-orange-700 px-1 mb-2">Ponto Extra</div>
+              <div className="space-y-3">{extraProducts.map(renderProductRow)}</div>
+            </div>
+          )}
 
-            return (
-              <div
-                key={p.productId}
-                onClick={async () => {
-                  if (readOnly) return;
-                  if (openModal) {
-                    setSelectedProduct(p);
-                    return;
-                  }
-                  try {
-                    const nextChecked = !p.checked;
-                    await onUpdateProduct(p.productId, { checked: nextChecked });
-                    toast.success(nextChecked ? 'Marcado como concluído.' : 'Desmarcado.');
-                  } catch {
-                    toast.error('Não foi possível atualizar.');
-                  }
-                }}
-                className="bg-white p-4 rounded-lg shadow border border-gray-100 flex items-start gap-3 active:scale-[0.98] transition-transform"
-              >
-                <div className="pt-0.5">
-                  {rowCompleted ? (
-                    <CheckCircle size={20} className="text-green-600" />
-                  ) : (
-                    <Circle size={20} className="text-gray-300" />
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="font-medium text-gray-900 truncate">{p.product.name}</h3>
-                      <p className="text-xs text-gray-500 truncate">{p.product.ean || 'Sem EAN'}</p>
-                      {!required && !hasNonStockChecklist(p) && !isExtraSelected(p) && (
-                        <span className="text-[10px] bg-gray-100 text-gray-500 px-1 rounded">Sem obrigatoriedade</span>
-                      )}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActionProduct(p);
-                      }}
-                      className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50"
-                      disabled={readOnly}
-                      title="Ações"
-                    >
-                      <MoreVertical size={18} />
-                    </button>
-                  </div>
-
-                  <div className="mt-2 flex items-center justify-between text-xs">
-                    <span className={rowCompleted ? 'text-green-700 font-medium' : 'text-orange-600 font-medium'}>
-                      {rowCompleted ? 'Concluído' : openModal ? 'Toque para abrir' : 'Toque para marcar'}
-                    </span>
-                    {!readOnly && openModal && <span className="text-gray-400">Pendente</span>}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          <div className="pt-1">
+            <div className="text-[11px] font-bold text-slate-700 px-1 mb-2">
+              {extraProducts.length > 0 ? 'Ponto Natural' : 'Lista de Produtos'}
+            </div>
+            <div className="space-y-3">{naturalProducts.map(renderProductRow)}</div>
+          </div>
         </div>
 
         <div className="p-4 bg-white border-t">
