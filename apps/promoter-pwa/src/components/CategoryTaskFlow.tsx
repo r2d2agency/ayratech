@@ -181,6 +181,10 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     return hasStockInChecklists;
   };
 
+  const getChecklists = (p: any) => (Array.isArray(p?.checklists) ? p.checklists : []);
+
+  const isExtraSelected = (p: any) => extraSelectedProductIds.includes(String(p?.productId));
+
   const isValidityChecklistItem = (item: any) => {
     const desc = (item?.description || '').toLowerCase();
     if (item?.type === 'VALIDITY_CHECK') return true;
@@ -188,23 +192,31 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     return false;
   };
 
+  const hasNonStockChecklist = (p: any) => {
+    const cl = getChecklists(p);
+    return cl.some((c: any) => c?.type !== 'STOCK_COUNT');
+  };
+
   const hasInteractiveChecklist = (p: any) => {
-    const cl = Array.isArray(p?.checklists) ? p.checklists : [];
+    const cl = getChecklists(p);
     return cl.some((c: any) => {
-      if (!c?.type) return false;
-      if (c.type === 'STOCK_COUNT') return false;
+      if (c?.type === 'STOCK_COUNT') return false;
       if (isValidityChecklistItem(c)) return true;
-      return c.type === 'PRICE_CHECK' || c.type === 'PHOTO';
+      return c?.type === 'PRICE_CHECK' || c?.type === 'PHOTO';
     });
   };
 
-  const shouldOpenProduct = (p: any) => isStockCountRequired(p) || hasInteractiveChecklist(p);
+  const canOpenProduct = (p: any) => isStockCountRequired(p) || hasNonStockChecklist(p) || isExtraSelected(p);
+
+  const isProductRequiredForProgress = (p: any) => isStockCountRequired(p) || hasInteractiveChecklist(p);
 
   const isProductCountComplete = (p: any) => {
-    const cl = Array.isArray(p?.checklists) ? p.checklists : [];
+    const cl = getChecklists(p);
     const requiresStockCount = cl.some((c: any) => c?.type === 'STOCK_COUNT');
 
-    if (!requiresStockCount && cl.length === 0) return true;
+    const hasNonStock = cl.some((c: any) => c?.type !== 'STOCK_COUNT');
+
+    if (!requiresStockCount && !hasNonStock) return !!p.checked;
 
     if (requiresStockCount) {
       const gDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
@@ -236,7 +248,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     const catProducts = products || [];
     if (!catProducts.length) return true;
     return catProducts.every((p: any) => {
-      if (!shouldOpenProduct(p)) return true;
+      if (!isProductRequiredForProgress(p)) return true;
       return isProductCountComplete(p);
     });
   };
@@ -883,7 +895,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
           {products.map(p => {
             const required = isStockCountRequired(p);
             const rowCompleted = isProductCountComplete(p);
-            const openModal = shouldOpenProduct(p);
+            const openModal = canOpenProduct(p);
 
             return (
               <div
@@ -893,6 +905,13 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
                   if (openModal) {
                     setSelectedProduct(p);
                     return;
+                  }
+                  try {
+                    const nextChecked = !p.checked;
+                    await onUpdateProduct(p.productId, { checked: nextChecked });
+                    toast.success(nextChecked ? 'Marcado como concluído.' : 'Desmarcado.');
+                  } catch {
+                    toast.error('Não foi possível atualizar.');
                   }
                 }}
                 className="bg-white p-4 rounded-lg shadow border border-gray-100 flex items-start gap-3 active:scale-[0.98] transition-transform"
@@ -910,7 +929,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
                     <div className="min-w-0">
                       <h3 className="font-medium text-gray-900 truncate">{p.product.name}</h3>
                       <p className="text-xs text-gray-500 truncate">{p.product.ean || 'Sem EAN'}</p>
-                      {!required && !hasInteractiveChecklist(p) && (
+                      {!required && !hasNonStockChecklist(p) && !isExtraSelected(p) && (
                         <span className="text-[10px] bg-gray-100 text-gray-500 px-1 rounded">Sem obrigatoriedade</span>
                       )}
                     </div>
@@ -931,7 +950,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
                   <div className="mt-2 flex items-center justify-between text-xs">
                     <span className={rowCompleted ? 'text-green-700 font-medium' : 'text-orange-600 font-medium'}>
-                      {rowCompleted ? 'Concluído' : openModal ? 'Toque para abrir' : 'Sem obrigatoriedade'}
+                      {rowCompleted ? 'Concluído' : openModal ? 'Toque para abrir' : 'Toque para marcar'}
                     </span>
                     {!readOnly && openModal && <span className="text-gray-400">Pendente</span>}
                   </div>
@@ -1122,7 +1141,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
           onSave={handleProductSave}
           mode="BOTH"
           readOnly={readOnly}
-          requireStockCount={isStockCountRequired(selectedProduct)}
+          requireStockCount={isStockCountRequired(selectedProduct) || isExtraSelected(selectedProduct)}
           routeItemId={routeItem?.id}
           supermarketId={routeItem?.supermarket?.id || routeItem?.supermarketId}
         />

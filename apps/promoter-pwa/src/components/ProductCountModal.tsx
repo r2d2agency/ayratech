@@ -208,35 +208,25 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
         return;
       }
 
-      const overallValidity = (() => {
-        const storeOk = !!(validityStoreDate && validityStoreQuantity && validityStoreQuantity > 0);
-        const stockOk = !!(validityStockDate && validityStockQuantity && validityStockQuantity > 0);
-        if (storeOk && stockOk) {
-          return validityStoreDate <= validityStockDate
-            ? { date: validityStoreDate, qty: Number(validityStoreQuantity) }
-            : { date: validityStockDate, qty: Number(validityStockQuantity) };
-        }
-        if (storeOk) return { date: validityStoreDate, qty: Number(validityStoreQuantity) };
-        if (stockOk) return { date: validityStockDate, qty: Number(validityStockQuantity) };
-        return null;
-      })();
+      const overallValidity = hasValidityChecklist
+        ? (() => {
+            const storeOk = !!(validityStoreDate && validityStoreQuantity && validityStoreQuantity > 0);
+            const stockOk = !!(validityStockDate && validityStockQuantity && validityStockQuantity > 0);
+            if (storeOk && stockOk) {
+              return validityStoreDate <= validityStockDate
+                ? { date: validityStoreDate, qty: Number(validityStoreQuantity) }
+                : { date: validityStockDate, qty: Number(validityStockQuantity) };
+            }
+            if (storeOk) return { date: validityStoreDate, qty: Number(validityStoreQuantity) };
+            if (stockOk) return { date: validityStockDate, qty: Number(validityStockQuantity) };
+            return null;
+          })()
+        : null;
 
-      const payload = {
-        gondolaCount: gondolaCount === '' ? 0 : gondolaCount,
-        inventoryCount: inventoryCount === '' ? 0 : inventoryCount,
-        ruptureReason: composedRuptureReason, // Clear reason if stock > 0
-        isStockout: requireStockCount && total === 0,
-        stockCount: total,
-        validityStoreDate: validityStoreDate || null,
-        validityStoreQuantity: validityStoreQuantity === '' ? null : validityStoreQuantity,
-        validityStockDate: validityStockDate || null,
-        validityStockQuantity: validityStockQuantity === '' ? null : validityStockQuantity,
-        validityDate: overallValidity?.date || null,
-        validityQuantity: overallValidity?.qty ?? null,
-        checked: true, // Mark as checked/counted
-        checklists: Array.isArray(product.checklists) 
+      const payload: any = {
+        checked: true,
+        checklists: Array.isArray(product.checklists)
           ? product.checklists.map((c: any) => {
-              // Auto-check validity items if date is provided
               if (isValidityChecklistItem(c) && overallValidity?.date) {
                 return {
                   id: c.id,
@@ -245,14 +235,32 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
                 };
               }
 
+              const isChecked = checklistState[c.id] ?? c.isChecked ?? false;
               return {
                 id: c.id,
-                isChecked: checklistState[c.id] !== undefined ? checklistState[c.id] : c.isChecked,
+                isChecked: !!isChecked,
                 value: c.value
               };
             })
           : []
       };
+
+      if (requireStockCount) {
+        payload.gondolaCount = gondolaCount === '' ? 0 : gondolaCount;
+        payload.inventoryCount = inventoryCount === '' ? 0 : inventoryCount;
+        payload.ruptureReason = composedRuptureReason;
+        payload.isStockout = total === 0;
+        payload.stockCount = total;
+      }
+
+      if (hasValidityChecklist) {
+        payload.validityStoreDate = validityStoreDate || null;
+        payload.validityStoreQuantity = validityStoreQuantity === '' ? null : validityStoreQuantity;
+        payload.validityStockDate = validityStockDate || null;
+        payload.validityStockQuantity = validityStockQuantity === '' ? null : validityStockQuantity;
+        payload.validityDate = overallValidity?.date || null;
+        payload.validityQuantity = overallValidity?.qty ?? null;
+      }
 
       await onSave(product.productId, payload);
       onClose();
