@@ -90,6 +90,7 @@ export class BrandsService {
       // 1. If there are simple fields to update, update them
       if (Object.keys(brandData).length > 0) {
         await this.brandsRepository.update(id, brandData);
+        Object.assign(brand, brandData);
       }
 
       // 2. If there is a clientId change, update the relation specifically

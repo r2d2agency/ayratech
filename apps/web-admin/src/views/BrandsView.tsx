@@ -144,6 +144,7 @@ const BrandsView: React.FC = () => {
 
       if (payload.inventoryFrequencyDays === '') payload.inventoryFrequencyDays = undefined;
       if (payload.inventoryMaxPostponesPerWeek === '') payload.inventoryMaxPostponesPerWeek = undefined;
+      if (!payload.checklistTemplateId) payload.checklistTemplateId = undefined;
       
       if (payload.name) {
         payload.name = payload.name.trim();
