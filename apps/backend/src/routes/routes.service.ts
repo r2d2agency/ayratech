@@ -541,6 +541,194 @@ export class RoutesService {
     return qb.getMany();
   }
 
+  async findAllSummary(
+    userId?: string,
+    filters?: { date?: string; startDate?: string; endDate?: string },
+  ) {
+    const date = filters?.date;
+    const startDate = filters?.startDate;
+    const endDate = filters?.endDate;
+
+    let allowedClientIds: string[] | null = null;
+    let restrictToPromoterId: string | null = null;
+
+    if (userId) {
+      const userRepo = this.dataSource.getRepository(User);
+      const user = await userRepo.findOne({
+        where: { id: userId },
+        relations: ['clients', 'role', 'employee'],
+      });
+
+      if (user) {
+        const roleName = user.role?.name?.toLowerCase() || '';
+        const isAdmin = ['admin', 'administrador do sistema', 'manager', 'rh'].includes(roleName);
+
+        if (!isAdmin) {
+          if (user.clients && user.clients.length > 0) {
+            allowedClientIds = user.clients.map(c => c.id);
+          } else if (roleName.includes('supervisor')) {
+            if (!allowedClientIds) allowedClientIds = [];
+          }
+
+          const isSupervisor = roleName.includes('supervisor');
+          const isClient = roleName === 'client';
+
+          if (user.employee && !isSupervisor && !isClient) {
+            restrictToPromoterId = user.employee.id;
+            allowedClientIds = null;
+          }
+
+          if (!allowedClientIds && !restrictToPromoterId) {
+            allowedClientIds = [];
+          }
+        }
+      }
+    }
+
+    const qb = this.routesRepository
+      .createQueryBuilder('route')
+      .leftJoin('route.items', 'items')
+      .leftJoin('items.supermarket', 'supermarket')
+      .leftJoin('supermarket.clients', 'smClient')
+      .leftJoin('route.brand', 'brand')
+      .leftJoin('brand.client', 'brandClient')
+      .leftJoin('route.promoter', 'promoter')
+      .leftJoin('route.promoters', 'promoters')
+      .leftJoin('items.checkins', 'checkins')
+      .where('route.isTemplate IS NOT TRUE')
+      .orderBy('route.date', 'DESC');
+
+    qb.select([
+      'route.id AS route_id',
+      'route.date AS route_date',
+      'route.status AS route_status',
+      'route.type AS route_type',
+      'route.isTemplate AS route_isTemplate',
+      'route.recurrenceGroup AS route_recurrenceGroup',
+
+      'promoter.id AS promoter_id',
+      'promoter.fullName AS promoter_fullName',
+
+      'promoters.id AS promoters_id',
+      'promoters.fullName AS promoters_fullName',
+
+      'items.id AS item_id',
+      'items.status AS item_status',
+      'items.\"order\" AS item_order',
+      'items.\"checkInTime\" AS item_checkInTime',
+      'items.\"checkOutTime\" AS item_checkOutTime',
+
+      'supermarket.id AS supermarket_id',
+      'supermarket.\"fantasyName\" AS supermarket_fantasyName',
+
+      'checkins.id AS checkin_id',
+      'checkins.\"promoterId\" AS checkin_promoterId',
+      'checkins.\"checkInTime\" AS checkin_checkInTime',
+      'checkins.\"checkOutTime\" AS checkin_checkOutTime',
+    ]);
+
+    if (date) {
+      qb.andWhere('route.date = :date', { date });
+    } else if (startDate && endDate) {
+      qb.andWhere('route.date BETWEEN :startDate AND :endDate', { startDate, endDate });
+    } else if (startDate) {
+      qb.andWhere('route.date >= :startDate', { startDate });
+    } else if (endDate) {
+      qb.andWhere('route.date <= :endDate', { endDate });
+    }
+
+    if (restrictToPromoterId) {
+      qb.andWhere('(promoter.id = :promoterId OR promoters.id = :promoterId)', { promoterId: restrictToPromoterId });
+    }
+
+    if (allowedClientIds !== null) {
+      if (allowedClientIds.length === 0) {
+        return [];
+      }
+      qb.andWhere('(brandClient.id IN (:...clientIds) OR smClient.id IN (:...clientIds))', { clientIds: allowedClientIds });
+    }
+
+    const rows = await qb.getRawMany();
+    const routesById = new Map<string, any>();
+    const itemsByRoute = new Map<string, Map<string, any>>();
+
+    const ensureRoute = (routeId: string) => {
+      const existing = routesById.get(routeId);
+      if (existing) return existing;
+      const created: any = {
+        id: routeId,
+        date: null,
+        status: null,
+        type: null,
+        isTemplate: false,
+        recurrenceGroup: null,
+        promoter: null,
+        promoters: [],
+        items: [],
+      };
+      routesById.set(routeId, created);
+      itemsByRoute.set(routeId, new Map());
+      return created;
+    };
+
+    for (const r of rows) {
+      const routeId = r.route_id;
+      if (!routeId) continue;
+
+      const route = ensureRoute(routeId);
+      route.date = route.date ?? r.route_date;
+      route.status = route.status ?? r.route_status;
+      route.type = route.type ?? r.route_type;
+      route.isTemplate = Boolean(r.route_isTemplate);
+      route.recurrenceGroup = route.recurrenceGroup ?? r.route_recurrenceGroup;
+
+      if (r.promoter_id && !route.promoter) {
+        route.promoter = { id: r.promoter_id, fullName: r.promoter_fullName };
+      }
+
+      if (r.promoters_id) {
+        const has = (route.promoters || []).some((p: any) => p?.id === r.promoters_id);
+        if (!has) {
+          route.promoters = [...(route.promoters || []), { id: r.promoters_id, fullName: r.promoters_fullName }];
+        }
+      }
+
+      if (r.item_id) {
+        const map = itemsByRoute.get(routeId)!;
+        let item = map.get(r.item_id);
+        if (!item) {
+          item = {
+            id: r.item_id,
+            status: r.item_status,
+            order: r.item_order,
+            checkInTime: r.item_checkInTime,
+            checkOutTime: r.item_checkOutTime,
+            supermarket: r.supermarket_id
+              ? { id: r.supermarket_id, fantasyName: r.supermarket_fantasyName }
+              : null,
+            checkins: [],
+          };
+          map.set(r.item_id, item);
+          route.items.push(item);
+        }
+
+        if (r.checkin_id) {
+          const exists = (item.checkins || []).some((c: any) => c?.id === r.checkin_id);
+          if (!exists) {
+            item.checkins.push({
+              id: r.checkin_id,
+              promoterId: r.checkin_promoterId,
+              checkInTime: r.checkin_checkInTime,
+              checkOutTime: r.checkin_checkOutTime,
+            });
+          }
+        }
+      }
+    }
+
+    return Array.from(routesById.values());
+  }
+
   findByPromoter(promoterId: string) {
     return this.routesRepository.find({
       where: [

@@ -38,13 +38,61 @@ class OfflineService {
 
   async saveRoute(route: any) {
     try {
+      const existing = await db.routes.get(route.id);
+
+      const mergeArrayById = (prevArr: any[] | undefined, nextArr: any[] | undefined) => {
+        const prev = Array.isArray(prevArr) ? prevArr : [];
+        const next = Array.isArray(nextArr) ? nextArr : [];
+        const byId = new Map<string, any>();
+
+        for (const p of prev) {
+          if (p && p.id) byId.set(p.id, p);
+        }
+        for (const n of next) {
+          if (!n || !n.id) continue;
+          const old = byId.get(n.id);
+          byId.set(n.id, old ? { ...old, ...n } : n);
+        }
+
+        return Array.from(byId.values());
+      };
+
+      const mergedItems = (() => {
+        const prevItems = Array.isArray(existing?.items) ? existing.items : [];
+        const nextItems = Array.isArray(route?.items) ? route.items : [];
+
+        const byId = new Map<string, any>();
+        for (const p of prevItems) {
+          if (p && p.id) byId.set(p.id, p);
+        }
+
+        for (const n of nextItems) {
+          if (!n || !n.id) continue;
+          const old = byId.get(n.id);
+          if (!old) {
+            byId.set(n.id, n);
+            continue;
+          }
+
+          const merged = { ...old, ...n };
+          merged.supermarket = n.supermarket ?? old.supermarket;
+          merged.products = Array.isArray(n.products) && n.products.length > 0 ? n.products : old.products;
+          merged.checkins = mergeArrayById(old.checkins, n.checkins);
+          merged.categoryPhotos = n.categoryPhotos ?? old.categoryPhotos;
+          merged.observation = n.observation ?? old.observation;
+          byId.set(n.id, merged);
+        }
+
+        return Array.from(byId.values());
+      })();
+
       await db.routes.put({
         id: route.id,
         date: route.date,
         promoterId: route.promoter?.id,
-        promoters: route.promoters,
-        items: route.items,
-        status: route.status,
+        promoters: Array.isArray(route.promoters) ? route.promoters : existing?.promoters,
+        items: mergedItems,
+        status: route.status ?? existing?.status,
         syncedAt: new Date()
       });
       console.log('Route cached offline:', route.id);

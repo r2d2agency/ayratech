@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import client from '../api/client';
 import { Calendar as CalendarIcon, ChevronRight, MapPin, Filter, CheckCircle2, UserCheck } from 'lucide-react';
-import { format, parseISO, isSameDay, isSameWeek, isSameMonth } from 'date-fns';
+import { format, parseISO, isSameDay, isSameWeek, isSameMonth, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,7 +10,6 @@ type FilterType = 'day' | 'week' | 'month';
 
 const CalendarView = () => {
   const [routes, setRoutes] = useState<any[]>([]);
-  const [filteredRoutes, setFilteredRoutes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<FilterType>('day');
   const [showOnlyMyCheckins, setShowOnlyMyCheckins] = useState(false);
@@ -20,8 +19,23 @@ const CalendarView = () => {
 
   useEffect(() => {
     const fetchRoutes = async () => {
+      const today = new Date();
+      const toYmd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const weekStart = startOfWeek(today, { locale: ptBR });
+      const weekEnd = endOfWeek(today, { locale: ptBR });
+      const monthStart = startOfMonth(today);
+      const monthEnd = endOfMonth(today);
+
+      const params =
+        activeFilter === 'day'
+          ? { date: toYmd(today) }
+          : activeFilter === 'week'
+            ? { startDate: toYmd(weekStart), endDate: toYmd(weekEnd) }
+            : { startDate: toYmd(monthStart), endDate: toYmd(monthEnd) };
+
+      setLoading(true);
       try {
-        const response = await client.get('/routes');
+        const response = await client.get('/routes/summary', { params });
         // Sort by date ASC
         const sorted = response.data
           .filter((r: any) => !r.isTemplate)
@@ -34,14 +48,11 @@ const CalendarView = () => {
       }
     };
     fetchRoutes();
-  }, [location]);
+  }, [activeFilter, location]);
 
-  useEffect(() => {
+  const filteredRoutes = useMemo(() => {
     const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    
-    const filtered = routes.filter(route => {
-      const dateStr = String(route.date).split('T')[0];
+    return routes.filter(route => {
       const routeDate = parseISO(route.date);
 
       // Filtro por período (dia / semana / mês)
@@ -50,7 +61,7 @@ const CalendarView = () => {
           ? isSameDay(routeDate, today)
           : activeFilter === 'week'
           ? isSameWeek(routeDate, today, { locale: ptBR })
-          : true;
+          : isSameMonth(routeDate, today);
 
       if (!matchesPeriod) return false;
 
@@ -69,17 +80,17 @@ const CalendarView = () => {
 
       return true;
     });
-
-    setFilteredRoutes(filtered);
   }, [routes, activeFilter, showOnlyMyCheckins, user]);
 
   // Group routes by month (only for week/month views or all)
-  const groupedRoutes = filteredRoutes.reduce((acc: any, route) => {
-    const month = format(parseISO(route.date), 'MMMM yyyy', { locale: ptBR });
-    if (!acc[month]) acc[month] = [];
-    acc[month].push(route);
-    return acc;
-  }, {});
+  const groupedRoutes = useMemo(() => {
+    return filteredRoutes.reduce((acc: any, route) => {
+      const month = format(parseISO(route.date), 'MMMM yyyy', { locale: ptBR });
+      if (!acc[month]) acc[month] = [];
+      acc[month].push(route);
+      return acc;
+    }, {});
+  }, [filteredRoutes]);
 
   return (
     <div className="p-4 space-y-4 pb-24">

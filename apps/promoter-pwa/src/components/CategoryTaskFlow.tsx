@@ -643,7 +643,10 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
         />
 
       </div>
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-lg z-50 pb-8">
+      <div
+        className="fixed left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-lg z-60"
+        style={{ bottom: 'calc(env(safe-area-inset-bottom) + 72px)' }}
+      >
         <div className="flex gap-3">
           <button
             type="button"

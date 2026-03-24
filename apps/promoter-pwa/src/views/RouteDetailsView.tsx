@@ -1253,7 +1253,10 @@ const RouteDetailsView = () => {
                         )}
                     </div>
                     
-                    <div className="sticky bottom-0 bg-white border-t p-4">
+                    <div
+                      className="sticky bg-white border-t p-4"
+                      style={{ bottom: 'calc(env(safe-area-inset-bottom) + 72px)' }}
+                    >
                         {(() => {
                           const validation = validateRouteItemCompletion(activeItem);
                           return (

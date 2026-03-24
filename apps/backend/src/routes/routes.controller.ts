@@ -49,6 +49,16 @@ export class RoutesController {
     return this.routesService.findAll(req.user?.userId, date);
   }
 
+  @Get('summary')
+  findAllSummary(
+    @Req() req,
+    @Query('date') date?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.routesService.findAllSummary(req.user?.userId, { date, startDate, endDate });
+  }
+
   @Get('client/all')
   findAllByClient(@Req() req: any) {
     if (req.user.role !== 'client') throw new UnauthorizedException();
