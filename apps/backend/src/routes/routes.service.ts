@@ -27,6 +27,7 @@ import { WhatsappService } from '../notifications/whatsapp.service';
 
 import { NotificationsService } from '../notifications/notifications.service';
 import { RouteFactoryService } from './route-factory.service';
+import { AbsencesService } from '../absences/absences.service';
 
 @Injectable()
 export class RoutesService {
@@ -42,6 +43,7 @@ export class RoutesService {
     private dataSource: DataSource,
     private whatsappService: WhatsappService,
     private notificationsService: NotificationsService,
+    private absencesService: AbsencesService,
     private configService: ConfigService,
     private routeFactoryService: RouteFactoryService,
   ) {}
@@ -2712,6 +2714,19 @@ export class RoutesService {
 
   private async checkPromoterAvailability(promoterId: string, date: string, startTime: string, estimatedDuration: number, excludeRouteId?: string) {
     if (!promoterId || !date || !startTime || !estimatedDuration) return;
+
+    const blockingAbsence = await this.absencesService.findBlockingAbsence(promoterId, date, startTime, estimatedDuration);
+    if (blockingAbsence) {
+      const startDate = blockingAbsence.startDate ? new Date(blockingAbsence.startDate as any).toISOString().slice(0, 10) : date;
+      const endDate = blockingAbsence.endDate ? new Date(blockingAbsence.endDate as any).toISOString().slice(0, 10) : startDate;
+      const startT = blockingAbsence.startTime ? String(blockingAbsence.startTime).slice(0, 5) : '';
+      const endT = blockingAbsence.endTime ? String(blockingAbsence.endTime).slice(0, 5) : '';
+      const period =
+        startDate === endDate
+          ? (startT || endT ? `${startDate} ${startT || '00:00'} - ${endT || '23:59'}` : startDate)
+          : `${startDate} - ${endDate}`;
+      throw new BadRequestException(`O promotor possui ${String(blockingAbsence.type || 'ausência')} em ${period}.`);
+    }
 
     // Convert time to minutes
     const startMinutes = this.timeToMinutes(startTime);

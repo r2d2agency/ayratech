@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, CheckCircle, XCircle, ChevronDown, ChevronUp, Clock } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, CheckCircle, XCircle, ChevronDown, ChevronUp, Clock, FileText, Upload } from 'lucide-react';
 import api from '../api/client';
 import { useBranding } from '../context/BrandingContext';
 import { getImageUrl } from '../utils/image';
@@ -20,6 +20,28 @@ interface Role {
   id: string;
   name: string;
   description: string;
+}
+
+interface EmployeeDocument {
+  id: string;
+  type: string;
+  fileUrl: string;
+  description?: string;
+  createdAt: string;
+}
+
+interface AbsenceRequest {
+  id: string;
+  type: string;
+  status: string;
+  startDate: string;
+  startTime?: string;
+  endDate?: string;
+  endTime?: string;
+  reason?: string;
+  fileUrl?: string;
+  employeeDocumentId?: string;
+  createdAt: string;
 }
 
 interface WorkScheduleDay {
@@ -95,9 +117,25 @@ const EmployeesView: React.FC = () => {
     accessLevel: 'basic'
   });
 
-  const [formTab, setFormTab] = useState<'general' | 'address' | 'contract' | 'schedule'>('general');
+  const [formTab, setFormTab] = useState<'general' | 'address' | 'contract' | 'schedule' | 'absences'>('general');
   const [cpfError, setCpfError] = useState<string>('');
   const [cepError, setCepError] = useState<string>('');
+
+  const [employeeDocuments, setEmployeeDocuments] = useState<EmployeeDocument[]>([]);
+  const [employeeAbsences, setEmployeeAbsences] = useState<AbsenceRequest[]>([]);
+  const [loadingAbsences, setLoadingAbsences] = useState(false);
+  const [absenceForm, setAbsenceForm] = useState({
+    type: 'atestado',
+    status: 'approved',
+    startDate: '',
+    startTime: '',
+    endDate: '',
+    endTime: '',
+    reason: '',
+    employeeDocumentId: '',
+    fileUrl: '',
+  });
+  const [absenceFile, setAbsenceFile] = useState<File | null>(null);
 
   // Helper functions
   const formatCPF = (value: string) => {
@@ -199,6 +237,154 @@ const EmployeesView: React.FC = () => {
     }
   };
 
+  const fetchEmployeeDocuments = async (employeeId: string) => {
+    if (!employeeId) return;
+    try {
+      const response = await api.get(`/employees/${employeeId}/documents`);
+      const docs = Array.isArray(response.data) ? response.data : [];
+      setEmployeeDocuments(docs);
+    } catch (error) {
+      console.error('Error fetching employee documents:', error);
+      setEmployeeDocuments([]);
+    }
+  };
+
+  const fetchEmployeeAbsences = async (employeeId: string) => {
+    if (!employeeId) return;
+    setLoadingAbsences(true);
+    try {
+      const response = await api.get('/absences', { params: { employeeId } });
+      const absences = Array.isArray(response.data) ? response.data : [];
+      setEmployeeAbsences(absences);
+    } catch (error) {
+      console.error('Error fetching absences:', error);
+      setEmployeeAbsences([]);
+    } finally {
+      setLoadingAbsences(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!showEmployeeModal) return;
+    const employeeId = editingEmployee?.id;
+    if (!employeeId) return;
+    if (formTab !== 'absences') return;
+
+    fetchEmployeeAbsences(employeeId);
+    fetchEmployeeDocuments(employeeId);
+  }, [showEmployeeModal, editingEmployee?.id, formTab]);
+
+  const handleUploadAbsenceDocument = async () => {
+    if (!editingEmployee?.id || !absenceFile) return;
+    try {
+      const formData = new FormData();
+      formData.append('file', absenceFile);
+      formData.append('type', absenceForm.type || 'documento');
+      if (absenceForm.reason) {
+        formData.append('description', absenceForm.reason);
+      }
+
+      const response = await api.post(`/employees/${editingEmployee.id}/documents`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      const doc = response.data;
+      if (doc?.id) {
+        setAbsenceForm(prev => ({
+          ...prev,
+          employeeDocumentId: doc.id,
+          fileUrl: doc.fileUrl || prev.fileUrl,
+        }));
+      } else if (doc?.fileUrl) {
+        setAbsenceForm(prev => ({ ...prev, fileUrl: doc.fileUrl }));
+      }
+
+      setAbsenceFile(null);
+      await fetchEmployeeDocuments(editingEmployee.id);
+      alert('Documento enviado e vinculado com sucesso!');
+    } catch (error: any) {
+      console.error('Error uploading document:', error);
+      const msg = error.response?.data?.message || error.message || 'Erro ao enviar documento.';
+      alert(`Erro: ${Array.isArray(msg) ? msg.join(', ') : msg}`);
+    }
+  };
+
+  const handleCreateAbsence = async () => {
+    if (!editingEmployee?.id) {
+      alert('Salve o funcionário antes de registrar afastamentos/férias/atestado.');
+      return;
+    }
+    if (!absenceForm.type || !absenceForm.startDate) {
+      alert('Informe o tipo e a data de início.');
+      return;
+    }
+
+    try {
+      const isPartialVacation = absenceForm.type === 'ferias_parcial';
+      if (isPartialVacation) {
+        if (!absenceForm.startTime || !absenceForm.endTime) {
+          alert('Para férias parciais, informe hora de início e hora de fim.');
+          return;
+        }
+        if (absenceForm.startTime >= absenceForm.endTime) {
+          alert('Hora de início deve ser menor que a hora de fim.');
+          return;
+        }
+      }
+
+      const payloadEndDate = isPartialVacation
+        ? absenceForm.startDate
+        : absenceForm.endDate || undefined;
+
+      await api.post('/absences', {
+        employeeId: editingEmployee.id,
+        type: absenceForm.type,
+        status: absenceForm.status,
+        startDate: absenceForm.startDate,
+        startTime: absenceForm.startTime || undefined,
+        endDate: payloadEndDate,
+        endTime: absenceForm.endTime || undefined,
+        reason: absenceForm.reason || undefined,
+        employeeDocumentId: absenceForm.employeeDocumentId || undefined,
+        fileUrl: absenceForm.fileUrl || undefined,
+      });
+
+      setAbsenceForm({
+        type: 'atestado',
+        status: 'approved',
+        startDate: '',
+        startTime: '',
+        endDate: '',
+        endTime: '',
+        reason: '',
+        employeeDocumentId: '',
+        fileUrl: '',
+      });
+      setAbsenceFile(null);
+      await fetchEmployeeAbsences(editingEmployee.id);
+      alert('Registro salvo com sucesso!');
+    } catch (error: any) {
+      console.error('Error creating absence:', error);
+      const msg = error.response?.data?.message || error.message || 'Erro ao registrar.';
+      alert(`Erro: ${Array.isArray(msg) ? msg.join(', ') : msg}`);
+    }
+  };
+
+  const handleDeleteAbsence = async (absenceId: string) => {
+    if (!absenceId) return;
+    if (!confirm('Remover este registro?')) return;
+    try {
+      await api.delete(`/absences/${absenceId}`);
+      if (editingEmployee?.id) {
+        await fetchEmployeeAbsences(editingEmployee.id);
+      }
+    } catch (error: any) {
+      console.error('Error deleting absence:', error);
+      const msg = error.response?.data?.message || error.message || 'Erro ao remover.';
+      alert(`Erro: ${Array.isArray(msg) ? msg.join(', ') : msg}`);
+    }
+  };
+
   const filteredEmployees = employees.filter(emp => 
     emp.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     emp.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -294,6 +480,21 @@ const EmployeesView: React.FC = () => {
     setFormTab('general');
     setFacialPhotoFile(null);
     setFacialPhotoPreview('');
+    setEmployeeDocuments([]);
+    setEmployeeAbsences([]);
+    setLoadingAbsences(false);
+    setAbsenceForm({
+      type: 'atestado',
+      status: 'approved',
+      startDate: '',
+      startTime: '',
+      endDate: '',
+      endTime: '',
+      reason: '',
+      employeeDocumentId: '',
+      fileUrl: '',
+    });
+    setAbsenceFile(null);
   };
 
   const openEditEmployee = async (emp: any) => {
@@ -856,6 +1057,17 @@ const EmployeesView: React.FC = () => {
               >
                 Escala
               </button>
+              <button
+                type="button"
+                disabled={!editingEmployee}
+                onClick={() => setFormTab('absences')}
+                className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
+                  formTab === 'absences' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+                } ${!editingEmployee ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={!editingEmployee ? 'Salve o funcionário primeiro' : ''}
+              >
+                Afastamentos
+              </button>
             </div>
 
             <form onSubmit={handleSaveEmployee} className="overflow-y-auto p-6 flex-1">
@@ -1296,6 +1508,244 @@ const EmployeesView: React.FC = () => {
                     />
                   </div>
                   {/* Future: Add day-by-day schedule here */}
+                </div>
+              )}
+
+              {formTab === 'absences' && (
+                <div className="space-y-4">
+                  {!editingEmployee ? (
+                    <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg p-4 text-sm">
+                      Salve o funcionário para registrar e gerenciar afastamentos/férias/atestado.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
+                        <div className="flex items-center gap-2 text-slate-800 font-semibold">
+                          <FileText size={18} />
+                          Novo registro
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Tipo</label>
+                            <select
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                              value={absenceForm.type}
+                              onChange={e => setAbsenceForm(prev => ({ ...prev, type: e.target.value }))}
+                            >
+                              <option value="atestado">Atestado</option>
+                              <option value="ferias">Férias</option>
+                              <option value="ferias_parcial">Férias (parcial)</option>
+                              <option value="afastamento">Afastamento</option>
+                              <option value="folga">Folga</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                            <select
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                              value={absenceForm.status}
+                              onChange={e => setAbsenceForm(prev => ({ ...prev, status: e.target.value }))}
+                            >
+                              <option value="approved">Aprovado</option>
+                              <option value="pending">Pendente</option>
+                              <option value="rejected">Rejeitado</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Data início</label>
+                            <input
+                              type="date"
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                              value={absenceForm.startDate}
+                              onChange={e => setAbsenceForm(prev => ({ ...prev, startDate: e.target.value }))}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Hora início</label>
+                            <input
+                              type="time"
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                              value={absenceForm.startTime}
+                              onChange={e => setAbsenceForm(prev => ({ ...prev, startTime: e.target.value }))}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Data fim</label>
+                            <input
+                              type="date"
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                              value={absenceForm.endDate}
+                              onChange={e => setAbsenceForm(prev => ({ ...prev, endDate: e.target.value }))}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Hora fim</label>
+                            <input
+                              type="time"
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                              value={absenceForm.endTime}
+                              onChange={e => setAbsenceForm(prev => ({ ...prev, endTime: e.target.value }))}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">Motivo/Observação</label>
+                          <textarea
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                            rows={3}
+                            value={absenceForm.reason}
+                            onChange={e => setAbsenceForm(prev => ({ ...prev, reason: e.target.value }))}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="block text-sm font-medium text-slate-700">Documento</label>
+                          <select
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                            value={absenceForm.employeeDocumentId}
+                            onChange={e => {
+                              const docId = e.target.value;
+                              const doc = employeeDocuments.find(d => d.id === docId);
+                              setAbsenceForm(prev => ({
+                                ...prev,
+                                employeeDocumentId: docId,
+                                fileUrl: doc?.fileUrl || prev.fileUrl,
+                              }));
+                            }}
+                          >
+                            <option value="">Nenhum</option>
+                            {employeeDocuments.map(doc => (
+                              <option key={doc.id} value={doc.id}>
+                                {doc.type} - {doc.description || doc.fileUrl}
+                              </option>
+                            ))}
+                          </select>
+
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="file"
+                              onChange={e => setAbsenceFile(e.target.files?.[0] || null)}
+                              className="block w-full text-sm text-gray-500
+                                file:mr-4 file:py-2 file:px-4
+                                file:rounded-md file:border-0
+                                file:text-sm file:font-semibold
+                                file:bg-blue-50 file:text-blue-700
+                                hover:file:bg-blue-100"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleUploadAbsenceDocument}
+                              disabled={!absenceFile}
+                              className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white ${
+                                absenceFile ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-300 cursor-not-allowed'
+                              }`}
+                            >
+                              <Upload size={16} />
+                              Enviar
+                            </button>
+                          </div>
+
+                          {absenceForm.fileUrl && (
+                            <a
+                              href={getImageUrl(absenceForm.fileUrl)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-sm text-blue-600 hover:text-blue-800"
+                            >
+                              Ver documento vinculado
+                            </a>
+                          )}
+                        </div>
+
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={handleCreateAbsence}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                          >
+                            Salvar registro
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="font-semibold text-slate-800">Registros</div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (editingEmployee?.id) {
+                                fetchEmployeeAbsences(editingEmployee.id);
+                              }
+                            }}
+                            className="text-sm text-slate-600 hover:text-slate-800"
+                          >
+                            Atualizar
+                          </button>
+                        </div>
+
+                        {loadingAbsences ? (
+                          <div className="text-sm text-slate-500">Carregando...</div>
+                        ) : employeeAbsences.length === 0 ? (
+                          <div className="text-sm text-slate-500">Nenhum registro.</div>
+                        ) : (
+                          <div className="space-y-3">
+                            {employeeAbsences.map(a => {
+                              const startDate = a.startDate ? String(a.startDate).split('T')[0] : '';
+                              const endDate = a.endDate ? String(a.endDate).split('T')[0] : '';
+                              const startTime = a.startTime ? String(a.startTime).slice(0, 5) : '';
+                              const endTime = a.endTime ? String(a.endTime).slice(0, 5) : '';
+                              const period =
+                                endDate && endDate !== startDate
+                                  ? `${startDate} - ${endDate}`
+                                  : startTime || endTime
+                                    ? `${startDate} ${startTime || '00:00'} - ${endTime || '23:59'}`
+                                    : startDate;
+
+                              return (
+                                <div key={a.id} className="border border-slate-200 rounded-lg p-3">
+                                  <div className="flex justify-between gap-4">
+                                    <div className="min-w-0">
+                                      <div className="font-medium text-slate-900 capitalize">
+                                        {a.type} <span className="text-xs text-slate-500">({a.status})</span>
+                                      </div>
+                                      <div className="text-sm text-slate-600">{period}</div>
+                                      {a.reason && <div className="text-sm text-slate-600 mt-1">{a.reason}</div>}
+                                      {a.fileUrl && (
+                                        <a
+                                          href={getImageUrl(a.fileUrl)}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="inline-block text-sm text-blue-600 hover:text-blue-800 mt-1"
+                                        >
+                                          Ver documento
+                                        </a>
+                                      )}
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteAbsence(a.id)}
+                                      className="text-red-600 hover:text-red-800 p-1 shrink-0"
+                                      title="Remover"
+                                    >
+                                      <Trash2 size={18} />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </form>

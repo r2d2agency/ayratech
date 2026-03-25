@@ -4,5 +4,5 @@ import { CreateAbsenceRequestDto } from './create-absence-request.dto';
 export class UpdateAbsenceRequestDto extends PartialType(CreateAbsenceRequestDto) {
   status?: string;
   approverId?: string;
-  approvedAt?: Date;
+  approvedAt?: string;
 }

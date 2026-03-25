@@ -8,9 +8,13 @@ import { Employee } from '../employees/entities/employee.entity';
 import { WorkSchedule } from '../work-schedules/entities/work-schedule.entity';
 import { TimeClockGateway } from './time-clock.gateway';
 import { TimeClockMonitorService } from './time-clock-monitor.service';
+import { AbsencesModule } from '../absences/absences.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([TimeClockEvent, TimeBalance, Employee, WorkSchedule])],
+  imports: [
+    TypeOrmModule.forFeature([TimeClockEvent, TimeBalance, Employee, WorkSchedule]),
+    AbsencesModule,
+  ],
   controllers: [TimeClockController],
   providers: [TimeClockService, TimeClockGateway, TimeClockMonitorService],
   exports: [TimeClockService],

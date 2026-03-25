@@ -12,11 +12,13 @@ import { RouteItemCheckin } from './entities/route-item-checkin.entity';
 import { RouteFactoryService } from './route-factory.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ConfigModule } from '@nestjs/config';
+import { AbsencesModule } from '../absences/absences.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Route, RouteItem, RouteItemProduct, RouteRule, RouteItemProductChecklist, RouteItemCheckin]),
     NotificationsModule,
+    AbsencesModule,
     ConfigModule
   ],
   controllers: [RoutesController, PublicRoutesController],
