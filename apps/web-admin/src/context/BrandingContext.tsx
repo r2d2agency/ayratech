@@ -22,7 +22,7 @@ interface BrandingContextType {
 
 const defaultSettings: BrandingSettings = {
   companyName: 'Ayratech',
-  primaryColor: '#fd00ff',
+  primaryColor: '#8f0090',
   logoUrl: 'https://cdn-icons-png.flaticon.com/512/3050/3050253.png', // Placeholder
 };
 

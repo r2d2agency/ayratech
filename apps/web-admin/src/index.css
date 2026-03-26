@@ -18,7 +18,7 @@
   --color-border: var(--outline-variant);
   --color-text: var(--on-background);
   --color-muted: var(--on-surface-variant);
-  --color-primary: #fd00ff;
+  --color-primary: #8f0090;
   --color-secondary: #53ddfc;
   --color-tertiary: #ff6daf;
 }
@@ -43,7 +43,7 @@ body {
   --color-border: var(--outline-variant);
   --color-text: var(--on-background);
   --color-muted: var(--on-surface-variant);
-  --color-primary: #fd00ff;
+  --color-primary: #8f0090;
   --color-secondary: #53ddfc;
   --color-tertiary: #ff6daf;
 }
