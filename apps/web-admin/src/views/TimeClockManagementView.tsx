@@ -229,6 +229,53 @@ const TimeClockManagementView = () => {
     }
   };
 
+  const handleExportGeneralTimesheet = async () => {
+    try {
+      const response = await api.get('/employees/documents/timesheets/general/export', {
+        params: { competence },
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `folha_ponto_geral_${competence}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      toast.error('Erro ao baixar folha geral');
+    }
+  };
+
+  const handleGenerateMonthlyTimesheets = async () => {
+    try {
+      const res = await api.post('/employees/documents/timesheets/generate', {
+        competence,
+        sendToAll: true,
+        skipIfExists: true,
+      });
+      const affected = res?.data?.affected ?? 0;
+      toast.success(`Folhas geradas: ${affected}`);
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || 'Erro ao gerar folhas do mês';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : String(msg));
+    }
+  };
+
+  const handleApproveTimesheets = async () => {
+    try {
+      const res = await api.post('/employees/documents/timesheets/approve', null, {
+        params: { competence },
+      });
+      const affected = res?.data?.affected ?? 0;
+      toast.success(`Folhas aprovadas e notificadas: ${affected}`);
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || 'Erro ao aprovar folhas';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : String(msg));
+    }
+  };
+
   const fetchEvents = async () => {
     try {
       const params = new URLSearchParams();
@@ -439,6 +486,24 @@ const TimeClockManagementView = () => {
                 subtitle="Visualize e gerencie os registros de ponto dos colaboradores."
             />
             <div className="flex gap-2">
+          <button
+            onClick={handleGenerateMonthlyTimesheets}
+            className="bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 flex items-center gap-2 font-medium"
+          >
+            <FileText size={20} /> Gerar folhas (mês)
+          </button>
+          <button
+            onClick={handleApproveTimesheets}
+            className="bg-indigo-700 text-white px-4 py-2 rounded-lg hover:bg-indigo-800 flex items-center gap-2 font-medium"
+          >
+            <FileText size={20} /> Aprovar/Enviar
+          </button>
+          <button
+            onClick={handleExportGeneralTimesheet}
+            className="bg-emerald-700 text-white px-4 py-2 rounded-lg hover:bg-emerald-800 flex items-center gap-2 font-medium"
+          >
+            <Download size={20} /> Folha geral
+          </button>
           <button 
             onClick={handleExport}
             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 font-medium"

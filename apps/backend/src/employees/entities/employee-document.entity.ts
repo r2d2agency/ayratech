@@ -39,6 +39,24 @@ export class EmployeeDocument {
   @Column({ type: 'timestamp', nullable: true })
   readAt: Date; // lido_em
 
+  @Column({ default: false })
+  requiresSignature: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  signedAt: Date;
+
+  @Column({ nullable: true })
+  signedByEmployeeId: string;
+
+  @Column({ type: 'json', nullable: true })
+  signedMeta: any;
+
+  @Column({ nullable: true })
+  signedFileUrl: string;
+
+  @Column({ type: 'enum', enum: ['pending', 'validated'], default: 'pending' })
+  approvalStatus: 'pending' | 'validated';
+
   @CreateDateColumn()
   createdAt: Date;
 }

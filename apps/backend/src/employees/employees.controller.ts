@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFile, Request, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFile, Request, Query, BadRequestException, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
@@ -139,6 +140,37 @@ export class EmployeesController {
       fileUrl,
       senderId
     });
+  }
+
+  @Patch('me/documents/:id/sign')
+  @Roles('admin', 'rh', 'manager', 'supervisor de operações', 'promotor', 'promoter', 'app_user')
+  signMyDocument(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    const employeeId = req.user?.employee?.id;
+    return this.employeesService.signMyDocument(id, employeeId, body);
+  }
+
+  @Post('documents/timesheets/generate')
+  generateMonthlyTimesheets(@Body() body: any) {
+    return this.employeesService.generateMonthlyTimesheets(body);
+  }
+
+  @Post('documents/timesheets/approve')
+  approveTimesheets(@Query('competence') competence: string) {
+    return this.employeesService.approveTimesheetsAndNotify(competence);
+  }
+
+  @Get('public/verify-document')
+  verifyDocument(@Query('id') id: string, @Query('hash') hash: string) {
+    return this.employeesService.verifyDocumentSignature(id, hash);
+  }
+
+  @Get('documents/timesheets/general/export')
+  async exportGeneralTimesheet(@Query('competence') competence: string, @Res() res: Response) {
+    const workbook = await this.employeesService.generateGeneralTimesheetWorkbook(competence);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=folha_ponto_geral_${String(competence || '').trim() || 'competencia'}.xlsx`);
+    await workbook.xlsx.write(res);
+    res.end();
   }
 
   @Get('vacation-alerts')

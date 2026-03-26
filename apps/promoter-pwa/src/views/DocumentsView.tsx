@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import client, { API_URL } from '../api/client';
 import { offlineService } from '../services/offline.service';
-import { FileText, Download, Upload, X, Check, Eye } from 'lucide-react';
+import { FileText, Download, Upload, X, Check, Eye, PenLine } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toast, Toaster } from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -14,6 +14,11 @@ const DocumentsView = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [description, setDescription] = useState('');
+  const [showSignModal, setShowSignModal] = useState(false);
+  const [docToSign, setDocToSign] = useState<any | null>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -43,6 +48,74 @@ const DocumentsView = () => {
     const cleanUrl = url.startsWith('/') ? url.substring(1) : url;
     // Construct full URL using API base URL
     return `${API_URL}/${cleanUrl}`;
+  };
+
+  const getDeviceInfo = () => {
+    const nav = navigator as any;
+    return {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      language: navigator.language,
+      vendor: navigator.vendor,
+      appVersion: navigator.appVersion,
+      // Optional fields if available in some browsers/environments:
+      hardwareConcurrency: nav?.hardwareConcurrency,
+      deviceMemory: nav?.deviceMemory,
+    };
+  };
+
+  const requestGeolocation = (): Promise<{ latitude?: number; longitude?: number; accuracy?: number } | null> => {
+    return new Promise(resolve => {
+      if (!('geolocation' in navigator)) {
+        resolve(null);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          resolve({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+          });
+        },
+        () => resolve(null),
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+      );
+    });
+  };
+
+  const getCanvasDataUrl = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    return canvas.toDataURL('image/png');
+  };
+
+  const handleSign = async (doc: any, signatureImage?: string | null) => {
+    try {
+      const location = await requestGeolocation();
+      const device = getDeviceInfo();
+      const timestamp = new Date().toISOString();
+      const signer = {
+        fullName: user?.employee?.fullName || user?.name || '',
+        cpf: (user as any)?.employee?.cpf || (user as any)?.cpf || undefined,
+      };
+
+      await client.patch(`/employees/me/documents/${doc.id}/sign`, {
+        timestamp,
+        device,
+        location,
+        signer,
+        signatureImage,
+      });
+
+      setDocuments(prev => prev.map(d => d.id === doc.id ? { ...d, signedAt: timestamp, readAt: d.readAt || timestamp } : d));
+      toast.success('Documento assinado com sucesso');
+      setShowSignModal(false);
+      setDocToSign(null);
+    } catch (e) {
+      console.error('Sign error:', e);
+      toast.error('Não foi possível assinar o documento');
+    }
   };
 
   const handleMarkAsRead = async (docId: string, url: string) => {
@@ -260,21 +333,141 @@ const DocumentsView = () => {
                          Lido
                        </span>
                      )}
+                     {doc.requiresSignature && !doc.signedAt && (
+                        <span className="text-[10px] text-amber-700 font-medium bg-amber-100 px-1.5 py-0.5 rounded">
+                          Assinatura pendente
+                        </span>
+                      )}
+                      {doc.signedAt && (
+                        <span className="text-[10px] text-emerald-700 font-medium bg-emerald-100 px-1.5 py-0.5 rounded">
+                          Assinado
+                        </span>
+                      )}
                    </div>
                  </div>
                </div>
-               
-               <button 
-                 onClick={() => handleMarkAsRead(doc.id, doc.fileUrl)}
-                 className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                 title={doc.readAt ? "Baixar novamente" : "Ler documento"}
-               >
-                 {doc.readAt ? <Download size={20} /> : <Eye size={20} />}
-               </button>
+               <div className="flex items-center gap-2">
+                 {doc.requiresSignature && !doc.signedAt && (
+                   <button
+                     onClick={() => { setDocToSign(doc); setShowSignModal(true); }}
+                     className="p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+                     title="Assinar documento"
+                   >
+                     <PenLine size={20} />
+                   </button>
+                 )}
+                 <button 
+                   onClick={() => handleMarkAsRead(doc.id, doc.fileUrl)}
+                   className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                   title={doc.readAt ? "Baixar novamente" : "Ler documento"}
+                 >
+                   {doc.readAt ? <Download size={20} /> : <Eye size={20} />}
+                 </button>
+               </div>
             </div>
           ))
         )}
       </div>
+      {showSignModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-bold">Assinar Documento</h3>
+              <button onClick={() => { setShowSignModal(false); setDocToSign(null); }} className="text-gray-500">
+                <X size={24} />
+              </button>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 mb-2">Assine no quadro abaixo com o dedo ou caneta.</p>
+              <div 
+                className="border rounded-lg bg-gray-50"
+                style={{ touchAction: 'none' }}
+              >
+                <canvas
+                  ref={canvasRef}
+                  width={500}
+                  height={200}
+                  className="w-full h-[200px]"
+                  onMouseDown={(e) => {
+                    setIsDrawing(true);
+                    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+                    setLastPoint({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+                  }}
+                  onMouseMove={(e) => {
+                    if (!isDrawing || !canvasRef.current || !lastPoint) return;
+                    const ctx = canvasRef.current.getContext('2d');
+                    if (!ctx) return;
+                    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    ctx.strokeStyle = '#111827';
+                    ctx.lineWidth = 2;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(lastPoint.x, lastPoint.y);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+                    setLastPoint({ x, y });
+                  }}
+                  onMouseUp={() => { setIsDrawing(false); setLastPoint(null); }}
+                  onMouseLeave={() => { setIsDrawing(false); setLastPoint(null); }}
+                  onTouchStart={(e) => {
+                    setIsDrawing(true);
+                    const canvas = canvasRef.current!;
+                    const rect = canvas.getBoundingClientRect();
+                    const t = e.touches[0];
+                    setLastPoint({ x: t.clientX - rect.left, y: t.clientY - rect.top });
+                  }}
+                  onTouchMove={(e) => {
+                    if (!isDrawing || !canvasRef.current || !lastPoint) return;
+                    const canvas = canvasRef.current!;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return;
+                    const rect = canvas.getBoundingClientRect();
+                    const t = e.touches[0];
+                    const x = t.clientX - rect.left;
+                    const y = t.clientY - rect.top;
+                    ctx.strokeStyle = '#111827';
+                    ctx.lineWidth = 2;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(lastPoint.x, lastPoint.y);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+                    setLastPoint({ x, y });
+                  }}
+                  onTouchEnd={() => { setIsDrawing(false); setLastPoint(null); }}
+                />
+              </div>
+              <div className="flex justify-between mt-2">
+                <button
+                  onClick={() => {
+                    if (canvasRef.current) {
+                      const ctx = canvasRef.current.getContext('2d');
+                      if (ctx) {
+                        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                      }
+                    }
+                  }}
+                  className="px-3 py-2 border rounded-lg text-sm"
+                >
+                  Limpar
+                </button>
+                <button
+                  onClick={() => {
+                    const dataUrl = getCanvasDataUrl();
+                    if (!dataUrl) return;
+                    if (docToSign) handleSign(docToSign, dataUrl);
+                  }}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm"
+                >
+                  Confirmar Assinatura
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

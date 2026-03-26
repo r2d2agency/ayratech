@@ -11,13 +11,15 @@ import { UsersModule } from '../users/users.module';
 import { RolesModule } from '../roles/roles.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AbsenceRequest } from '../absences/entities/absence-request.entity';
+import { TimeClockModule } from '../time-clock/time-clock.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Employee, EmployeeCompensation, EmployeeDocument, WorkSchedule, WorkScheduleDay, AbsenceRequest]),
     UsersModule,
     RolesModule,
-    NotificationsModule
+    NotificationsModule,
+    TimeClockModule
   ],
   controllers: [EmployeesController],
   providers: [EmployeesService],

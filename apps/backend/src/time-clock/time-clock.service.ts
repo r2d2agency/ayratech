@@ -28,6 +28,110 @@ export class TimeClockService {
     private absencesRepository: Repository<AbsenceRequest>,
   ) {}
 
+  private getCompetenceRange(competence: string) {
+    const c = String(competence || '').trim();
+    const m = /^(\d{4})-(\d{2})$/.exec(c);
+    if (!m) throw new BadRequestException('Competência inválida. Use YYYY-MM.');
+    const year = Number(m[1]);
+    const monthIndex = Number(m[2]) - 1;
+    if (!Number.isFinite(year) || !Number.isFinite(monthIndex) || monthIndex < 0 || monthIndex > 11) {
+      throw new BadRequestException('Competência inválida. Use YYYY-MM.');
+    }
+    const start = new Date(year, monthIndex, 1, 0, 0, 0, 0);
+    const end = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
+    const toYMD = (d: Date) => {
+      const y = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${y}-${mm}-${dd}`;
+    };
+    return { startDate: toYMD(start), endDate: toYMD(end), start, end };
+  }
+
+  async generateEmployeeTimesheetWorkbook(competence: string, employeeId: string) {
+    if (!employeeId) throw new BadRequestException('employeeId é obrigatório.');
+    const employee = await this.employeesRepository.findOne({ where: { id: employeeId } });
+    if (!employee) throw new BadRequestException('Funcionário não encontrado.');
+
+    const { startDate, endDate } = this.getCompetenceRange(competence);
+    const events = await this.findAll(startDate, endDate, employeeId);
+
+    const groupedByDate = new Map<string, TimeClockEvent[]>();
+    for (const event of events) {
+      const dateKey = event.timestamp.toISOString().split('T')[0];
+      if (!groupedByDate.has(dateKey)) groupedByDate.set(dateKey, []);
+      groupedByDate.get(dateKey)!.push(event);
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet('Folha de Ponto');
+
+    const title = `Folha de Ponto - ${String(competence || '').trim()}`;
+    ws.addRow([title]);
+    ws.addRow([`Funcionário: ${employee.fullName}`]);
+    if (employee.cpf) ws.addRow([`CPF: ${employee.cpf}`]);
+    ws.addRow([]);
+
+    ws.columns = [
+      { header: 'Data', key: 'date', width: 14 },
+      { header: 'Entrada', key: 'entry', width: 12 },
+      { header: 'Início Almoço', key: 'lunchStart', width: 14 },
+      { header: 'Fim Almoço', key: 'lunchEnd', width: 12 },
+      { header: 'Saída', key: 'exit', width: 12 },
+      { header: 'Total Horas', key: 'totalHours', width: 12 },
+      { header: 'Observações', key: 'observations', width: 40 },
+    ];
+
+    const formatTime = (date?: Date) =>
+      date ? date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-';
+
+    const dates = Array.from(groupedByDate.keys()).sort();
+    let totalMs = 0;
+    for (const dateKey of dates) {
+      const dayEvents = groupedByDate.get(dateKey)!;
+      dayEvents.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+      const entry = dayEvents.find(e => e.eventType === 'ENTRY');
+      const lunchStart = dayEvents.find(e => e.eventType === 'LUNCH_START');
+      const lunchEnd = dayEvents.find(e => e.eventType === 'LUNCH_END');
+      const exit = dayEvents.find(e => e.eventType === 'EXIT');
+
+      let dayMs = 0;
+      const observations: string[] = [];
+      if (dayEvents.some(e => e.isManual)) observations.push('Contém ajustes manuais');
+
+      if (entry && lunchStart) dayMs += lunchStart.timestamp.getTime() - entry.timestamp.getTime();
+      if (lunchEnd && exit) dayMs += exit.timestamp.getTime() - lunchEnd.timestamp.getTime();
+      if (entry && exit && !lunchStart && !lunchEnd) dayMs += exit.timestamp.getTime() - entry.timestamp.getTime();
+
+      totalMs += Math.max(0, dayMs);
+      const totalHours = dayMs > 0 ? (dayMs / (1000 * 60 * 60)).toFixed(2) : '0.00';
+
+      ws.addRow({
+        date: new Date(`${dateKey}T00:00:00`).toLocaleDateString('pt-BR'),
+        entry: formatTime(entry?.timestamp),
+        lunchStart: formatTime(lunchStart?.timestamp),
+        lunchEnd: formatTime(lunchEnd?.timestamp),
+        exit: formatTime(exit?.timestamp),
+        totalHours,
+        observations: observations.join(', '),
+      } as any);
+    }
+
+    ws.addRow([]);
+    ws.addRow([`Total do mês (horas): ${(totalMs / (1000 * 60 * 60)).toFixed(2)}`]);
+    ws.addRow([]);
+    ws.addRow(['Assinatura do Funcionário: ________________________________']);
+    ws.addRow(['Data: ____/____/________']);
+
+    return workbook;
+  }
+
+  async generateGeneralTimesheetWorkbook(competence: string) {
+    const { startDate, endDate } = this.getCompetenceRange(competence);
+    return this.generateReport(startDate, endDate);
+  }
+
   async generateReport(startDate?: string, endDate?: string, employeeId?: string) {
     const events = await this.findAll(startDate, endDate, employeeId);
     
