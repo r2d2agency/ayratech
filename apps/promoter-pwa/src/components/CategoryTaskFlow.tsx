@@ -243,9 +243,9 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     });
   };
 
-  const canOpenProduct = (p: any) => isStockCountRequired(p) || hasNonStockChecklist(p) || isExtraSelected(p);
+  const canOpenProduct = (p: any) => isStockCountRequired(p) || hasInteractiveChecklist(p);
 
-  const isProductRequiredForProgress = (p: any) => isStockCountRequired(p) || hasInteractiveChecklist(p);
+  const isProductRequiredForProgress = (p: any) => isStockCountRequired(p) || hasNonStockChecklist(p);
 
   const getProductProgressFraction = (p: any) => {
     const cl = getChecklists(p);
@@ -953,6 +953,8 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
       const rowCompleted = isProductCountComplete(p);
       const openModal = canOpenProduct(p);
       const productProgress = Math.round(getProductProgressFraction(p) * 100);
+      const isSimpleChecklist =
+        hasNonStockChecklist(p) && !isStockCountRequired(p) && !hasInteractiveChecklist(p);
 
       return (
         <div
@@ -964,13 +966,30 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
               return;
             }
             try {
+              const cl = getChecklists(p);
+              const nextCheckedValueForSimple = (() => {
+                const anyChecked = cl.some((c: any) => c?.type !== 'STOCK_COUNT' && !!c?.isChecked);
+                return !anyChecked;
+              })();
+
+              const nextChecklistsForSimple = cl.map((c: any) => {
+                if (c?.type === 'STOCK_COUNT') return c;
+                if (isValidityChecklistItem(c)) return c;
+                if (c?.type === 'PRICE_CHECK' || c?.type === 'PHOTO') return c;
+                return { ...c, isChecked: nextCheckedValueForSimple };
+              });
+
               if (pt === 'extra') {
                 const pid = String(p.productId);
                 const current = extraProductChecks?.[pid] || {};
-                const nextChecked = !(current.checked ?? false);
+                const nextChecked = isSimpleChecklist ? nextCheckedValueForSimple : !(current.checked ?? false);
                 const nextChecks = {
                   ...extraProductChecks,
-                  [pid]: { ...current, checked: nextChecked }
+                  [pid]: {
+                    ...current,
+                    checked: nextChecked,
+                    ...(isSimpleChecklist ? { checklists: nextChecklistsForSimple } : {})
+                  }
                 };
                 setExtraProductChecks(nextChecks);
 
@@ -988,8 +1007,11 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
                 return;
               }
 
-              const nextChecked = !p.checked;
-              await onUpdateProduct(p.productId, { checked: nextChecked });
+              const nextChecked = isSimpleChecklist ? nextCheckedValueForSimple : !p.checked;
+              const payload: any = isSimpleChecklist
+                ? { checked: nextChecked, checklists: nextChecklistsForSimple }
+                : { checked: nextChecked };
+              await onUpdateProduct(p.productId, payload);
               toast.success(nextChecked ? 'Marcado como concluído.' : 'Desmarcado.');
             } catch {
               toast.error('Não foi possível atualizar.');

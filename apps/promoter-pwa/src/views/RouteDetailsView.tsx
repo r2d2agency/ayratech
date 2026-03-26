@@ -393,10 +393,12 @@ const RouteDetailsView = () => {
 
   const executeCheckOut = async (itemId: string, lat: number, lng: number, exitPhoto?: string) => {
         try {
+          const nowIso = new Date().toISOString();
+          const promoterId = user?.employee?.id || user?.id;
           const res = await client.post(`/routes/items/${itemId}/check-out`, {
             lat,
             lng,
-            timestamp: new Date().toISOString(),
+            timestamp: nowIso,
             exitPhoto
           });
           toast.success('Visita finalizada!');
@@ -404,12 +406,29 @@ const RouteDetailsView = () => {
           
           const updatedItems = route.items.map((i: any) => {
             if (i.id !== itemId) return i;
+            const incomingCheckins = apiItem?.checkins || i.checkins || [];
+            const mergedCheckins = Array.isArray(incomingCheckins)
+              ? incomingCheckins.map((c: any) => {
+                  const cPid = c.promoterId || c.promoter?.id;
+                  if (cPid === promoterId) {
+                    return {
+                      ...c,
+                      checkOutTime: c.checkOutTime || nowIso,
+                      exitPhoto: c.exitPhoto || exitPhoto || null,
+                    };
+                  }
+                  return c;
+                })
+              : incomingCheckins;
+
             return {
               ...i,
               ...apiItem,
+              status: apiItem?.status || 'CHECKOUT',
+              checkOutTime: apiItem?.checkOutTime || nowIso,
               supermarket: i.supermarket || apiItem?.supermarket,
               products: apiItem?.products || i.products,
-              checkins: apiItem?.checkins || i.checkins,
+              checkins: mergedCheckins,
             };
           });
           
@@ -437,11 +456,10 @@ const RouteDetailsView = () => {
 
           const updatedItems = route.items.map((i: any) => {
             if (i.id === itemId) {
-                const promoterId = user?.employee?.id || user?.id;
                 const updatedCheckins = (i.checkins || []).map((c: any) => {
                     const cPid = c.promoterId || c.promoter?.id;
                     if (cPid === promoterId && !c.checkOutTime) {
-                        return { ...c, checkOutTime: new Date().toISOString() };
+                        return { ...c, checkOutTime: new Date().toISOString(), exitPhoto: exitPhoto || c.exitPhoto || null };
                     }
                     return c;
                 });
