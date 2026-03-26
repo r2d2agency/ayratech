@@ -62,10 +62,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
   const navItem = (id: ViewType, icon: React.ReactNode, label: string) => (
     <button
       onClick={() => onNavigate(id)}
-      className={`w-full flex items-center gap-3 px-4 py-3 transition-all relative group font-headline uppercase tracking-wider text-[0.6875rem] ${
+      className={`w-full flex items-center gap-3 px-4 py-3 transition-all relative group text-sm ${
         activeView === id 
           ? 'text-[color:var(--color-primary)] bg-[color:var(--color-primary)]/10 border-r-2 border-[color:var(--color-primary)]' 
-          : 'text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] hover:bg-white/5'
+          : 'text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] hover:bg-black/5 dark:hover:bg-black/5 dark:hover:bg-white/5'
       }`}
     >
       <div className="min-w-[24px] flex justify-center">{icon}</div>
@@ -117,7 +117,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
             )}
           </div>
         )}
-        <span className={`text-xl font-bold text-[color:var(--color-primary)] tracking-tighter transition-all duration-300 truncate font-headline ${
+        <span className={`text-xl font-bold text-[color:var(--color-primary)] tracking-tighter transition-all duration-300 truncate  ${
           expanded ? 'opacity-100' : 'opacity-0 w-0'
         }`}>
           {settings.companyName}
@@ -128,21 +128,21 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
       <div className="flex-1 px-2 space-y-1 overflow-y-auto">
         {isClient ? (
           <>
-            <p className={`text-[0.6875rem] font-headline uppercase tracking-widest px-4 mb-2 h-4 overflow-hidden transition-all text-[color:var(--color-muted)] ${expanded ? 'opacity-100' : 'opacity-0'}`}>
+            <p className={`text-xs font-semibold uppercase tracking-wide px-4 mb-2 h-4 overflow-hidden transition-all text-[color:var(--color-muted)] ${expanded ? 'opacity-100' : 'opacity-0'}`}>
               Cliente
             </p>
             {navItem('client_dashboard', <LayoutGrid size={20} />, 'Dashboard')}
           </>
         ) : (
           <>
-        <p className={`text-[0.6875rem] font-headline uppercase tracking-widest px-4 mb-2 h-4 overflow-hidden transition-all text-[color:var(--color-muted)] ${expanded ? 'opacity-100' : 'opacity-0'}`}>
+        <p className={`text-xs font-semibold uppercase tracking-wide px-4 mb-2 h-4 overflow-hidden transition-all text-[color:var(--color-muted)] ${expanded ? 'opacity-100' : 'opacity-0'}`}>
           Principal
         </p>
         {navItem('dashboard', <LayoutGrid size={20} />, 'Dashboard')}
         {navItem('live_map', <MapPinned size={20} />, 'Monitoramento')}
 
         <div className="pt-4" />
-        <p className={`text-[0.6875rem] font-headline uppercase tracking-widest px-4 mb-2 h-4 overflow-hidden transition-all text-[color:var(--color-muted)] ${expanded ? 'opacity-100' : 'opacity-0'}`}>
+        <p className={`text-xs font-semibold uppercase tracking-wide px-4 mb-2 h-4 overflow-hidden transition-all text-[color:var(--color-muted)] ${expanded ? 'opacity-100' : 'opacity-0'}`}>
           Cadastros
         </p>
         
@@ -150,7 +150,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
         <div>
           <button
             onClick={() => toggleSubmenu('gestao')}
-            className="w-full flex items-center gap-3 px-4 py-3 transition-all text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] hover:bg-white/5 relative group font-headline uppercase tracking-wider text-[0.6875rem]"
+            className="w-full flex items-center gap-3 px-4 py-3 transition-all text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] hover:bg-black/5 dark:hover:bg-white/5 relative group text-sm"
           >
             <div className="min-w-[24px] flex justify-center"><Briefcase size={20} /></div>
             <span className={`font-medium flex-1 text-left transition-all duration-300 overflow-hidden whitespace-nowrap ${
@@ -236,7 +236,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
         {canViewEmployees && navItem('documents', <FileText size={20} />, 'Documentos')}
 
         <div className="pt-4" />
-        <p className={`text-[0.6875rem] font-headline uppercase tracking-widest px-4 mb-2 h-4 overflow-hidden transition-all text-[color:var(--color-muted)] ${expanded ? 'opacity-100' : 'opacity-0'}`}>
+        <p className={`text-xs font-semibold uppercase tracking-wide px-4 mb-2 h-4 overflow-hidden transition-all text-[color:var(--color-muted)] ${expanded ? 'opacity-100' : 'opacity-0'}`}>
           Operação
         </p>
         {navItem('routes', <Map size={20} />, 'Rotas e Visitas')}
@@ -245,7 +245,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
         {navItem('breakages_report', <AlertTriangle size={20} />, 'Avarias')}
         
         <div className="pt-4" />
-        <p className={`text-[0.6875rem] font-headline uppercase tracking-widest px-4 mb-2 h-4 overflow-hidden transition-all text-[color:var(--color-muted)] ${expanded ? 'opacity-100' : 'opacity-0'}`}>
+        <p className={`text-xs font-semibold uppercase tracking-wide px-4 mb-2 h-4 overflow-hidden transition-all text-[color:var(--color-muted)] ${expanded ? 'opacity-100' : 'opacity-0'}`}>
           Relatórios
         </p>
         {navItem('reports_routes', <FileText size={20} />, 'Relatório de Rotas')}
@@ -253,7 +253,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
         {navItem('gallery', <Camera size={20} />, 'Galeria de Fotos')}
 
         <div className="pt-4" />
-        <p className={`text-[0.6875rem] font-headline uppercase tracking-widest px-4 mb-2 h-4 overflow-hidden transition-all text-[color:var(--color-muted)] ${expanded ? 'opacity-100' : 'opacity-0'}`}>
+        <p className={`text-xs font-semibold uppercase tracking-wide px-4 mb-2 h-4 overflow-hidden transition-all text-[color:var(--color-muted)] ${expanded ? 'opacity-100' : 'opacity-0'}`}>
           Inteligência Artificial
         </p>
         {navItem('photo_processing', <Wand2 size={20} />, 'Processamento')}
@@ -261,7 +261,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
         {['admin', 'superadmin', 'administrador do sistema'].includes(userRole?.toLowerCase() || '') && navItem('ai_config', <Settings size={20} />, 'Configuração IA')}
 
         <div className="pt-4" />
-        <p className={`text-[0.6875rem] font-headline uppercase tracking-widest px-4 mb-2 h-4 overflow-hidden transition-all text-[color:var(--color-muted)] ${expanded ? 'opacity-100' : 'opacity-0'}`}>
+        <p className={`text-xs font-semibold uppercase tracking-wide px-4 mb-2 h-4 overflow-hidden transition-all text-[color:var(--color-muted)] ${expanded ? 'opacity-100' : 'opacity-0'}`}>
           Sistema
         </p>
         {navItem('admin', <Settings size={20} />, 'Configurações')}
@@ -284,7 +284,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
         
         <button 
           onClick={() => setExpanded(!expanded)}
-          className="w-full flex items-center gap-3 px-4 py-3 text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] hover:bg-white/5 transition-all font-headline uppercase tracking-wider text-[0.6875rem]"
+          className="w-full flex items-center gap-3 px-4 py-3 text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] hover:bg-black/5 dark:hover:bg-white/5 transition-all text-sm"
         >
           <div className="min-w-[24px] flex justify-center">
             {expanded ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
@@ -295,7 +295,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
           onClick={() => {
             if (onLogout) onLogout();
           }}
-          className="w-full flex items-center gap-3 px-4 py-3 text-[color:var(--color-tertiary)] hover:bg-[color:var(--color-tertiary)]/10 transition-all font-headline uppercase tracking-wider text-[0.6875rem]"
+          className="w-full flex items-center gap-3 px-4 py-3 text-[color:var(--color-tertiary)] hover:bg-[color:var(--color-tertiary)]/10 transition-all text-sm"
         >
           <div className="min-w-[24px] flex justify-center"><LogOut size={20} /></div>
           <span className={`font-medium transition-all ${expanded ? 'opacity-100' : 'opacity-0 w-0'}`}>Sair</span>

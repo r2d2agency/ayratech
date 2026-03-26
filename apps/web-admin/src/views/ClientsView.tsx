@@ -382,16 +382,16 @@ const ClientsView: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500 relative">
       {showLinkModal && linkClient && (
         <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
-          <div className="rounded-3xl p-6 max-w-5xl w-full shadow-[0_0_20px_rgba(253,0,255,0.12)] relative flex flex-col max-h-[90vh] border border-white/5 bg-[color:var(--surface-container-low)]">
+          <div className="rounded-3xl p-6 max-w-5xl w-full shadow-[0_0_20px_rgba(253,0,255,0.12)] relative flex flex-col max-h-[90vh] border border-[color:var(--color-border)] bg-[color:var(--surface-container-low)]">
             <button 
               onClick={() => setShowLinkModal(false)}
               className="absolute top-4 right-4 p-2 hover:bg-white/5 rounded-full transition-colors"
             >
               <X size={20} className="text-[color:var(--color-muted)]" />
             </button>
-            <h2 className="text-xl font-bold font-headline text-[color:var(--color-text)] mb-4">Vincular PDVs - {linkClient.nome}</h2>
+            <h2 className="text-xl font-bold  text-[color:var(--color-text)] mb-4">Vincular PDVs - {linkClient.nome}</h2>
             <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-4">
-              <div className="rounded-xl p-3 border border-white/5 flex flex-col h-full overflow-hidden bg-[color:var(--surface-container-highest)]">
+              <div className="rounded-xl p-3 border border-[color:var(--color-border)] flex flex-col h-full overflow-hidden bg-[color:var(--surface-container-highest)]">
                 <div className="mb-2 space-y-2 flex-shrink-0">
                   <div className="flex gap-2">
                     <div className="flex-1 relative z-20">
@@ -419,7 +419,7 @@ const ClientsView: React.FC = () => {
                     value={leftSearch}
                     onChange={e => setLeftSearch(e.target.value)}
                     placeholder="Filtrar PDVs disponíveis..."
-                    className="w-full px-3 py-2 rounded-lg border border-white/5 bg-[color:var(--surface-container-low)] text-xs"
+                    className="w-full px-3 py-2 rounded-lg border border-[color:var(--color-border)] bg-[color:var(--surface-container-low)] text-xs"
                   />
                 </div>
                 <div className="flex-1 overflow-y-auto space-y-1 pr-1">
@@ -428,7 +428,7 @@ const ClientsView: React.FC = () => {
                     .filter(s => !selectedGroupFilter || (s.group?.id === selectedGroupFilter))
                     .filter(s => (s.fantasyName || '').toLowerCase().includes(leftSearch.toLowerCase()))
                     .map(s => (
-                      <div key={s.id} className="flex items-center justify-between bg-[color:var(--surface-container-low)] border border-white/5 rounded-lg px-3 py-2 hover:border-[color:var(--color-secondary)]/50 transition-colors group cursor-pointer" onClick={() => addToSelected(s.id)}>
+                      <div key={s.id} className="flex items-center justify-between bg-[color:var(--surface-container-low)] border border-[color:var(--color-border)] rounded-lg px-3 py-2 hover:border-[color:var(--color-secondary)]/50 transition-colors group cursor-pointer" onClick={() => addToSelected(s.id)}>
                         <div className="min-w-0">
                           <p className="text-xs font-medium text-[color:var(--color-text)] truncate group-hover:text-[color:var(--color-secondary)]">{s.fantasyName}</p>
                           <p className="text-[10px] text-[color:var(--color-muted)]">{s.city} - {s.state}</p>
@@ -449,14 +449,14 @@ const ClientsView: React.FC = () => {
                 <div className="text-[color:var(--color-muted)] font-bold text-xs lg:rotate-0 rotate-90 hidden lg:block">&rarr;</div>
               </div>
               
-              <div className="rounded-xl p-3 border border-white/5 flex flex-col h-full overflow-hidden bg-[color:var(--surface-container-highest)]">
+              <div className="rounded-xl p-3 border border-[color:var(--color-border)] flex flex-col h-full overflow-hidden bg-[color:var(--surface-container-highest)]">
                 <div className="mb-2 flex-shrink-0 flex justify-between items-center gap-2">
                   <input 
                     type="text"
                     value={rightSearch}
                     onChange={e => setRightSearch(e.target.value)}
                     placeholder="Filtrar PDVs vinculados..."
-                    className="w-full px-3 py-2 rounded-lg border border-white/5 bg-[color:var(--surface-container-low)] text-xs"
+                    className="w-full px-3 py-2 rounded-lg border border-[color:var(--color-border)] bg-[color:var(--surface-container-low)] text-xs"
                   />
                   <button 
                     onClick={() => setSelectedSupermarketIds([])}
@@ -470,7 +470,7 @@ const ClientsView: React.FC = () => {
                     .filter(s => selectedSupermarketIds.includes(s.id))
                     .filter(s => (s.fantasyName || '').toLowerCase().includes(rightSearch.toLowerCase()))
                     .map(s => (
-                      <div key={s.id} className="flex items-center justify-between bg-[color:var(--surface-container-low)] border border-white/5 rounded-lg px-3 py-2 hover:border-[color:var(--color-tertiary)]/50 transition-colors group cursor-pointer" onClick={() => removeFromSelected(s.id)}>
+                      <div key={s.id} className="flex items-center justify-between bg-[color:var(--surface-container-low)] border border-[color:var(--color-border)] rounded-lg px-3 py-2 hover:border-[color:var(--color-tertiary)]/50 transition-colors group cursor-pointer" onClick={() => removeFromSelected(s.id)}>
                         <div className="min-w-0">
                           <p className="text-xs font-medium text-[color:var(--color-text)] truncate group-hover:text-[color:var(--color-tertiary)]">{s.fantasyName}</p>
                           <p className="text-[10px] text-[color:var(--color-muted)]">{s.city} - {s.state}</p>
@@ -507,7 +507,7 @@ const ClientsView: React.FC = () => {
       )}
       {showClientModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="rounded-3xl p-8 max-w-2xl w-full shadow-[0_0_20px_rgba(253,0,255,0.12)] relative max-h-[90vh] overflow-y-auto border border-white/5 bg-[color:var(--surface-container-low)]">
+          <div className="rounded-3xl p-8 max-w-2xl w-full shadow-[0_0_20px_rgba(253,0,255,0.12)] relative max-h-[90vh] overflow-y-auto border border-[color:var(--color-border)] bg-[color:var(--surface-container-low)]">
             <button 
               onClick={() => setShowClientModal(false)}
               className="absolute top-4 right-4 p-2 hover:bg-white/5 rounded-full transition-colors"
@@ -515,12 +515,12 @@ const ClientsView: React.FC = () => {
               <X size={20} className="text-[color:var(--color-muted)]" />
             </button>
             
-            <h2 className="text-2xl font-bold font-headline text-[color:var(--color-text)] mb-6">{editingClient ? 'Editar Cliente' : 'Novo Cliente'}</h2>
+            <h2 className="text-2xl font-bold  text-[color:var(--color-text)] mb-6">{editingClient ? 'Editar Cliente' : 'Novo Cliente'}</h2>
             
             <form onSubmit={handleClientSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Razão Social *</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Razão Social *</label>
                   <input 
                     type="text" 
                     required
@@ -532,7 +532,7 @@ const ClientsView: React.FC = () => {
                 </div>
                 
                 <div className="col-span-2 md:col-span-1">
-                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Nome Fantasia</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Nome Fantasia</label>
                   <input 
                     type="text" 
                     value={newClient.nomeFantasia}
@@ -543,7 +543,7 @@ const ClientsView: React.FC = () => {
                 </div>
 
                 <div className="col-span-2 md:col-span-1">
-                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">CNPJ *</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">CNPJ *</label>
                   <input 
                     type="text" 
                     required
@@ -555,7 +555,7 @@ const ClientsView: React.FC = () => {
                 </div>
 
                 <div className="col-span-2 md:col-span-1">
-                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Email Principal</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Email Principal</label>
                   <input 
                     type="email" 
                     value={newClient.emailPrincipal}
@@ -565,7 +565,7 @@ const ClientsView: React.FC = () => {
                 </div>
 
                 <div className="col-span-2 md:col-span-1">
-                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Telefone Principal</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Telefone Principal</label>
                   <input 
                     type="text" 
                     value={newClient.telefonePrincipal}
@@ -575,7 +575,7 @@ const ClientsView: React.FC = () => {
                 </div>
 
                 <div className="col-span-2 md:col-span-1">
-                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Senha de Acesso (Opcional na edição)</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Senha de Acesso (Opcional na edição)</label>
                   <input 
                     type="password" 
                     value={newClient.password || ''}
@@ -600,8 +600,8 @@ const ClientsView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="border-t border-white/5 pt-4">
-                <h3 className="text-sm font-bold text-[color:var(--color-text)] mb-4 uppercase tracking-wider font-headline">Padrões de Checklist</h3>
+              <div className="border-t border-[color:var(--color-border)] pt-4">
+                <h3 className="text-sm font-bold text-[color:var(--color-text)] mb-4 uppercase tracking-wider ">Padrões de Checklist</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="col-span-2 md:col-span-1">
                     <SearchableSelect
@@ -627,7 +627,7 @@ const ClientsView: React.FC = () => {
                       ]}
                     />
                   </div>
-                  <div className="col-span-2 flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-[color:var(--surface-container-highest)]">
+                  <div className="col-span-2 flex items-center gap-3 p-3 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--surface-container-highest)]">
                     <input
                       type="checkbox"
                       id="requiresInventoryCount"
@@ -641,7 +641,7 @@ const ClientsView: React.FC = () => {
                   </div>
                   
                   <div className="col-span-2 md:col-span-1">
-                     <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Frequência de Inventário</label>
+                     <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Frequência de Inventário</label>
                      <select
                        value={newClient.inventoryFrequency || ''}
                        onChange={e => setNewClient({...newClient, inventoryFrequency: e.target.value})}
@@ -655,7 +655,7 @@ const ClientsView: React.FC = () => {
                      </select>
                   </div>
                   <div className="col-span-2 md:col-span-1">
-                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Raio de Localização (m)</label>
+                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Raio de Localização (m)</label>
                     <input 
                       type="number" 
                       value={newClient.locationRange || 500}
@@ -666,11 +666,11 @@ const ClientsView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="border-t border-white/5 pt-4">
-                <h3 className="text-sm font-bold text-[color:var(--color-text)] mb-4 uppercase tracking-wider font-headline">Endereço</h3>
+              <div className="border-t border-[color:var(--color-border)] pt-4">
+                <h3 className="text-sm font-bold text-[color:var(--color-text)] mb-4 uppercase tracking-wider ">Endereço</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="col-span-2 md:col-span-1">
-                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">CEP</label>
+                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">CEP</label>
                     <input 
                       type="text" 
                       value={newClient.cep}
@@ -679,7 +679,7 @@ const ClientsView: React.FC = () => {
                     />
                   </div>
                   <div className="col-span-2 md:col-span-1">
-                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Logradouro</label>
+                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Logradouro</label>
                     <input 
                       type="text" 
                       value={newClient.logradouro}
@@ -688,7 +688,7 @@ const ClientsView: React.FC = () => {
                     />
                   </div>
                   <div className="col-span-2 md:col-span-1">
-                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Número</label>
+                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Número</label>
                     <input 
                       type="text" 
                       value={newClient.numero}
@@ -697,7 +697,7 @@ const ClientsView: React.FC = () => {
                     />
                   </div>
                   <div className="col-span-2 md:col-span-1">
-                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Bairro</label>
+                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Bairro</label>
                     <input 
                       type="text" 
                       value={newClient.bairro}
@@ -706,7 +706,7 @@ const ClientsView: React.FC = () => {
                     />
                   </div>
                   <div className="col-span-2 md:col-span-1">
-                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Cidade</label>
+                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Cidade</label>
                     <input 
                       type="text" 
                       value={newClient.cidade}
@@ -715,7 +715,7 @@ const ClientsView: React.FC = () => {
                     />
                   </div>
                   <div className="col-span-2 md:col-span-1">
-                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Estado (UF)</label>
+                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Estado (UF)</label>
                     <input 
                       type="text" 
                       value={newClient.estado}
@@ -726,8 +726,8 @@ const ClientsView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="border-t border-white/5 pt-4">
-                <h3 className="text-sm font-bold text-[color:var(--color-text)] mb-4 uppercase tracking-wider font-headline">Configuração de Fotos (Checklist)</h3>
+              <div className="border-t border-[color:var(--color-border)] pt-4">
+                <h3 className="text-sm font-bold text-[color:var(--color-text)] mb-4 uppercase tracking-wider ">Configuração de Fotos (Checklist)</h3>
                 <p className="text-xs text-[color:var(--color-muted)] mb-4">Defina os rótulos das fotos que devem ser tiradas. Deixe em branco para desativar um tipo de foto.</p>
                 
                 {/* Default Config */}
@@ -799,7 +799,7 @@ const ClientsView: React.FC = () => {
 
                   <div className="space-y-4">
                     {Object.entries(newClient.photoConfig?.categories || {}).map(([category, config]: [string, any]) => (
-                      <div key={category} className="p-3 rounded-xl border border-white/5 relative bg-[color:var(--surface-container-highest)]">
+                      <div key={category} className="p-3 rounded-xl border border-[color:var(--color-border)] relative bg-[color:var(--surface-container-highest)]">
                         <button 
                           type="button"
                           onClick={() => handleRemoveCategory(category)}
@@ -874,7 +874,7 @@ const ClientsView: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Logo (Upload ou URL)</label>
+                <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Logo (Upload ou URL)</label>
                 <div className="flex flex-col gap-2">
                   <input 
                     type="file" 
@@ -906,7 +906,7 @@ const ClientsView: React.FC = () => {
 
       {showContractModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="rounded-3xl p-8 max-w-md w-full shadow-[0_0_20px_rgba(253,0,255,0.12)] relative border border-white/5 bg-[color:var(--surface-container-low)]">
+          <div className="rounded-3xl p-8 max-w-md w-full shadow-[0_0_20px_rgba(253,0,255,0.12)] relative border border-[color:var(--color-border)] bg-[color:var(--surface-container-low)]">
             <button 
               onClick={() => setShowContractModal(false)}
               className="absolute top-4 right-4 p-2 hover:bg-white/5 rounded-full transition-colors"
@@ -914,7 +914,7 @@ const ClientsView: React.FC = () => {
               <X size={20} className="text-[color:var(--color-muted)]" />
             </button>
             
-            <h2 className="text-2xl font-bold font-headline text-[color:var(--color-text)] mb-6">Novo Contrato</h2>
+            <h2 className="text-2xl font-bold  text-[color:var(--color-text)] mb-6">Novo Contrato</h2>
             
             <form onSubmit={handleCreateContract} className="space-y-4">
               <div>
@@ -949,7 +949,7 @@ const ClientsView: React.FC = () => {
               </div>
               
               <div>
-                <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Descrição do Contrato</label>
+                <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Descrição do Contrato</label>
                 <input 
                   type="text" 
                   required
@@ -962,7 +962,7 @@ const ClientsView: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Início</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Início</label>
                   <input 
                     type="date" 
                     required
@@ -972,7 +972,7 @@ const ClientsView: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Fim</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Fim</label>
                   <input 
                     type="date" 
                     required
@@ -984,7 +984,7 @@ const ClientsView: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Tipo de Contrato</label>
+                <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Tipo de Contrato</label>
                 <select 
                   value={newContract.type}
                   onChange={e => setNewContract({...newContract, type: e.target.value})}
@@ -998,7 +998,7 @@ const ClientsView: React.FC = () => {
 
               {newContract.type === 'fixo' && (
                 <div>
-                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Valor Mensal (R$)</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Valor Mensal (R$)</label>
                   <input 
                     type="number" 
                     min="0"
@@ -1012,7 +1012,7 @@ const ClientsView: React.FC = () => {
 
               {newContract.type === 'por_loja' && (
                 <div>
-                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Valor por Loja (R$)</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Valor por Loja (R$)</label>
                   <input 
                     type="number" 
                     min="0"
@@ -1026,7 +1026,7 @@ const ClientsView: React.FC = () => {
 
               {newContract.type === 'por_visita' && (
                 <div>
-                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Valor por Visita (R$)</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Valor por Visita (R$)</label>
                   <input 
                     type="number" 
                     min="0"
@@ -1040,7 +1040,7 @@ const ClientsView: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Frequência de Visitas</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Frequência de Visitas</label>
                   <input 
                     type="text" 
                     value={newContract.visitFrequency}
@@ -1050,7 +1050,7 @@ const ClientsView: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Visitas/Mês</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">Visitas/Mês</label>
                   <input 
                     type="number" 
                     value={newContract.visitsPerMonth}
@@ -1061,7 +1061,7 @@ const ClientsView: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">SLA (%)</label>
+                <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block  tracking-wider">SLA (%)</label>
                 <input 
                   type="number" 
                   min="0"
@@ -1144,14 +1144,14 @@ const ClientsView: React.FC = () => {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight font-headline text-[color:var(--color-text)]">Clientes & Contratos</h1>
+          <h1 className="text-2xl font-bold tracking-tight  text-[color:var(--color-text)]">Clientes & Contratos</h1>
           <p className="text-[color:var(--color-muted)] font-medium text-lg">Marcas que confiam na operação Ayratech.</p>
         </div>
         <div className="flex gap-4">
           {activeTab === 'templates' && (
              <button 
               onClick={() => setShowTemplateModal(true)}
-              className="flex items-center gap-2 text-[color:var(--color-text)] border border-white/10 px-6 py-3 rounded-2xl font-bold shadow-sm transition-all hover:bg-white/5 bg-[color:var(--surface-container-low)]"
+              className="flex items-center gap-2 text-[color:var(--color-text)] border border-[color:var(--color-border)] px-6 py-3 rounded-2xl font-bold shadow-sm transition-all hover:bg-white/5 bg-[color:var(--surface-container-low)]"
             >
               <Plus size={20} /> Novo Modelo
             </button>
@@ -1159,7 +1159,7 @@ const ClientsView: React.FC = () => {
           {activeTab === 'clients' && (
             <button 
               onClick={() => { resetClientForm(); setShowClientModal(true); }}
-              className="flex items-center gap-2 text-[color:var(--color-text)] border border-white/10 px-6 py-3 rounded-2xl font-bold shadow-sm transition-all hover:bg-white/5 bg-[color:var(--surface-container-low)]"
+              className="flex items-center gap-2 text-[color:var(--color-text)] border border-[color:var(--color-border)] px-6 py-3 rounded-2xl font-bold shadow-sm transition-all hover:bg-white/5 bg-[color:var(--surface-container-low)]"
             >
               <Plus size={20} /> Novo Cliente
             </button>
@@ -1175,7 +1175,7 @@ const ClientsView: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-6 border-b border-white/10">
+      <div className="flex gap-6 border-b border-[color:var(--color-border)]">
         <button 
           onClick={() => setActiveTab('clients')}
           className={`pb-4 text-sm font-black uppercase tracking-widest transition-all ${
@@ -1223,7 +1223,7 @@ const ClientsView: React.FC = () => {
             <div 
               key={c.id} 
               onClick={() => openLinkModal(c)}
-              className="rounded-3xl border border-white/10 p-8 hover:shadow-xl transition-all group relative overflow-hidden cursor-pointer bg-[color:var(--surface-container-low)]"
+              className="rounded-3xl border border-[color:var(--color-border)] p-8 hover:shadow-xl transition-all group relative overflow-hidden cursor-pointer bg-[color:var(--surface-container-low)]"
             >
               <div 
                 className="absolute top-0 right-0 w-32 h-32 opacity-10 rounded-bl-full -mr-10 -mt-10 transition-all group-hover:opacity-20" 
@@ -1231,7 +1231,7 @@ const ClientsView: React.FC = () => {
               />
               <div className="relative z-10">
                 <div className="flex justify-between items-start mb-8">
-                  <div className="h-16 w-16 rounded-2xl bg-[color:var(--surface-container-highest)] border border-white/10 shadow-sm flex items-center justify-center p-3">
+                  <div className="h-16 w-16 rounded-2xl bg-[color:var(--surface-container-highest)] border border-[color:var(--color-border)] shadow-sm flex items-center justify-center p-3">
                     <img src={getImageUrl(c.logo)} className="object-contain" alt={c.nome} />
                   </div>
                   <div className="flex flex-col items-end gap-2">
@@ -1259,7 +1259,7 @@ const ClientsView: React.FC = () => {
                 <h3 className="text-2xl font-bold text-[color:var(--color-text)] mb-1">{c.nome}</h3>
                 <p className="text-[color:var(--color-muted)] font-bold mb-2">{c.totalProdutos} SKUs cadastrados</p>
                 <p className="text-[color:var(--color-muted)] font-bold mb-8">{c.totalPdvs} PDVs vinculados</p>
-                <div className="pt-6 border-t border-white/10 flex gap-3">
+                <div className="pt-6 border-t border-[color:var(--color-border)] flex gap-3">
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1290,14 +1290,14 @@ const ClientsView: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {templates.map(t => (
-            <div key={t.id} className="rounded-3xl border border-white/10 p-8 hover:shadow-xl transition-all group relative overflow-hidden bg-[color:var(--surface-container-low)]">
+            <div key={t.id} className="rounded-3xl border border-[color:var(--color-border)] p-8 hover:shadow-xl transition-all group relative overflow-hidden bg-[color:var(--surface-container-low)]">
               <div 
                 className="absolute top-0 right-0 w-32 h-32 opacity-5 rounded-bl-full -mr-10 -mt-10 transition-all group-hover:opacity-10 bg-slate-900" 
               />
               <div className="relative z-10">
                 <h3 className="text-xl font-bold text-[color:var(--color-text)] mb-2">{t.name}</h3>
                 <p className="text-[color:var(--color-muted)] font-medium text-sm mb-4 line-clamp-2">{t.description || 'Sem descrição'}</p>
-                <div className="pt-4 border-t border-white/10">
+                <div className="pt-4 border-t border-[color:var(--color-border)]">
                   <button className="w-full py-2 bg-white/5 text-[color:var(--color-text)] rounded-lg text-xs font-bold hover:bg-white/10 transition-colors">
                     Editar Modelo
                   </button>
@@ -1315,7 +1315,7 @@ const ClientsView: React.FC = () => {
 
       {showDetailsModal && detailsClient && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="rounded-3xl p-8 max-w-4xl w-full shadow-[0_0_20px_rgba(253,0,255,0.12)] relative max-h-[90vh] flex flex-col border border-white/5 bg-[color:var(--surface-container-low)]">
+          <div className="rounded-3xl p-8 max-w-4xl w-full shadow-[0_0_20px_rgba(253,0,255,0.12)] relative max-h-[90vh] flex flex-col border border-[color:var(--color-border)] bg-[color:var(--surface-container-low)]">
             <button 
               onClick={() => setShowDetailsModal(false)}
               className="absolute top-4 right-4 p-2 hover:bg-white/5 rounded-full transition-colors"
@@ -1324,7 +1324,7 @@ const ClientsView: React.FC = () => {
             </button>
 
             <div className="flex items-center gap-4 mb-6">
-              <div className="h-16 w-16 rounded-2xl bg-[color:var(--surface-container-highest)] border border-white/10 shadow-sm flex items-center justify-center p-3">
+              <div className="h-16 w-16 rounded-2xl bg-[color:var(--surface-container-highest)] border border-[color:var(--color-border)] shadow-sm flex items-center justify-center p-3">
                 <img src={getImageUrl(detailsClient.logo)} className="object-contain" alt={detailsClient.nome} />
               </div>
               <div>
@@ -1333,7 +1333,7 @@ const ClientsView: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex gap-6 border-b border-white/10 mb-6">
+            <div className="flex gap-6 border-b border-[color:var(--color-border)] mb-6">
               <button 
                 onClick={() => setDetailsTab('products')}
                 className={`pb-4 flex items-center gap-2 text-sm font-black uppercase tracking-widest transition-all ${
@@ -1359,8 +1359,8 @@ const ClientsView: React.FC = () => {
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                    {detailsClient.allProducts?.length > 0 ? (
                      detailsClient.allProducts.map((p: any) => (
-                       <div key={p.id} className="p-4 rounded-xl border border-white/10 flex gap-3 items-center bg-[color:var(--surface-container-highest)]">
-                          <div className="h-12 w-12 rounded-lg flex items-center justify-center border border-white/10 bg-[color:var(--surface-container-low)]">
+                       <div key={p.id} className="p-4 rounded-xl border border-[color:var(--color-border)] flex gap-3 items-center bg-[color:var(--surface-container-highest)]">
+                          <div className="h-12 w-12 rounded-lg flex items-center justify-center border border-[color:var(--color-border)] bg-[color:var(--surface-container-low)]">
                             {p.image ? (
                               <img src={getImageUrl(p.image)} className="h-10 w-10 object-contain" />
                             ) : (
@@ -1386,7 +1386,7 @@ const ClientsView: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {detailsClient.supermarkets?.length > 0 ? (
                       detailsClient.supermarkets.map((s: any) => (
-                        <div key={s.id} className="p-4 rounded-xl border border-white/10 flex justify-between items-center bg-[color:var(--surface-container-highest)]">
+                        <div key={s.id} className="p-4 rounded-xl border border-[color:var(--color-border)] flex justify-between items-center bg-[color:var(--surface-container-highest)]">
                            <div>
                              <p className="font-bold text-[color:var(--color-text)]">{s.fantasyName}</p>
                              <p className="text-xs text-[color:var(--color-muted)]">{s.city} - {s.state}</p>

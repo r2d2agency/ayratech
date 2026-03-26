@@ -114,7 +114,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[color:var(--surface)]">
-      <div className="p-8 rounded-2xl border border-white/5 w-96 flex flex-col items-center bg-[color:var(--surface-container-low)] shadow-[0_0_20px_rgba(253,0,255,0.12)]">
+      <div className="p-8 rounded-2xl border border-[color:var(--color-border)] w-96 flex flex-col items-center bg-[color:var(--surface-container-low)] shadow-[0_0_20px_rgba(253,0,255,0.12)]">
         {settings.loginLogoUrl ? (
           <img 
             src={getImageUrl(settings.loginLogoUrl)} 
@@ -136,11 +136,11 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
             )}
           </div>
         )}
-        <h2 className="text-2xl font-bold mb-6 text-center font-headline text-[color:var(--color-primary)]">Login</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center  text-[color:var(--color-primary)]">Login</h2>
         {error && <p className="text-red-500 mb-4">{error}</p>}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-[color:var(--color-muted)] text-sm font-medium mb-2 font-headline uppercase tracking-wider">Email</label>
+            <label className="block text-[color:var(--color-muted)] text-sm font-medium mb-2  uppercase tracking-wider">Email</label>
             <input
               type="text"
               className="w-full px-4 py-3 rounded-xl"
@@ -149,7 +149,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
             />
           </div>
           <div className="mb-4">
-            <label className="block text-[color:var(--color-muted)] text-sm font-medium mb-2 font-headline uppercase tracking-wider">Senha</label>
+            <label className="block text-[color:var(--color-muted)] text-sm font-medium mb-2  uppercase tracking-wider">Senha</label>
             <input
               type="password"
               className="w-full px-4 py-3 rounded-xl"
@@ -177,14 +177,14 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
            <button
             type="button"
             onClick={handleRegister}
-            className="w-full mt-2 text-[color:var(--color-muted)] font-bold py-2.5 px-4 rounded-xl border border-white/10 hover:bg-white/5 transition-colors"
+            className="w-full mt-2 text-[color:var(--color-muted)] font-bold py-2.5 px-4 rounded-xl border border-[color:var(--color-border)] hover:bg-white/5 transition-colors"
           >
             Registrar (Dev)
           </button>
           <button
             type="button"
             onClick={handleDevReset}
-            className="w-full mt-2 text-[color:var(--color-muted)] font-bold py-2.5 px-4 rounded-xl border border-white/10 hover:bg-white/5 transition-colors"
+            className="w-full mt-2 text-[color:var(--color-muted)] font-bold py-2.5 px-4 rounded-xl border border-[color:var(--color-border)] hover:bg-white/5 transition-colors"
           >
             Recuperar acesso (Dev)
           </button>

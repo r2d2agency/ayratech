@@ -134,7 +134,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   };
 
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between bg-[color:var(--surface)]/80 backdrop-blur-md px-8 border-b border-white/5 h-16">
+    <header className="sticky top-0 z-40 flex items-center justify-between bg-[color:var(--surface)]/80 backdrop-blur-md px-8 border-b border-[color:var(--color-border)] h-16">
       <div className="flex items-center gap-4">
         <button 
           onClick={onToggleSidebar}
@@ -155,7 +155,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
       <div className="flex items-center gap-4">
         <button
           onClick={toggleTheme}
-          className="relative flex h-10 w-10 items-center justify-center rounded-xl text-[color:var(--color-muted)] hover:text-[color:var(--color-secondary)] hover:bg-white/5 transition-colors border border-white/5"
+          className="relative flex h-10 w-10 items-center justify-center rounded-xl text-[color:var(--color-muted)] hover:text-[color:var(--color-secondary)] hover:bg-white/5 transition-colors border border-[color:var(--color-border)]"
           title={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
         >
           {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
@@ -163,7 +163,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
 
         <div className="relative" ref={notificationRef}>
           <button 
-            className="relative flex h-10 w-10 items-center justify-center rounded-xl text-[color:var(--color-muted)] hover:text-[color:var(--color-secondary)] hover:bg-white/5 transition-colors border border-white/5"
+            className="relative flex h-10 w-10 items-center justify-center rounded-xl text-[color:var(--color-muted)] hover:text-[color:var(--color-secondary)] hover:bg-white/5 transition-colors border border-[color:var(--color-border)]"
             onClick={() => setShowNotifications(!showNotifications)}
           >
             <Bell size={20} />
@@ -173,8 +173,8 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 top-12 w-80 bg-[color:var(--surface-container-low)] rounded-xl shadow-[0_0_20px_rgba(253,0,255,0.12)] border border-white/5 overflow-hidden z-50">
-              <div className="p-3 border-b border-white/5 flex justify-between items-center bg-[color:var(--surface)]/40">
+            <div className="absolute right-0 top-12 w-80 bg-[color:var(--surface-container-low)] rounded-xl shadow-[0_0_20px_rgba(253,0,255,0.12)] border border-[color:var(--color-border)] overflow-hidden z-50">
+              <div className="p-3 border-b border-[color:var(--color-border)] flex justify-between items-center bg-[color:var(--surface)]/40">
                 <h3 className="font-semibold text-[color:var(--color-text)] text-sm">Notificações</h3>
                 {unreadCount > 0 && (
                     <button onClick={handleMarkAllAsRead} className="text-xs text-[color:var(--color-primary)] font-medium">
@@ -191,11 +191,11 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
                   notifications.map(notification => (
                     <div 
                       key={notification.id} 
-                      className={`p-3 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${notification.read ? 'opacity-60' : 'bg-[color:var(--surface-container-highest)]/40'}`}
+                      className={`p-3 border-b border-[color:var(--color-border)] hover:bg-white/5 transition-colors cursor-pointer ${notification.read ? 'opacity-60' : 'bg-[color:var(--surface-container-highest)]/40'}`}
                       onClick={() => handleMarkAsRead(notification.id)}
                     >
                       <div className="flex gap-3">
-                        <div className={`mt-1 h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${notification.read ? 'bg-[color:var(--surface-container-highest)]' : 'bg-[color:var(--surface)] shadow-sm border border-white/5'}`}>
+                        <div className={`mt-1 h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${notification.read ? 'bg-[color:var(--surface-container-highest)]' : 'bg-[color:var(--surface)] shadow-sm border border-[color:var(--color-border)]'}`}>
                           {getNotificationIcon(notification.type)}
                         </div>
                         <div className="flex-1">
@@ -221,12 +221,12 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           )}
         </div>
 
-        <div className="flex items-center gap-3 pl-4 border-l border-white/10">
+        <div className="flex items-center gap-3 pl-4 border-l border-[color:var(--color-border)]">
           <div className="text-right hidden sm:block">
-            <p className="text-xs font-medium text-[color:var(--color-text)] font-headline">
+            <p className="text-xs font-medium text-[color:var(--color-text)] ">
               {user?.employee?.fullName || user?.employee?.name || user?.email || 'Usuário'}
             </p>
-            <p className="text-[10px] text-[color:var(--color-muted)] font-medium uppercase tracking-wider font-headline">
+            <p className="text-[10px] text-[color:var(--color-muted)] font-medium uppercase tracking-wider ">
               {user?.employee?.position || user?.role?.name || 'Nível de Acesso'}
             </p>
           </div>

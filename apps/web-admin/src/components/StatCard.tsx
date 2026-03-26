@@ -10,16 +10,22 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ icon, label, value, trend, sub, color }) => (
-  <div className="bg-[color:var(--surface-container-low)] rounded-2xl border border-[color:var(--color-border)] p-6 shadow-sm hover:shadow-[0_0_20px_rgba(253,0,255,0.1)] transition-all group relative overflow-hidden">
-    <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center mb-4 transition-all group-hover:scale-110 shadow-sm border border-[color:var(--color-border)]`}>
-      {React.isValidElement(icon) && React.cloneElement(icon as React.ReactElement<any>, { size: 20 })}
+  <div className="bg-[color:var(--surface-container-low)] rounded-xl border border-[color:var(--color-border)] p-4 shadow-sm hover:shadow-md transition-all flex items-center gap-4 group">
+    <div className={`w-10 h-10 rounded-lg ${color} flex items-center justify-center transition-transform group-hover:scale-105`}>
+      {React.isValidElement(icon) && React.cloneElement(icon as React.ReactElement<any>, { size: 18, strokeWidth: 1.5 })}
     </div>
-    <p className="text-[10px] font-bold text-[color:var(--color-muted)] uppercase tracking-[0.1em] mb-1 font-headline">{label}</p>
-    <div className="flex items-baseline gap-2">
-      <span className="text-2xl font-black text-[color:var(--color-text)] tracking-tight font-headline">{value}</span>
-      {trend && <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">{trend}</span>}
+    <div className="flex-1 min-w-0">
+      <p className="text-sm font-medium text-[color:var(--color-text)] truncate">{label}</p>
+      {(sub || trend) && (
+        <div className="flex items-center gap-2 mt-0.5">
+          {sub && <p className="text-[11px] text-[color:var(--color-muted)] truncate">{sub}</p>}
+          {trend && <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">{trend}</span>}
+        </div>
+      )}
     </div>
-    {sub && <p className="text-[10px] text-[color:var(--color-muted)] font-medium mt-1">{sub}</p>}
+    <div className="text-lg font-semibold text-[color:var(--color-text)] tracking-tight">
+      {value}
+    </div>
   </div>
 );
 

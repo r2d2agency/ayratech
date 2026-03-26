@@ -3,10 +3,10 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: 'Inter', sans-serif;
-  --surface: #f6f7f8;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --surface: #f8fafc;
   --surface-container-low: #ffffff;
-  --surface-container-highest: #ffffff;
+  --surface-container-highest: #f1f5f9;
   --surface-bright: #ffffff;
   --outline-variant: #e2e8f0;
 
