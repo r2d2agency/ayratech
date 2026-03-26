@@ -38,7 +38,7 @@ export const LivePhotosFeed: React.FC<LivePhotosFeedProps> = ({ clientId }) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+        <h3 className="text-lg font-bold text-[color:var(--color-text)] flex items-center gap-2">
           <span className="relative flex h-3 w-3">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
@@ -79,7 +79,7 @@ export const LivePhotosFeed: React.FC<LivePhotosFeedProps> = ({ clientId }) => {
             {/* Always Visible Info */}
             <div className="p-2 space-y-1.5">
               <div className="flex items-start justify-between gap-1">
-                 <div className="flex items-center gap-1 text-[10px] font-medium text-slate-600 truncate">
+                 <div className="flex items-center gap-1 text-[10px] font-medium text-[color:var(--color-muted)] truncate">
                     <User size={10} className="text-blue-500" />
                     <span className="truncate max-w-[80px]" title={photo.promoterName}>{photo.promoterName.split(' ')[0]}</span>
                  </div>
@@ -89,7 +89,7 @@ export const LivePhotosFeed: React.FC<LivePhotosFeedProps> = ({ clientId }) => {
                  </span>
               </div>
               
-              <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate border-t border-slate-50 pt-1.5 mt-0.5">
+              <div className="flex items-center gap-1 text-[10px] text-[color:var(--color-muted)] truncate border-t border-slate-50 pt-1.5 mt-0.5">
                 <MapPin size={10} className="text-orange-500 flex-shrink-0" />
                 <span className="truncate" title={photo.supermarketName}>{photo.supermarketName}</span>
               </div>

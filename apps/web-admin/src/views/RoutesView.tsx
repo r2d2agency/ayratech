@@ -27,7 +27,7 @@ const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts
           <div className="h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-black text-sm">
             {index + 1}
           </div>
-          <div className="mt-2 text-slate-300 hover:text-slate-500">
+          <div className="mt-2 text-slate-300 hover:text-[color:var(--color-muted)]">
             {!disabled && <GripVertical size={20} />}
           </div>
         </div>
@@ -35,7 +35,7 @@ const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts
         <div className="flex-1 space-y-4">
           <div className="flex justify-between items-start">
             <div>
-              <h4 className="font-bold text-lg text-slate-900">{item.supermarket.fantasyName}</h4>
+              <h4 className="font-bold text-lg text-[color:var(--color-text)]">{item.supermarket.fantasyName}</h4>
               <p className="text-sm text-slate-400">{item.supermarket.address}, {item.supermarket.city}</p>
             </div>
             <button onClick={() => onRemove(index)} className="text-red-300 hover:text-red-500">
@@ -52,7 +52,7 @@ const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts
                   type="time" 
                   value={item.startTime || ''}
                   onChange={e => onUpdate(index, 'startTime', e.target.value)}
-                  className="bg-transparent font-bold text-sm text-slate-700 outline-none w-24"
+                  className="bg-transparent font-bold text-sm text-[color:var(--color-text)] outline-none w-24"
                 />
               </div>
             </div>
@@ -64,7 +64,7 @@ const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts
                   type="time" 
                   value={item.endTime || ''}
                   onChange={e => onUpdate(index, 'endTime', e.target.value)}
-                  className="bg-transparent font-bold text-sm text-slate-700 outline-none w-24"
+                  className="bg-transparent font-bold text-sm text-[color:var(--color-text)] outline-none w-24"
                 />
               </div>
             </div>
@@ -72,7 +72,7 @@ const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts
 
           <div className="mt-4">
             <div className="flex justify-between items-center mb-2">
-              <h5 className="text-xs font-black text-slate-500 uppercase">Produtos ({item.productIds?.length || 0})</h5>
+              <h5 className="text-xs font-black text-[color:var(--color-muted)] uppercase">Produtos ({item.productIds?.length || 0})</h5>
               <button 
                 onClick={() => onOpenProducts(index)}
                 className="text-blue-600 hover:text-blue-700 text-xs font-bold flex items-center gap-1"
@@ -117,14 +117,14 @@ const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts
                   return (
                     <div key={brand.brandKey} className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <h6 className="text-xs font-black text-slate-700 uppercase tracking-wide">{brand.brandLabel}</h6>
+                        <h6 className="text-xs font-black text-[color:var(--color-text)] uppercase tracking-wide">{brand.brandLabel}</h6>
                         <span className="text-[10px] text-slate-400 font-bold">{categories.length} categorias</span>
                       </div>
 
                       <div className="space-y-4">
                         {categories.map(([categoryName, categoryProducts], cIndex) => (
                           <div key={`${brand.brandKey}::${categoryName}`} className="border-l-2 border-slate-200 pl-3">
-                            <h6 className="text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">{categoryName}</h6>
+                            <h6 className="text-xs font-bold text-[color:var(--color-muted)] mb-2 uppercase tracking-wide">{categoryName}</h6>
                             <div className="space-y-2">
                               {categoryProducts
                                 .slice()
@@ -142,7 +142,7 @@ const SortableRouteItem = ({ id, item, index, onRemove, onUpdate, onOpenProducts
                                       </span>
                                       <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
-                                          <p className={`text-sm font-bold truncate ${isCompleted ? 'text-green-800' : 'text-slate-700'}`}>{product.name}</p>
+                                          <p className={`text-sm font-bold truncate ${isCompleted ? 'text-green-800' : 'text-[color:var(--color-text)]'}`}>{product.name}</p>
                                           {isCompleted && <CheckCircle size={14} className="text-green-600 flex-shrink-0" />}
                                         </div>
                                         <p className={`text-xs ${isCompleted ? 'text-green-600' : 'text-slate-400'}`}>{product.ean || product.barcode || ''}</p>
@@ -219,9 +219,9 @@ const DraggableRouteCard = ({ route, onDoubleClick, onDelete, onDuplicate, onMan
       case 'IN_PROGRESS':
         return 'bg-amber-200 text-amber-700';
       case 'COMPLETED':
-        return 'bg-slate-200 text-slate-600';
+        return 'bg-slate-200 text-[color:var(--color-muted)]';
       default:
-        return 'bg-slate-100 text-slate-500';
+        return 'bg-slate-100 text-[color:var(--color-muted)]';
     }
   };
 
@@ -249,12 +249,12 @@ const DraggableRouteCard = ({ route, onDoubleClick, onDelete, onDuplicate, onMan
                     </div>
                 ))}
                 {((route.promoters?.length || 0) > 3) && (
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white bg-slate-200 text-slate-600">
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white bg-slate-200 text-[color:var(--color-muted)]">
                         +{(route.promoters?.length || 0) - 3}
                     </div>
                 )}
             </div>
-            <p className="text-xs font-bold text-slate-700 truncate max-w-[120px]" title={((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p:any) => p.name).join(', ')}>
+            <p className="text-xs font-bold text-[color:var(--color-text)] truncate max-w-[120px]" title={((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p:any) => p.name).join(', ')}>
                 {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p:any) => (p.name || '').split(' ')[0]).join(', ')}
             </p>
         </div>
@@ -264,7 +264,7 @@ const DraggableRouteCard = ({ route, onDoubleClick, onDelete, onDuplicate, onMan
                     e.stopPropagation();
                     onManagePromoters(route);
                 }}
-                className="p-1 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"
+                className="p-1 hover:bg-slate-200 rounded-full text-[color:var(--color-muted)] transition-colors"
                 title="Gerenciar Promotores"
             >
                 <UserPlus size={12} />
@@ -292,7 +292,7 @@ const DraggableRouteCard = ({ route, onDoubleClick, onDelete, onDuplicate, onMan
             </button>
         </div>
       </div>
-      <p className="text-xs font-bold text-slate-500 mb-1">{route.items?.length || 0} PDVs</p>
+      <p className="text-xs font-bold text-[color:var(--color-muted)] mb-1">{route.items?.length || 0} PDVs</p>
       {route.items && route.items.length > 0 && (
           <p className="text-[10px] text-slate-400 truncate">
               {route.items.map((i: any) => i.supermarket?.fantasyName).join(', ')}
@@ -1568,8 +1568,8 @@ const RoutesView: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Gestão de Rotas</h1>
-          <p className="text-slate-500 font-medium text-lg">Planejamento, Templates e Regras.</p>
+          <h1 className="text-2xl font-black text-[color:var(--color-text)] tracking-tight">Gestão de Rotas</h1>
+          <p className="text-[color:var(--color-muted)] font-medium text-lg">Planejamento, Templates e Regras.</p>
         </div>
         <div className="flex bg-slate-100 p-1 rounded-xl overflow-x-auto">
           {['planner', 'editor', 'templates', 'rules'].map(tab => (
@@ -1577,7 +1577,7 @@ const RoutesView: React.FC = () => {
               key={tab}
               onClick={() => setActiveTab(tab as any)}
               className={`px-6 py-2 rounded-lg text-sm font-bold transition-all capitalize ${
-                activeTab === tab ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                activeTab === tab ? 'bg-white text-[color:var(--color-text)] shadow-sm' : 'text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]'
               }`}
             >
               {tab === 'planner' ? 'Calendário' : tab === 'editor' ? 'Editor de Rota' : tab === 'templates' ? 'Modelos' : 'Regras'}
@@ -1596,17 +1596,17 @@ const RoutesView: React.FC = () => {
                   const d = new Date(weekStart);
                   d.setDate(d.getDate() - 7);
                   setWeekStart(d);
-               }} className="p-2 hover:bg-slate-100 rounded-lg font-bold text-slate-600">
+               }} className="p-2 hover:bg-slate-100 rounded-lg font-bold text-[color:var(--color-muted)]">
                  &larr; Semana Anterior
                </button>
-               <h3 className="text-lg font-black text-slate-900">
+               <h3 className="text-lg font-black text-[color:var(--color-text)]">
                  {weekDays[0].toLocaleDateString()} - {weekDays[6].toLocaleDateString()}
                </h3>
                <button onClick={() => {
                   const d = new Date(weekStart);
                   d.setDate(d.getDate() + 7);
                   setWeekStart(d);
-               }} className="p-2 hover:bg-slate-100 rounded-lg font-bold text-slate-600">
+               }} className="p-2 hover:bg-slate-100 rounded-lg font-bold text-[color:var(--color-muted)]">
                  Próxima Semana &rarr;
                </button>
             </div>
@@ -1615,7 +1615,7 @@ const RoutesView: React.FC = () => {
                <select 
                  value={filterGroupId}
                  onChange={(e) => setFilterGroupId(e.target.value)}
-                 className="px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-600"
+                 className="px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 text-sm font-bold text-[color:var(--color-muted)]"
                >
                  <option value="">Todas as Redes</option>
                  {groups.map(g => (
@@ -1626,7 +1626,7 @@ const RoutesView: React.FC = () => {
                <select 
                  value={filterSupermarketId}
                  onChange={(e) => setFilterSupermarketId(e.target.value)}
-                 className="px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-600"
+                 className="px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 text-sm font-bold text-[color:var(--color-muted)]"
                >
                  <option value="">Todos os PDVs</option>
                  {supermarkets
@@ -1639,7 +1639,7 @@ const RoutesView: React.FC = () => {
                <select 
                  value={filterPromoterId}
                  onChange={(e) => setFilterPromoterId(e.target.value)}
-                 className="px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-600"
+                 className="px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 text-sm font-bold text-[color:var(--color-muted)]"
                >
                  <option value="">Todos os Promotores</option>
                  {promoters.map(p => (
@@ -1650,7 +1650,7 @@ const RoutesView: React.FC = () => {
                <select 
                  value={filterSupervisorId}
                  onChange={(e) => setFilterSupervisorId(e.target.value)}
-                 className="px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-600"
+                 className="px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 text-sm font-bold text-[color:var(--color-muted)]"
                >
                  <option value="">Todos os Supervisores</option>
                  {/* Filter employees to show only potential supervisors (e.g., have 'supervisor' in role or are assigned as supervisor) 
@@ -1695,7 +1695,7 @@ const RoutesView: React.FC = () => {
                 >
                   <div className="text-center mb-4">
                     <p className="text-xs font-black text-slate-400 uppercase">{day.toLocaleDateString('pt-BR', { weekday: 'short' })}</p>
-                    <p className={`text-xl font-black ${isToday ? 'text-blue-600' : 'text-slate-900'}`}>{day.getDate()}</p>
+                    <p className={`text-xl font-black ${isToday ? 'text-blue-600' : 'text-[color:var(--color-text)]'}`}>{day.getDate()}</p>
                   </div>
 
                   {dayRoutes.map(route => (
@@ -1720,7 +1720,7 @@ const RoutesView: React.FC = () => {
           {/* Calendário Mensal */}
           <div className="mt-10 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-black text-slate-900">Calendário Mensal</h3>
+              <h3 className="text-lg font-black text-[color:var(--color-text)]">Calendário Mensal</h3>
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setPlannerMonth(new Date(plannerMonth.getFullYear(), plannerMonth.getMonth() - 1, 1))}
@@ -1821,7 +1821,7 @@ const RoutesView: React.FC = () => {
                     return (
                       <button key={dateStr} onClick={() => openDayModal(dateStr)} className="border rounded-xl p-2 bg-white text-left hover:border-blue-300 transition">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-500">{day.toLocaleDateString('pt-BR', { day: '2-digit' })}</span>
+                          <span className="text-xs font-bold text-[color:var(--color-muted)]">{day.toLocaleDateString('pt-BR', { day: '2-digit' })}</span>
                           <span className="text-[10px] text-slate-400">{totalPdvs} PDV(s)</span>
                         </div>
                         <div className="mt-2 space-y-1">
@@ -1829,8 +1829,8 @@ const RoutesView: React.FC = () => {
                             <div className="text-[11px] text-slate-300 italic">Sem agenda</div>
                           ) : topEntries.map((e, idx) => (
                             <div key={idx} className="flex items-center justify-between text-[11px]">
-                              <span className="font-medium text-slate-700 truncate">{e.name}</span>
-                              <span className="text-slate-500">{e.clientsCount} cliente(s)</span>
+                              <span className="font-medium text-[color:var(--color-text)] truncate">{e.name}</span>
+                              <span className="text-[color:var(--color-muted)]">{e.clientsCount} cliente(s)</span>
                             </div>
                           ))}
                         </div>
@@ -1865,20 +1865,20 @@ const RoutesView: React.FC = () => {
           {/* Settings Panel */}
           <div className="space-y-6">
             <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Configuração da Rota</h3>
+              <h3 className="text-sm font-black text-[color:var(--color-text)] uppercase tracking-wider">Configuração da Rota</h3>
               
               <div>
-                <label className="text-xs font-bold text-slate-500 block mb-1">Data</label>
+                <label className="text-xs font-bold text-[color:var(--color-muted)] block mb-1">Data</label>
                 <input 
                   type="date" 
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full font-bold text-slate-900 bg-slate-50 p-3 rounded-xl outline-none"
+                  className="w-full font-bold text-[color:var(--color-text)] bg-slate-50 p-3 rounded-xl outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
+                <label className="block text-sm font-bold text-[color:var(--color-text)] mb-2">
                   1. Selecione os Promotores *
                 </label>
                 <div className="mb-2">
@@ -1902,11 +1902,11 @@ const RoutesView: React.FC = () => {
                           className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
                             isSelected
                               ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
-                              : 'bg-white border border-slate-100 hover:bg-slate-50 text-slate-600'
+                              : 'bg-white border border-slate-100 hover:bg-slate-50 text-[color:var(--color-muted)]'
                           }`}
                         >
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                            isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                            isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-[color:var(--color-muted)]'
                           }`}>
                             {promoter.name.charAt(0)}
                           </div>
@@ -1931,9 +1931,9 @@ const RoutesView: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-500 block mb-1">Status</label>
+                <label className="text-xs font-bold text-[color:var(--color-muted)] block mb-1">Status</label>
                 <div className={`inline-flex px-3 py-1 rounded-full text-xs font-black ${
-                  routeStatus === 'CONFIRMED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
+                  routeStatus === 'CONFIRMED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-[color:var(--color-muted)]'
                 }`}>
                   {routeStatus}
                 </div>
@@ -1942,7 +1942,7 @@ const RoutesView: React.FC = () => {
 
             <div className="bg-white rounded-3xl border border-slate-200 p-6">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
+                <label className="block text-sm font-bold text-[color:var(--color-text)] mb-2">
                   2. Adicionar Supermercados *
                 </label>
                 <div className="mb-2">
@@ -1968,7 +1968,7 @@ const RoutesView: React.FC = () => {
                       className="w-full flex justify-between items-center p-3 rounded-xl hover:bg-slate-50 border border-slate-100 disabled:opacity-50 disabled:cursor-not-allowed text-left"
                     >
                       <div>
-                        <p className="text-sm font-bold text-slate-800">{s.fantasyName}</p>
+                        <p className="text-sm font-bold text-[color:var(--color-text)]">{s.fantasyName}</p>
                         <p className="text-[10px] text-slate-400">{s.city}</p>
                       </div>
                       <Plus size={16} className="text-slate-400" />
@@ -1989,11 +1989,11 @@ const RoutesView: React.FC = () => {
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-slate-50 rounded-3xl border border-slate-200 p-8 min-h-[600px]">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-black text-slate-900">Roteiro de Visitas</h3>
+                <h3 className="text-xl font-black text-[color:var(--color-text)]">Roteiro de Visitas</h3>
                 <div className="flex gap-2">
                   <button 
                     onClick={() => setShowSaveTemplateModal(true)}
-                    className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2"
+                    className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-[color:var(--color-muted)] hover:bg-slate-50 flex items-center gap-2"
                   >
                     <Copy size={14} /> Salvar como Modelo
                   </button>
@@ -2049,7 +2049,7 @@ const RoutesView: React.FC = () => {
                 <button 
                   onClick={() => handleSaveRoute('DRAFT')}
                   disabled={loading || (!isAdmin && (routeStatus === 'COMPLETED' || routeStatus === 'IN_PROGRESS'))}
-                  className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 rounded-xl font-black shadow-sm hover:bg-slate-50 disabled:opacity-50"
+                  className="flex-1 py-4 bg-white border border-slate-200 text-[color:var(--color-muted)] rounded-xl font-black shadow-sm hover:bg-slate-50 disabled:opacity-50"
                 >
                   {routeStatus === 'CONFIRMED' || routeStatus === 'COMPLETED' ? 'Reverter para Rascunho' : 'Salvar Rascunho'}
                 </button>
@@ -2078,8 +2078,8 @@ const RoutesView: React.FC = () => {
                 </div>
                 <button className="text-slate-300 hover:text-red-400"><Trash2 size={18} /></button>
               </div>
-              <h3 className="text-lg font-black text-slate-900 mb-2">{template.templateName}</h3>
-              <p className="text-sm text-slate-500 mb-6">{template.items.length} PDVs configurados</p>
+              <h3 className="text-lg font-black text-[color:var(--color-text)] mb-2">{template.templateName}</h3>
+              <p className="text-sm text-[color:var(--color-muted)] mb-6">{template.items.length} PDVs configurados</p>
               
               <button 
                 onClick={() => handleLoadTemplate(template)}
@@ -2101,7 +2101,7 @@ const RoutesView: React.FC = () => {
       {activeTab === 'rules' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
            <div className="bg-white rounded-3xl border border-slate-200 p-8">
-              <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2">
+              <h3 className="text-xl font-black text-[color:var(--color-text)] mb-6 flex items-center gap-2">
                 <Settings size={24} className="text-slate-400" />
                 Nova Regra
               </h3>
@@ -2146,7 +2146,7 @@ const RoutesView: React.FC = () => {
            </div>
            {/* Rules List (Same as before) */}
            <div className="bg-white rounded-3xl border border-slate-200 p-8">
-              <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2">
+              <h3 className="text-xl font-black text-[color:var(--color-text)] mb-6 flex items-center gap-2">
                 <List size={24} className="text-slate-400" />
                 Regras Ativas
               </h3>
@@ -2154,10 +2154,10 @@ const RoutesView: React.FC = () => {
                  {rules.map((rule: any) => (
                    <div key={rule.id} className="p-4 rounded-xl bg-slate-50 border border-slate-100">
                       <div className="flex justify-between items-start mb-2">
-                         <h4 className="font-bold text-slate-900">{rule.name}</h4>
+                         <h4 className="font-bold text-[color:var(--color-text)]">{rule.name}</h4>
                          <span className="text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-700">Ativa</span>
                       </div>
-                      <p className="text-sm text-slate-500 mb-3">{rule.description}</p>
+                      <p className="text-sm text-[color:var(--color-muted)] mb-3">{rule.description}</p>
                    </div>
                  ))}
               </div>
@@ -2170,7 +2170,7 @@ const RoutesView: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg max-h-[70vh] flex flex-col p-4 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-slate-900">
+              <h3 className="text-lg font-bold text-[color:var(--color-text)]">
                 {selectedClientForModal ? (
                   currentRouteItemIndex !== null && routeItems[currentRouteItemIndex] ? (
                     <span>
@@ -2188,7 +2188,7 @@ const RoutesView: React.FC = () => {
               <button onClick={() => {
                 setShowProductModal(false);
                 setSelectedClientForModal(null);
-              }} className="text-slate-400 hover:text-slate-600">
+              }} className="text-slate-400 hover:text-[color:var(--color-muted)]">
                 <Settings size={20} className="rotate-45" />
               </button>
             </div>
@@ -2275,8 +2275,8 @@ const RoutesView: React.FC = () => {
                             className="w-full p-3 rounded-xl border border-slate-100 hover:bg-slate-50 flex items-center justify-between group text-left transition-all"
                           >
                             <div>
-                              <p className="font-bold text-slate-800">{client.nomeFantasia || client.fantasyName || client.razaoSocial || client.nome || 'Cliente sem Nome'}</p>
-                              <p className="text-xs text-slate-500">{clientProducts.length} produtos disponíveis</p>
+                              <p className="font-bold text-[color:var(--color-text)]">{client.nomeFantasia || client.fantasyName || client.razaoSocial || client.nome || 'Cliente sem Nome'}</p>
+                              <p className="text-xs text-[color:var(--color-muted)]">{clientProducts.length} produtos disponíveis</p>
                             </div>
                             {selectedCount > 0 && (
                               <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">
@@ -2316,7 +2316,7 @@ const RoutesView: React.FC = () => {
                       {/* Left: Available */}
                       <div className="flex flex-col border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
                         <div className="p-3 bg-white border-b border-slate-200 flex justify-between items-center">
-                            <span className="text-xs font-black text-slate-500 uppercase">Disponíveis</span>
+                            <span className="text-xs font-black text-[color:var(--color-muted)] uppercase">Disponíveis</span>
                             <button 
                                 onClick={() => {
                                     // Logic to add all visible products
@@ -2414,7 +2414,7 @@ const RoutesView: React.FC = () => {
                                 >
                                     <div className="flex justify-between items-center">
                                         <div>
-                                            <p className="text-sm font-bold text-slate-700 group-hover:text-blue-700">{product.name}</p>
+                                            <p className="text-sm font-bold text-[color:var(--color-text)] group-hover:text-blue-700">{product.name}</p>
                                             <p className="text-xs text-slate-400">{product.sku}</p>
                                             {product.category && <p className="text-[10px] text-slate-400 uppercase mt-1">{product.categoryRef?.name || product.category}</p>}
                                         </div>
@@ -2435,7 +2435,7 @@ const RoutesView: React.FC = () => {
                       <div className="flex flex-col border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
                         <div className="p-3 bg-white border-b border-slate-200 flex flex-col gap-2">
                             <div className="flex justify-between items-center">
-                                <span className="text-xs font-black text-slate-500 uppercase">Selecionados ({tempSelectedProducts.length})</span>
+                                <span className="text-xs font-black text-[color:var(--color-muted)] uppercase">Selecionados ({tempSelectedProducts.length})</span>
                                 <button 
                                     onClick={() => {
                                       setTempSelectedProducts([]);
@@ -2480,8 +2480,8 @@ const RoutesView: React.FC = () => {
                                 >
                                     <div className="flex justify-between items-start mb-2">
                                         <div>
-                                            <p className="text-sm font-bold text-slate-800">{product.name}</p>
-                                            <p className="text-xs text-slate-500">{product.sku}</p>
+                                            <p className="text-sm font-bold text-[color:var(--color-text)]">{product.name}</p>
+                                            <p className="text-xs text-[color:var(--color-muted)]">{product.sku}</p>
                                         </div>
                                         <button 
                                             onClick={() => handleToggleProductSelection(product.id)}
@@ -2516,7 +2516,7 @@ const RoutesView: React.FC = () => {
                                          </select>
 
                                          <div className="mt-2 grid grid-cols-3 gap-2">
-                                           <label className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
+                                           <label className="flex items-center gap-2 text-[11px] font-bold text-[color:var(--color-muted)]">
                                              <input
                                                type="checkbox"
                                                checked={stockCountChecked}
@@ -2541,7 +2541,7 @@ const RoutesView: React.FC = () => {
                                              Contagem
                                            </label>
 
-                                           <label className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
+                                           <label className="flex items-center gap-2 text-[11px] font-bold text-[color:var(--color-muted)]">
                                              <input
                                                type="checkbox"
                                                checked={validityChecked}
@@ -2566,7 +2566,7 @@ const RoutesView: React.FC = () => {
                                              Validade
                                            </label>
 
-                                           <label className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
+                                           <label className="flex items-center gap-2 text-[11px] font-bold text-[color:var(--color-muted)]">
                                              <input
                                                type="checkbox"
                                                checked={stockPhotosChecked}
@@ -2607,7 +2607,7 @@ const RoutesView: React.FC = () => {
               <button onClick={() => {
                 setShowProductModal(false);
                 setSelectedClientForModal(null);
-              }} className="px-4 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100 text-sm">Cancelar</button>
+              }} className="px-4 py-2 rounded-lg font-bold text-[color:var(--color-muted)] hover:bg-slate-100 text-sm">Cancelar</button>
               <button 
                 onClick={handleSaveProductSelection}
                 className="px-4 py-2 rounded-lg font-bold text-white shadow-lg text-sm"
@@ -2624,10 +2624,10 @@ const RoutesView: React.FC = () => {
       {showSaveTemplateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
-            <h3 className="text-xl font-bold text-slate-900 mb-4">Salvar como Modelo</h3>
+            <h3 className="text-xl font-bold text-[color:var(--color-text)] mb-4">Salvar como Modelo</h3>
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-500 block mb-1">Nome do Modelo</label>
+                <label className="text-xs font-bold text-[color:var(--color-muted)] block mb-1">Nome do Modelo</label>
                 <input 
                   type="text" 
                   value={templateName}
@@ -2637,7 +2637,7 @@ const RoutesView: React.FC = () => {
                 />
               </div>
               <div className="flex gap-3 justify-end pt-4">
-                <button onClick={() => setShowSaveTemplateModal(false)} className="px-6 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100">Cancelar</button>
+                <button onClick={() => setShowSaveTemplateModal(false)} className="px-6 py-2 rounded-lg font-bold text-[color:var(--color-muted)] hover:bg-slate-100">Cancelar</button>
                 <button 
                   onClick={handleSaveTemplate}
                   disabled={!templateName}
@@ -2656,9 +2656,9 @@ const RoutesView: React.FC = () => {
       {managingPromotersRoute && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
-            <h3 className="text-xl font-bold text-slate-900 mb-4">Gerenciar Promotores</h3>
+            <h3 className="text-xl font-bold text-[color:var(--color-text)] mb-4">Gerenciar Promotores</h3>
             <div className="space-y-4">
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-[color:var(--color-muted)]">
                 Adicione ou remova promotores para esta rota em execução.
               </p>
               
@@ -2673,11 +2673,11 @@ const RoutesView: React.FC = () => {
                           className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
                             isSelected
                               ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
-                              : 'bg-white border border-slate-100 hover:bg-slate-50 text-slate-600'
+                              : 'bg-white border border-slate-100 hover:bg-slate-50 text-[color:var(--color-muted)]'
                           }`}
                         >
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                            isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                            isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-[color:var(--color-muted)]'
                           }`}>
                             {promoter.name.charAt(0)}
                           </div>
@@ -2701,7 +2701,7 @@ const RoutesView: React.FC = () => {
                 <button onClick={() => {
                   setManagingPromotersRoute(null);
                   setManagedPromoterIds([]);
-                }} className="px-6 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100">Cancelar</button>
+                }} className="px-6 py-2 rounded-lg font-bold text-[color:var(--color-muted)] hover:bg-slate-100">Cancelar</button>
                 <button 
                   onClick={handleSaveManagedPromoters}
                   className="px-6 py-2 rounded-lg font-bold text-white shadow-lg"
@@ -2719,8 +2719,8 @@ const RoutesView: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl w-full max-w-2xl p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-slate-900">Agenda de {new Date(dayModalDate + 'T00:00:00').toLocaleDateString('pt-BR')}</h3>
-              <button onClick={() => setShowDayModal(false)} className="px-3 py-1 rounded-lg font-bold text-slate-500 hover:bg-slate-100">Fechar</button>
+              <h3 className="text-xl font-bold text-[color:var(--color-text)]">Agenda de {new Date(dayModalDate + 'T00:00:00').toLocaleDateString('pt-BR')}</h3>
+              <button onClick={() => setShowDayModal(false)} className="px-3 py-1 rounded-lg font-bold text-[color:var(--color-muted)] hover:bg-slate-100">Fechar</button>
             </div>
             <div className="max-h-[60vh] overflow-y-auto space-y-2 pr-2">
               {dayModalEntries.length === 0 ? (
@@ -2731,8 +2731,8 @@ const RoutesView: React.FC = () => {
                   <div key={idx} className="border border-slate-200 rounded-xl p-3 bg-white">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-sm font-bold text-slate-800">{entry.pdvName}</div>
-                        <div className="text-xs text-slate-500">{entry.clientsCount} cliente(s) • {promoterText}</div>
+                        <div className="text-sm font-bold text-[color:var(--color-text)]">{entry.pdvName}</div>
+                        <div className="text-xs text-[color:var(--color-muted)]">{entry.clientsCount} cliente(s) • {promoterText}</div>
                       </div>
                       <div className="flex items-center gap-2">
                         <button 
@@ -2770,13 +2770,13 @@ const RoutesView: React.FC = () => {
       {showDuplicateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
-            <h3 className="text-xl font-bold text-slate-900 mb-4">Duplicar Rota</h3>
+            <h3 className="text-xl font-bold text-[color:var(--color-text)] mb-4">Duplicar Rota</h3>
             <div className="space-y-4">
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-[color:var(--color-muted)]">
                 Duplicando rota de <b>{routeToDuplicate?.promoter?.name}</b> do dia <b>{new Date(routeToDuplicate?.date).toLocaleDateString()}</b>.
               </p>
               <div>
-                <label className="text-xs font-bold text-slate-500 block mb-2">Adicionar Dias</label>
+                <label className="text-xs font-bold text-[color:var(--color-muted)] block mb-2">Adicionar Dias</label>
                 
                 <div className="flex gap-2 mb-4">
                   <input 
@@ -2795,7 +2795,7 @@ const RoutesView: React.FC = () => {
                 </div>
 
                 <div className="mt-4 border-t pt-4">
-                  <label className="text-xs font-bold text-slate-500 block mb-2">Recorrência por Dias da Semana</label>
+                  <label className="text-xs font-bold text-[color:var(--color-muted)] block mb-2">Recorrência por Dias da Semana</label>
                   <div className="grid grid-cols-4 gap-2 mb-3">
                     {[
                       { d:1, label:'Seg' }, { d:2, label:'Ter' }, { d:3, label:'Qua' }, { d:4, label:'Qui' },
@@ -2804,14 +2804,14 @@ const RoutesView: React.FC = () => {
                       <button
                         key={d}
                         onClick={() => handleToggleWeekday(d)}
-                        className={`px-3 py-2 rounded-lg border text-sm ${recurrenceWeekdays[d] ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-white border-slate-200 text-slate-600'}`}
+                        className={`px-3 py-2 rounded-lg border text-sm ${recurrenceWeekdays[d] ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-white border-slate-200 text-[color:var(--color-muted)]'}`}
                       >
                         {label}
                       </button>
                     ))}
                   </div>
                   <div className="flex gap-2 items-center">
-                    <label className="text-xs font-bold text-slate-500">Por quantos meses?</label>
+                    <label className="text-xs font-bold text-[color:var(--color-muted)]">Por quantos meses?</label>
                     <input 
                       type="number" 
                       min={1}
@@ -2855,7 +2855,7 @@ const RoutesView: React.FC = () => {
                   <p className="text-xs font-bold text-slate-400 mb-2">Dias Selecionados ({duplicateTargetDates.length})</p>
                   {duplicateTargetDates.map(date => (
                     <div key={date} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
-                      <span className="text-sm font-bold text-slate-700">
+                      <span className="text-sm font-bold text-[color:var(--color-text)]">
                         {new Date(date + 'T12:00:00').toLocaleDateString()}
                       </span>
                       <button 
@@ -2875,7 +2875,7 @@ const RoutesView: React.FC = () => {
                   setRouteToDuplicate(null);
                   setDuplicateTargetDates([]);
                   setCurrentDateInput('');
-                }} className="px-6 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100">Cancelar</button>
+                }} className="px-6 py-2 rounded-lg font-bold text-[color:var(--color-muted)] hover:bg-slate-100">Cancelar</button>
                 <button 
                   onClick={handleDuplicateRoute}
                   disabled={duplicateTargetDates.length === 0}
@@ -2895,11 +2895,11 @@ const RoutesView: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
           <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-              <h3 className="text-xl font-bold text-slate-900">Criar Rotas por Semana</h3>
-              <button onClick={() => { setShowWeeklyModal(false); }} className="px-3 py-1 rounded-lg font-bold text-slate-500 hover:bg-slate-100">Fechar</button>
+              <h3 className="text-xl font-bold text-[color:var(--color-text)]">Criar Rotas por Semana</h3>
+              <button onClick={() => { setShowWeeklyModal(false); }} className="px-3 py-1 rounded-lg font-bold text-[color:var(--color-muted)] hover:bg-slate-100">Fechar</button>
             </div>
             <div className="px-6 pt-4">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+              <div className="flex items-center gap-2 text-xs font-bold text-[color:var(--color-muted)]">
                 <div className={`px-2 py-1 rounded-lg border ${weeklyWizardStep === 1 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-slate-200'}`}>1. Cliente</div>
                 <div className={`px-2 py-1 rounded-lg border ${weeklyWizardStep === 2 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-slate-200'}`}>2. Promotor</div>
                 <div className={`px-2 py-1 rounded-lg border ${weeklyWizardStep === 3 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-slate-200'}`}>3. Agenda</div>
@@ -2912,7 +2912,7 @@ const RoutesView: React.FC = () => {
                 <div className="space-y-5">
                   <div className="grid grid-cols-1 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-500 block mb-1">Cliente</label>
+                      <label className="text-xs font-bold text-[color:var(--color-muted)] block mb-1">Cliente</label>
                       <select
                         value={weeklyClientId}
                         onChange={(e) => {
@@ -2946,7 +2946,7 @@ const RoutesView: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="text-xs font-bold text-slate-500 block mb-1">Marca (do cliente)</label>
+                      <label className="text-xs font-bold text-[color:var(--color-muted)] block mb-1">Marca (do cliente)</label>
                       <select
                         value={weeklyBrandId}
                         onChange={(e) => {
@@ -2971,7 +2971,7 @@ const RoutesView: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="text-xs font-bold text-slate-500 block mb-1">Checklist (padrão)</label>
+                      <label className="text-xs font-bold text-[color:var(--color-muted)] block mb-1">Checklist (padrão)</label>
                       <select
                         value={weeklyChecklistTemplateId}
                         onChange={(e) => setWeeklyChecklistTemplateId(e.target.value)}
@@ -2991,7 +2991,7 @@ const RoutesView: React.FC = () => {
                 <div className="space-y-5">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-500 block mb-1">Supervisor</label>
+                      <label className="text-xs font-bold text-[color:var(--color-muted)] block mb-1">Supervisor</label>
                       <select
                         value={weeklySupervisorId}
                         onChange={(e) => setWeeklySupervisorId(e.target.value)}
@@ -3010,7 +3010,7 @@ const RoutesView: React.FC = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-500 block mb-1">Buscar</label>
+                      <label className="text-xs font-bold text-[color:var(--color-muted)] block mb-1">Buscar</label>
                       <input
                         type="text"
                         placeholder="Buscar promotor..."
@@ -3022,7 +3022,7 @@ const RoutesView: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Promotores (vinculados ao cliente)</label>
+                    <label className="block text-sm font-bold text-[color:var(--color-text)] mb-2">Promotores (vinculados ao cliente)</label>
                     <div className="h-72 overflow-y-auto space-y-2 pr-2 border border-slate-100 rounded-xl p-2">
                       {promoters
                         .filter(p => {
@@ -3043,9 +3043,9 @@ const RoutesView: React.FC = () => {
                             <button
                               key={promoter.id}
                               onClick={() => handleTogglePromoter(promoter.id)}
-                              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${isSelected ? 'bg-blue-600 text-white' : 'bg-white border border-slate-100 text-slate-600'}`}
+                              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${isSelected ? 'bg-blue-600 text-white' : 'bg-white border border-slate-100 text-[color:var(--color-muted)]'}`}
                             >
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-[color:var(--color-muted)]'}`}>
                                 {promoter.name.charAt(0)}
                               </div>
                               <div className="text-left">
@@ -3064,13 +3064,13 @@ const RoutesView: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6">
                   <div className="space-y-5">
                     <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2">Dias da Semana</label>
+                      <label className="block text-sm font-bold text-[color:var(--color-text)] mb-2">Dias da Semana</label>
                       <div className="flex flex-wrap gap-2">
                         {[{d:1,t:'Seg'},{d:2,t:'Ter'},{d:3,t:'Qua'},{d:4,t:'Qui'},{d:5,t:'Sex'},{d:6,t:'Sáb'},{d:0,t:'Dom'}].map(({d,t}) => (
                           <button
                             key={d}
                             onClick={() => toggleWeeklyDay(d)}
-                            className={`px-3 py-1 rounded-lg text-xs font-bold ${weeklyWeekdays[d] ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}
+                            className={`px-3 py-1 rounded-lg text-xs font-bold ${weeklyWeekdays[d] ? 'bg-blue-600 text-white' : 'bg-slate-100 text-[color:var(--color-muted)]'}`}
                           >
                             {t}
                           </button>
@@ -3079,7 +3079,7 @@ const RoutesView: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="text-xs font-bold text-slate-500 block mb-1">Meses de Recorrência</label>
+                      <label className="text-xs font-bold text-[color:var(--color-muted)] block mb-1">Meses de Recorrência</label>
                       <input
                         type="number"
                         min={1}
@@ -3096,14 +3096,14 @@ const RoutesView: React.FC = () => {
                       if (!b || activeWindows.length === 0) return null;
                       return (
                         <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                          <div className="text-xs font-black text-slate-500 uppercase mb-2">Horários do Cliente</div>
+                          <div className="text-xs font-black text-[color:var(--color-muted)] uppercase mb-2">Horários do Cliente</div>
                           <div className="space-y-1 text-sm">
                             {activeWindows
                               .sort((a: any, b: any) => Number(a.dayOfWeek) - Number(b.dayOfWeek))
                               .map((w: any) => (
                                 <div key={`${w.dayOfWeek}-${w.startTime}-${w.endTime}`} className="flex items-center justify-between">
-                                  <span className="font-bold text-slate-700">{['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][Number(w.dayOfWeek)]}</span>
-                                  <span className="text-slate-600">{String(w.startTime)} - {String(w.endTime)}</span>
+                                  <span className="font-bold text-[color:var(--color-text)]">{['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][Number(w.dayOfWeek)]}</span>
+                                  <span className="text-[color:var(--color-muted)]">{String(w.startTime)} - {String(w.endTime)}</span>
                                 </div>
                               ))}
                           </div>
@@ -3115,10 +3115,10 @@ const RoutesView: React.FC = () => {
                   <div className="space-y-4">
                     <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
                       <div className="flex items-center justify-between mb-2">
-                        <div className="text-xs font-black text-slate-500 uppercase">Datas Geradas</div>
+                        <div className="text-xs font-black text-[color:var(--color-muted)] uppercase">Datas Geradas</div>
                         <button
                           onClick={() => setWeeklyChecklistOverrides({})}
-                          className="text-xs font-bold text-slate-500 hover:text-slate-700"
+                          className="text-xs font-bold text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]"
                         >
                           Limpar Overrides
                         </button>
@@ -3133,7 +3133,7 @@ const RoutesView: React.FC = () => {
                             {previewDates.slice(0, 90).map((d) => (
                               <div key={d} className="bg-white border border-slate-100 rounded-lg p-2">
                                 <div className="flex items-center justify-between gap-2">
-                                  <div className="text-sm font-bold text-slate-700">
+                                  <div className="text-sm font-bold text-[color:var(--color-text)]">
                                     {new Date(d + 'T12:00:00').toLocaleDateString('pt-BR')}
                                   </div>
                                   <div className="w-64">
@@ -3162,9 +3162,9 @@ const RoutesView: React.FC = () => {
                     </div>
 
                     <div className="space-y-1">
-                      <div className="text-xs font-bold text-slate-500">Promotores Selecionados</div>
+                      <div className="text-xs font-bold text-[color:var(--color-muted)]">Promotores Selecionados</div>
                       <div className="text-sm">{selectedPromoters.length} promotor(es)</div>
-                      <div className="text-xs font-bold text-slate-500">Dias Selecionados</div>
+                      <div className="text-xs font-bold text-[color:var(--color-muted)]">Dias Selecionados</div>
                       <div className="text-sm">
                         {Object.entries(weeklyWeekdays).filter(([,v])=>v).map(([d]) => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][parseInt(d,10)]).join(', ') || 'Nenhum'}
                       </div>
@@ -3177,7 +3177,7 @@ const RoutesView: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6">
                   <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2">Adicionar PDVs</label>
+                      <label className="block text-sm font-bold text-[color:var(--color-text)] mb-2">Adicionar PDVs</label>
                       <div className="mb-2">
                         <input
                           type="text"
@@ -3208,7 +3208,7 @@ const RoutesView: React.FC = () => {
                               className="w-full flex justify-between items-center p-3 rounded-xl hover:bg-slate-50 border border-slate-100 disabled:opacity-50 text-left"
                             >
                               <div>
-                                <p className="text-sm font-bold text-slate-800">{s.fantasyName}</p>
+                                <p className="text-sm font-bold text-[color:var(--color-text)]">{s.fantasyName}</p>
                                 <p className="text-[10px] text-slate-400">{s.city}</p>
                               </div>
                               <Plus size={16} className="text-slate-400" />
@@ -3220,7 +3220,7 @@ const RoutesView: React.FC = () => {
 
                   <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-bold text-slate-700">PDVs Selecionados</label>
+                      <label className="block text-sm font-bold text-[color:var(--color-text)]">PDVs Selecionados</label>
                       <div className="space-y-2 max-h-64 overflow-y-auto border border-slate-100 rounded-xl p-2">
                         {routeItems.length === 0 ? (
                           <div className="text-center py-6 text-slate-400 text-sm">Nenhum PDV selecionado</div>
@@ -3228,7 +3228,7 @@ const RoutesView: React.FC = () => {
                           <div key={item.supermarketId} className="border border-slate-100 rounded-xl p-3 bg-white">
                             <div className="flex items-center justify-between">
                               <div>
-                                <div className="text-sm font-bold text-slate-800">{item.supermarket?.fantasyName || 'PDV'}</div>
+                                <div className="text-sm font-bold text-[color:var(--color-text)]">{item.supermarket?.fantasyName || 'PDV'}</div>
                                 <div className="text-[10px] text-slate-400">{item.supermarket?.city}</div>
                               </div>
                               <div className="flex items-center gap-2">
@@ -3238,7 +3238,7 @@ const RoutesView: React.FC = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-2 mt-2">
                               <div>
-                                <label className="text-[10px] font-bold text-slate-500 block mb-1">Início</label>
+                                <label className="text-[10px] font-bold text-[color:var(--color-muted)] block mb-1">Início</label>
                                 <input
                                   type="time"
                                   value={item.startTime || ''}
@@ -3247,7 +3247,7 @@ const RoutesView: React.FC = () => {
                                 />
                               </div>
                               <div>
-                                <label className="text-[10px] font-bold text-slate-500 block mb-1">Fim</label>
+                                <label className="text-[10px] font-bold text-[color:var(--color-muted)] block mb-1">Fim</label>
                                 <input
                                   type="time"
                                   value={item.endTime || ''}
@@ -3262,11 +3262,11 @@ const RoutesView: React.FC = () => {
                     </div>
 
                     <div className="space-y-1">
-                      <div className="text-xs font-bold text-slate-500">Promotores Selecionados</div>
+                      <div className="text-xs font-bold text-[color:var(--color-muted)]">Promotores Selecionados</div>
                       <div className="text-sm">{selectedPromoters.length} promotor(es)</div>
-                      <div className="text-xs font-bold text-slate-500">PDVs Selecionados</div>
+                      <div className="text-xs font-bold text-[color:var(--color-muted)]">PDVs Selecionados</div>
                       <div className="text-sm">{routeItems.length} PDV(s)</div>
-                      <div className="text-xs font-bold text-slate-500">Datas (prévia)</div>
+                      <div className="text-xs font-bold text-[color:var(--color-muted)]">Datas (prévia)</div>
                       <div className="text-sm">{generateWeeklyDates().length} dia(s)</div>
                     </div>
                   </div>
@@ -3277,7 +3277,7 @@ const RoutesView: React.FC = () => {
             <div className="flex gap-3 justify-between px-6 py-4 border-t border-slate-200">
               <button
                 onClick={() => { setShowWeeklyModal(false); }}
-                className="px-6 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100"
+                className="px-6 py-2 rounded-lg font-bold text-[color:var(--color-muted)] hover:bg-slate-100"
               >
                 Cancelar
               </button>
@@ -3285,7 +3285,7 @@ const RoutesView: React.FC = () => {
                 <button
                   onClick={() => setWeeklyWizardStep((s) => Math.max(1, s - 1))}
                   disabled={weeklyWizardStep === 1}
-                  className="px-6 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-50"
+                  className="px-6 py-2 rounded-lg font-bold text-[color:var(--color-muted)] hover:bg-slate-100 disabled:opacity-50"
                 >
                   Voltar
                 </button>
@@ -3322,13 +3322,13 @@ const RoutesView: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
           <div className="bg-white rounded-2xl w-full max-w-5xl shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-              <h3 className="text-xl font-bold text-slate-900">Criar Rotas por Calendário</h3>
+              <h3 className="text-xl font-bold text-[color:var(--color-text)]">Criar Rotas por Calendário</h3>
               <button
                 onClick={() => {
                   setShowCalendarModal(false);
                   setCalendarSelectedDates([]);
                 }}
-                className="px-3 py-1 rounded-lg font-bold text-slate-500 hover:bg-slate-100"
+                className="px-3 py-1 rounded-lg font-bold text-[color:var(--color-muted)] hover:bg-slate-100"
               >
                 Fechar
               </button>
@@ -3338,7 +3338,7 @@ const RoutesView: React.FC = () => {
               <div className="space-y-6">
                 <div className="grid grid-cols-1 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-500 block mb-1">Marca</label>
+                    <label className="text-xs font-bold text-[color:var(--color-muted)] block mb-1">Marca</label>
                     <select
                       value={editorBrandId}
                       onChange={(e) => {
@@ -3358,7 +3358,7 @@ const RoutesView: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-500 block mb-1">Checklist (padrão da marca)</label>
+                    <label className="text-xs font-bold text-[color:var(--color-muted)] block mb-1">Checklist (padrão da marca)</label>
                     <select
                       value={editorChecklistTemplateId}
                       onChange={(e) => setEditorChecklistTemplateId(e.target.value)}
@@ -3373,7 +3373,7 @@ const RoutesView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Promotores</label>
+                  <label className="block text-sm font-bold text-[color:var(--color-text)] mb-2">Promotores</label>
                   <div className="mb-2">
                     <input
                       type="text"
@@ -3401,9 +3401,9 @@ const RoutesView: React.FC = () => {
                           <button
                             key={promoter.id}
                             onClick={() => handleTogglePromoter(promoter.id)}
-                            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${isSelected ? 'bg-blue-600 text-white' : 'bg-white border border-slate-100 text-slate-600'}`}
+                            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${isSelected ? 'bg-blue-600 text-white' : 'bg-white border border-slate-100 text-[color:var(--color-muted)]'}`}
                           >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-[color:var(--color-muted)]'}`}>
                               {promoter.name.charAt(0)}
                             </div>
                             <div className="text-left">
@@ -3417,7 +3417,7 @@ const RoutesView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Adicionar PDVs</label>
+                  <label className="block text-sm font-bold text-[color:var(--color-text)] mb-2">Adicionar PDVs</label>
                   <div className="mb-2">
                     <input
                       type="text"
@@ -3448,7 +3448,7 @@ const RoutesView: React.FC = () => {
                           className="w-full flex justify-between items-center p-3 rounded-xl hover:bg-slate-50 border border-slate-100 disabled:opacity-50 text-left"
                         >
                           <div>
-                            <p className="text-sm font-bold text-slate-800">{s.fantasyName}</p>
+                            <p className="text-sm font-bold text-[color:var(--color-text)]">{s.fantasyName}</p>
                             <p className="text-[10px] text-slate-400">{s.city}</p>
                           </div>
                           <Plus size={16} className="text-slate-400" />
@@ -3458,7 +3458,7 @@ const RoutesView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-slate-700">PDVs Selecionados</label>
+                  <label className="block text-sm font-bold text-[color:var(--color-text)]">PDVs Selecionados</label>
                   <div className="space-y-2 max-h-48 overflow-y-auto border border-slate-100 rounded-xl p-2">
                     {routeItems.length === 0 ? (
                       <div className="text-center py-6 text-slate-400 text-sm">Nenhum PDV selecionado</div>
@@ -3466,7 +3466,7 @@ const RoutesView: React.FC = () => {
                       <div key={item.supermarketId} className="border border-slate-100 rounded-xl p-3 bg-white">
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-sm font-bold text-slate-800">{item.supermarket?.fantasyName || 'PDV'}</div>
+                            <div className="text-sm font-bold text-[color:var(--color-text)]">{item.supermarket?.fantasyName || 'PDV'}</div>
                             <div className="text-[10px] text-slate-400">{item.supermarket?.city}</div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -3476,7 +3476,7 @@ const RoutesView: React.FC = () => {
                         </div>
                         <div className="grid grid-cols-2 gap-2 mt-2">
                           <div>
-                            <label className="text-[10px] font-bold text-slate-500 block mb-1">Início</label>
+                            <label className="text-[10px] font-bold text-[color:var(--color-muted)] block mb-1">Início</label>
                             <input
                               type="time"
                               value={item.startTime || ''}
@@ -3485,7 +3485,7 @@ const RoutesView: React.FC = () => {
                             />
                           </div>
                           <div>
-                            <label className="text-[10px] font-bold text-slate-500 block mb-1">Fim</label>
+                            <label className="text-[10px] font-bold text-[color:var(--color-muted)] block mb-1">Fim</label>
                             <input
                               type="time"
                               value={item.endTime || ''}
@@ -3502,7 +3502,7 @@ const RoutesView: React.FC = () => {
 
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <div className="font-bold text-slate-800">
+                  <div className="font-bold text-[color:var(--color-text)]">
                     {calendarMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
                   </div>
                   <div className="flex items-center gap-2">
@@ -3538,7 +3538,7 @@ const RoutesView: React.FC = () => {
                           <button
                             key={dateStr}
                             onClick={() => toggleSelectCalendarDate(day)}
-                            className={`border rounded-lg p-2 text-center text-sm font-bold transition ${isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:border-blue-300'}`}
+                            className={`border rounded-lg p-2 text-center text-sm font-bold transition ${isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-[color:var(--color-text)] hover:border-blue-300'}`}
                             title={day.toLocaleDateString('pt-BR')}
                           >
                             {day.getDate()}
@@ -3551,10 +3551,10 @@ const RoutesView: React.FC = () => {
 
                 <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-xs font-black text-slate-500 uppercase">Datas Selecionadas</div>
+                    <div className="text-xs font-black text-[color:var(--color-muted)] uppercase">Datas Selecionadas</div>
                     <button
                       onClick={() => setCalendarSelectedDates([])}
-                      className="text-xs font-bold text-slate-500 hover:text-slate-700"
+                      className="text-xs font-bold text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]"
                     >
                       Limpar
                     </button>
@@ -3567,7 +3567,7 @@ const RoutesView: React.FC = () => {
                         .sort()
                         .map(d => (
                           <div key={d} className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-100">
-                            <span className="text-sm font-bold text-slate-700">{new Date(d + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
+                            <span className="text-sm font-bold text-[color:var(--color-text)]">{new Date(d + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
                             <button onClick={() => setCalendarSelectedDates(prev => prev.filter(x => x !== d))} className="text-red-400 hover:text-red-600 p-1">
                               <XCircle size={16} />
                             </button>
@@ -3578,11 +3578,11 @@ const RoutesView: React.FC = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <div className="text-xs font-bold text-slate-500">Promotores Selecionados</div>
+                  <div className="text-xs font-bold text-[color:var(--color-muted)]">Promotores Selecionados</div>
                   <div className="text-sm">{selectedPromoters.length} promotor(es)</div>
-                  <div className="text-xs font-bold text-slate-500">PDVs Selecionados</div>
+                  <div className="text-xs font-bold text-[color:var(--color-muted)]">PDVs Selecionados</div>
                   <div className="text-sm">{routeItems.length} PDV(s)</div>
-                  <div className="text-xs font-bold text-slate-500">Datas Selecionadas</div>
+                  <div className="text-xs font-bold text-[color:var(--color-muted)]">Datas Selecionadas</div>
                   <div className="text-sm">{calendarSelectedDates.length} dia(s)</div>
                 </div>
               </div>
@@ -3594,7 +3594,7 @@ const RoutesView: React.FC = () => {
                   setShowCalendarModal(false);
                   setCalendarSelectedDates([]);
                 }}
-                className="px-6 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-100"
+                className="px-6 py-2 rounded-lg font-bold text-[color:var(--color-muted)] hover:bg-slate-100"
               >
                 Cancelar
               </button>
@@ -3613,15 +3613,15 @@ const RoutesView: React.FC = () => {
       {showRecurrenceChoiceModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95">
-            <h3 className="text-xl font-black text-slate-800 mb-2">Editar Rota Recorrente</h3>
-            <p className="text-slate-500 mb-6">
+            <h3 className="text-xl font-black text-[color:var(--color-text)] mb-2">Editar Rota Recorrente</h3>
+            <p className="text-[color:var(--color-muted)] mb-6">
               Esta rota faz parte de uma série recorrente. Você deseja editar apenas esta rota específica ou todas as rotas futuras desta série?
             </p>
             
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => handleRecurrenceOption('single')}
-                className="w-full py-3 px-4 rounded-xl border-2 border-slate-200 font-bold text-slate-600 hover:border-slate-300 hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                className="w-full py-3 px-4 rounded-xl border-2 border-slate-200 font-bold text-[color:var(--color-muted)] hover:border-slate-300 hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
               >
                 <Calendar size={18} />
                 Apenas Esta Rota {pendingRouteEdit?.date ? `(${new Date(pendingRouteEdit.date).toLocaleDateString('pt-BR')})` : ''}
@@ -3641,7 +3641,7 @@ const RoutesView: React.FC = () => {
                   setShowRecurrenceChoiceModal(false);
                   setPendingRouteEdit(null);
                 }}
-                className="mt-2 text-sm font-bold text-slate-400 hover:text-slate-600"
+                className="mt-2 text-sm font-bold text-slate-400 hover:text-[color:var(--color-muted)]"
               >
                 Cancelar
               </button>

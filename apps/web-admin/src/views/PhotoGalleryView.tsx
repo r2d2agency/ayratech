@@ -165,7 +165,7 @@ const PhotoGalleryView: React.FC = () => {
       {/* Filters */}
       <div className="space-y-4">
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2 text-slate-500">
+          <div className="flex items-center gap-2 text-[color:var(--color-muted)]">
             <Filter size={20} />
             <span className="font-bold text-sm">Filtros:</span>
           </div>
@@ -175,7 +175,7 @@ const PhotoGalleryView: React.FC = () => {
               type="date" 
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[color:var(--color-text)] outline-none focus:border-blue-500 transition-colors"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -184,7 +184,7 @@ const PhotoGalleryView: React.FC = () => {
               type="date" 
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[color:var(--color-text)] outline-none focus:border-blue-500 transition-colors"
             />
           </div>
         </div>
@@ -236,7 +236,7 @@ const PhotoGalleryView: React.FC = () => {
               {/* Card Header */}
               <div className="p-4 border-b border-slate-100 bg-slate-50/50">
                 <div className="flex justify-between items-start mb-2">
-                   <h3 className="font-bold text-slate-800 line-clamp-1" title={visit.item.supermarket.fantasyName}>
+                   <h3 className="font-bold text-[color:var(--color-text)] line-clamp-1" title={visit.item.supermarket.fantasyName}>
                      {visit.item.supermarket.fantasyName}
                    </h3>
                    <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-white px-2 py-1 rounded-full border border-slate-100">
@@ -246,11 +246,11 @@ const PhotoGalleryView: React.FC = () => {
                 </div>
                 
                 <div className="space-y-1.5">
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <div className="flex items-center gap-2 text-xs text-[color:var(--color-muted)]">
                     <MapPin size={12} className="text-slate-400" />
                     <span className="truncate">{visit.item.supermarket.city || 'Cidade não inf.'} - {visit.item.supermarket.state || 'UF'}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <div className="flex items-center gap-2 text-xs text-[color:var(--color-muted)]">
                     <Calendar size={12} className="text-slate-400" />
                     <span>{new Date(visit.route.date).toLocaleDateString('pt-BR')}</span>
                     {visit.item.checkInTime && (
@@ -261,7 +261,7 @@ const PhotoGalleryView: React.FC = () => {
                       </>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <div className="flex items-center gap-2 text-xs text-[color:var(--color-muted)]">
                     <User size={12} className="text-slate-400" />
                     <span className="truncate">{visit.route.promoter?.fullName || 'N/A'}</span>
                   </div>
@@ -306,27 +306,27 @@ const PhotoGalleryView: React.FC = () => {
             {/* Header */}
             <div className="p-6 border-b border-slate-100 flex justify-between items-start bg-slate-50/50">
               <div>
-                <h2 className="text-2xl font-black text-slate-900">{selectedVisit.item.supermarket.fantasyName}</h2>
-                <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-slate-500">
+                <h2 className="text-2xl font-black text-[color:var(--color-text)]">{selectedVisit.item.supermarket.fantasyName}</h2>
+                <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-[color:var(--color-muted)]">
                   <span className="flex items-center gap-1.5">
                     <Calendar size={14} />
                     {new Date(selectedVisit.route.date).toLocaleDateString('pt-BR')}
                   </span>
                   <span className="flex items-center gap-1.5">
                     <User size={14} />
-                    Promotor: <strong className="text-slate-700">{selectedVisit.route.promoter?.fullName || 'N/A'}</strong>
+                    Promotor: <strong className="text-[color:var(--color-text)]">{selectedVisit.route.promoter?.fullName || 'N/A'}</strong>
                   </span>
                   {selectedVisit.route.promoter?.supervisor && (
                     <span className="flex items-center gap-1.5">
                       <User size={14} />
-                      Supervisor: <strong className="text-slate-700">{selectedVisit.route.promoter.supervisor.fullName}</strong>
+                      Supervisor: <strong className="text-[color:var(--color-text)]">{selectedVisit.route.promoter.supervisor.fullName}</strong>
                     </span>
                   )}
                 </div>
               </div>
               <button 
                 onClick={() => setSelectedVisit(null)}
-                className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-red-500 transition-all"
+                className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-[color:var(--color-muted)] hover:bg-slate-50 hover:text-red-500 transition-all"
               >
                 <X size={20} />
               </button>
@@ -340,11 +340,11 @@ const PhotoGalleryView: React.FC = () => {
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                   <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                     <div>
-                      <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                      <h3 className="font-bold text-[color:var(--color-text)] flex items-center gap-2">
                         <ImageIcon size={18} className="text-blue-500"/>
                         Fotos da Gôndola / Categoria
                       </h3>
-                      <div className="text-xs text-slate-500 mt-0.5">Visão Geral por Categoria</div>
+                      <div className="text-xs text-[color:var(--color-muted)] mt-0.5">Visão Geral por Categoria</div>
                     </div>
                   </div>
                   <div className="p-4 space-y-6">
@@ -405,7 +405,7 @@ const PhotoGalleryView: React.FC = () => {
 
                        return (
                          <div key={catId} className="border-l-4 border-blue-500 pl-4 py-2 bg-slate-50/30 rounded-r-xl">
-                           <h4 className="font-bold text-base text-slate-800 mb-3">{catId}</h4>
+                           <h4 className="font-bold text-base text-[color:var(--color-text)] mb-3">{catId}</h4>
                            {renderPhotoGrid(beforePhotos, 'Antes')}
                            {renderPhotoGrid(afterPhotos, 'Depois')}
                            {renderPhotoGrid(storagePhotos, 'Estoque')}
@@ -423,8 +423,8 @@ const PhotoGalleryView: React.FC = () => {
                 <div key={idx} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                   <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                     <div>
-                      <h3 className="font-bold text-slate-800">{product.product.name}</h3>
-                      <div className="text-xs text-slate-500 mt-0.5">{product.product.brand?.name}</div>
+                      <h3 className="font-bold text-[color:var(--color-text)]">{product.product.name}</h3>
+                      <div className="text-xs text-[color:var(--color-muted)] mt-0.5">{product.product.brand?.name}</div>
                     </div>
                     <span className="text-xs font-bold text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-200">
                       {product.photos?.length} foto(s)

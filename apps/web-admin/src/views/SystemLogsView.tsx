@@ -60,7 +60,7 @@ const SystemLogsView: React.FC = () => {
       case 'error': return <XCircle className="text-red-500" size={20} />;
       case 'warn': return <AlertTriangle className="text-yellow-500" size={20} />;
       case 'info': return <Info className="text-blue-500" size={20} />;
-      default: return <AlertCircle className="text-slate-500" size={20} />;
+      default: return <AlertCircle className="text-[color:var(--color-muted)]" size={20} />;
     }
   };
 
@@ -69,8 +69,8 @@ const SystemLogsView: React.FC = () => {
       error: 'bg-red-100 text-red-700',
       warn: 'bg-yellow-100 text-yellow-700',
       info: 'bg-blue-100 text-blue-700',
-      debug: 'bg-slate-100 text-slate-700',
-    }[level] || 'bg-slate-100 text-slate-700';
+      debug: 'bg-slate-100 text-[color:var(--color-text)]',
+    }[level] || 'bg-slate-100 text-[color:var(--color-text)]';
 
     return (
       <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase ${classes}`}>
@@ -83,11 +83,11 @@ const SystemLogsView: React.FC = () => {
     <div className="p-6 max-w-[1600px] mx-auto space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-[color:var(--color-text)] flex items-center gap-2">
             <Code className="text-blue-600" />
             Logs do Sistema
           </h1>
-          <p className="text-slate-500 mt-1">
+          <p className="text-[color:var(--color-muted)] mt-1">
             Monitoramento de erros e eventos do sistema
           </p>
         </div>
@@ -96,7 +96,7 @@ const SystemLogsView: React.FC = () => {
           <button
             onClick={fetchLogs}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-[color:var(--color-text)] rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
           >
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
             Atualizar
@@ -117,17 +117,17 @@ const SystemLogsView: React.FC = () => {
           <table className="w-full text-left border-collapse">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="p-4 text-xs font-bold text-slate-500 uppercase w-16">Nível</th>
-                <th className="p-4 text-xs font-bold text-slate-500 uppercase w-48">Contexto</th>
-                <th className="p-4 text-xs font-bold text-slate-500 uppercase">Mensagem</th>
-                <th className="p-4 text-xs font-bold text-slate-500 uppercase w-48">Data/Hora</th>
-                <th className="p-4 text-xs font-bold text-slate-500 uppercase w-12"></th>
+                <th className="p-4 text-xs font-bold text-[color:var(--color-muted)] uppercase w-16">Nível</th>
+                <th className="p-4 text-xs font-bold text-[color:var(--color-muted)] uppercase w-48">Contexto</th>
+                <th className="p-4 text-xs font-bold text-[color:var(--color-muted)] uppercase">Mensagem</th>
+                <th className="p-4 text-xs font-bold text-[color:var(--color-muted)] uppercase w-48">Data/Hora</th>
+                <th className="p-4 text-xs font-bold text-[color:var(--color-muted)] uppercase w-12"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {logs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-slate-500">
+                  <td colSpan={5} className="p-8 text-center text-[color:var(--color-muted)]">
                     Nenhum log encontrado.
                   </td>
                 </tr>
@@ -145,18 +145,18 @@ const SystemLogsView: React.FC = () => {
                         </div>
                       </td>
                       <td className="p-4 align-top">
-                        <div className="font-medium text-slate-700 font-mono text-sm">{log.context}</div>
+                        <div className="font-medium text-[color:var(--color-text)] font-mono text-sm">{log.context}</div>
                         {log.userId && (
-                          <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
+                          <div className="flex items-center gap-1 text-xs text-[color:var(--color-muted)] mt-1">
                             <User size={12} />
                             {log.userId}
                           </div>
                         )}
                       </td>
                       <td className="p-4 align-top">
-                        <div className="text-slate-800 line-clamp-2">{log.message}</div>
+                        <div className="text-[color:var(--color-text)] line-clamp-2">{log.message}</div>
                       </td>
-                      <td className="p-4 align-top text-slate-500 text-sm whitespace-nowrap">
+                      <td className="p-4 align-top text-[color:var(--color-muted)] text-sm whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <Clock size={14} />
                           {new Date(log.createdAt).toLocaleString()}
@@ -176,13 +176,13 @@ const SystemLogsView: React.FC = () => {
                         <td colSpan={5} className="p-4 pt-0 border-b border-slate-200">
                           <div className="bg-slate-900 rounded-lg p-4 text-slate-300 font-mono text-xs overflow-x-auto space-y-4">
                             <div>
-                              <div className="text-slate-500 mb-1 uppercase tracking-wider font-bold">Stack Trace</div>
+                              <div className="text-[color:var(--color-muted)] mb-1 uppercase tracking-wider font-bold">Stack Trace</div>
                               <pre className="whitespace-pre-wrap">{log.stack || 'N/A'}</pre>
                             </div>
                             
                             {log.metadata && Object.keys(log.metadata).length > 0 && (
                               <div>
-                                <div className="text-slate-500 mb-1 uppercase tracking-wider font-bold">Metadata</div>
+                                <div className="text-[color:var(--color-muted)] mb-1 uppercase tracking-wider font-bold">Metadata</div>
                                 <pre className="whitespace-pre-wrap">{JSON.stringify(log.metadata, null, 2)}</pre>
                               </div>
                             )}

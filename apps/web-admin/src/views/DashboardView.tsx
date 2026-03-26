@@ -63,15 +63,15 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight font-headline text-[color:var(--color-text)]">Dashboard Operacional</h1>
-          <p className="text-[color:var(--color-muted)] font-medium text-lg">Seu hub de controle Ayratech.</p>
+          <h1 className="text-2xl font-bold tracking-tight font-headline text-[color:var(--color-text)]">Dashboard Operacional</h1>
+          <p className="text-[color:var(--color-muted)] font-medium text-sm">Seu hub de controle Ayratech.</p>
         </div>
         <div className="p-1 rounded-full border border-white/5 flex gap-1 shadow-sm bg-[color:var(--surface-container-low)]">
           <button 
             onClick={() => setPeriod('today')}
-            className={`px-6 py-2 text-xs font-bold rounded-full transition-all ${
+            className={`px-5 py-1.5 text-[11px] font-bold rounded-full transition-all ${
               period === 'today' 
-                ? 'text-[color:var(--on-background)] bg-gradient-to-r from-[color:var(--color-primary)] to-[color:var(--color-primary)] shadow-[0_0_20px_rgba(204,151,255,0.25)]' 
+                ? 'text-[color:var(--surface)] bg-gradient-to-r from-[color:var(--color-primary)] to-[color:var(--color-primary)] shadow-[0_0_15px_rgba(253,0,255,0.3)]' 
                 : 'text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]'
             }`}
           >
@@ -79,9 +79,9 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           </button>
           <button 
             onClick={() => setPeriod('week')}
-            className={`px-6 py-2 text-xs font-bold rounded-full transition-all ${
+            className={`px-5 py-1.5 text-[11px] font-bold rounded-full transition-all ${
               period === 'week' 
-                ? 'text-[color:var(--on-background)] bg-gradient-to-r from-[color:var(--color-primary)] to-[color:var(--color-primary)] shadow-[0_0_20px_rgba(204,151,255,0.25)]' 
+                ? 'text-[color:var(--surface)] bg-gradient-to-r from-[color:var(--color-primary)] to-[color:var(--color-primary)] shadow-[0_0_15px_rgba(253,0,255,0.3)]' 
                 : 'text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]'
             }`}
           >
@@ -185,7 +185,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     </div>
                     <div className="w-full bg-[color:var(--surface-container-highest)] h-2.5 rounded-full overflow-hidden">
                     <div 
-                        className="h-full transition-all duration-1000 shadow-[0_0_10px_rgba(204,151,255,0.5)]" 
+                        className="h-full transition-all duration-1000 shadow-[0_0_10px_rgba(253,0,255,0.5)]" 
                         style={{ width: `${c.percentage}%`, backgroundColor: settings.primaryColor }} 
                     />
                     </div>
@@ -201,7 +201,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             <img src="https://picsum.photos/800/400?grayscale" className="absolute inset-0 w-full h-full object-cover opacity-30 transition-all duration-700 group-hover:scale-105" alt="Map" />
             <button 
               onClick={() => onNavigate('live_map')}
-              className="relative z-10 bg-[color:var(--surface-container-low)] px-8 py-3 rounded-2xl shadow-[0_0_20px_rgba(204,151,255,0.15)] border border-white/10 font-bold hover:scale-105 transition-all hover:bg-white/5 text-sm uppercase tracking-wider font-headline"
+              className="relative z-10 bg-[color:var(--surface-container-low)] px-8 py-3 rounded-2xl shadow-[0_0_20px_rgba(253,0,255,0.15)] border border-white/10 font-bold hover:scale-105 transition-all hover:bg-white/5 text-sm uppercase tracking-wider font-headline"
               style={{ color: settings.primaryColor }}
             >
               Abrir Monitoramento Full

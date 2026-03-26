@@ -104,7 +104,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
         ) : (
           <div 
             onClick={() => onNavigate('dashboard')}
-            className="flex h-10 w-10 min-w-[40px] items-center justify-center rounded-full text-[color:var(--on-background)] cursor-pointer shadow-[0_0_15px_rgba(204,151,255,0.25)] bg-gradient-to-tr from-[color:var(--color-primary)] to-[color:var(--color-secondary)]"
+            className="flex h-10 w-10 min-w-[40px] items-center justify-center rounded-full text-[color:var(--on-background)] cursor-pointer shadow-[0_0_15px_rgba(253,0,255,0.25)] bg-gradient-to-tr from-[color:var(--color-primary)] to-[color:var(--color-secondary)]"
           >
             {settings.logoUrl ? (
                <img 

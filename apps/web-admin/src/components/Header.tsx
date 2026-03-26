@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Search, Bell, FileText, Info, CheckCircle, Menu } from 'lucide-react';
+import { Search, Bell, FileText, Info, CheckCircle, Menu, Sun, Moon } from 'lucide-react';
 import api from '../api/client';
 import { useNavigate } from 'react-router-dom';
 import { getImageUrl } from '../utils/image';
+import { useTheme } from '../context/ThemeContext';
 
 interface HeaderProps {
   onToggleSidebar?: () => void;
@@ -37,6 +38,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     fetchUser();
@@ -151,6 +153,14 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
       </div>
 
       <div className="flex items-center gap-4">
+        <button
+          onClick={toggleTheme}
+          className="relative flex h-10 w-10 items-center justify-center rounded-xl text-[color:var(--color-muted)] hover:text-[color:var(--color-secondary)] hover:bg-white/5 transition-colors border border-white/5"
+          title={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
+        >
+          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+
         <div className="relative" ref={notificationRef}>
           <button 
             className="relative flex h-10 w-10 items-center justify-center rounded-xl text-[color:var(--color-muted)] hover:text-[color:var(--color-secondary)] hover:bg-white/5 transition-colors border border-white/5"
@@ -163,7 +173,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 top-12 w-80 bg-[color:var(--surface-container-low)] rounded-xl shadow-[0_0_20px_rgba(204,151,255,0.12)] border border-white/5 overflow-hidden z-50">
+            <div className="absolute right-0 top-12 w-80 bg-[color:var(--surface-container-low)] rounded-xl shadow-[0_0_20px_rgba(253,0,255,0.12)] border border-white/5 overflow-hidden z-50">
               <div className="p-3 border-b border-white/5 flex justify-between items-center bg-[color:var(--surface)]/40">
                 <h3 className="font-semibold text-[color:var(--color-text)] text-sm">Notificações</h3>
                 {unreadCount > 0 && (

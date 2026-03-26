@@ -39,8 +39,8 @@ const SupermarketGroupFormView: React.FC<SupermarketGroupFormViewProps> = ({ onN
              <ChevronRight className="rotate-180" size={24} />
           </button>
           <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Nova Rede / Grupo</h1>
-            <p className="text-slate-500 font-bold">Cadastre uma nova rede de supermercados.</p>
+            <h1 className="text-xl font-black text-[color:var(--color-text)] tracking-tight">Nova Rede / Grupo</h1>
+            <p className="text-[color:var(--color-muted)] font-bold">Cadastre uma nova rede de supermercados.</p>
           </div>
        </div>
        <div className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-sm">
@@ -51,13 +51,13 @@ const SupermarketGroupFormView: React.FC<SupermarketGroupFormViewProps> = ({ onN
                     type="text" 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                    className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]" 
                     placeholder="Ex: Grupo Pão de Açúcar" 
                 />
              </div>
           </div>
           <div className="mt-12 pt-10 border-t border-slate-100 flex justify-end gap-6">
-             <button onClick={() => onNavigate('supermarket_groups_list')} className="px-8 py-4 font-black text-slate-400 hover:text-slate-600 transition-all">Descartar</button>
+             <button onClick={() => onNavigate('supermarket_groups_list')} className="px-8 py-4 font-black text-slate-400 hover:text-[color:var(--color-muted)] transition-all">Descartar</button>
              <button 
                 disabled={loading}
                 className="px-12 py-4 text-white font-black rounded-2xl shadow-2xl shadow-blue-200 hover:scale-105 transition-all disabled:opacity-50"

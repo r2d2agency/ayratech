@@ -382,7 +382,7 @@ const ClientsView: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500 relative">
       {showLinkModal && linkClient && (
         <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
-          <div className="rounded-3xl p-6 max-w-5xl w-full shadow-[0_0_20px_rgba(204,151,255,0.12)] relative flex flex-col max-h-[90vh] border border-white/5 bg-[color:var(--surface-container-low)]">
+          <div className="rounded-3xl p-6 max-w-5xl w-full shadow-[0_0_20px_rgba(253,0,255,0.12)] relative flex flex-col max-h-[90vh] border border-white/5 bg-[color:var(--surface-container-low)]">
             <button 
               onClick={() => setShowLinkModal(false)}
               className="absolute top-4 right-4 p-2 hover:bg-white/5 rounded-full transition-colors"
@@ -507,7 +507,7 @@ const ClientsView: React.FC = () => {
       )}
       {showClientModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="rounded-3xl p-8 max-w-2xl w-full shadow-[0_0_20px_rgba(204,151,255,0.12)] relative max-h-[90vh] overflow-y-auto border border-white/5 bg-[color:var(--surface-container-low)]">
+          <div className="rounded-3xl p-8 max-w-2xl w-full shadow-[0_0_20px_rgba(253,0,255,0.12)] relative max-h-[90vh] overflow-y-auto border border-white/5 bg-[color:var(--surface-container-low)]">
             <button 
               onClick={() => setShowClientModal(false)}
               className="absolute top-4 right-4 p-2 hover:bg-white/5 rounded-full transition-colors"
@@ -906,7 +906,7 @@ const ClientsView: React.FC = () => {
 
       {showContractModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="rounded-3xl p-8 max-w-md w-full shadow-[0_0_20px_rgba(204,151,255,0.12)] relative border border-white/5 bg-[color:var(--surface-container-low)]">
+          <div className="rounded-3xl p-8 max-w-md w-full shadow-[0_0_20px_rgba(253,0,255,0.12)] relative border border-white/5 bg-[color:var(--surface-container-low)]">
             <button 
               onClick={() => setShowContractModal(false)}
               className="absolute top-4 right-4 p-2 hover:bg-white/5 rounded-full transition-colors"
@@ -1094,7 +1094,7 @@ const ClientsView: React.FC = () => {
               <X size={20} className="text-slate-400" />
             </button>
             
-            <h2 className="text-2xl font-black text-slate-900 mb-6">Novo Modelo</h2>
+            <h2 className="text-2xl font-black text-[color:var(--color-text)] mb-6">Novo Modelo</h2>
             
             <form onSubmit={handleCreateTemplate} className="space-y-4">
               <div>
@@ -1144,7 +1144,7 @@ const ClientsView: React.FC = () => {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight font-headline text-[color:var(--color-text)]">Clientes & Contratos</h1>
+          <h1 className="text-2xl font-bold tracking-tight font-headline text-[color:var(--color-text)]">Clientes & Contratos</h1>
           <p className="text-[color:var(--color-muted)] font-medium text-lg">Marcas que confiam na operação Ayratech.</p>
         </div>
         <div className="flex gap-4">
@@ -1166,7 +1166,7 @@ const ClientsView: React.FC = () => {
           )}
           <button 
             onClick={() => setShowContractModal(true)}
-            className="flex items-center gap-2 text-black px-8 py-3 rounded-2xl font-bold shadow-[0_0_20px_rgba(204,151,255,0.25)] transition-all hover:scale-105 bg-gradient-to-r from-[color:var(--color-primary)] to-[color:var(--color-primary)]"
+            className="flex items-center gap-2 text-black px-8 py-3 rounded-2xl font-bold shadow-[0_0_20px_rgba(253,0,255,0.25)] transition-all hover:scale-105 bg-gradient-to-r from-[color:var(--color-primary)] to-[color:var(--color-primary)]"
             style={{ backgroundColor: settings.primaryColor }}
           >
             <Plus size={20} /> Novo Contrato
@@ -1315,7 +1315,7 @@ const ClientsView: React.FC = () => {
 
       {showDetailsModal && detailsClient && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="rounded-3xl p-8 max-w-4xl w-full shadow-[0_0_20px_rgba(204,151,255,0.12)] relative max-h-[90vh] flex flex-col border border-white/5 bg-[color:var(--surface-container-low)]">
+          <div className="rounded-3xl p-8 max-w-4xl w-full shadow-[0_0_20px_rgba(253,0,255,0.12)] relative max-h-[90vh] flex flex-col border border-white/5 bg-[color:var(--surface-container-low)]">
             <button 
               onClick={() => setShowDetailsModal(false)}
               className="absolute top-4 right-4 p-2 hover:bg-white/5 rounded-full transition-colors"

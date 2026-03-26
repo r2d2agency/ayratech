@@ -100,8 +100,8 @@ const AiPromptsView: React.FC = () => {
     <div className="p-8 space-y-8 animate-in fade-in duration-500">
       <div className="flex justify-between items-center">
         <div>
-           <h1 className="text-4xl font-black text-slate-900 tracking-tight">Prompts de IA</h1>
-           <p className="text-slate-500 font-medium text-lg">Gerencie as instruções para os assistentes de IA.</p>
+           <h1 className="text-2xl font-black text-[color:var(--color-text)] tracking-tight">Prompts de IA</h1>
+           <p className="text-[color:var(--color-muted)] font-medium text-lg">Gerencie as instruções para os assistentes de IA.</p>
         </div>
         {!editingPrompt && (
           <button 
@@ -126,12 +126,12 @@ const AiPromptsView: React.FC = () => {
       {editingPrompt ? (
         <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm max-w-4xl">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-slate-800">
+            <h2 className="text-xl font-bold text-[color:var(--color-text)]">
               {editingPrompt.id ? 'Editar Prompt' : 'Novo Prompt'}
             </h2>
             <button 
               onClick={() => setEditingPrompt(null)}
-              className="text-slate-400 hover:text-slate-600 font-bold text-sm"
+              className="text-slate-400 hover:text-[color:var(--color-muted)] font-bold text-sm"
             >
               Cancelar
             </button>
@@ -139,7 +139,7 @@ const AiPromptsView: React.FC = () => {
 
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Nome do Prompt (Identificador)</label>
+              <label className="block text-sm font-bold text-[color:var(--color-text)] mb-2">Nome do Prompt (Identificador)</label>
               <input
                 type="text"
                 value={editingPrompt.name}
@@ -151,7 +151,7 @@ const AiPromptsView: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Tipo</label>
+              <label className="block text-sm font-bold text-[color:var(--color-text)] mb-2">Tipo</label>
               <select
                 value={editingPrompt.type}
                 onChange={e => setEditingPrompt({...editingPrompt, type: e.target.value})}
@@ -172,13 +172,13 @@ const AiPromptsView: React.FC = () => {
                 className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
               />
               <label htmlFor="supportsImageAnalysis" className="cursor-pointer">
-                <span className="block font-bold text-slate-700">Analisar Imagem</span>
-                <span className="text-xs text-slate-500">Habilitar envio de imagem para a IA junto com este prompt.</span>
+                <span className="block font-bold text-[color:var(--color-text)]">Analisar Imagem</span>
+                <span className="text-xs text-[color:var(--color-muted)]">Habilitar envio de imagem para a IA junto com este prompt.</span>
               </label>
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Conteúdo / Instruções</label>
+              <label className="block text-sm font-bold text-[color:var(--color-text)] mb-2">Conteúdo / Instruções</label>
               <textarea
                 value={editingPrompt.content}
                 onChange={e => setEditingPrompt({...editingPrompt, content: e.target.value})}
@@ -225,12 +225,12 @@ const AiPromptsView: React.FC = () => {
                 <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl group-hover:bg-blue-100 transition-colors">
                   <FileText size={24} />
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 px-2 py-1 rounded-lg">
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-[color:var(--color-muted)] px-2 py-1 rounded-lg">
                   {prompt.type}
                 </span>
               </div>
-              <h3 className="font-bold text-lg text-slate-800 mb-2">{prompt.name}</h3>
-              <p className="text-slate-500 text-sm line-clamp-3 font-mono bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <h3 className="font-bold text-lg text-[color:var(--color-text)] mb-2">{prompt.name}</h3>
+              <p className="text-[color:var(--color-muted)] text-sm line-clamp-3 font-mono bg-slate-50 p-3 rounded-xl border border-slate-100">
                 {prompt.content}
               </p>
               <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
@@ -246,7 +246,7 @@ const AiPromptsView: React.FC = () => {
           
           {prompts.length === 0 && !loading && (
             <div className="col-span-full text-center py-20 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
-              <p className="text-slate-500 font-medium">Nenhum prompt configurado.</p>
+              <p className="text-[color:var(--color-muted)] font-medium">Nenhum prompt configurado.</p>
               <button 
                 onClick={handleNew}
                 className="text-blue-600 font-bold mt-2 hover:underline"

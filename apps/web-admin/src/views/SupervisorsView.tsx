@@ -119,8 +119,8 @@ const SupervisorsView: React.FC = () => {
     <div className="animate-in fade-in duration-500">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Supervisores</h1>
-          <p className="text-slate-500 font-bold mt-1">Gerencie as equipes e regiões.</p>
+          <h1 className="text-xl font-black text-[color:var(--color-text)] tracking-tight">Supervisores</h1>
+          <p className="text-[color:var(--color-muted)] font-bold mt-1">Gerencie as equipes e regiões.</p>
         </div>
       </div>
 
@@ -134,7 +134,7 @@ const SupervisorsView: React.FC = () => {
                 <input 
                   type="text"
                   placeholder="Buscar supervisor..."
-                  className="w-full h-12 pl-12 pr-4 bg-slate-50 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-100 transition-all font-bold text-slate-700 placeholder:text-slate-400"
+                  className="w-full h-12 pl-12 pr-4 bg-slate-50 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)] placeholder:text-slate-400"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -147,7 +147,7 @@ const SupervisorsView: React.FC = () => {
                   <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                 </div>
               ) : filteredSupervisors.length === 0 ? (
-                <div className="text-center p-8 text-slate-500">
+                <div className="text-center p-8 text-[color:var(--color-muted)]">
                   Nenhum supervisor encontrado.
                 </div>
               ) : (
@@ -176,8 +176,8 @@ const SupervisorsView: React.FC = () => {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-slate-800 truncate">{supervisor.fullName}</h3>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                        <h3 className="font-bold text-[color:var(--color-text)] truncate">{supervisor.fullName}</h3>
+                        <div className="flex items-center gap-2 text-xs text-[color:var(--color-muted)] mt-1">
                           <MapPin size={12} />
                           <span className="truncate">{supervisor.region || 'Sem região definida'}</span>
                         </div>
@@ -218,8 +218,8 @@ const SupervisorsView: React.FC = () => {
                         )}
                       </div>
                       <div className="flex-1 pt-2">
-                        <h2 className="text-2xl font-black text-slate-900">{selectedSupervisor.fullName}</h2>
-                        <p className="text-slate-500 font-medium">{selectedSupervisor.email}</p>
+                        <h2 className="text-2xl font-black text-[color:var(--color-text)]">{selectedSupervisor.fullName}</h2>
+                        <p className="text-[color:var(--color-muted)] font-medium">{selectedSupervisor.email}</p>
                         
                         <div className="flex flex-wrap gap-3 mt-4">
                           <div className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center gap-1">
@@ -244,7 +244,7 @@ const SupervisorsView: React.FC = () => {
                     <div className="grid grid-cols-2 gap-8">
                       {/* Promoters List */}
                       <div>
-                        <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <h3 className="font-bold text-[color:var(--color-text)] mb-4 flex items-center gap-2">
                           <Users size={18} className="text-blue-500" />
                           Equipe ({subordinates.length})
                         </h3>
@@ -262,8 +262,8 @@ const SupervisorsView: React.FC = () => {
                                   )}
                                 </div>
                                 <div className="min-w-0">
-                                  <p className="font-bold text-slate-700 text-sm truncate">{sub.fullName}</p>
-                                  <p className="text-xs text-slate-500 truncate">{sub.email}</p>
+                                  <p className="font-bold text-[color:var(--color-text)] text-sm truncate">{sub.fullName}</p>
+                                  <p className="text-xs text-[color:var(--color-muted)] truncate">{sub.email}</p>
                                 </div>
                               </div>
                             ))
@@ -275,7 +275,7 @@ const SupervisorsView: React.FC = () => {
 
                       {/* Networks List */}
                       <div>
-                        <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <h3 className="font-bold text-[color:var(--color-text)] mb-4 flex items-center gap-2">
                           <Building2 size={18} className="text-orange-500" />
                           Redes Atendidas
                         </h3>
@@ -283,7 +283,7 @@ const SupervisorsView: React.FC = () => {
                           {networks.length > 0 ? (
                             networks.map(net => (
                               <div key={net.id} className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                                <p className="font-bold text-slate-700 text-sm">{net.name}</p>
+                                <p className="font-bold text-[color:var(--color-text)] text-sm">{net.name}</p>
                               </div>
                             ))
                           ) : (

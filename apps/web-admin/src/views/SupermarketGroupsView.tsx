@@ -198,8 +198,8 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
     <div className="animate-in fade-in duration-500 relative">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Redes / Grupos</h1>
-          <p className="text-slate-500 font-bold mt-1">Gerencie as redes de supermercados.</p>
+          <h1 className="text-xl font-black text-[color:var(--color-text)] tracking-tight">Redes / Grupos</h1>
+          <p className="text-[color:var(--color-muted)] font-bold mt-1">Gerencie as redes de supermercados.</p>
         </div>
         <button 
           onClick={handleAddNew}
@@ -218,7 +218,7 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
             <input 
               type="text"
               placeholder="Buscar rede..."
-              className="w-full h-12 pl-12 pr-4 bg-slate-50 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-100 transition-all font-bold text-slate-700 placeholder:text-slate-400"
+              className="w-full h-12 pl-12 pr-4 bg-slate-50 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)] placeholder:text-slate-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -226,7 +226,7 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
         </div>
 
         {loading ? (
-           <div className="p-10 text-center text-slate-500">Carregando...</div>
+           <div className="p-10 text-center text-[color:var(--color-muted)]">Carregando...</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -240,7 +240,7 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
               <tbody className="divide-y divide-slate-100">
                 {filteredGroups.map((group) => (
                   <tr key={group.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-8 py-4 font-bold text-slate-700">{group.name}</td>
+                    <td className="px-8 py-4 font-bold text-[color:var(--color-text)]">{group.name}</td>
                     <td className="px-8 py-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-black ${group.status ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
                         {group.status ? 'ATIVO' : 'INATIVO'}
@@ -276,10 +276,10 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
           <div className="bg-white rounded-[2rem] w-full max-w-5xl shadow-2xl animate-in zoom-in-95 duration-200 h-[90vh] flex flex-col relative">
             <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center rounded-t-[2rem] shrink-0">
               <div>
-                <h2 className="text-2xl font-black text-slate-900">
+                <h2 className="text-2xl font-black text-[color:var(--color-text)]">
                   {editingGroup ? 'Editar Rede' : 'Nova Rede'}
                 </h2>
-                <p className="text-slate-500 font-medium">Preencha os dados da rede</p>
+                <p className="text-[color:var(--color-muted)] font-medium">Preencha os dados da rede</p>
               </div>
               <button 
                 onClick={() => setShowModal(false)}
@@ -298,7 +298,7 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
                    className={`py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${
                      activeTab === 'details' 
                        ? 'text-blue-600 border-blue-600' 
-                       : 'text-slate-400 border-transparent hover:text-slate-600'
+                       : 'text-slate-400 border-transparent hover:text-[color:var(--color-muted)]'
                    }`}
                  >
                    Dados Gerais
@@ -309,7 +309,7 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
                    className={`py-4 text-sm font-black uppercase tracking-widest border-b-2 transition-all ${
                      activeTab === 'mix' 
                        ? 'text-blue-600 border-blue-600' 
-                       : 'text-slate-400 border-transparent hover:text-slate-600'
+                       : 'text-slate-400 border-transparent hover:text-[color:var(--color-muted)]'
                    }`}
                  >
                    Mix de Produtos
@@ -325,7 +325,7 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
                            type="text" 
                            value={formData.name}
                            onChange={(e) => setFormData({...formData, name: e.target.value})}
-                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]" 
                            placeholder="Ex: Grupo Pão de Açúcar"
                            required
                        />
@@ -353,7 +353,7 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
                         <div className="p-2 border-b border-slate-100 bg-white space-y-2 shrink-0">
                           <div className="flex justify-between items-center gap-2">
                              <div className="flex items-center gap-2">
-                               <h3 className="font-bold text-slate-700 text-sm">Disponíveis</h3>
+                               <h3 className="font-bold text-[color:var(--color-text)] text-sm">Disponíveis</h3>
                                <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{availableProducts.length}</span>
                              </div>
                              <div className="relative w-40">
@@ -361,7 +361,7 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
                                 <input 
                                   type="text"
                                   placeholder="Buscar..."
-                                  className="w-full h-8 pl-7 pr-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400"
+                                  className="w-full h-8 pl-7 pr-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-[color:var(--color-muted)] outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400"
                                   value={productSearchTerm}
                                   onChange={(e) => setProductSearchTerm(e.target.value)}
                                 />
@@ -439,7 +439,7 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
                                   <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-400 text-[9px] font-bold shrink-0">IMG</div>
                                 )}
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-bold text-slate-700 text-xs truncate" title={product.name}>{product.name}</div>
+                                  <div className="font-bold text-[color:var(--color-text)] text-xs truncate" title={product.name}>{product.name}</div>
                                   <div className="text-[9px] font-medium text-slate-400 truncate">
                                     {product.brand?.name || 'Sem Marca'} • {product.sku || 'S/ SKU'}
                                   </div>
@@ -470,7 +470,7 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
                         <div className="p-2 border-b border-slate-100 bg-white space-y-2 shrink-0">
                           <div className="flex justify-between items-center gap-2">
                              <div className="flex items-center gap-2">
-                               <h3 className="font-bold text-slate-700 text-sm">Selecionados</h3>
+                               <h3 className="font-bold text-[color:var(--color-text)] text-sm">Selecionados</h3>
                                <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{formData.productIds.length}</span>
                              </div>
                              <div className="relative w-40">
@@ -478,7 +478,7 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
                                 <input 
                                   type="text"
                                   placeholder="Buscar..."
-                                  className="w-full h-8 pl-7 pr-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-red-100 transition-all placeholder:text-slate-400"
+                                  className="w-full h-8 pl-7 pr-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-[color:var(--color-muted)] outline-none focus:ring-2 focus:ring-red-100 transition-all placeholder:text-slate-400"
                                   value={selectedSearchTerm}
                                   onChange={(e) => setSelectedSearchTerm(e.target.value)}
                                 />
@@ -533,7 +533,7 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
                                   <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-400 text-[9px] font-bold shrink-0">IMG</div>
                                 )}
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-bold text-slate-700 text-xs truncate" title={product.name}>{product.name}</div>
+                                  <div className="font-bold text-[color:var(--color-text)] text-xs truncate" title={product.name}>{product.name}</div>
                                   <div className="text-[9px] font-medium text-slate-400 truncate">
                                     {product.brand?.name || 'Sem Marca'} • {product.sku || 'S/ SKU'}
                                   </div>
@@ -560,7 +560,7 @@ const SupermarketGroupsView: React.FC<SupermarketGroupsViewProps> = ({ onNavigat
                  <button 
                    type="button"
                    onClick={() => setShowModal(false)} 
-                   className="px-6 py-3 font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-all"
+                   className="px-6 py-3 font-bold text-[color:var(--color-muted)] hover:bg-slate-50 rounded-xl transition-all"
                  >
                    Cancelar
                  </button>

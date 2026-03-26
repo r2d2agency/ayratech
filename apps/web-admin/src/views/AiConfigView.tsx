@@ -56,11 +56,11 @@ const AiConfigView: React.FC = () => {
     <div className="p-8 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-           <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+           <h1 className="text-2xl font-black text-[color:var(--color-text)] tracking-tight flex items-center gap-3">
              <Bot size={36} className="text-purple-600" />
              Configuração de IA
            </h1>
-           <p className="text-slate-500 font-medium text-lg">Gerencie os provedores e chaves de API para análise de imagens.</p>
+           <p className="text-[color:var(--color-muted)] font-medium text-lg">Gerencie os provedores e chaves de API para análise de imagens.</p>
         </div>
       </div>
 
@@ -85,7 +85,7 @@ const AiConfigView: React.FC = () => {
                   className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
                     provider === 'gemini' 
                       ? 'border-purple-600 bg-purple-50 text-purple-700' 
-                      : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200'
+                      : 'border-slate-100 bg-slate-50 text-[color:var(--color-muted)] hover:border-slate-200'
                   }`}
                 >
                   <span className="font-black">Google Gemini</span>
@@ -96,7 +96,7 @@ const AiConfigView: React.FC = () => {
                   className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
                     provider === 'openai' 
                       ? 'border-green-600 bg-green-50 text-green-700' 
-                      : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200'
+                      : 'border-slate-100 bg-slate-50 text-[color:var(--color-muted)] hover:border-slate-200'
                   }`}
                 >
                   <span className="font-black">OpenAI GPT-4</span>
@@ -115,7 +115,7 @@ const AiConfigView: React.FC = () => {
                 value={apiKey}
                 onChange={e => setApiKey(e.target.value)}
                 placeholder="Ex: sk-..."
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[color:var(--color-text)] font-medium outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all"
               />
               <p className="text-xs text-slate-400">
                 A chave será armazenada de forma segura. Para Gemini, obtenha no Google AI Studio.
@@ -130,7 +130,7 @@ const AiConfigView: React.FC = () => {
               <select 
                 value={model}
                 onChange={e => setModel(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-bold outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all appearance-none cursor-pointer"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[color:var(--color-text)] font-bold outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all appearance-none cursor-pointer"
                 disabled={!apiKey}
               >
                 <option value="">Selecione um modelo...</option>

@@ -60,7 +60,7 @@ export class RoutesService {
       .leftJoinAndSelect('p.brand', 'b')
       .leftJoinAndSelect('rip.completedBy', 'u')
       .where("rip.photos IS NOT NULL")
-      .andWhere("jsonb_array_length(rip.photos) > 0")
+      .andWhere("cardinality(rip.photos) > 0")
       .andWhere('rip.checkOutTime >= :timeThreshold', { timeThreshold })
       .orderBy('rip.checkOutTime', 'DESC')
       .take(20);

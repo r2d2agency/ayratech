@@ -311,33 +311,33 @@ const AdminView: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Administração</h1>
-          <p className="text-slate-500 font-medium text-lg">Configurações globais do sistema.</p>
+          <h1 className="text-2xl font-black text-[color:var(--color-text)] tracking-tight">Administração</h1>
+          <p className="text-[color:var(--color-muted)] font-medium text-lg">Configurações globais do sistema.</p>
         </div>
       </div>
 
       <div className="flex gap-4 border-b border-slate-200 overflow-x-auto">
         <button
           onClick={() => setActiveTab('branding')}
-          className={`pb-4 px-4 font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'branding' ? 'text-[var(--primary-color)] border-b-2 border-[var(--primary-color)]' : 'text-slate-400 hover:text-slate-600'}`}
+          className={`pb-4 px-4 font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'branding' ? 'text-[var(--primary-color)] border-b-2 border-[var(--primary-color)]' : 'text-slate-400 hover:text-[color:var(--color-muted)]'}`}
         >
           Branding & Identidade
         </button>
         <button
           onClick={() => setActiveTab('users')}
-          className={`pb-4 px-4 font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'users' ? 'text-[var(--primary-color)] border-b-2 border-[var(--primary-color)]' : 'text-slate-400 hover:text-slate-600'}`}
+          className={`pb-4 px-4 font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'users' ? 'text-[var(--primary-color)] border-b-2 border-[var(--primary-color)]' : 'text-slate-400 hover:text-[color:var(--color-muted)]'}`}
         >
           Usuários
         </button>
         <button
           onClick={() => setActiveTab('permissions')}
-          className={`pb-4 px-4 font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'permissions' ? 'text-[var(--primary-color)] border-b-2 border-[var(--primary-color)]' : 'text-slate-400 hover:text-slate-600'}`}
+          className={`pb-4 px-4 font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'permissions' ? 'text-[var(--primary-color)] border-b-2 border-[var(--primary-color)]' : 'text-slate-400 hover:text-[color:var(--color-muted)]'}`}
         >
           Permissões & Cargos
         </button>
         <button
           onClick={() => setActiveTab('reasons')}
-          className={`pb-4 px-4 font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'reasons' ? 'text-[var(--primary-color)] border-b-2 border-[var(--primary-color)]' : 'text-slate-400 hover:text-slate-600'}`}
+          className={`pb-4 px-4 font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'reasons' ? 'text-[var(--primary-color)] border-b-2 border-[var(--primary-color)]' : 'text-slate-400 hover:text-[color:var(--color-muted)]'}`}
         >
           Motivos
         </button>
@@ -387,7 +387,7 @@ const AdminView: React.FC = () => {
                 <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Clientes Vinculados (Supervisores)</label>
                 <div className="border border-slate-200 rounded-xl bg-slate-50 p-4 max-h-48 overflow-y-auto grid grid-cols-1 gap-2">
                     {allClients.map(client => (
-                        <label key={client.id} className="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer hover:bg-slate-100 p-1 rounded transition-colors">
+                        <label key={client.id} className="flex items-center gap-2 text-sm font-bold text-[color:var(--color-text)] cursor-pointer hover:bg-slate-100 p-1 rounded transition-colors">
                             <input 
                                 type="checkbox"
                                 checked={userForm.clientIds?.includes(client.id)}
@@ -417,7 +417,7 @@ const AdminView: React.FC = () => {
                   <button 
                     type="button" 
                     onClick={resetUserForm}
-                    className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-black hover:bg-slate-200 transition-all mt-4"
+                    className="flex-1 py-3 bg-slate-100 text-[color:var(--color-muted)] rounded-xl font-black hover:bg-slate-200 transition-all mt-4"
                   >
                     Cancelar
                   </button>
@@ -440,7 +440,7 @@ const AdminView: React.FC = () => {
                 <tbody className="divide-y divide-slate-100">
                   {users.map(user => (
                     <tr key={user.id} className="group hover:bg-slate-50 transition-colors">
-                      <td className="py-4 px-4 font-bold text-slate-700">
+                      <td className="py-4 px-4 font-bold text-[color:var(--color-text)]">
                         {user.email}
                         {user.employee?.name && <span className="block text-xs text-slate-400 font-normal">{user.employee.name}</span>}
                       </td>
@@ -514,7 +514,7 @@ const AdminView: React.FC = () => {
                 />
               </div>
 
-              <label className="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer select-none">
+              <label className="flex items-center gap-2 text-sm font-bold text-[color:var(--color-text)] cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={incidentReasonForm.isActive}
@@ -532,7 +532,7 @@ const AdminView: React.FC = () => {
                   <button
                     type="button"
                     onClick={resetIncidentReasonForm}
-                    className="flex-1 py-3 border border-slate-200 text-slate-600 rounded-xl font-black hover:bg-slate-50 transition-all mt-4"
+                    className="flex-1 py-3 border border-slate-200 text-[color:var(--color-muted)] rounded-xl font-black hover:bg-slate-50 transition-all mt-4"
                   >
                     Cancelar
                   </button>
@@ -544,8 +544,8 @@ const AdminView: React.FC = () => {
           <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
               <div>
-                <h2 className="text-xl font-black text-slate-900">Motivos</h2>
-                <p className="text-slate-500 text-sm font-medium">Ruptura e Avaria (pré-cadastrado).</p>
+                <h2 className="text-xl font-black text-[color:var(--color-text)]">Motivos</h2>
+                <p className="text-[color:var(--color-muted)] text-sm font-medium">Ruptura e Avaria (pré-cadastrado).</p>
               </div>
 
               <div className="flex items-center gap-2">
@@ -575,13 +575,13 @@ const AdminView: React.FC = () => {
                   {incidentReasons.map((r: any) => (
                     <tr key={r.id} className="group hover:bg-slate-50 transition-colors">
                       <td className="py-4 px-4">
-                        <span className="px-3 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-black uppercase">
+                        <span className="px-3 py-1 rounded-lg bg-slate-100 text-[color:var(--color-text)] text-xs font-black uppercase">
                           {r.type === 'BREAKAGE' ? 'Avaria' : 'Ruptura'}
                         </span>
                       </td>
-                      <td className="py-4 px-4 font-bold text-slate-700">{r.label}</td>
+                      <td className="py-4 px-4 font-bold text-[color:var(--color-text)]">{r.label}</td>
                       <td className="py-4 px-4">
-                        <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase ${r.isActive ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                        <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase ${r.isActive ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-[color:var(--color-muted)]'}`}>
                           {r.isActive ? 'Ativo' : 'Inativo'}
                         </span>
                       </td>
@@ -634,7 +634,7 @@ const AdminView: React.FC = () => {
                 type="text" 
                 value={brandingForm.companyName}
                 onChange={e => setBrandingForm({...brandingForm, companyName: e.target.value})}
-                className="w-full h-12 px-4 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800"
+                className="w-full h-12 px-4 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]"
               />
             </div>
             
@@ -647,7 +647,7 @@ const AdminView: React.FC = () => {
                   onChange={e => setBrandingForm({...brandingForm, primaryColor: e.target.value})}
                   className="h-12 w-24 rounded-xl cursor-pointer"
                 />
-                <span className="font-mono text-slate-500">{brandingForm.primaryColor}</span>
+                <span className="font-mono text-[color:var(--color-muted)]">{brandingForm.primaryColor}</span>
               </div>
             </div>
 
@@ -664,7 +664,7 @@ const AdminView: React.FC = () => {
                     </div>
                   )}
                   <div className="flex items-center gap-4">
-                      <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg cursor-pointer transition-colors font-bold text-sm">
+                      <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-[color:var(--color-muted)] rounded-lg cursor-pointer transition-colors font-bold text-sm">
                           <Upload size={16} />
                           Escolher Arquivo
                           <input 
@@ -674,7 +674,7 @@ const AdminView: React.FC = () => {
                               onChange={e => e.target.files && setLogoFile(e.target.files[0])}
                           />
                       </label>
-                      {logoFile && <span className="text-sm text-slate-500">{logoFile.name}</span>}
+                      {logoFile && <span className="text-sm text-[color:var(--color-muted)]">{logoFile.name}</span>}
                   </div>
               </div>
             </div>
@@ -694,7 +694,7 @@ const AdminView: React.FC = () => {
                             </div>
                         )}
                         <div className="flex items-center gap-4">
-                            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg cursor-pointer transition-colors font-bold text-sm">
+                            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-[color:var(--color-muted)] rounded-lg cursor-pointer transition-colors font-bold text-sm">
                                 <Upload size={16} />
                                 Arquivo
                                 <input 
@@ -704,7 +704,7 @@ const AdminView: React.FC = () => {
                                     onChange={e => e.target.files && setLoginLogoFile(e.target.files[0])}
                                 />
                             </label>
-                            {loginLogoFile && <span className="text-sm text-slate-500 truncate max-w-[100px]">{loginLogoFile.name}</span>}
+                            {loginLogoFile && <span className="text-sm text-[color:var(--color-muted)] truncate max-w-[100px]">{loginLogoFile.name}</span>}
                         </div>
                     </div>
                 </div>
@@ -723,7 +723,7 @@ const AdminView: React.FC = () => {
                             </div>
                         )}
                         <div className="flex items-center gap-4">
-                            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg cursor-pointer transition-colors font-bold text-sm">
+                            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-[color:var(--color-muted)] rounded-lg cursor-pointer transition-colors font-bold text-sm">
                                 <Upload size={16} />
                                 Arquivo
                                 <input 
@@ -733,7 +733,7 @@ const AdminView: React.FC = () => {
                                     onChange={e => e.target.files && setSystemLogoFile(e.target.files[0])}
                                 />
                             </label>
-                            {systemLogoFile && <span className="text-sm text-slate-500 truncate max-w-[100px]">{systemLogoFile.name}</span>}
+                            {systemLogoFile && <span className="text-sm text-[color:var(--color-muted)] truncate max-w-[100px]">{systemLogoFile.name}</span>}
                         </div>
                     </div>
                 </div>
@@ -752,7 +752,7 @@ const AdminView: React.FC = () => {
                             </div>
                         )}
                         <div className="flex items-center gap-4">
-                            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg cursor-pointer transition-colors font-bold text-sm">
+                            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-[color:var(--color-muted)] rounded-lg cursor-pointer transition-colors font-bold text-sm">
                                 <Upload size={16} />
                                 Arquivo
                                 <input 
@@ -762,7 +762,7 @@ const AdminView: React.FC = () => {
                                     onChange={e => e.target.files && setSplashScreenFile(e.target.files[0])}
                                 />
                             </label>
-                            {splashScreenFile && <span className="text-sm text-slate-500 truncate max-w-[100px]">{splashScreenFile.name}</span>}
+                            {splashScreenFile && <span className="text-sm text-[color:var(--color-muted)] truncate max-w-[100px]">{splashScreenFile.name}</span>}
                         </div>
                     </div>
                 </div>
@@ -783,7 +783,7 @@ const AdminView: React.FC = () => {
                             </div>
                         )}
                         <div className="flex items-center gap-4">
-                            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg cursor-pointer transition-colors font-bold text-sm">
+                            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-[color:var(--color-muted)] rounded-lg cursor-pointer transition-colors font-bold text-sm">
                                 <Upload size={16} />
                                 Arquivo
                                 <input 
@@ -793,7 +793,7 @@ const AdminView: React.FC = () => {
                                     onChange={e => e.target.files && setFaviconFile(e.target.files[0])}
                                 />
                             </label>
-                            {faviconFile && <span className="text-sm text-slate-500 truncate max-w-[100px]">{faviconFile.name}</span>}
+                            {faviconFile && <span className="text-sm text-[color:var(--color-muted)] truncate max-w-[100px]">{faviconFile.name}</span>}
                         </div>
                     </div>
                 </div>
@@ -812,7 +812,7 @@ const AdminView: React.FC = () => {
                             </div>
                         )}
                         <div className="flex items-center gap-4">
-                            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg cursor-pointer transition-colors font-bold text-sm">
+                            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-[color:var(--color-muted)] rounded-lg cursor-pointer transition-colors font-bold text-sm">
                                 <Upload size={16} />
                                 Arquivo
                                 <input 
@@ -822,7 +822,7 @@ const AdminView: React.FC = () => {
                                     onChange={e => e.target.files && setPwaIconFile(e.target.files[0])}
                                 />
                             </label>
-                            {pwaIconFile && <span className="text-sm text-slate-500 truncate max-w-[100px]">{pwaIconFile.name}</span>}
+                            {pwaIconFile && <span className="text-sm text-[color:var(--color-muted)] truncate max-w-[100px]">{pwaIconFile.name}</span>}
                         </div>
                     </div>
                 </div>
@@ -841,7 +841,7 @@ const AdminView: React.FC = () => {
                             </div>
                         )}
                         <div className="flex items-center gap-4">
-                            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg cursor-pointer transition-colors font-bold text-sm">
+                            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-[color:var(--color-muted)] rounded-lg cursor-pointer transition-colors font-bold text-sm">
                                 <Upload size={16} />
                                 Arquivo
                                 <input 
@@ -851,7 +851,7 @@ const AdminView: React.FC = () => {
                                     onChange={e => e.target.files && setSiteIconFile(e.target.files[0])}
                                 />
                             </label>
-                            {siteIconFile && <span className="text-sm text-slate-500 truncate max-w-[100px]">{siteIconFile.name}</span>}
+                            {siteIconFile && <span className="text-sm text-[color:var(--color-muted)] truncate max-w-[100px]">{siteIconFile.name}</span>}
                         </div>
                     </div>
                 </div>
@@ -872,14 +872,14 @@ const AdminView: React.FC = () => {
                     className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[var(--primary-color)]"
                   />
                   <div className="flex flex-col items-center min-w-[3rem]">
-                    <span className="font-bold text-slate-700 text-lg">{brandingForm.blurThreshold || 8}</span>
+                    <span className="font-bold text-[color:var(--color-text)] text-lg">{brandingForm.blurThreshold || 8}</span>
                     <span className="text-[10px] text-slate-400 font-medium uppercase">Valor</span>
                   </div>
                 </div>
                 <p className="text-xs text-slate-400 mt-2">
                   Ajuste o nível de exigência para fotos borradas. <br/>
-                  <span className="font-bold text-slate-500">Menor (0-5):</span> Aceita mais fotos (menos rigoroso). <br/>
-                  <span className="font-bold text-slate-500">Maior (10+):</span> Exige fotos muito nítidas (mais rigoroso). <br/>
+                  <span className="font-bold text-[color:var(--color-muted)]">Menor (0-5):</span> Aceita mais fotos (menos rigoroso). <br/>
+                  <span className="font-bold text-[color:var(--color-muted)]">Maior (10+):</span> Exige fotos muito nítidas (mais rigoroso). <br/>
                   <span className="font-bold text-[var(--primary-color)]">Recomendado: 8</span>
                 </p>
             </div>
@@ -902,8 +902,8 @@ const AdminView: React.FC = () => {
                <div key={role.id} className="p-4 border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all flex flex-col gap-4">
                  <div className="flex justify-between items-center w-full">
                    <div>
-                     <h3 className="font-black text-slate-900">{role.name}</h3>
-                     <p className="text-xs text-slate-500 font-bold mt-1">{role.permissions.length} permissões ativas</p>
+                     <h3 className="font-black text-[color:var(--color-text)]">{role.name}</h3>
+                     <p className="text-xs text-[color:var(--color-muted)] font-bold mt-1">{role.permissions.length} permissões ativas</p>
                    </div>
                    <button 
                     onClick={() => setEditingPermissions(editingPermissions === role.id ? null : role.id)}
@@ -916,7 +916,7 @@ const AdminView: React.FC = () => {
                  {editingPermissions === role.id && (
                    <div className="pt-4 border-t border-slate-100 grid grid-cols-2 md:grid-cols-4 gap-2 animate-in slide-in-from-top-2 duration-200">
                       {['view_dashboard', 'manage_users', 'manage_routes', 'view_reports', 'submit_checklist', 'all'].map(perm => (
-                        <label key={perm} className="flex items-center gap-2 text-sm text-slate-600 font-medium cursor-pointer hover:bg-slate-100 p-2 rounded-lg">
+                        <label key={perm} className="flex items-center gap-2 text-sm text-[color:var(--color-muted)] font-medium cursor-pointer hover:bg-slate-100 p-2 rounded-lg">
                           <input 
                             type="checkbox" 
                             checked={role.permissions.includes(perm)}

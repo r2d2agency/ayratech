@@ -475,8 +475,8 @@ const ProductsView: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Catálogo de SKUs</h1>
-          <p className="text-slate-500 font-medium text-lg">Controle central de mix de produtos.</p>
+          <h1 className="text-2xl font-black text-[color:var(--color-text)] tracking-tight">Catálogo de SKUs</h1>
+          <p className="text-[color:var(--color-muted)] font-medium text-lg">Controle central de mix de produtos.</p>
         </div>
         <button 
           onClick={() => {
@@ -536,17 +536,17 @@ const ProductsView: React.FC = () => {
               
               <div className="relative aspect-square overflow-hidden rounded-xl mb-5 bg-slate-50 flex items-center justify-center">
                 <ProductImage src={getImageUrl(p.imagem)} alt={p.nome} />
-                <div className="absolute top-2 left-2 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-lg text-[9px] font-black text-slate-700 border border-slate-100 shadow-sm">
+                <div className="absolute top-2 left-2 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-lg text-[9px] font-black text-[color:var(--color-text)] border border-slate-100 shadow-sm">
                   {p.sku}
                 </div>
               </div>
               <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: settings.primaryColor }}>{p.categoria}</p>
-              <h4 className="text-lg font-black text-slate-900 truncate mb-1">{p.nome}</h4>
+              <h4 className="text-lg font-black text-[color:var(--color-text)] truncate mb-1">{p.nome}</h4>
               <div className="flex items-center gap-2 mt-4">
                 <div className="h-6 w-6 rounded-lg border border-slate-100 flex items-center justify-center p-1">
                   <img src={clients.find(c => c.id === p.clientId)?.logo} className="object-contain" alt="" />
                 </div>
-                <span className="text-[11px] font-black text-slate-500">{clients.find(c => c.id === p.clientId)?.nome}</span>
+                <span className="text-[11px] font-black text-[color:var(--color-muted)]">{clients.find(c => c.id === p.clientId)?.nome}</span>
               </div>
             </div>
           ))}
@@ -558,10 +558,10 @@ const ProductsView: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="text-xl font-black text-slate-800">
+              <h3 className="text-xl font-black text-[color:var(--color-text)]">
                 {editingProduct ? 'Editar Produto' : 'Novo Produto'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-[color:var(--color-muted)]">
                 <X size={24} />
               </button>
             </div>
@@ -574,8 +574,8 @@ const ProductsView: React.FC = () => {
                   onClick={() => setActiveTab('geral')}
                   className={`pb-4 text-sm font-black uppercase tracking-widest transition-all ${
                     activeTab === 'geral' 
-                      ? 'border-b-4 text-slate-900' 
-                      : 'text-slate-400 hover:text-slate-600'
+                      ? 'border-b-4 text-[color:var(--color-text)]' 
+                      : 'text-slate-400 hover:text-[color:var(--color-muted)]'
                   }`}
                   style={{ borderColor: activeTab === 'geral' ? settings.primaryColor : 'transparent' }}
                 >
@@ -586,8 +586,8 @@ const ProductsView: React.FC = () => {
                   onClick={() => setActiveTab('pdvs')}
                   className={`pb-4 text-sm font-black uppercase tracking-widest transition-all ${
                     activeTab === 'pdvs' 
-                      ? 'border-b-4 text-slate-900' 
-                      : 'text-slate-400 hover:text-slate-600'
+                      ? 'border-b-4 text-[color:var(--color-text)]' 
+                      : 'text-slate-400 hover:text-[color:var(--color-muted)]'
                   }`}
                   style={{ borderColor: activeTab === 'pdvs' ? settings.primaryColor : 'transparent' }}
                 >
@@ -598,8 +598,8 @@ const ProductsView: React.FC = () => {
                   onClick={() => setActiveTab('ia')}
                   className={`pb-4 text-sm font-black uppercase tracking-widest transition-all ${
                     activeTab === 'ia' 
-                      ? 'border-b-4 text-slate-900' 
-                      : 'text-slate-400 hover:text-slate-600'
+                      ? 'border-b-4 text-[color:var(--color-text)]' 
+                      : 'text-slate-400 hover:text-[color:var(--color-muted)]'
                   }`}
                   style={{ borderColor: activeTab === 'ia' ? settings.primaryColor : 'transparent' }}
                 >
@@ -609,7 +609,7 @@ const ProductsView: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ display: activeTab === 'geral' ? 'grid' : 'none' }}>
                 <div className="col-span-2">
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Nome do Produto</label>
+                  <label className="block text-xs font-bold text-[color:var(--color-muted)] uppercase mb-2">Nome do Produto</label>
                   <input
                     type="text"
                     required
@@ -620,7 +620,7 @@ const ProductsView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">SKU</label>
+                  <label className="block text-xs font-bold text-[color:var(--color-muted)] uppercase mb-2">SKU</label>
                   <input
                     type="text"
                     required
@@ -631,7 +631,7 @@ const ProductsView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Código de Barras</label>
+                  <label className="block text-xs font-bold text-[color:var(--color-muted)] uppercase mb-2">Código de Barras</label>
                   <input
                     type="text"
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium"
@@ -739,7 +739,7 @@ const ProductsView: React.FC = () => {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Imagem do Produto</label>
+                  <label className="block text-xs font-bold text-[color:var(--color-muted)] uppercase mb-2">Imagem do Produto</label>
                   <div className="flex items-center gap-4">
                     <div className="relative w-24 h-24 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden bg-slate-50 group hover:border-blue-400 transition-all cursor-pointer">
                       {imagePreview ? (
@@ -763,7 +763,7 @@ const ProductsView: React.FC = () => {
                       />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-600 mb-1">Clique para selecionar uma imagem</p>
+                      <p className="text-sm font-medium text-[color:var(--color-muted)] mb-1">Clique para selecionar uma imagem</p>
                       <p className="text-xs text-slate-400">Formatos aceitos: JPG, PNG, WEBP. A imagem será otimizada automaticamente.</p>
                       {imagePreview && (
                         <button 
@@ -787,8 +787,8 @@ const ProductsView: React.FC = () => {
               <div style={{ display: activeTab === 'pdvs' ? 'block' : 'none' }}>
                   <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col h-[500px]">
                       <div className="mb-4">
-                          <h3 className="text-sm font-black text-slate-900 mb-1">Disponibilidade nos PDVs</h3>
-                          <p className="text-xs text-slate-500">Selecione os PDVs onde este produto deve estar disponível (Mix).</p>
+                          <h3 className="text-sm font-black text-[color:var(--color-text)] mb-1">Disponibilidade nos PDVs</h3>
+                          <p className="text-xs text-[color:var(--color-muted)]">Selecione os PDVs onde este produto deve estar disponível (Mix).</p>
                       </div>
                       
                       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-4">
@@ -832,7 +832,7 @@ const ProductsView: React.FC = () => {
                                       .map(s => (
                                           <div key={s.id} className="flex items-center justify-between bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-lg px-3 py-2 transition-colors">
                                               <div className="min-w-0">
-                                                  <p className="text-xs font-bold text-slate-700 truncate">{s.fantasyName}</p>
+                                                  <p className="text-xs font-bold text-[color:var(--color-text)] truncate">{s.fantasyName}</p>
                                                   <p className="text-[10px] text-slate-400">{s.city} - {s.state}</p>
                                               </div>
                                               <button 
@@ -864,7 +864,7 @@ const ProductsView: React.FC = () => {
                           <div className="bg-white rounded-xl border border-slate-200 flex flex-col h-full overflow-hidden">
                               <div className="p-3 border-b border-slate-100 bg-slate-50">
                                   <div className="flex justify-between items-center mb-2">
-                                      <span className="text-xs font-bold text-slate-700">Selecionados ({productForm.supermarketIds.length})</span>
+                                      <span className="text-xs font-bold text-[color:var(--color-text)]">Selecionados ({productForm.supermarketIds.length})</span>
                                       <button
                                           type="button"
                                           onClick={() => setProductForm(prev => ({ ...prev, supermarketIds: [] }))}
@@ -914,7 +914,7 @@ const ProductsView: React.FC = () => {
 
               <div className="space-y-4" style={{ display: activeTab === 'ia' ? 'block' : 'none' }}>
                 <div className="border border-slate-200 rounded-xl p-4">
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Imagem de Referência (IA)</label>
+                  <label className="block text-xs font-bold text-[color:var(--color-muted)] uppercase mb-2">Imagem de Referência (IA)</label>
                   <div className="flex items-center gap-4">
                     <div className="relative w-24 h-24 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden bg-slate-50 group hover:border-blue-400 transition-all cursor-pointer">
                       {referenceImagePreview ? (
@@ -938,7 +938,7 @@ const ProductsView: React.FC = () => {
                       />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-600 mb-1">Imagem usada pela IA para descrever o produto.</p>
+                      <p className="text-sm font-medium text-[color:var(--color-muted)] mb-1">Imagem usada pela IA para descrever o produto.</p>
                       <p className="text-xs text-slate-400">Formatos aceitos: JPG, PNG, WEBP. Otimização automática.</p>
                       {referenceImagePreview && (
                         <button 
@@ -960,7 +960,7 @@ const ProductsView: React.FC = () => {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <Wand2 size={18} className="text-blue-600" />
-                      <span className="text-sm font-bold text-slate-700">Inteligência Artificial</span>
+                      <span className="text-sm font-bold text-[color:var(--color-text)]">Inteligência Artificial</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-48">
@@ -985,7 +985,7 @@ const ProductsView: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Prompt da Imagem</label>
+                  <label className="block text-xs font-bold text-[color:var(--color-muted)] uppercase mb-2">Prompt da Imagem</label>
                   <textarea
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-50 outline-none transition-all font-mono text-sm"
                     rows={6}
@@ -1000,7 +1000,7 @@ const ProductsView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-6 py-3 text-slate-600 font-bold hover:bg-slate-50 rounded-xl transition-all"
+                  className="px-6 py-3 text-[color:var(--color-muted)] font-bold hover:bg-slate-50 rounded-xl transition-all"
                 >
                   Cancelar
                 </button>

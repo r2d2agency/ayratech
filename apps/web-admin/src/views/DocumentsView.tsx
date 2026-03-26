@@ -207,20 +207,20 @@ const DocumentsView: React.FC = () => {
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Gestão de Documentos</h1>
-          <p className="text-slate-500 mt-1">Envie holerites, comunicados e outros documentos para os funcionários.</p>
+          <h1 className="text-2xl font-bold text-[color:var(--color-text)]">Gestão de Documentos</h1>
+          <p className="text-[color:var(--color-muted)] mt-1">Envie holerites, comunicados e outros documentos para os funcionários.</p>
         </div>
         <div className="flex gap-2">
           <button 
             onClick={() => setActiveTab('history')}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === 'history' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === 'history' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-white text-[color:var(--color-muted)] border border-slate-200 hover:bg-slate-50'}`}
           >
             <Clock size={18} className="inline mr-2" />
             Histórico
           </button>
           <button 
             onClick={() => setActiveTab('send')}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === 'send' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === 'send' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-white text-[color:var(--color-muted)] border border-slate-200 hover:bg-slate-50'}`}
           >
             <Send size={18} className="inline mr-2" />
             Novo Envio
@@ -230,7 +230,7 @@ const DocumentsView: React.FC = () => {
 
       {activeTab === 'send' && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-[color:var(--color-text)] mb-6 flex items-center gap-2">
             <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
               <Send size={20} />
             </div>
@@ -247,7 +247,7 @@ const DocumentsView: React.FC = () => {
           <form onSubmit={handleSendDocument} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2 relative z-20">
-                <label className="text-sm font-medium text-slate-700">Funcionário</label>
+                <label className="text-sm font-medium text-[color:var(--color-text)]">Funcionário</label>
                 
                 <div className="flex items-center gap-2 mb-2 p-3 bg-slate-50 rounded-xl border border-slate-100 transition-colors hover:bg-slate-100">
                    <input 
@@ -264,7 +264,7 @@ const DocumentsView: React.FC = () => {
                      }}
                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                    />
-                   <label htmlFor="sendToAll" className="text-sm font-medium text-slate-700 cursor-pointer select-none flex-1">Enviar para todos os funcionários</label>
+                   <label htmlFor="sendToAll" className="text-sm font-medium text-[color:var(--color-text)] cursor-pointer select-none flex-1">Enviar para todos os funcionários</label>
                 </div>
 
                 {!sendToAll && (
@@ -307,14 +307,14 @@ const DocumentsView: React.FC = () => {
                                 setEmployeeSearchQuery(emp.fullName || emp.name);
                                 setIsEmployeeDropdownOpen(false);
                               }}
-                              className={`w-full text-left px-4 py-3 hover:bg-slate-50 text-sm border-b border-slate-50 last:border-0 transition-colors flex items-center justify-between group ${selectedEmployeeId === emp.id ? 'bg-blue-50 text-blue-700' : 'text-slate-700'}`}
+                              className={`w-full text-left px-4 py-3 hover:bg-slate-50 text-sm border-b border-slate-50 last:border-0 transition-colors flex items-center justify-between group ${selectedEmployeeId === emp.id ? 'bg-blue-50 text-blue-700' : 'text-[color:var(--color-text)]'}`}
                             >
                               <span className="font-medium">{emp.fullName || emp.name}</span>
                               {selectedEmployeeId === emp.id && <CheckCircle size={16} />}
                             </button>
                           ))}
                         {employees.filter(emp => (emp.fullName || emp.name).toLowerCase().includes(employeeSearchQuery.toLowerCase())).length === 0 && (
-                          <div className="px-4 py-3 text-sm text-slate-500 text-center">Nenhum funcionário encontrado.</div>
+                          <div className="px-4 py-3 text-sm text-[color:var(--color-muted)] text-center">Nenhum funcionário encontrado.</div>
                         )}
                       </div>
                     )}
@@ -323,7 +323,7 @@ const DocumentsView: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Tipo de Documento</label>
+                <label className="text-sm font-medium text-[color:var(--color-text)]">Tipo de Documento</label>
                 <select 
                   className="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
                   value={docType}
@@ -342,7 +342,7 @@ const DocumentsView: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Descrição / Observação</label>
+              <label className="text-sm font-medium text-[color:var(--color-text)]">Descrição / Observação</label>
               <textarea 
                 className="w-full h-24 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all resize-none"
                 placeholder="Adicione uma nota ou descrição para o funcionário..."
@@ -352,7 +352,7 @@ const DocumentsView: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Arquivo</label>
+              <label className="text-sm font-medium text-[color:var(--color-text)]">Arquivo</label>
               <div className="relative border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:bg-slate-50 transition-colors">
                 <input 
                   type="file" 
@@ -360,11 +360,11 @@ const DocumentsView: React.FC = () => {
                   onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
                   required
                 />
-                <div className="flex flex-col items-center gap-2 text-slate-500">
+                <div className="flex flex-col items-center gap-2 text-[color:var(--color-muted)]">
                   <div className="p-3 bg-blue-50 text-blue-600 rounded-full">
                     <Plus size={24} />
                   </div>
-                  <span className="font-medium text-slate-700">
+                  <span className="font-medium text-[color:var(--color-text)]">
                     {file ? file.name : 'Clique para selecionar ou arraste o arquivo'}
                   </span>
                   <span className="text-xs">PDF, JPG, PNG (Max. 10MB)</span>
@@ -407,7 +407,7 @@ const DocumentsView: React.FC = () => {
             </div>
             <button 
               onClick={() => setShowFilters(!showFilters)}
-              className={`h-10 px-4 rounded-xl border transition-colors flex items-center gap-2 text-sm font-medium ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+              className={`h-10 px-4 rounded-xl border transition-colors flex items-center gap-2 text-sm font-medium ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white text-[color:var(--color-muted)] border-slate-200 hover:bg-slate-50'}`}
             >
               <Filter size={18} />
               Filtros
@@ -417,7 +417,7 @@ const DocumentsView: React.FC = () => {
           {showFilters && (
             <div className="p-4 border-b border-slate-100 bg-slate-50/50 grid grid-cols-1 md:grid-cols-5 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-500">Data Inicial</label>
+                <label className="text-xs font-medium text-[color:var(--color-muted)]">Data Inicial</label>
                 <input 
                   type="date" 
                   className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
@@ -426,7 +426,7 @@ const DocumentsView: React.FC = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-500">Data Final</label>
+                <label className="text-xs font-medium text-[color:var(--color-muted)]">Data Final</label>
                 <input 
                   type="date" 
                   className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
@@ -435,7 +435,7 @@ const DocumentsView: React.FC = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-500">Tipo</label>
+                <label className="text-xs font-medium text-[color:var(--color-muted)]">Tipo</label>
                 <select 
                   className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
                   value={filterType}
@@ -452,7 +452,7 @@ const DocumentsView: React.FC = () => {
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-500">Funcionário</label>
+                <label className="text-xs font-medium text-[color:var(--color-muted)]">Funcionário</label>
                 <select 
                   className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
                   value={filterEmployeeId}
@@ -465,7 +465,7 @@ const DocumentsView: React.FC = () => {
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-500">Ordenação</label>
+                <label className="text-xs font-medium text-[color:var(--color-muted)]">Ordenação</label>
                 <select 
                   className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
                   value={sortOrder}
@@ -482,42 +482,42 @@ const DocumentsView: React.FC = () => {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Data</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Enviado Por</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Funcionário</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Tipo</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Descrição</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Ações</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[color:var(--color-muted)] uppercase tracking-wider">Data</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[color:var(--color-muted)] uppercase tracking-wider">Enviado Por</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[color:var(--color-muted)] uppercase tracking-wider">Funcionário</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[color:var(--color-muted)] uppercase tracking-wider">Tipo</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[color:var(--color-muted)] uppercase tracking-wider">Descrição</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[color:var(--color-muted)] uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-[color:var(--color-muted)] uppercase tracking-wider">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500">Carregando...</td>
+                    <td colSpan={7} className="px-6 py-12 text-center text-[color:var(--color-muted)]">Carregando...</td>
                   </tr>
                 ) : filteredDocuments.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500">Nenhum documento encontrado.</td>
+                    <td colSpan={7} className="px-6 py-12 text-center text-[color:var(--color-muted)]">Nenhum documento encontrado.</td>
                   </tr>
                 ) : (
                   filteredDocuments.map((doc) => (
                     <tr key={doc.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-slate-900">
+                        <div className="text-sm font-medium text-[color:var(--color-text)]">
                           {new Date(doc.sentAt).toLocaleDateString()}
                         </div>
-                        <div className="text-xs text-slate-500">
+                        <div className="text-xs text-[color:var(--color-muted)]">
                           {new Date(doc.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-slate-700">
+                        <div className="text-sm text-[color:var(--color-text)]">
                           {doc.sender?.employee?.fullName || doc.sender?.employee?.name || doc.sender?.email || 'Sistema'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-slate-900">{doc.employee?.fullName || doc.employee?.name || 'Desconhecido'}</div>
+                        <div className="text-sm font-medium text-[color:var(--color-text)]">{doc.employee?.fullName || doc.employee?.name || 'Desconhecido'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -525,7 +525,7 @@ const DocumentsView: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-slate-600 truncate max-w-xs">{doc.description || '-'}
+                        <div className="text-sm text-[color:var(--color-muted)] truncate max-w-xs">{doc.description || '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -535,7 +535,7 @@ const DocumentsView: React.FC = () => {
                               <CheckCircle size={12} />
                               Lido
                             </span>
-                            <div className="text-xs text-slate-500">
+                            <div className="text-xs text-[color:var(--color-muted)]">
                               {new Date(doc.readAt).toLocaleString()}
                             </div>
                           </div>

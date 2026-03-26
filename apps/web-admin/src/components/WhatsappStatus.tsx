@@ -69,7 +69,7 @@ export const WhatsappStatus: React.FC<{ expanded: boolean }> = ({ expanded }) =>
           {getIcon()}
       </div>
       
-      <span className={`font-bold text-sm text-slate-600 transition-all duration-300 overflow-hidden whitespace-nowrap ${
+      <span className={`font-bold text-sm text-[color:var(--color-muted)] transition-all duration-300 overflow-hidden whitespace-nowrap ${
         expanded ? 'w-auto opacity-100' : 'w-0 opacity-0'
       }`}>
         {getLabel()}

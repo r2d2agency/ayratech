@@ -71,14 +71,14 @@ const StockApprovalsView: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Aprovações de Estoque</h1>
-          <p className="text-slate-500">Valide as contagens de estoque pendentes</p>
+          <h1 className="text-2xl font-bold text-[color:var(--color-text)]">Aprovações de Estoque</h1>
+          <p className="text-[color:var(--color-muted)]">Valide as contagens de estoque pendentes</p>
         </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         {items.length === 0 ? (
-          <div className="p-12 text-center text-slate-500">
+          <div className="p-12 text-center text-[color:var(--color-muted)]">
             <CheckSquare className="w-12 h-12 mx-auto mb-4 text-slate-300" />
             <p>Nenhuma aprovação pendente no momento.</p>
           </div>
@@ -87,32 +87,32 @@ const StockApprovalsView: React.FC = () => {
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="px-6 py-4 font-semibold text-slate-700">Data/Hora</th>
-                  <th className="px-6 py-4 font-semibold text-slate-700">Produto</th>
-                  <th className="px-6 py-4 font-semibold text-slate-700">Marca</th>
-                  <th className="px-6 py-4 font-semibold text-slate-700">PDV</th>
-                  <th className="px-6 py-4 font-semibold text-slate-700 text-center">Contagem</th>
-                  <th className="px-6 py-4 font-semibold text-slate-700 text-right">Ações</th>
+                  <th className="px-6 py-4 font-semibold text-[color:var(--color-text)]">Data/Hora</th>
+                  <th className="px-6 py-4 font-semibold text-[color:var(--color-text)]">Produto</th>
+                  <th className="px-6 py-4 font-semibold text-[color:var(--color-text)]">Marca</th>
+                  <th className="px-6 py-4 font-semibold text-[color:var(--color-text)]">PDV</th>
+                  <th className="px-6 py-4 font-semibold text-[color:var(--color-text)] text-center">Contagem</th>
+                  <th className="px-6 py-4 font-semibold text-[color:var(--color-text)] text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {items.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50">
                     <td className="px-6 py-4">
-                      <div className="font-medium text-slate-800">
+                      <div className="font-medium text-[color:var(--color-text)]">
                         {new Date(item.checkInTime).toLocaleDateString('pt-BR')}
                       </div>
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs text-[color:var(--color-muted)]">
                         {new Date(item.checkInTime).toLocaleTimeString('pt-BR')}
                       </div>
                     </td>
-                    <td className="px-6 py-4 font-medium text-slate-800">
+                    <td className="px-6 py-4 font-medium text-[color:var(--color-text)]">
                       {item.product.name}
                     </td>
-                    <td className="px-6 py-4 text-slate-600">
+                    <td className="px-6 py-4 text-[color:var(--color-muted)]">
                       {item.product.brand.name}
                     </td>
-                    <td className="px-6 py-4 text-slate-600">
+                    <td className="px-6 py-4 text-[color:var(--color-muted)]">
                       {item.routeItem.supermarket.fantasyName}
                     </td>
                     <td className="px-6 py-4 text-center">

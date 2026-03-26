@@ -176,7 +176,7 @@ const LiveMapView: React.FC<LiveMapViewProps> = ({ onNavigate }) => {
                 <div className="absolute inset-0 bg-emerald-500 rounded-full animate-ping opacity-75" />
                 <div className="relative h-3 w-3 bg-emerald-500 rounded-full" />
              </div>
-             <h1 className="text-xl font-black text-slate-900">Live Map</h1>
+             <h1 className="text-xl font-black text-[color:var(--color-text)]">Live Map</h1>
           </div>
 
           <div className="flex flex-col md:flex-row gap-3 flex-1 w-full md:w-auto justify-end">
@@ -302,7 +302,7 @@ const LiveMapView: React.FC<LiveMapViewProps> = ({ onNavigate }) => {
                <LivePhotosFeed clientId={filterClientId} />
             </div>
 
-            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-[color:var(--color-text)] mb-4 flex items-center gap-2">
               <Users size={18} className="text-slate-400" />
               Equipe em Campo
             </h3>
@@ -322,8 +322,8 @@ const LiveMapView: React.FC<LiveMapViewProps> = ({ onNavigate }) => {
                              S
                            </div>
                            <div className="flex-1">
-                             <p className="text-sm font-bold text-slate-800">{s.fullName}</p>
-                             <p className="text-[10px] text-slate-500">
+                             <p className="text-sm font-bold text-[color:var(--color-text)]">{s.fullName}</p>
+                             <p className="text-[10px] text-[color:var(--color-muted)]">
                                {s.lastLocationAt 
                                  ? `Visto às ${new Date(s.lastLocationAt).toLocaleTimeString()}`
                                  : 'Sem localização recente'}
@@ -352,8 +352,8 @@ const LiveMapView: React.FC<LiveMapViewProps> = ({ onNavigate }) => {
                                       )}
                                   </div>
                                   <div>
-                                      <p className="text-sm font-black text-slate-900">{p.fullName || p.name}</p>
-                                      <p className="text-[10px] text-slate-500 font-medium">{p.email}</p>
+                                      <p className="text-sm font-black text-[color:var(--color-text)]">{p.fullName || p.name}</p>
+                                      <p className="text-[10px] text-[color:var(--color-muted)] font-medium">{p.email}</p>
                                   </div>
                               </div>
                               

@@ -734,8 +734,8 @@ const EmployeesView: React.FC = () => {
                         )}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Gestão de Pessoas</h1>
-          <p className="text-slate-500">Gerencie funcionários, cargos e escalas</p>
+          <h1 className="text-2xl font-bold text-[color:var(--color-text)]">Gestão de Pessoas</h1>
+          <p className="text-[color:var(--color-muted)]">Gerencie funcionários, cargos e escalas</p>
         </div>
         <div className="flex gap-3">
           <button
@@ -743,7 +743,7 @@ const EmployeesView: React.FC = () => {
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               activeTab === 'employees' 
                 ? 'bg-blue-600 text-white' 
-                : 'bg-white text-slate-600 hover:bg-slate-50'
+                : 'bg-white text-[color:var(--color-muted)] hover:bg-slate-50'
             }`}
           >
             Funcionários
@@ -753,7 +753,7 @@ const EmployeesView: React.FC = () => {
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               activeTab === 'roles' 
                 ? 'bg-blue-600 text-white' 
-                : 'bg-white text-slate-600 hover:bg-slate-50'
+                : 'bg-white text-[color:var(--color-muted)] hover:bg-slate-50'
             }`}
           >
             Cargos
@@ -765,7 +765,7 @@ const EmployeesView: React.FC = () => {
       {activeTab === 'employees' && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row justify-between items-center bg-slate-50 gap-4">
-            <h2 className="font-semibold text-slate-700">Lista de Funcionários</h2>
+            <h2 className="font-semibold text-[color:var(--color-text)]">Lista de Funcionários</h2>
             
             <div className="flex flex-1 w-full md:w-auto gap-4 justify-end">
               <div className="relative w-full md:w-64">
@@ -795,7 +795,7 @@ const EmployeesView: React.FC = () => {
           
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-slate-50 text-slate-600 text-sm font-semibold">
+              <thead className="bg-slate-50 text-[color:var(--color-muted)] text-sm font-semibold">
                 <tr>
                   <th className="p-4 text-left">Nome</th>
                   <th className="p-4 text-left">Cargo</th>
@@ -823,15 +823,15 @@ const EmployeesView: React.FC = () => {
                           )}
                         </div>
                         <div>
-                          <div className="font-medium text-slate-900">{emp.fullName}</div>
-                          <div className="text-xs text-slate-500">CPF: {emp.cpf}</div>
+                          <div className="font-medium text-[color:var(--color-text)]">{emp.fullName}</div>
+                          <div className="text-xs text-[color:var(--color-muted)]">CPF: {emp.cpf}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="p-4 text-slate-600">{emp.role?.name || '-'}</td>
+                    <td className="p-4 text-[color:var(--color-muted)]">{emp.role?.name || '-'}</td>
                     <td className="p-4">
-                      <div className="text-sm text-slate-600">{emp.email}</div>
-                      <div className="text-xs text-slate-500">{emp.phone}</div>
+                      <div className="text-sm text-[color:var(--color-muted)]">{emp.email}</div>
+                      <div className="text-xs text-[color:var(--color-muted)]">{emp.phone}</div>
                     </td>
                     <td className="p-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -862,7 +862,7 @@ const EmployeesView: React.FC = () => {
                 ))}
                 {employees.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="p-8 text-center text-slate-500">
+                    <td colSpan={5} className="p-8 text-center text-[color:var(--color-muted)]">
                       Nenhum funcionário cadastrado.
                     </td>
                   </tr>
@@ -877,7 +877,7 @@ const EmployeesView: React.FC = () => {
       {activeTab === 'roles' && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-            <h2 className="font-semibold text-slate-700">Cargos e Permissões</h2>
+            <h2 className="font-semibold text-[color:var(--color-text)]">Cargos e Permissões</h2>
             <button
               onClick={() => setShowRoleModal(true)}
               className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -889,12 +889,12 @@ const EmployeesView: React.FC = () => {
           <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {roles.map((role) => (
               <div key={role.id} className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                <h3 className="font-bold text-slate-800">{role.name}</h3>
-                <p className="text-sm text-slate-500 mt-1">{role.description}</p>
+                <h3 className="font-bold text-[color:var(--color-text)]">{role.name}</h3>
+                <p className="text-sm text-[color:var(--color-muted)] mt-1">{role.description}</p>
               </div>
             ))}
             {roles.length === 0 && (
-              <p className="text-slate-500 col-span-3 text-center py-8">Nenhum cargo cadastrado.</p>
+              <p className="text-[color:var(--color-muted)] col-span-3 text-center py-8">Nenhum cargo cadastrado.</p>
             )}
           </div>
         </div>
@@ -905,14 +905,14 @@ const EmployeesView: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="font-bold text-lg text-slate-800">Novo Cargo</h3>
-              <button onClick={() => setShowRoleModal(false)} className="text-slate-400 hover:text-slate-600">
+              <h3 className="font-bold text-lg text-[color:var(--color-text)]">Novo Cargo</h3>
+              <button onClick={() => setShowRoleModal(false)} className="text-slate-400 hover:text-[color:var(--color-muted)]">
                 <XCircle size={24} />
               </button>
             </div>
             <form onSubmit={handleSaveRole} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nome do Cargo</label>
+                <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Nome do Cargo</label>
                 <input
                   type="text"
                   required
@@ -923,7 +923,7 @@ const EmployeesView: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
+                <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Descrição</label>
                 <textarea
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   value={roleForm.description}
@@ -935,7 +935,7 @@ const EmployeesView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowRoleModal(false)}
-                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg mr-2"
+                  className="px-4 py-2 text-[color:var(--color-muted)] hover:bg-slate-100 rounded-lg mr-2"
                 >
                   Cancelar
                 </button>
@@ -956,10 +956,10 @@ const EmployeesView: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-slate-200 flex justify-between items-center sticky top-0 bg-white z-10">
-              <h3 className="text-xl font-bold text-slate-800">
+              <h3 className="text-xl font-bold text-[color:var(--color-text)]">
                 Escala de Trabalho - {selectedEmployeeForSchedule?.fullName}
               </h3>
-              <button onClick={() => setShowScheduleModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setShowScheduleModal(false)} className="text-slate-400 hover:text-[color:var(--color-muted)]">
                 <XCircle size={24} />
               </button>
             </div>
@@ -988,7 +988,7 @@ const EmployeesView: React.FC = () => {
                                             }}
                                             className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                                         />
-                                        <span className={`font-medium ${day.active ? 'text-slate-900' : 'text-slate-500'}`}>
+                                        <span className={`font-medium ${day.active ? 'text-[color:var(--color-text)]' : 'text-[color:var(--color-muted)]'}`}>
                                             {dayNames[day.dayOfWeek]}
                                         </span>
                                     </div>
@@ -996,7 +996,7 @@ const EmployeesView: React.FC = () => {
                                     {day.active && (
                                         <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-4">
                                             <div>
-                                                <label className="block text-xs font-medium text-slate-500 mb-1">Entrada</label>
+                                                <label className="block text-xs font-medium text-[color:var(--color-muted)] mb-1">Entrada</label>
                                                 <input
                                                     type="time"
                                                     value={day.startTime}
@@ -1009,7 +1009,7 @@ const EmployeesView: React.FC = () => {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-medium text-slate-500 mb-1">Início Almoço</label>
+                                                <label className="block text-xs font-medium text-[color:var(--color-muted)] mb-1">Início Almoço</label>
                                                 <input
                                                     type="time"
                                                     value={day.breakStart || ''}
@@ -1022,7 +1022,7 @@ const EmployeesView: React.FC = () => {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-medium text-slate-500 mb-1">Fim Almoço</label>
+                                                <label className="block text-xs font-medium text-[color:var(--color-muted)] mb-1">Fim Almoço</label>
                                                 <input
                                                     type="time"
                                                     value={day.breakEnd || ''}
@@ -1035,7 +1035,7 @@ const EmployeesView: React.FC = () => {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-medium text-slate-500 mb-1">Saída</label>
+                                                <label className="block text-xs font-medium text-[color:var(--color-muted)] mb-1">Saída</label>
                                                 <input
                                                     type="time"
                                                     value={day.endTime}
@@ -1048,7 +1048,7 @@ const EmployeesView: React.FC = () => {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-medium text-slate-500 mb-1">Tol. (min)</label>
+                                                <label className="block text-xs font-medium text-[color:var(--color-muted)] mb-1">Tol. (min)</label>
                                                 <input
                                                     type="number"
                                                     min="0"
@@ -1074,7 +1074,7 @@ const EmployeesView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowScheduleModal(false)}
-                className="px-4 py-2 text-slate-700 hover:bg-slate-100 rounded-lg font-medium transition-colors"
+                className="px-4 py-2 text-[color:var(--color-text)] hover:bg-slate-100 rounded-lg font-medium transition-colors"
               >
                 Cancelar
               </button>
@@ -1095,10 +1095,10 @@ const EmployeesView: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
-              <h3 className="font-bold text-lg text-slate-800">
+              <h3 className="font-bold text-lg text-[color:var(--color-text)]">
                 {editingEmployee ? 'Editar Funcionário' : 'Novo Funcionário'}
               </h3>
-              <button onClick={() => setShowEmployeeModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setShowEmployeeModal(false)} className="text-slate-400 hover:text-[color:var(--color-muted)]">
                 <XCircle size={24} />
               </button>
             </div>
@@ -1108,7 +1108,7 @@ const EmployeesView: React.FC = () => {
               <button
                 onClick={() => setFormTab('general')}
                 className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
-                  formTab === 'general' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+                  formTab === 'general' ? 'border-blue-600 text-blue-600' : 'border-transparent text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]'
                 }`}
               >
                 Dados Gerais
@@ -1116,7 +1116,7 @@ const EmployeesView: React.FC = () => {
               <button
                 onClick={() => setFormTab('address')}
                 className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
-                  formTab === 'address' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+                  formTab === 'address' ? 'border-blue-600 text-blue-600' : 'border-transparent text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]'
                 }`}
               >
                 Endereço
@@ -1124,7 +1124,7 @@ const EmployeesView: React.FC = () => {
               <button
                 onClick={() => setFormTab('contract')}
                 className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
-                  formTab === 'contract' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+                  formTab === 'contract' ? 'border-blue-600 text-blue-600' : 'border-transparent text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]'
                 }`}
               >
                 Contrato & Vínculo
@@ -1132,7 +1132,7 @@ const EmployeesView: React.FC = () => {
               <button
                 onClick={() => setFormTab('schedule')}
                 className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
-                  formTab === 'schedule' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+                  formTab === 'schedule' ? 'border-blue-600 text-blue-600' : 'border-transparent text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]'
                 }`}
               >
                 Escala
@@ -1142,7 +1142,7 @@ const EmployeesView: React.FC = () => {
                 disabled={!editingEmployee}
                 onClick={() => setFormTab('absences')}
                 className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
-                  formTab === 'absences' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+                  formTab === 'absences' ? 'border-blue-600 text-blue-600' : 'border-transparent text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]'
                 } ${!editingEmployee ? 'opacity-50 cursor-not-allowed' : ''}`}
                 title={!editingEmployee ? 'Salve o funcionário primeiro' : ''}
               >
@@ -1155,7 +1155,7 @@ const EmployeesView: React.FC = () => {
                 <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Nome Completo</label>
+                    <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Nome Completo</label>
                     <input
                       type="text"
                       required
@@ -1165,7 +1165,7 @@ const EmployeesView: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">CPF</label>
+                    <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">CPF</label>
                     <input
                       type="text"
                       required
@@ -1179,7 +1179,7 @@ const EmployeesView: React.FC = () => {
                     {cpfError && <p className="text-red-600 text-xs mt-1">{cpfError}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">RG</label>
+                    <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">RG</label>
                     <input
                       type="text"
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg"
@@ -1188,7 +1188,7 @@ const EmployeesView: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Data de Nascimento</label>
+                    <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Data de Nascimento</label>
                     <input
                       type="date"
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg"
@@ -1197,7 +1197,7 @@ const EmployeesView: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                    <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Email</label>
                     <input
                       type="email"
                       required
@@ -1207,7 +1207,7 @@ const EmployeesView: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Telefone</label>
+                    <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Telefone</label>
                     <input
                       type="text"
                       required
@@ -1320,7 +1320,7 @@ const EmployeesView: React.FC = () => {
                           </div>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-1">
+                          <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">
                             Senha de Acesso
                           </label>
                           <input
@@ -1340,7 +1340,7 @@ const EmployeesView: React.FC = () => {
               {formTab === 'address' && (
                 <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">CEP *</label>
+                    <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">CEP *</label>
                     <input
                       type="text"
                       required
@@ -1353,7 +1353,7 @@ const EmployeesView: React.FC = () => {
                     {cepError && <p className="text-red-600 text-xs mt-1">{cepError}</p>}
                   </div>
                   <div className="md:col-span-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Logradouro *</label>
+                    <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Logradouro *</label>
                     <input
                       type="text"
                       required
@@ -1363,7 +1363,7 @@ const EmployeesView: React.FC = () => {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Número *</label>
+                    <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Número *</label>
                     <input
                       type="text"
                       required
@@ -1373,7 +1373,7 @@ const EmployeesView: React.FC = () => {
                     />
                   </div>
                   <div className="md:col-span-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Bairro *</label>
+                    <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Bairro *</label>
                     <input
                       type="text"
                       required
@@ -1383,7 +1383,7 @@ const EmployeesView: React.FC = () => {
                     />
                   </div>
                   <div className="md:col-span-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Cidade *</label>
+                    <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Cidade *</label>
                     <input
                       type="text"
                       required
@@ -1393,7 +1393,7 @@ const EmployeesView: React.FC = () => {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Estado *</label>
+                    <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Estado *</label>
                     <input
                       type="text"
                       required
@@ -1408,7 +1408,7 @@ const EmployeesView: React.FC = () => {
               {formTab === 'contract' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Matrícula Interna</label>
+                    <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Matrícula Interna</label>
                     <input
                       type="text"
                       required
@@ -1418,7 +1418,7 @@ const EmployeesView: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Cargo</label>
+                    <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Cargo</label>
                     <select
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                       value={employeeForm.roleId}
@@ -1431,7 +1431,7 @@ const EmployeesView: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Supervisor</label>
+                    <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Supervisor</label>
                     <select
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                       value={employeeForm.supervisorId}
@@ -1451,7 +1451,7 @@ const EmployeesView: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Tipo de Contrato</label>
+                    <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Tipo de Contrato</label>
                     <select
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                       value={employeeForm.contractType}
@@ -1464,7 +1464,7 @@ const EmployeesView: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Data de Admissão</label>
+                    <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Data de Admissão</label>
                     <input
                       type="date"
                       required
@@ -1474,7 +1474,7 @@ const EmployeesView: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                    <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Status</label>
                     <select
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                       value={employeeForm.status}
@@ -1487,12 +1487,12 @@ const EmployeesView: React.FC = () => {
                   </div>
                   
                   <div className="col-span-2 mt-4">
-                    <h4 className="font-semibold text-slate-800 border-b pb-2 mb-4">Remuneração (Estimativa)</h4>
+                    <h4 className="font-semibold text-[color:var(--color-text)] border-b pb-2 mb-4">Remuneração (Estimativa)</h4>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Salário Base</label>
+                      <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Salário Base</label>
                       <input
                         type="number"
                         step="0.01"
@@ -1502,7 +1502,7 @@ const EmployeesView: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Valor Hora</label>
+                      <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Valor Hora</label>
                       <input
                         type="number"
                         step="0.01"
@@ -1512,7 +1512,7 @@ const EmployeesView: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Valor Diária</label>
+                      <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Valor Diária</label>
                       <input
                         type="number"
                         step="0.01"
@@ -1522,7 +1522,7 @@ const EmployeesView: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Valor Visita</label>
+                      <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Valor Visita</label>
                       <input
                         type="number"
                         step="0.01"
@@ -1532,7 +1532,7 @@ const EmployeesView: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Ajuda de Custo (Mensal)</label>
+                      <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Ajuda de Custo (Mensal)</label>
                       <input
                         type="number"
                         step="0.01"
@@ -1542,7 +1542,7 @@ const EmployeesView: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Vale Transporte</label>
+                      <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Vale Transporte</label>
                       <input
                         type="number"
                         step="0.01"
@@ -1552,7 +1552,7 @@ const EmployeesView: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Vale Refeição/Alimentação</label>
+                      <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Vale Refeição/Alimentação</label>
                       <input
                         type="number"
                         step="0.01"
@@ -1562,7 +1562,7 @@ const EmployeesView: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Encargos (%)</label>
+                      <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Encargos (%)</label>
                       <input
                         type="number"
                         step="0.01"
@@ -1577,9 +1577,9 @@ const EmployeesView: React.FC = () => {
 
               {formTab === 'schedule' && (
                 <div className="space-y-4">
-                  <p className="text-sm text-slate-500">Configuração simplificada de jornada.</p>
+                  <p className="text-sm text-[color:var(--color-muted)]">Configuração simplificada de jornada.</p>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Carga Horária Semanal</label>
+                    <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Carga Horária Semanal</label>
                     <input
                       type="number"
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg"
@@ -1600,14 +1600,14 @@ const EmployeesView: React.FC = () => {
                   ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
-                        <div className="flex items-center gap-2 text-slate-800 font-semibold">
+                        <div className="flex items-center gap-2 text-[color:var(--color-text)] font-semibold">
                           <FileText size={18} />
                           Novo registro
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Tipo</label>
+                            <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Tipo</label>
                             <select
                               className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                               value={absenceForm.type}
@@ -1622,7 +1622,7 @@ const EmployeesView: React.FC = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                            <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Status</label>
                             <select
                               className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                               value={absenceForm.status}
@@ -1635,7 +1635,7 @@ const EmployeesView: React.FC = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Data início</label>
+                            <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Data início</label>
                             <input
                               type="date"
                               className="w-full px-3 py-2 border border-slate-300 rounded-lg"
@@ -1645,7 +1645,7 @@ const EmployeesView: React.FC = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Hora início</label>
+                            <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Hora início</label>
                             <input
                               type="time"
                               className="w-full px-3 py-2 border border-slate-300 rounded-lg"
@@ -1655,7 +1655,7 @@ const EmployeesView: React.FC = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Data fim</label>
+                            <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Data fim</label>
                             <input
                               type="date"
                               className="w-full px-3 py-2 border border-slate-300 rounded-lg"
@@ -1665,7 +1665,7 @@ const EmployeesView: React.FC = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Hora fim</label>
+                            <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Hora fim</label>
                             <input
                               type="time"
                               className="w-full px-3 py-2 border border-slate-300 rounded-lg"
@@ -1676,7 +1676,7 @@ const EmployeesView: React.FC = () => {
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-1">Motivo/Observação</label>
+                          <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Motivo/Observação</label>
                           <textarea
                             className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                             rows={3}
@@ -1686,7 +1686,7 @@ const EmployeesView: React.FC = () => {
                         </div>
 
                         <div className="space-y-2">
-                          <label className="block text-sm font-medium text-slate-700">Documento</label>
+                          <label className="block text-sm font-medium text-[color:var(--color-text)]">Documento</label>
                             <input
                               type="text"
                               placeholder="Pesquisar documento (tipo, descrição, remetente...)"
@@ -1734,7 +1734,7 @@ const EmployeesView: React.FC = () => {
                                           <FileText size={26} className="text-slate-400" />
                                         )}
                                       </div>
-                                      <div className="text-xs text-slate-700 mt-2 truncate">{doc.type}</div>
+                                      <div className="text-xs text-[color:var(--color-text)] mt-2 truncate">{doc.type}</div>
                                     </button>
                                   );
                                 })}
@@ -1780,7 +1780,7 @@ const EmployeesView: React.FC = () => {
                         {absenceForm.type === 'atestado' && (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-1">CID</label>
+                              <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">CID</label>
                               <input
                                 type="text"
                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg"
@@ -1789,7 +1789,7 @@ const EmployeesView: React.FC = () => {
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-1">Nome do médico</label>
+                              <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Nome do médico</label>
                               <input
                                 type="text"
                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg"
@@ -1798,7 +1798,7 @@ const EmployeesView: React.FC = () => {
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-1">Local de atendimento</label>
+                              <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Local de atendimento</label>
                               <input
                                 type="text"
                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg"
@@ -1807,7 +1807,7 @@ const EmployeesView: React.FC = () => {
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-1">CRM</label>
+                              <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">CRM</label>
                               <input
                                 type="text"
                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg"
@@ -1832,10 +1832,10 @@ const EmployeesView: React.FC = () => {
                           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                             <div className="bg-white rounded-xl w-full max-w-3xl overflow-hidden">
                               <div className="flex items-center justify-between px-4 py-3 border-b">
-                                <div className="text-sm font-semibold text-slate-800 truncate">
+                                <div className="text-sm font-semibold text-[color:var(--color-text)] truncate">
                                   {previewDoc.type} {previewDoc.description ? `- ${previewDoc.description}` : ''}
                                 </div>
-                                <button type="button" onClick={() => setPreviewDoc(null)} className="text-slate-500 hover:text-slate-700">
+                                <button type="button" onClick={() => setPreviewDoc(null)} className="text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]">
                                   <XCircle size={20} />
                                 </button>
                               </div>
@@ -1852,7 +1852,7 @@ const EmployeesView: React.FC = () => {
                                     href={getImageUrl(previewDoc.fileUrl)}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="px-3 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50"
+                                    className="px-3 py-2 border border-slate-300 rounded-lg text-[color:var(--color-text)] hover:bg-slate-50"
                                   >
                                     Abrir em nova aba
                                   </a>
@@ -1879,9 +1879,9 @@ const EmployeesView: React.FC = () => {
                                 <div className="text-sm font-semibold">{vacationAlert.label}</div>
                               </div>
                               <div className="p-4 space-y-2">
-                                <div className="text-sm text-slate-800">Prazo concessivo até <span className="font-semibold">{vacationAlert.concessiveEnd}</span>.</div>
+                                <div className="text-sm text-[color:var(--color-text)]">Prazo concessivo até <span className="font-semibold">{vacationAlert.concessiveEnd}</span>.</div>
                                 {typeof vacationAlert.daysToExpire === 'number' && (
-                                  <div className="text-xs text-slate-600">{vacationAlert.daysToExpire > 0 ? `Faltam ${vacationAlert.daysToExpire} dia(s)` : vacationAlert.daysToExpire === 0 ? 'Vence hoje' : 'Já vencido'}</div>
+                                  <div className="text-xs text-[color:var(--color-muted)]">{vacationAlert.daysToExpire > 0 ? `Faltam ${vacationAlert.daysToExpire} dia(s)` : vacationAlert.daysToExpire === 0 ? 'Vence hoje' : 'Já vencido'}</div>
                                 )}
                                 <div className="pt-2 flex justify-end">
                                   <button type="button" onClick={() => setShowVacationAlert(false)} className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Entendi</button>
@@ -1894,7 +1894,7 @@ const EmployeesView: React.FC = () => {
 
                       <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
                         <div className="flex items-center justify-between">
-                          <div className="font-semibold text-slate-800">Registros</div>
+                          <div className="font-semibold text-[color:var(--color-text)]">Registros</div>
                           <button
                             type="button"
                             onClick={() => {
@@ -1902,16 +1902,16 @@ const EmployeesView: React.FC = () => {
                                 fetchEmployeeAbsences(editingEmployee.id);
                               }
                             }}
-                            className="text-sm text-slate-600 hover:text-slate-800"
+                            className="text-sm text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]"
                           >
                             Atualizar
                           </button>
                         </div>
 
                         {loadingAbsences ? (
-                          <div className="text-sm text-slate-500">Carregando...</div>
+                          <div className="text-sm text-[color:var(--color-muted)]">Carregando...</div>
                         ) : employeeAbsences.length === 0 ? (
-                          <div className="text-sm text-slate-500">Nenhum registro.</div>
+                          <div className="text-sm text-[color:var(--color-muted)]">Nenhum registro.</div>
                         ) : (
                           <div className="space-y-3">
                             {employeeAbsences.map(a => {
@@ -1930,13 +1930,13 @@ const EmployeesView: React.FC = () => {
                                 <div key={a.id} className="border border-slate-200 rounded-lg p-3">
                                   <div className="flex justify-between gap-4">
                                     <div className="min-w-0">
-                                      <div className="font-medium text-slate-900 capitalize">
-                                        {a.type} <span className="text-xs text-slate-500">({a.status})</span>
+                                      <div className="font-medium text-[color:var(--color-text)] capitalize">
+                                        {a.type} <span className="text-xs text-[color:var(--color-muted)]">({a.status})</span>
                                       </div>
-                                      <div className="text-sm text-slate-600">{period}</div>
-                                      {a.reason && <div className="text-sm text-slate-600 mt-1">{a.reason}</div>}
+                                      <div className="text-sm text-[color:var(--color-muted)]">{period}</div>
+                                      {a.reason && <div className="text-sm text-[color:var(--color-muted)] mt-1">{a.reason}</div>}
                                       {a.type === 'atestado' && (a.medicalCid || a.medicalProfessionalName || a.medicalLicenseNumber) && (
-                                        <div className="text-sm text-slate-600 mt-1">
+                                        <div className="text-sm text-[color:var(--color-muted)] mt-1">
                                           {[
                                             a.medicalCid ? `CID ${a.medicalCid}` : '',
                                             a.medicalProfessionalName || '',
@@ -1983,7 +1983,7 @@ const EmployeesView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowEmployeeModal(false)}
-                className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+                className="px-4 py-2 text-[color:var(--color-muted)] hover:bg-slate-100 rounded-lg"
               >
                 Cancelar
               </button>

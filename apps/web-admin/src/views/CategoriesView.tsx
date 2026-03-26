@@ -112,8 +112,8 @@ const CategoriesView: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Categorias</h1>
-          <p className="text-slate-500 font-medium text-lg">Gerencie as categorias e subcategorias de produtos.</p>
+          <h1 className="text-2xl font-black text-[color:var(--color-text)] tracking-tight">Categorias</h1>
+          <p className="text-[color:var(--color-muted)] font-medium text-lg">Gerencie as categorias e subcategorias de produtos.</p>
         </div>
         <button 
           onClick={() => { resetForm(); setShowModal(true); }}
@@ -152,8 +152,8 @@ const CategoriesView: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {filteredCategories.map(category => (
                 <tr key={category.id} className="hover:bg-slate-50 transition-colors group">
-                  <td className="p-6 font-bold text-slate-700">{category.name}</td>
-                  <td className="p-6 text-slate-500">
+                  <td className="p-6 font-bold text-[color:var(--color-text)]">{category.name}</td>
+                  <td className="p-6 text-[color:var(--color-muted)]">
                     {category.parent ? (
                       <span className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-blue-50 text-blue-600 text-xs font-bold">
                         {category.parent.name}
@@ -162,7 +162,7 @@ const CategoriesView: React.FC = () => {
                       <span className="text-slate-300">-</span>
                     )}
                   </td>
-                  <td className="p-6 text-slate-500 text-sm">{category.description}</td>
+                  <td className="p-6 text-[color:var(--color-muted)] text-sm">{category.description}</td>
                   <td className="p-6 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
@@ -197,17 +197,17 @@ const CategoriesView: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="text-xl font-black text-slate-800">
+              <h3 className="text-xl font-black text-[color:var(--color-text)]">
                 {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-[color:var(--color-muted)]">
                 <X size={24} />
               </button>
             </div>
             
             <form onSubmit={handleSave} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Nome</label>
+                <label className="block text-xs font-bold text-[color:var(--color-muted)] uppercase mb-2">Nome</label>
                 <input
                   type="text"
                   required
@@ -218,7 +218,7 @@ const CategoriesView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Categoria Pai (Opcional)</label>
+                <label className="block text-xs font-bold text-[color:var(--color-muted)] uppercase mb-2">Categoria Pai (Opcional)</label>
                 <select
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium bg-white"
                   value={formData.parentId}
@@ -232,7 +232,7 @@ const CategoriesView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Descrição</label>
+                <label className="block text-xs font-bold text-[color:var(--color-muted)] uppercase mb-2">Descrição</label>
                 <textarea
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium resize-none"
                   rows={3}
@@ -245,7 +245,7 @@ const CategoriesView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-6 py-3 text-slate-600 font-bold hover:bg-slate-50 rounded-xl transition-all"
+                  className="px-6 py-3 text-[color:var(--color-muted)] font-bold hover:bg-slate-50 rounded-xl transition-all"
                 >
                   Cancelar
                 </button>

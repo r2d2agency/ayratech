@@ -303,7 +303,7 @@ const RoutesReportView: React.FC = () => {
 
     const { adjustedDate, diffDays } = getValidityMeta(date);
     const color =
-      diffDays < 0 ? 'text-red-600' : diffDays <= 30 ? 'text-amber-600' : 'text-slate-600';
+      diffDays < 0 ? 'text-red-600' : diffDays <= 30 ? 'text-amber-600' : 'text-[color:var(--color-muted)]';
     const headline =
       diffDays < 0 ? 'VENCIDO' : diffDays <= 30 ? `Vence em ${diffDays}d` : adjustedDate.toLocaleDateString('pt-BR');
 
@@ -322,7 +322,7 @@ const RoutesReportView: React.FC = () => {
             )}
           </div>
         </div>
-        <div className="text-[10px] text-slate-500 whitespace-nowrap">
+        <div className="text-[10px] text-[color:var(--color-muted)] whitespace-nowrap">
           Qtd: {qty && qty > 0 ? qty : '-'}
         </div>
       </div>
@@ -879,7 +879,7 @@ const RoutesReportView: React.FC = () => {
 
     if (!isExecuted) {
       return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-slate-100 text-[color:var(--color-muted)] border border-slate-200">
           <XCircle size={14} />
           Não Executado
         </span>
@@ -1117,7 +1117,7 @@ const RoutesReportView: React.FC = () => {
               <select 
                 value={selectedSupervisor}
                 onChange={e => setSelectedSupervisor(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[color:var(--color-text)] outline-none focus:border-blue-500 transition-colors"
               >
                 <option value="">Todos</option>
                 {uniqueOptions.supervisors.map(s => <option key={s} value={s}>{s}</option>)}
@@ -1129,7 +1129,7 @@ const RoutesReportView: React.FC = () => {
               <select 
                 value={selectedPromoter}
                 onChange={e => setSelectedPromoter(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[color:var(--color-text)] outline-none focus:border-blue-500 transition-colors"
               >
                 <option value="">Todos</option>
                 {uniqueOptions.promoters.map(s => <option key={s} value={s}>{s}</option>)}
@@ -1141,7 +1141,7 @@ const RoutesReportView: React.FC = () => {
               <select 
                 value={selectedClient}
                 onChange={e => setSelectedClient(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[color:var(--color-text)] outline-none focus:border-blue-500 transition-colors"
               >
                 <option value="">Todos</option>
                 {uniqueOptions.clients.map(s => <option key={s} value={s}>{s}</option>)}
@@ -1153,7 +1153,7 @@ const RoutesReportView: React.FC = () => {
               <select 
                 value={selectedPDV}
                 onChange={e => setSelectedPDV(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[color:var(--color-text)] outline-none focus:border-blue-500 transition-colors"
               >
                 <option value="">Todos</option>
                 {uniqueOptions.pdvs.map(s => <option key={s} value={s}>{s}</option>)}
@@ -1165,7 +1165,7 @@ const RoutesReportView: React.FC = () => {
               <select 
                 value={selectedProduct}
                 onChange={e => setSelectedProduct(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[color:var(--color-text)] outline-none focus:border-blue-500 transition-colors"
               >
                 <option value="">Todos</option>
                 {uniqueOptions.products.map(s => <option key={s} value={s}>{s}</option>)}
@@ -1178,7 +1178,7 @@ const RoutesReportView: React.FC = () => {
                 type="date" 
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[color:var(--color-text)] outline-none focus:border-blue-500 transition-colors"
               />
             </div>
             <div className="space-y-1.5">
@@ -1187,7 +1187,7 @@ const RoutesReportView: React.FC = () => {
                 type="date" 
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[color:var(--color-text)] outline-none focus:border-blue-500 transition-colors"
               />
             </div>
             
@@ -1196,7 +1196,7 @@ const RoutesReportView: React.FC = () => {
               className={`w-full px-3 py-2 rounded-xl text-sm font-bold border transition-all flex items-center justify-center gap-2 h-[38px] ${
                 onlyRuptures 
                   ? 'bg-red-50 border-red-200 text-red-600' 
-                  : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                  : 'bg-white border-slate-200 text-[color:var(--color-muted)] hover:bg-slate-50'
               }`}
             >
               <AlertTriangle size={16} />
@@ -1243,7 +1243,7 @@ const RoutesReportView: React.FC = () => {
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-              <h3 className="font-black text-lg text-slate-800 mb-6 flex items-center gap-2">
+              <h3 className="font-black text-lg text-[color:var(--color-text)] mb-6 flex items-center gap-2">
                 <Users size={20} className="text-slate-400" />
                 Execução por Supervisor
               </h3>
@@ -1263,7 +1263,7 @@ const RoutesReportView: React.FC = () => {
             </div>
 
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-              <h3 className="font-black text-lg text-slate-800 mb-6 flex items-center gap-2">
+              <h3 className="font-black text-lg text-[color:var(--color-text)] mb-6 flex items-center gap-2">
                 <Users size={20} className="text-slate-400" />
                 Execução por Promotor
               </h3>
@@ -1287,14 +1287,14 @@ const RoutesReportView: React.FC = () => {
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center flex-wrap gap-4">
               <div className="flex items-center gap-4">
-                <h3 className="font-black text-lg text-slate-800">
+                <h3 className="font-black text-lg text-[color:var(--color-text)]">
                   {groupBy === 'route' ? 'Detalhamento das Rotas' : 'Relatório por PDV'}
                 </h3>
                 <div className="flex bg-slate-100 p-1 rounded-xl">
                   <button 
                     onClick={() => setGroupBy('route')}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      groupBy === 'route' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                      groupBy === 'route' ? 'bg-white text-blue-600 shadow-sm' : 'text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]'
                     }`}
                   >
                     <List size={14} />
@@ -1303,7 +1303,7 @@ const RoutesReportView: React.FC = () => {
                   <button 
                     onClick={() => setGroupBy('pdv')}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      groupBy === 'pdv' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                      groupBy === 'pdv' ? 'bg-white text-blue-600 shadow-sm' : 'text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]'
                     }`}
                   >
                     <Store size={14} />
@@ -1312,7 +1312,7 @@ const RoutesReportView: React.FC = () => {
                   <button 
                     onClick={() => setGroupBy('validity')}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      groupBy === 'validity' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                      groupBy === 'validity' ? 'bg-white text-blue-600 shadow-sm' : 'text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]'
                     }`}
                   >
                     <Clock size={14} />
@@ -1348,7 +1348,7 @@ const RoutesReportView: React.FC = () => {
                         className="hover:bg-slate-50 transition-colors group cursor-pointer"
                       >
                         <td className="p-4">
-                          <span className="font-bold text-slate-700 text-sm">
+                          <span className="font-bold text-[color:var(--color-text)] text-sm">
                             {formatRouteDate(route.date)}
                           </span>
                         </td>
@@ -1361,25 +1361,25 @@ const RoutesReportView: React.FC = () => {
                                     </div>
                                 ))}
                                 {((route.promoters?.length || 0) > 3) && (
-                                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs border-2 border-white">
+                                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[color:var(--color-muted)] font-bold text-xs border-2 border-white">
                                         +{(route.promoters?.length || 0) - 3}
                                     </div>
                                 )}
                             </div>
                             <div className="flex flex-col">
-                                <span className="font-bold text-slate-700 text-sm">
+                                <span className="font-bold text-[color:var(--color-text)] text-sm">
                                     {((route.promoters && route.promoters.length > 0) ? route.promoters : (route.promoter ? [route.promoter] : [])).map((p: any) => (p?.fullName || p?.name || '').split(' ')[0]).join(', ')}
                                 </span>
                             </div>
                           </div>
                         </td>
                         <td className="p-4">
-                          <span className="text-sm font-medium text-slate-500">
+                          <span className="text-sm font-medium text-[color:var(--color-muted)]">
                             {route.promoter.supervisor?.fullName || '-'}
                           </span>
                         </td>
                         <td className="p-4">
-                          <span className="text-sm font-medium text-slate-500">
+                          <span className="text-sm font-medium text-[color:var(--color-muted)]">
                             {route.items.length} lojas
                           </span>
                         </td>
@@ -1421,18 +1421,18 @@ const RoutesReportView: React.FC = () => {
                               <Store size={14} />
                             </div>
                             <div className="flex flex-col">
-                                <span className="font-bold text-slate-700 text-sm">{pdv.name}</span>
+                                <span className="font-bold text-[color:var(--color-text)] text-sm">{pdv.name}</span>
                                 <span className="text-[10px] text-slate-400">{pdv.address}</span>
                             </div>
                           </div>
                         </td>
                         <td className="p-4">
-                          <span className="text-sm font-medium text-slate-500">
+                          <span className="text-sm font-medium text-[color:var(--color-muted)]">
                             {pdv.city}
                           </span>
                         </td>
                         <td className="p-4 text-center">
-                          <span className="font-bold text-slate-900 bg-slate-100 px-2 py-1 rounded-lg text-xs">
+                          <span className="font-bold text-[color:var(--color-text)] bg-slate-100 px-2 py-1 rounded-lg text-xs">
                             {pdv.visits}
                           </span>
                         </td>
@@ -1486,7 +1486,7 @@ const RoutesReportView: React.FC = () => {
                     {validityReport.map((pdv) => (
                       <React.Fragment key={pdv.id}>
                         <tr className="bg-slate-50/50">
-                          <td colSpan={6} className="p-3 font-bold text-slate-700 border-y border-slate-100">
+                          <td colSpan={6} className="p-3 font-bold text-[color:var(--color-text)] border-y border-slate-100">
                              <div className="flex items-center gap-2">
                                <Store size={14} className="text-blue-500" />
                                {pdv.name}
@@ -1503,10 +1503,10 @@ const RoutesReportView: React.FC = () => {
                                   <ProductImage src={getImageUrl(item.productImage)} alt="" />
                                 </div>
                               </td>
-                             <td className="p-3 font-medium text-slate-700 text-sm">
+                             <td className="p-3 font-medium text-[color:var(--color-text)] text-sm">
                                {item.productName}
                              </td>
-                             <td className="p-3 text-slate-500 text-sm">
+                             <td className="p-3 text-[color:var(--color-muted)] text-sm">
                                {item.brandName}
                              </td>
                              <td className="p-3 text-sm">
@@ -1520,7 +1520,7 @@ const RoutesReportView: React.FC = () => {
                                   )}
                                 </div>
                              </td>
-                             <td className="p-3 text-sm text-slate-500">
+                             <td className="p-3 text-sm text-[color:var(--color-muted)]">
                                {item.promoterName}
                                <div className="text-[10px] text-slate-400">
                                  {formatRouteDate(item.date)}
@@ -1550,22 +1550,22 @@ const RoutesReportView: React.FC = () => {
             {/* Header */}
             <div className="p-6 border-b border-slate-100 flex justify-between items-start bg-slate-50/50 sticky top-0 z-10">
               <div>
-                <h2 className="text-xl font-black text-slate-900">Detalhes da Rota</h2>
-                <div className="flex items-center gap-4 mt-2 text-sm text-slate-500 flex-wrap">
+                <h2 className="text-xl font-black text-[color:var(--color-text)]">Detalhes da Rota</h2>
+                <div className="flex items-center gap-4 mt-2 text-sm text-[color:var(--color-muted)] flex-wrap">
                   <span className="flex items-center gap-1.5">
                     <Calendar size={14} />
                     {formatRouteDate(selectedRoute.date)}
                   </span>
                   <span className="flex items-center gap-1.5">
                     <User size={14} />
-                    Equipe: <strong className="text-slate-700">
+                    Equipe: <strong className="text-[color:var(--color-text)]">
                       {((selectedRoute.promoters && selectedRoute.promoters.length > 0) ? selectedRoute.promoters : (selectedRoute.promoter ? [selectedRoute.promoter] : [])).map((p: any) => p.fullName || p.name).join(', ')}
                     </strong>
                   </span>
                   {selectedRoute.promoter.supervisor && (
                     <span className="flex items-center gap-1.5">
                       <Users size={14} />
-                    Supervisor: <strong className="text-slate-700">{selectedRoute.promoter.supervisor.fullName}</strong>
+                    Supervisor: <strong className="text-[color:var(--color-text)]">{selectedRoute.promoter.supervisor.fullName}</strong>
                   </span>
                 )}
                 {calculateTotalRouteDuration(selectedRoute.items) && (
@@ -1602,14 +1602,14 @@ const RoutesReportView: React.FC = () => {
                           toast.error('Erro ao atualizar lista de rotas.', { id: loadingToast });
                       });
                     }}
-                    className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-blue-500 transition-all flex-shrink-0"
+                    className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-[color:var(--color-muted)] hover:bg-slate-50 hover:text-blue-500 transition-all flex-shrink-0"
                     title="Atualizar dados da rota"
                   >
                     <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
                   </button>
                   <button 
                     onClick={() => setSelectedRoute(null)}
-                    className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-red-500 transition-all flex-shrink-0"
+                    className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-[color:var(--color-muted)] hover:bg-slate-50 hover:text-red-500 transition-all flex-shrink-0"
                   >
                     <X size={20} />
                   </button>
@@ -1638,8 +1638,8 @@ const RoutesReportView: React.FC = () => {
                       {index + 1}
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-bold text-slate-900">{item.supermarket.fantasyName}</h3>
-                      <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                      <h3 className="font-bold text-[color:var(--color-text)]">{item.supermarket.fantasyName}</h3>
+                      <div className="flex items-center gap-2 text-xs text-[color:var(--color-muted)] mt-0.5">
                         <MapPin size={12} />
                         {(() => {
                            const s = item.supermarket;
@@ -1665,7 +1665,7 @@ const RoutesReportView: React.FC = () => {
                          </button>
                       )}
 
-                      <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+                      <div className="flex items-center gap-2 text-xs font-bold text-[color:var(--color-muted)] bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
                         <Clock size={14} className="text-slate-400" />
                         <span>In: {formatTime(item.checkInTime)}</span>
                         <span className="text-slate-300">|</span>
@@ -1682,7 +1682,7 @@ const RoutesReportView: React.FC = () => {
                       <div className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${
                         ['CHECKOUT', 'COMPLETED'].includes(item.status) 
                           ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
-                          : 'bg-slate-100 text-slate-500 border-slate-200'
+                          : 'bg-slate-100 text-[color:var(--color-muted)] border-slate-200'
                       }`}>
                         {item.status}
                       </div>
@@ -1692,7 +1692,7 @@ const RoutesReportView: React.FC = () => {
                   {/* Category Photos Section */}
                   {item.categoryPhotos && Object.keys(item.categoryPhotos).length > 0 && (
                     <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
-                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                      <h4 className="text-xs font-bold text-[color:var(--color-muted)] uppercase tracking-wider mb-2 flex items-center gap-2">
                         <ImageIcon size={14} />
                         Fotos da Gôndola / Categoria
                       </h4>
@@ -1752,7 +1752,7 @@ const RoutesReportView: React.FC = () => {
 
                            return (
                              <div key={catId} className="border-l-2 border-slate-300 pl-3 py-1">
-                               <h5 className="font-bold text-sm text-slate-800 mb-2 bg-slate-100 px-2 py-1 rounded inline-block">{catId}</h5>
+                               <h5 className="font-bold text-sm text-[color:var(--color-text)] mb-2 bg-slate-100 px-2 py-1 rounded inline-block">{catId}</h5>
                                {renderPhotoList(beforePhotos, 'Antes')}
                                {renderPhotoList(afterPhotos, 'Depois')}
                                {renderPhotoList(storagePhotos, 'Estoque')}
@@ -1767,7 +1767,7 @@ const RoutesReportView: React.FC = () => {
                   {/* Products Table */}
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm min-w-[1200px]">
-                      <thead className="bg-slate-50 text-slate-500 font-bold text-xs uppercase border-b border-slate-100">
+                      <thead className="bg-slate-50 text-[color:var(--color-muted)] font-bold text-xs uppercase border-b border-slate-100">
                         <tr>
                           <th className="p-3 w-10">#</th>
                           <th className="p-3 w-[200px]">Produto</th>
@@ -1786,13 +1786,13 @@ const RoutesReportView: React.FC = () => {
                         {item.products.map((p, pIndex) => (
                           <tr key={p.id} className={p.isStockout ? 'bg-red-50/30' : ''}>
                             <td className="p-3 text-slate-400 text-xs">{pIndex + 1}</td>
-                            <td className="p-3 font-medium text-slate-700">
+                            <td className="p-3 font-medium text-[color:var(--color-text)]">
                                 <div className="line-clamp-2" title={p.product.name}>{p.product.name}</div>
                             </td>
-                            <td className="p-3 text-slate-500">
+                            <td className="p-3 text-[color:var(--color-muted)]">
                                 <div className="truncate max-w-[120px]" title={p.product.brand?.name}>{p.product.brand?.name || '-'}</div>
                             </td>
-                            <td className="p-3 text-xs font-bold text-slate-500">
+                            <td className="p-3 text-xs font-bold text-[color:var(--color-muted)]">
             {p.completedBy ? (
                 <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded-md border border-blue-100 whitespace-nowrap">
                     {p.completedBy.fullName}
@@ -1811,15 +1811,15 @@ const RoutesReportView: React.FC = () => {
                                 </div>
                               </div>
                             </td>
-                            <td className="p-3 text-xs font-bold text-slate-700">
+                            <td className="p-3 text-xs font-bold text-[color:var(--color-text)]">
                                 {((p.gondolaCount !== undefined && p.gondolaCount !== null) || (p.inventoryCount !== undefined && p.inventoryCount !== null)) ? 
                                   ((Number(p.gondolaCount) || 0) + (Number(p.inventoryCount) || 0)) 
                                   : (p.stockCount !== undefined && p.stockCount !== null ? p.stockCount : '-')}
                             </td>
-                            <td className="p-3 text-xs text-slate-700">
+                            <td className="p-3 text-xs text-[color:var(--color-text)]">
                                 {p.product.checklistTemplate?.title && (
                                     <div className="mb-1 pb-1 border-b border-slate-100">
-                                        <span className="text-[10px] font-bold text-slate-700 bg-slate-200 px-1 rounded block w-fit truncate max-w-full">
+                                        <span className="text-[10px] font-bold text-[color:var(--color-text)] bg-slate-200 px-1 rounded block w-fit truncate max-w-full">
                                             {p.product.checklistTemplate.title}
                                         </span>
                                     </div>
@@ -1828,7 +1828,7 @@ const RoutesReportView: React.FC = () => {
                                     <div className="flex flex-col gap-1 max-h-[100px] overflow-y-auto">
                                         {p.checklists.map((c: any, cIdx: number) => (
                                             <div key={c.id || cIdx} className="flex flex-col border-b last:border-0 border-slate-100 pb-1 last:pb-0">
-                                                <span className="font-semibold text-[10px] text-slate-500 truncate" title={c.description}>{c.description}</span>
+                                                <span className="font-semibold text-[10px] text-[color:var(--color-muted)] truncate" title={c.description}>{c.description}</span>
                                                 {c.competitorName && (
                                                     <span className="text-[10px] text-orange-600 font-bold truncate">{c.competitorName}</span>
                                                 )}
@@ -1838,7 +1838,7 @@ const RoutesReportView: React.FC = () => {
                                                             <span className="text-emerald-600 font-bold flex items-center gap-1 text-[10px]"><CheckCircle2 size={10}/> Sim</span> : 
                                                             <span className="text-red-500 font-bold flex items-center gap-1 text-[10px]"><XCircle size={10}/> Não</span>
                                                     ) : (
-                                                        <span className="font-mono bg-slate-100 px-1 rounded text-slate-700 text-[10px]">
+                                                        <span className="font-mono bg-slate-100 px-1 rounded text-[color:var(--color-text)] text-[10px]">
                                                             {c.type === 'PRICE_CHECK' ? 'R$ ' : ''}{c.value || '-'}
                                                         </span>
                                                     )}
@@ -1901,7 +1901,7 @@ const RoutesReportView: React.FC = () => {
                                 <span className="text-slate-300 text-xs">-</span>
                               )}
                             </td>
-                            <td className="p-3 text-slate-500 italic text-xs">
+                            <td className="p-3 text-[color:var(--color-muted)] italic text-xs">
                               <div className="max-w-[200px] truncate" title={p.observation || ''}>
                                 {p.observation || '-'}
                               </div>
@@ -1923,10 +1923,10 @@ const RoutesReportView: React.FC = () => {
         <div className="fixed inset-0 bg-slate-900/50 z-[110] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
            <div className="bg-white w-full max-w-3xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-               <h2 className="text-xl font-black text-slate-900">Lançamento Manual de Visita</h2>
+               <h2 className="text-xl font-black text-[color:var(--color-text)]">Lançamento Manual de Visita</h2>
                <button 
                   onClick={() => setManualForm(null)}
-                  className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-all"
+                  className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-[color:var(--color-muted)] hover:bg-slate-50 transition-all"
                 >
                   <X size={20} />
                 </button>
@@ -1936,7 +1936,7 @@ const RoutesReportView: React.FC = () => {
                {/* Header Inputs */}
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Horário Entrada</label>
+                    <label className="block text-xs font-bold text-[color:var(--color-muted)] mb-1">Horário Entrada</label>
                     <input 
                       type="datetime-local" 
                       value={manualForm.checkInTime}
@@ -1945,7 +1945,7 @@ const RoutesReportView: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Horário Saída</label>
+                    <label className="block text-xs font-bold text-[color:var(--color-muted)] mb-1">Horário Saída</label>
                     <input 
                       type="datetime-local" 
                       value={manualForm.checkOutTime}
@@ -1954,7 +1954,7 @@ const RoutesReportView: React.FC = () => {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Promotor Responsável</label>
+                    <label className="block text-xs font-bold text-[color:var(--color-muted)] mb-1">Promotor Responsável</label>
                     <select 
                       value={manualForm.promoterId}
                       onChange={e => setManualForm({...manualForm, promoterId: e.target.value})}
@@ -1970,14 +1970,14 @@ const RoutesReportView: React.FC = () => {
 
                {/* Products List */}
                <div className="space-y-4">
-                 <h3 className="font-bold text-slate-800">Produtos da Rota</h3>
+                 <h3 className="font-bold text-[color:var(--color-text)]">Produtos da Rota</h3>
                  {manualForm.products.map((prod, idx) => (
                    <div key={prod.productId} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-700">{prod.productName}</span>
+                        <span className="font-bold text-[color:var(--color-text)]">{prod.productName}</span>
                         <div className="flex items-center gap-4">
                          <div className="flex items-center gap-2">
-                           <label className="text-xs font-bold text-slate-500">Validade Loja:</label>
+                           <label className="text-xs font-bold text-[color:var(--color-muted)]">Validade Loja:</label>
                            <input
                              type="date"
                              value={(prod as any).validityStoreDate || ''}
@@ -1991,7 +1991,7 @@ const RoutesReportView: React.FC = () => {
                              }}
                              className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 w-32"
                            />
-                           <span className="text-xs font-bold text-slate-500 ml-2">Qtd:</span>
+                           <span className="text-xs font-bold text-[color:var(--color-muted)] ml-2">Qtd:</span>
                            <input
                              type="number"
                              min={0}
@@ -2009,7 +2009,7 @@ const RoutesReportView: React.FC = () => {
                            />
                          </div>
                          <div className="flex items-center gap-2">
-                           <label className="text-xs font-bold text-slate-500">Validade Estoque:</label>
+                           <label className="text-xs font-bold text-[color:var(--color-muted)]">Validade Estoque:</label>
                            <input
                              type="date"
                              value={(prod as any).validityStockDate || ''}
@@ -2023,7 +2023,7 @@ const RoutesReportView: React.FC = () => {
                              }}
                              className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 w-32"
                            />
-                           <span className="text-xs font-bold text-slate-500 ml-2">Qtd:</span>
+                           <span className="text-xs font-bold text-[color:var(--color-muted)] ml-2">Qtd:</span>
                            <input
                              type="number"
                              min={0}
@@ -2041,7 +2041,7 @@ const RoutesReportView: React.FC = () => {
                            />
                          </div>
                          <div className="flex items-center gap-2">
-                           <label className="text-xs font-bold text-slate-500">Estoque:</label>
+                           <label className="text-xs font-bold text-[color:var(--color-muted)]">Estoque:</label>
                            <input 
                              type="number" 
                              placeholder="Qtd"
@@ -2054,7 +2054,7 @@ const RoutesReportView: React.FC = () => {
                              className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 w-20"
                            />
                          </div>
-                         <label className="flex items-center gap-2 text-sm font-medium text-slate-600 cursor-pointer">
+                         <label className="flex items-center gap-2 text-sm font-medium text-[color:var(--color-muted)] cursor-pointer">
                            <input 
                              type="checkbox" 
                              checked={prod.checked}
@@ -2086,14 +2086,14 @@ const RoutesReportView: React.FC = () => {
                      {/* Checklist Items */}
                      {prod.checklists && prod.checklists.length > 0 && (
                         <div className="bg-slate-100 p-4 rounded-xl space-y-3 border border-slate-200">
-                            <h4 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                            <h4 className="text-xs font-bold text-[color:var(--color-muted)] uppercase flex items-center gap-2">
                                 <List size={14} /> Checklist / Detalhes
                             </h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {prod.checklists.map((checkItem, cIdx) => (
                                 <div key={cIdx} className="flex flex-col gap-1.5 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
                                     <div className="flex justify-between items-start">
-                                        <span className="text-sm font-medium text-slate-700 leading-tight">
+                                        <span className="text-sm font-medium text-[color:var(--color-text)] leading-tight">
                                             {checkItem.description} 
                                             {checkItem.competitorName && <span className="text-orange-600 font-bold ml-1 text-xs">({checkItem.competitorName})</span>}
                                         </span>
@@ -2114,7 +2114,7 @@ const RoutesReportView: React.FC = () => {
                                                     }}
                                                     className="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
                                                 />
-                                                <span className={checkItem.isChecked ? 'font-bold text-emerald-700' : 'text-slate-600'}>Sim</span>
+                                                <span className={checkItem.isChecked ? 'font-bold text-emerald-700' : 'text-[color:var(--color-muted)]'}>Sim</span>
                                             </label>
                                             <label className="flex items-center gap-2 text-sm cursor-pointer hover:bg-red-50 px-2 py-1 rounded transition-colors">
                                                 <input 
@@ -2130,7 +2130,7 @@ const RoutesReportView: React.FC = () => {
                                                     }}
                                                     className="w-4 h-4 text-red-600 focus:ring-red-500"
                                                 />
-                                                <span className={!checkItem.isChecked ? 'font-bold text-red-700' : 'text-slate-600'}>Não</span>
+                                                <span className={!checkItem.isChecked ? 'font-bold text-red-700' : 'text-[color:var(--color-muted)]'}>Não</span>
                                             </label>
                                         </div>
                                     ) : (
@@ -2171,7 +2171,7 @@ const RoutesReportView: React.FC = () => {
                        <div className="flex items-center gap-2">
                          <button 
                            onClick={() => openPhotoModal(idx)}
-                           className="flex-1 flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-500 hover:bg-slate-50 transition-colors"
+                           className="flex-1 flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-[color:var(--color-muted)] hover:bg-slate-50 transition-colors"
                          >
                            <Camera size={16} />
                            <span className="truncate">Adicionar Fotos</span>
@@ -2211,7 +2211,7 @@ const RoutesReportView: React.FC = () => {
              <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
                <button 
                  onClick={() => setManualForm(null)}
-                 className="px-4 py-2 text-slate-600 font-bold hover:bg-slate-200 rounded-xl transition-colors"
+                 className="px-4 py-2 text-[color:var(--color-muted)] font-bold hover:bg-slate-200 rounded-xl transition-colors"
                >
                  Cancelar
                </button>
@@ -2232,23 +2232,23 @@ const RoutesReportView: React.FC = () => {
         <div className="fixed inset-0 bg-slate-900/50 z-[120] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
            <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-               <h2 className="text-xl font-black text-slate-900">Dados da Foto</h2>
+               <h2 className="text-xl font-black text-[color:var(--color-text)]">Dados da Foto</h2>
                <button 
                   onClick={() => setShowPhotoModal(false)}
-                  className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-all"
+                  className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-[color:var(--color-muted)] hover:bg-slate-50 transition-all"
                 >
                   <X size={20} />
                 </button>
              </div>
              
              <div className="p-6 space-y-4">
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-[color:var(--color-muted)]">
                   Informe os dados que serão estampados na marca d'água das fotos.
                 </p>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Data</label>
+                    <label className="block text-xs font-bold text-[color:var(--color-muted)] mb-1">Data</label>
                     <input 
                       type="date"
                       value={photoMeta.date}
@@ -2257,7 +2257,7 @@ const RoutesReportView: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Hora</label>
+                    <label className="block text-xs font-bold text-[color:var(--color-muted)] mb-1">Hora</label>
                     <input 
                       type="time"
                       value={photoMeta.time}
@@ -2268,7 +2268,7 @@ const RoutesReportView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Promotor</label>
+                  <label className="block text-xs font-bold text-[color:var(--color-muted)] mb-1">Promotor</label>
                   <select 
                     value={photoMeta.promoterName}
                     onChange={e => setPhotoMeta({...photoMeta, promoterName: e.target.value})}
@@ -2282,12 +2282,12 @@ const RoutesReportView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">PDV</label>
+                  <label className="block text-xs font-bold text-[color:var(--color-muted)] mb-1">PDV</label>
                   <input 
                     type="text"
                     value={photoMeta.pdvName}
                     readOnly
-                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-sm outline-none text-slate-500 cursor-not-allowed"
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-sm outline-none text-[color:var(--color-muted)] cursor-not-allowed"
                   />
                 </div>
              </div>
@@ -2295,7 +2295,7 @@ const RoutesReportView: React.FC = () => {
              <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
                <button 
                  onClick={() => setShowPhotoModal(false)}
-                 className="px-4 py-2 text-slate-600 font-bold hover:bg-slate-200 rounded-xl transition-colors"
+                 className="px-4 py-2 text-[color:var(--color-muted)] font-bold hover:bg-slate-200 rounded-xl transition-colors"
                >
                  Cancelar
                </button>
@@ -2330,8 +2330,8 @@ const RoutesReportView: React.FC = () => {
             <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4 shadow-2xl">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                 <div className="text-center">
-                    <h3 className="text-lg font-bold text-slate-800">Processando Fotos...</h3>
-                    <p className="text-slate-500 text-sm">Aguarde enquanto adicionamos a marca d'água.</p>
+                    <h3 className="text-lg font-bold text-[color:var(--color-text)]">Processando Fotos...</h3>
+                    <p className="text-[color:var(--color-muted)] text-sm">Aguarde enquanto adicionamos a marca d'água.</p>
                 </div>
             </div>
         </div>
@@ -2341,14 +2341,14 @@ const RoutesReportView: React.FC = () => {
             <div className="divide-y divide-slate-100">
                 {validityReport.map(pdv => (
                     <div key={pdv.id} className="p-6">
-                        <h4 className="font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">
+                        <h4 className="font-bold text-lg text-[color:var(--color-text)] mb-4 flex items-center gap-2">
                             <Store size={18} className="text-blue-500" />
                             {pdv.name}
-                            <span className="text-sm font-normal text-slate-500 ml-2">({pdv.items.length} produtos)</span>
+                            <span className="text-sm font-normal text-[color:var(--color-muted)] ml-2">({pdv.items.length} produtos)</span>
                         </h4>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">
-                                <thead className="bg-slate-50 text-slate-500 font-bold">
+                                <thead className="bg-slate-50 text-[color:var(--color-muted)] font-bold">
                                     <tr>
                                         <th className="px-4 py-3 rounded-l-lg">Produto</th>
                                         <th className="px-4 py-3">Marca</th>
@@ -2361,8 +2361,8 @@ const RoutesReportView: React.FC = () => {
                                 <tbody className="divide-y divide-slate-100">
                                     {pdv.items.map((item, idx) => (
                                         <tr key={idx} className="hover:bg-slate-50">
-                                            <td className="px-4 py-3 font-medium text-slate-700">{item.productName}</td>
-                                            <td className="px-4 py-3 text-slate-600">{item.brandName}</td>
+                                            <td className="px-4 py-3 font-medium text-[color:var(--color-text)]">{item.productName}</td>
+                                            <td className="px-4 py-3 text-[color:var(--color-muted)]">{item.brandName}</td>
                                             <td className="px-4 py-3">
                                                 {item.validityDate ? (
                                                     <span className={`font-bold ${
@@ -2382,10 +2382,10 @@ const RoutesReportView: React.FC = () => {
                                                     <span className="text-slate-400 text-xs">Pendente</span>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-3 text-slate-600">
+                                            <td className="px-4 py-3 text-[color:var(--color-muted)]">
                                                 {new Date(item.date).toLocaleDateString('pt-BR')}
                                             </td>
-                                            <td className="px-4 py-3 text-slate-600">{item.promoterName}</td>
+                                            <td className="px-4 py-3 text-[color:var(--color-muted)]">{item.promoterName}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -2394,7 +2394,7 @@ const RoutesReportView: React.FC = () => {
                     </div>
                 ))}
                 {validityReport.length === 0 && (
-                    <div className="p-12 text-center text-slate-500">
+                    <div className="p-12 text-center text-[color:var(--color-muted)]">
                         Nenhum registro de validade encontrado para os filtros selecionados.
                     </div>
                 )}

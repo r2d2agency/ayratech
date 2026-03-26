@@ -121,8 +121,8 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
              <ChevronRight className="rotate-180" size={24} />
           </button>
           <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Novo Cadastro PDV</h1>
-            <p className="text-slate-500 font-bold">Preencha os dados operacionais da unidade.</p>
+            <h1 className="text-xl font-black text-[color:var(--color-text)] tracking-tight">Novo Cadastro PDV</h1>
+            <p className="text-[color:var(--color-muted)] font-bold">Preencha os dados operacionais da unidade.</p>
           </div>
        </div>
        <div className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-sm">
@@ -134,7 +134,7 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
                     name="fantasyName"
                     value={formData.fantasyName}
                     onChange={handleChange}
-                    className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                    className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]" 
                     placeholder="Ex: Pão de Açúcar - Loja 102" 
                 />
              </div>
@@ -167,7 +167,7 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
 
              {/* Address Section */}
              <div className="md:col-span-2 border-t border-slate-100 pt-8 mt-4 flex items-center justify-between">
-                <h3 className="text-lg font-black text-slate-800">Endereço</h3>
+                <h3 className="text-lg font-black text-[color:var(--color-text)]">Endereço</h3>
                 <button 
                   onClick={() => setShowMap(true)}
                   className="flex items-center gap-2 text-blue-600 font-bold hover:bg-blue-50 px-4 py-2 rounded-xl transition-colors"
@@ -186,7 +186,7 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
                         value={formData.zipCode}
                         onChange={handleChange}
                         onBlur={handleCepBlur}
-                        className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                        className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]" 
                         placeholder="00000-000" 
                     />
                     {cepLoading && <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400">Buscando...</div>}
@@ -200,7 +200,7 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
                     name="state"
                     value={formData.state}
                     onChange={handleChange}
-                    className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                    className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]" 
                     placeholder="SP" 
                 />
              </div>
@@ -212,7 +212,7 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
                     name="city"
                     value={formData.city}
                     onChange={handleChange}
-                    className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                    className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]" 
                     placeholder="Cidade" 
                 />
              </div>
@@ -224,7 +224,7 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
                     name="neighborhood"
                     value={formData.neighborhood}
                     onChange={handleChange}
-                    className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                    className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]" 
                     placeholder="Bairro" 
                 />
              </div>
@@ -236,7 +236,7 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
                     name="street"
                     value={formData.street}
                     onChange={handleChange}
-                    className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                    className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]" 
                     placeholder="Nome da Rua" 
                 />
              </div>
@@ -248,7 +248,7 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
                     name="number"
                     value={formData.number}
                     onChange={handleChange}
-                    className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                    className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]" 
                     placeholder="123" 
                 />
              </div>
@@ -260,7 +260,7 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
                     name="complement"
                     value={formData.complement}
                     onChange={handleChange}
-                    className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                    className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]" 
                     placeholder="Bloco A, Sala 1" 
                 />
              </div>
@@ -271,7 +271,7 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
                     type="text" 
                     value={formData.latitude || ''}
                     readOnly
-                    className="w-full h-14 px-6 rounded-2xl bg-slate-100 border border-slate-200 text-slate-500 font-mono" 
+                    className="w-full h-14 px-6 rounded-2xl bg-slate-100 border border-slate-200 text-[color:var(--color-muted)] font-mono" 
                 />
              </div>
 
@@ -281,12 +281,12 @@ const SupermarketFormView: React.FC<SupermarketFormViewProps> = ({ onNavigate })
                     type="text" 
                     value={formData.longitude || ''}
                     readOnly
-                    className="w-full h-14 px-6 rounded-2xl bg-slate-100 border border-slate-200 text-slate-500 font-mono" 
+                    className="w-full h-14 px-6 rounded-2xl bg-slate-100 border border-slate-200 text-[color:var(--color-muted)] font-mono" 
                 />
              </div>
           </div>
           <div className="mt-12 pt-10 border-t border-slate-100 flex justify-end gap-6">
-             <button onClick={() => onNavigate('supermarkets_list')} className="px-8 py-4 font-black text-slate-400 hover:text-slate-600 transition-all">Descartar</button>
+             <button onClick={() => onNavigate('supermarkets_list')} className="px-8 py-4 font-black text-slate-400 hover:text-[color:var(--color-muted)] transition-all">Descartar</button>
              <button 
                 disabled={loading}
                 className="px-12 py-4 text-white font-black rounded-2xl shadow-2xl shadow-blue-200 hover:scale-105 transition-all disabled:opacity-50"

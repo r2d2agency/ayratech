@@ -114,7 +114,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[color:var(--surface)]">
-      <div className="p-8 rounded-2xl border border-white/5 w-96 flex flex-col items-center bg-[color:var(--surface-container-low)] shadow-[0_0_20px_rgba(204,151,255,0.12)]">
+      <div className="p-8 rounded-2xl border border-white/5 w-96 flex flex-col items-center bg-[color:var(--surface-container-low)] shadow-[0_0_20px_rgba(253,0,255,0.12)]">
         {settings.loginLogoUrl ? (
           <img 
             src={getImageUrl(settings.loginLogoUrl)} 
@@ -123,7 +123,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
           />
         ) : (
           <div 
-            className="mb-6 h-16 w-16 flex items-center justify-center rounded-full text-[color:var(--on-background)] shadow-[0_0_15px_rgba(204,151,255,0.25)] bg-gradient-to-tr from-[color:var(--color-primary)] to-[color:var(--color-secondary)]"
+            className="mb-6 h-16 w-16 flex items-center justify-center rounded-full text-[color:var(--on-background)] shadow-[0_0_15px_rgba(253,0,255,0.25)] bg-gradient-to-tr from-[color:var(--color-primary)] to-[color:var(--color-secondary)]"
           >
             {settings.logoUrl ? (
               <img 

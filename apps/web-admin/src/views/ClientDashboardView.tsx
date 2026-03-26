@@ -479,7 +479,7 @@ const ClientDashboardView: React.FC = () => {
           className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
             activeTab === tab.id
               ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              : 'border-transparent text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] hover:border-slate-300'
           }`}
         >
           {tab.icon}
@@ -501,14 +501,14 @@ const ClientDashboardView: React.FC = () => {
           )}
         </div>
         <div className="flex-1 text-center md:text-left">
-          <h1 className="text-2xl font-bold text-slate-800">{clientInfo?.name || 'Cliente'}</h1>
-          <p className="text-slate-500 mt-1">Dashboard de Performance e Acompanhamento</p>
+          <h1 className="text-2xl font-bold text-[color:var(--color-text)]">{clientInfo?.name || 'Cliente'}</h1>
+          <p className="text-[color:var(--color-muted)] mt-1">Dashboard de Performance e Acompanhamento</p>
           <div className="flex flex-wrap gap-4 mt-4 justify-center md:justify-start">
-            <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
+            <div className="flex items-center gap-2 text-sm text-[color:var(--color-muted)] bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
               <Calendar size={14} className="text-blue-500" />
               <span>{new Date(startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
+            <div className="flex items-center gap-2 text-sm text-[color:var(--color-muted)] bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
               <Store size={14} className="text-purple-500" />
               <span>{stats.visitedRoutes} Visitas Realizadas</span>
             </div>
@@ -519,7 +519,7 @@ const ClientDashboardView: React.FC = () => {
       {/* Filters */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-wrap gap-4 items-end">
         <div className="flex-1 min-w-[200px]">
-          <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Período</label>
+          <label className="block text-xs font-bold text-[color:var(--color-muted)] mb-1 uppercase">Período</label>
           <div className="flex gap-2">
             <input 
               type="date" 
@@ -538,7 +538,7 @@ const ClientDashboardView: React.FC = () => {
         </div>
 
         <div className="flex-1 min-w-[200px]">
-          <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Filtrar por PDV</label>
+          <label className="block text-xs font-bold text-[color:var(--color-muted)] mb-1 uppercase">Filtrar por PDV</label>
           <div className="relative">
             <Store className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <select
@@ -555,7 +555,7 @@ const ClientDashboardView: React.FC = () => {
         </div>
 
         <div className="flex-1 min-w-[200px]">
-          <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Filtrar por Marca</label>
+          <label className="block text-xs font-bold text-[color:var(--color-muted)] mb-1 uppercase">Filtrar por Marca</label>
           <div className="relative">
             <Tags className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <select
@@ -578,7 +578,7 @@ const ClientDashboardView: React.FC = () => {
             setStartDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
             setEndDate(new Date().toISOString().split('T')[0]);
           }}
-          className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+          className="p-2 text-[color:var(--color-muted)] hover:text-[color:var(--color-text)] hover:bg-slate-100 rounded-lg transition-colors"
           title="Limpar Filtros"
         >
           <Filter size={20} />
@@ -630,7 +630,7 @@ const ClientDashboardView: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                {/* Stockouts by PDV Chart */}
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2">
+                <h3 className="font-bold text-lg text-[color:var(--color-text)] mb-6 flex items-center gap-2">
                   <XCircle size={20} className="text-red-500" />
                   Rupturas por PDV (Top 10)
                 </h3>
@@ -649,7 +649,7 @@ const ClientDashboardView: React.FC = () => {
 
               {/* Expiry Status Chart */}
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2">
+                <h3 className="font-bold text-lg text-[color:var(--color-text)] mb-6 flex items-center gap-2">
                   <Calendar size={20} className="text-orange-500" />
                   Status de Validade
                 </h3>
@@ -680,7 +680,7 @@ const ClientDashboardView: React.FC = () => {
 
             {/* Recent Photos Preview */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-               <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2">
+               <h3 className="font-bold text-lg text-[color:var(--color-text)] mb-6 flex items-center gap-2">
                   <Camera size={20} className="text-purple-500" />
                   Últimas Fotos Registradas
                 </h3>
@@ -730,7 +730,7 @@ const ClientDashboardView: React.FC = () => {
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
-                <thead className="bg-slate-50 text-slate-500 font-medium">
+                <thead className="bg-slate-50 text-[color:var(--color-muted)] font-medium">
                   <tr>
                     <th className="px-4 py-3">Data</th>
                     <th className="px-4 py-3">Promotor</th>
@@ -747,20 +747,20 @@ const ClientDashboardView: React.FC = () => {
                     <tr key={`${route.id}-${item.id}`} className="hover:bg-slate-50">
                       <td className="px-4 py-3">{new Date(route.date).toLocaleDateString()}</td>
                       <td className="px-4 py-3">{route.promoter?.fullName || '-'}</td>
-                      <td className="px-4 py-3 font-medium text-slate-700">{item.supermarket.fantasyName}</td>
-                      <td className="px-4 py-3 text-slate-500">{item.supermarket.city}</td>
+                      <td className="px-4 py-3 font-medium text-[color:var(--color-text)]">{item.supermarket.fantasyName}</td>
+                      <td className="px-4 py-3 text-[color:var(--color-muted)]">{item.supermarket.city}</td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                           item.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
                           item.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' :
-                          'bg-slate-100 text-slate-600'
+                          'bg-slate-100 text-[color:var(--color-muted)]'
                         }`}>
                           {item.status === 'COMPLETED' ? 'Concluída' : 
                            item.status === 'IN_PROGRESS' ? 'Em Andamento' : 'Pendente'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-500">{item.checkInTime ? new Date(item.checkInTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-'}</td>
-                      <td className="px-4 py-3 text-slate-500">{item.checkOutTime ? new Date(item.checkOutTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-'}</td>
+                      <td className="px-4 py-3 text-[color:var(--color-muted)]">{item.checkInTime ? new Date(item.checkInTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-'}</td>
+                      <td className="px-4 py-3 text-[color:var(--color-muted)]">{item.checkOutTime ? new Date(item.checkOutTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-'}</td>
                       <td className="px-4 py-3 text-right font-medium">{item.products.filter(p => p.checked).length} / {item.products.length}</td>
                     </tr>
                   ))}
@@ -779,7 +779,7 @@ const ClientDashboardView: React.FC = () => {
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
              <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
-                <thead className="bg-slate-50 text-slate-500 font-medium">
+                <thead className="bg-slate-50 text-[color:var(--color-muted)] font-medium">
                   <tr>
                     <th className="px-4 py-3">Produto</th>
                     <th className="px-4 py-3">Marca</th>
@@ -794,12 +794,12 @@ const ClientDashboardView: React.FC = () => {
                     item.products.filter(p => p.isStockout).map(p => ({ route: r, item, product: p }))
                   )).map(({ route, item, product }, idx) => (
                     <tr key={idx} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-700">{product.product.name}</td>
-                      <td className="px-4 py-3 text-slate-500">{product.product.brand?.name || '-'}</td>
+                      <td className="px-4 py-3 font-medium text-[color:var(--color-text)]">{product.product.name}</td>
+                      <td className="px-4 py-3 text-[color:var(--color-muted)]">{product.product.brand?.name || '-'}</td>
                       <td className="px-4 py-3">{item.supermarket.fantasyName}</td>
                       <td className="px-4 py-3">{new Date(route.date).toLocaleDateString()}</td>
-                      <td className="px-4 py-3 text-slate-500">{route.promoter?.fullName}</td>
-                      <td className="px-4 py-3 text-slate-500 italic truncate max-w-[200px]">{product.observation || '-'}</td>
+                      <td className="px-4 py-3 text-[color:var(--color-muted)]">{route.promoter?.fullName}</td>
+                      <td className="px-4 py-3 text-[color:var(--color-muted)] italic truncate max-w-[200px]">{product.observation || '-'}</td>
                     </tr>
                   ))}
                   {stats.stockouts === 0 && (
@@ -817,7 +817,7 @@ const ClientDashboardView: React.FC = () => {
            <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
              <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
-                <thead className="bg-slate-50 text-slate-500 font-medium">
+                <thead className="bg-slate-50 text-[color:var(--color-muted)] font-medium">
                   <tr>
                     <th className="px-4 py-3">Produto</th>
                     <th className="px-4 py-3">Marca</th>
@@ -844,8 +844,8 @@ const ClientDashboardView: React.FC = () => {
                   .sort((a, b) => a.diffDays - b.diffDays)
                   .map(({ route, item, product, overall, diffDays }, idx) => (
                     <tr key={idx} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-700">{product.product.name}</td>
-                      <td className="px-4 py-3 text-slate-500">{product.product.brand?.name || '-'}</td>
+                      <td className="px-4 py-3 font-medium text-[color:var(--color-text)]">{product.product.name}</td>
+                      <td className="px-4 py-3 text-[color:var(--color-muted)]">{product.product.brand?.name || '-'}</td>
                       <td className="px-4 py-3">{item.supermarket.fantasyName}</td>
                       <td className="px-4 py-3">{new Date(String(overall!.date)).toLocaleDateString()}</td>
                       <td className="px-4 py-3">
@@ -855,7 +855,7 @@ const ClientDashboardView: React.FC = () => {
                                Vencido
                              </span>
                              {overall?.qty && overall.qty > 0 && (
-                               <span className="text-[10px] text-slate-500 font-normal pl-1">
+                               <span className="text-[10px] text-[color:var(--color-muted)] font-normal pl-1">
                                  Qtd: {overall.qty}
                                </span>
                              )}
@@ -866,7 +866,7 @@ const ClientDashboardView: React.FC = () => {
                                Próx. Vencimento
                              </span>
                              {overall?.qty && overall.qty > 0 && (
-                               <span className="text-[10px] text-slate-500 font-normal pl-1">
+                               <span className="text-[10px] text-[color:var(--color-muted)] font-normal pl-1">
                                  Qtd: {overall.qty}
                                </span>
                              )}
@@ -877,14 +877,14 @@ const ClientDashboardView: React.FC = () => {
                                Em Dia
                              </span>
                              {overall?.qty && overall.qty > 0 && (
-                               <span className="text-[10px] text-slate-500 font-normal pl-1">
+                               <span className="text-[10px] text-[color:var(--color-muted)] font-normal pl-1">
                                  Qtd: {overall.qty}
                                </span>
                              )}
                            </span>
                          )}
                       </td>
-                      <td className={`px-4 py-3 font-medium ${diffDays < 0 ? 'text-red-600' : diffDays <= 30 ? 'text-orange-600' : 'text-slate-600'}`}>
+                      <td className={`px-4 py-3 font-medium ${diffDays < 0 ? 'text-red-600' : diffDays <= 30 ? 'text-orange-600' : 'text-[color:var(--color-muted)]'}`}>
                         {diffDays} dias
                       </td>
                     </tr>
@@ -904,7 +904,7 @@ const ClientDashboardView: React.FC = () => {
            <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
              <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
-                <thead className="bg-slate-50 text-slate-500 font-medium">
+                <thead className="bg-slate-50 text-[color:var(--color-muted)] font-medium">
                   <tr>
                     <th className="px-4 py-3">Produto</th>
                     <th className="px-4 py-3">Marca</th>
@@ -921,13 +921,13 @@ const ClientDashboardView: React.FC = () => {
                   .sort((a, b) => new Date(b.route.date).getTime() - new Date(a.route.date).getTime())
                   .map(({ route, item, product }, idx) => (
                     <tr key={idx} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-700">{product.product.name}</td>
-                      <td className="px-4 py-3 text-slate-500">{product.product.brand?.name || '-'}</td>
+                      <td className="px-4 py-3 font-medium text-[color:var(--color-text)]">{product.product.name}</td>
+                      <td className="px-4 py-3 text-[color:var(--color-muted)]">{product.product.brand?.name || '-'}</td>
                       <td className="px-4 py-3">{item.supermarket.fantasyName}</td>
-                      <td className="px-4 py-3 font-medium text-slate-600">
+                      <td className="px-4 py-3 font-medium text-[color:var(--color-muted)]">
                         {product.gondolaCount ?? '-'}
                       </td>
-                      <td className="px-4 py-3 font-medium text-slate-600">
+                      <td className="px-4 py-3 font-medium text-[color:var(--color-muted)]">
                         {product.inventoryCount ?? product.stockCount ?? '-'}
                       </td>
                       <td className="px-4 py-3 font-bold text-blue-600">
@@ -976,19 +976,19 @@ const ClientDashboardView: React.FC = () => {
                     <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
                       <Tags size={20} />
                     </div>
-                    <h3 className="font-bold text-slate-800">{brand.name}</h3>
+                    <h3 className="font-bold text-[color:var(--color-text)]">{brand.name}</h3>
                   </div>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-500">Verificados</span>
-                      <span className="font-medium text-slate-900">{brandChecked}</span>
+                      <span className="text-[color:var(--color-muted)]">Verificados</span>
+                      <span className="font-medium text-[color:var(--color-text)]">{brandChecked}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-500">Rupturas</span>
+                      <span className="text-[color:var(--color-muted)]">Rupturas</span>
                       <span className="font-medium text-red-600">{brandStockouts}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-500">Vencidos</span>
+                      <span className="text-[color:var(--color-muted)]">Vencidos</span>
                       <span className="font-medium text-red-800">{brandExpiry}</span>
                     </div>
                   </div>
@@ -1028,19 +1028,19 @@ const ClientDashboardView: React.FC = () => {
                     <div className="p-3 bg-purple-50 text-purple-600 rounded-lg">
                       <Store size={20} />
                     </div>
-                    <h3 className="font-bold text-slate-800">{pdv.name}</h3>
+                    <h3 className="font-bold text-[color:var(--color-text)]">{pdv.name}</h3>
                   </div>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-500">Visitas Realizadas</span>
-                      <span className="font-medium text-slate-900">{pdvVisits}</span>
+                      <span className="text-[color:var(--color-muted)]">Visitas Realizadas</span>
+                      <span className="font-medium text-[color:var(--color-text)]">{pdvVisits}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-500">Rupturas</span>
+                      <span className="text-[color:var(--color-muted)]">Rupturas</span>
                       <span className="font-medium text-red-600">{pdvStockouts}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-500">Vencidos</span>
+                      <span className="text-[color:var(--color-muted)]">Vencidos</span>
                       <span className="font-medium text-red-800">{pdvExpiry}</span>
                     </div>
                   </div>

@@ -4,10 +4,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import App from './App';
-
-if (typeof document !== 'undefined') {
-  document.documentElement.classList.add('dark');
-}
+import { ThemeProvider } from './context/ThemeContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -18,7 +15,9 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

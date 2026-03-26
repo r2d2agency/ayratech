@@ -18,7 +18,7 @@
   --color-border: var(--outline-variant);
   --color-text: var(--on-background);
   --color-muted: var(--on-surface-variant);
-  --color-primary: #cc97ff;
+  --color-primary: #fd00ff;
   --color-secondary: #53ddfc;
   --color-tertiary: #ff6daf;
 }
@@ -29,21 +29,21 @@ body {
 }
 
 .dark {
-  --surface: #0e0e0e;
-  --surface-container-low: #131313;
-  --surface-container-highest: #262626;
-  --surface-bright: #2c2c2c;
-  --outline-variant: rgba(255,255,255,0.06);
+  --surface: #0f1115;
+  --surface-container-low: #16181d;
+  --surface-container-highest: #1e2128;
+  --surface-bright: #252830;
+  --outline-variant: rgba(255,255,255,0.08);
 
-  --on-background: #ffffff;
-  --on-surface-variant: #adaaaa;
+  --on-background: #f8fafc;
+  --on-surface-variant: #94a3b8;
 
   --color-background: var(--surface);
   --color-panel: var(--surface-container-low);
   --color-border: var(--outline-variant);
   --color-text: var(--on-background);
   --color-muted: var(--on-surface-variant);
-  --color-primary: #cc97ff;
+  --color-primary: #fd00ff;
   --color-secondary: #53ddfc;
   --color-tertiary: #ff6daf;
 }
@@ -57,6 +57,9 @@ body {
   input[type="password"],
   input[type="number"],
   input[type="tel"],
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
   select,
   textarea {
     background-color: var(--surface-container-highest);
@@ -64,6 +67,12 @@ body {
     border: 1px solid var(--outline-variant);
     border-radius: 0.75rem;
     outline: none;
+    color-scheme: light;
+  }
+  .dark input[type="date"],
+  .dark input[type="time"],
+  .dark input[type="datetime-local"] {
+    color-scheme: dark;
   }
   input[type="text"]:focus,
   input[type="email"]:focus,

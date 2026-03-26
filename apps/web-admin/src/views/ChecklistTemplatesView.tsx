@@ -187,10 +187,10 @@ const ChecklistTemplatesView: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-black text-[color:var(--color-text)] tracking-tight">
             Checklists
           </h1>
-          <p className="text-slate-500 mt-1">
+          <p className="text-[color:var(--color-muted)] mt-1">
             Gerencie modelos de checklist para validação de produtos
           </p>
         </div>
@@ -215,7 +215,7 @@ const ChecklistTemplatesView: React.FC = () => {
           placeholder="Buscar modelos..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 bg-white rounded-2xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-slate-600 placeholder:text-slate-400"
+          className="w-full pl-12 pr-4 py-3 bg-white rounded-2xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-[color:var(--color-muted)] placeholder:text-slate-400"
         />
       </div>
 
@@ -227,8 +227,8 @@ const ChecklistTemplatesView: React.FC = () => {
              
              <div className="flex justify-between items-start mb-4">
                <div>
-                 <h3 className="font-bold text-lg text-slate-800">{template.name}</h3>
-                 <p className="text-sm text-slate-500 line-clamp-2">{template.description || 'Sem descrição'}</p>
+                 <h3 className="font-bold text-lg text-[color:var(--color-text)]">{template.name}</h3>
+                 <p className="text-sm text-[color:var(--color-muted)] line-clamp-2">{template.description || 'Sem descrição'}</p>
                </div>
                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                  <button 
@@ -249,7 +249,7 @@ const ChecklistTemplatesView: React.FC = () => {
              <div className="space-y-2 mt-4">
                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Itens ({template.items.length})</div>
                {template.items.slice(0, 3).map((item, idx) => (
-                 <div key={idx} className="flex items-center gap-2 text-sm text-slate-600">
+                 <div key={idx} className="flex items-center gap-2 text-sm text-[color:var(--color-muted)]">
                     {item.type === 'SIMPLE' && <CheckSquare size={14} className="text-slate-400" />}
                     {item.type === 'PHOTO' && <ImageIcon size={14} className="text-blue-400" />}
                     {item.type === 'VALIDITY_CHECK' && <Calendar size={14} className="text-orange-400" />}
@@ -270,10 +270,10 @@ const ChecklistTemplatesView: React.FC = () => {
       {showCompetitorModal && (
         <div className="fixed inset-0 bg-slate-900/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 animate-in zoom-in-95">
-            <h3 className="font-bold text-lg text-slate-800 mb-4">Novo Concorrente</h3>
+            <h3 className="font-bold text-lg text-[color:var(--color-text)] mb-4">Novo Concorrente</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Nome da Marca</label>
+                <label className="block text-xs font-bold text-[color:var(--color-muted)] mb-1">Nome da Marca</label>
                 <input 
                   type="text"
                   autoFocus
@@ -286,7 +286,7 @@ const ChecklistTemplatesView: React.FC = () => {
               <div className="flex justify-end gap-2">
                 <button 
                   onClick={() => setShowCompetitorModal(false)}
-                  className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-2 text-[color:var(--color-muted)] hover:bg-slate-100 rounded-lg text-sm font-medium transition-colors"
                 >
                   Cancelar
                 </button>
@@ -306,12 +306,12 @@ const ChecklistTemplatesView: React.FC = () => {
         <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h2 className="text-xl font-black text-slate-900">
+              <h2 className="text-xl font-black text-[color:var(--color-text)]">
                 {editingTemplate ? 'Editar Checklist' : 'Novo Checklist'}
               </h2>
               <button 
                 onClick={closeModal}
-                className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-all"
+                className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-[color:var(--color-muted)] hover:bg-slate-50 transition-all"
               >
                 <X size={20} />
               </button>
@@ -320,7 +320,7 @@ const ChecklistTemplatesView: React.FC = () => {
             <div className="p-6 overflow-y-auto space-y-6">
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Nome do Modelo</label>
+                  <label className="block text-xs font-bold text-[color:var(--color-muted)] mb-1">Nome do Modelo</label>
                   <input 
                     type="text"
                     value={formName}
@@ -330,7 +330,7 @@ const ChecklistTemplatesView: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Descrição (Opcional)</label>
+                  <label className="block text-xs font-bold text-[color:var(--color-muted)] mb-1">Descrição (Opcional)</label>
                   <textarea 
                     value={formDescription}
                     onChange={(e) => setFormDescription(e.target.value)}
@@ -342,7 +342,7 @@ const ChecklistTemplatesView: React.FC = () => {
 
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Itens do Checklist</label>
+                  <label className="text-xs font-bold text-[color:var(--color-muted)] uppercase tracking-wider">Itens do Checklist</label>
                   <button 
                     onClick={addItem}
                     className="text-xs font-bold text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
@@ -369,7 +369,7 @@ const ChecklistTemplatesView: React.FC = () => {
                           <select
                             value={item.type}
                             onChange={(e) => updateItem(index, 'type', e.target.value)}
-                            className="px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 text-slate-600"
+                            className="px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 text-[color:var(--color-muted)]"
                           >
                             <option value="SIMPLE">Simples Conferência</option>
                             <option value="PHOTO">Exigir Foto</option>
@@ -403,7 +403,7 @@ const ChecklistTemplatesView: React.FC = () => {
                                      const newIds = [...(item.competitorIds || []), e.target.value];
                                      updateItem(index, 'competitorIds', newIds);
                                   }}
-                                  className="px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 text-slate-600 w-full"
+                                  className="px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 text-[color:var(--color-muted)] w-full"
                                 >
                                   <option value="">Adicionar Concorrente...</option>
                                   {competitors.filter(c => !(item.competitorIds || []).includes(c.id)).map(c => (
@@ -428,7 +428,7 @@ const ChecklistTemplatesView: React.FC = () => {
                               onChange={(e) => updateItem(index, 'isMandatory', e.target.checked)}
                               className="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500"
                             />
-                            <span className="text-xs text-slate-600 font-medium">Obrigatório</span>
+                            <span className="text-xs text-[color:var(--color-muted)] font-medium">Obrigatório</span>
                           </label>
                         </div>
                       </div>
@@ -454,7 +454,7 @@ const ChecklistTemplatesView: React.FC = () => {
             <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
               <button 
                 onClick={closeModal}
-                className="px-5 py-2.5 text-slate-600 font-bold hover:bg-slate-200 rounded-xl transition-colors text-sm"
+                className="px-5 py-2.5 text-[color:var(--color-muted)] font-bold hover:bg-slate-200 rounded-xl transition-colors text-sm"
               >
                 Cancelar
               </button>

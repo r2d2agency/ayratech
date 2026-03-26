@@ -10,16 +10,16 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ icon, label, value, trend, sub, color }) => (
-  <div className="bg-[color:var(--surface-container-low)] rounded-3xl border border-white/5 p-8 shadow-sm hover:shadow-[0_0_20px_rgba(204,151,255,0.1)] transition-all group relative overflow-hidden">
-    <div className={`w-14 h-14 rounded-2xl ${color} flex items-center justify-center mb-6 transition-all group-hover:scale-110 shadow-sm border border-white/5`}>
-      {React.isValidElement(icon) && React.cloneElement(icon as React.ReactElement<any>, { size: 28 })}
+  <div className="bg-[color:var(--surface-container-low)] rounded-2xl border border-[color:var(--color-border)] p-6 shadow-sm hover:shadow-[0_0_20px_rgba(253,0,255,0.1)] transition-all group relative overflow-hidden">
+    <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center mb-4 transition-all group-hover:scale-110 shadow-sm border border-[color:var(--color-border)]`}>
+      {React.isValidElement(icon) && React.cloneElement(icon as React.ReactElement<any>, { size: 20 })}
     </div>
-    <p className="text-[10px] font-bold text-[color:var(--color-muted)] uppercase tracking-[0.15em] mb-2 font-headline">{label}</p>
-    <div className="flex items-baseline gap-3">
-      <span className="text-3xl font-black text-[color:var(--color-text)] tracking-tighter font-headline">{value}</span>
-      {trend && <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-2.5 py-1 rounded-xl border border-emerald-400/20">{trend}</span>}
+    <p className="text-[10px] font-bold text-[color:var(--color-muted)] uppercase tracking-[0.1em] mb-1 font-headline">{label}</p>
+    <div className="flex items-baseline gap-2">
+      <span className="text-2xl font-black text-[color:var(--color-text)] tracking-tight font-headline">{value}</span>
+      {trend && <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">{trend}</span>}
     </div>
-    {sub && <p className="text-[11px] text-[color:var(--color-muted)] font-bold mt-2 uppercase tracking-tight">{sub}</p>}
+    {sub && <p className="text-[10px] text-[color:var(--color-muted)] font-medium mt-1">{sub}</p>}
   </div>
 );
 

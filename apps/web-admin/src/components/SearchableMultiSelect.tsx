@@ -103,7 +103,7 @@ export const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
       
       <div className="overflow-y-auto flex-1">
         {filteredOptions.length === 0 ? (
-          <div className="p-4 text-center text-sm text-slate-500">
+          <div className="p-4 text-center text-sm text-[color:var(--color-muted)]">
             Nenhum resultado encontrado
           </div>
         ) : (
@@ -115,7 +115,7 @@ export const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
                 className={`px-4 py-3 text-sm cursor-pointer transition-colors flex items-center justify-between ${
                   isSelected
                     ? 'bg-blue-50 text-blue-700 font-medium'
-                    : 'text-slate-700 hover:bg-slate-50'
+                    : 'text-[color:var(--color-text)] hover:bg-slate-50'
                 }`}
                 onClick={() => toggleOption(option.value)}
               >
@@ -132,7 +132,7 @@ export const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
   return (
     <div className={`relative ${className}`} ref={containerRef}>
       {label && (
-        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+        <label className="block text-xs font-bold text-[color:var(--color-muted)] uppercase mb-2">
           {label}
         </label>
       )}
@@ -143,7 +143,7 @@ export const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
         } ${disabled ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
         onClick={toggleOpen}
       >
-        <span className={`font-medium truncate ${value.length > 0 ? 'text-slate-700' : 'text-slate-400'}`}>
+        <span className={`font-medium truncate ${value.length > 0 ? 'text-[color:var(--color-text)]' : 'text-slate-400'}`}>
           {value.length > 0 
             ? `${value.length} selecionado${value.length > 1 ? 's' : ''}`
             : placeholder}

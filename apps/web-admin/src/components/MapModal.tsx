@@ -92,8 +92,8 @@ const MapModal: React.FC<LocationPickerModalProps> = ({ isOpen, onClose, onConfi
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
         <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white z-10">
-          <h3 className="text-lg font-bold text-slate-800">Selecionar Localização</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">✕</button>
+          <h3 className="text-lg font-bold text-[color:var(--color-text)]">Selecionar Localização</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-[color:var(--color-muted)]">✕</button>
         </div>
         
         <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 flex gap-2">
@@ -132,7 +132,7 @@ const MapModal: React.FC<LocationPickerModalProps> = ({ isOpen, onClose, onConfi
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors"
+            className="px-4 py-2 text-sm font-bold text-[color:var(--color-muted)] hover:bg-slate-200 rounded-xl transition-colors"
           >
             Cancelar
           </button>

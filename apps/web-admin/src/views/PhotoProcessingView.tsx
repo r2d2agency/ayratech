@@ -84,13 +84,13 @@ const PhotoProcessingView: React.FC = () => {
     <div className="p-8 space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-           <h1 className="text-4xl font-black text-slate-900 tracking-tight">Centro de Processamento de Fotos (IA)</h1>
-           <p className="text-slate-500 font-medium text-lg">Validação automática de execução no PDV.</p>
+           <h1 className="text-2xl font-black text-[color:var(--color-text)] tracking-tight">Centro de Processamento de Fotos (IA)</h1>
+           <p className="text-[color:var(--color-muted)] font-medium text-lg">Validação automática de execução no PDV.</p>
         </div>
         <div className="flex items-center gap-4">
             <button
                 onClick={toggleSelectAll}
-                className="text-sm font-bold text-slate-500 hover:text-purple-600 flex items-center gap-2"
+                className="text-sm font-bold text-[color:var(--color-muted)] hover:text-purple-600 flex items-center gap-2"
             >
                 {selectedIds.size > 0 && selectedIds.size === validItemsCount ? (
                     <CheckSquare size={20} className="text-purple-600" />
@@ -112,7 +112,7 @@ const PhotoProcessingView: React.FC = () => {
 
       {items.length === 0 && !loading && (
         <div className="text-center py-20 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
-            <p className="text-slate-500 font-medium">Nenhuma foto pendente de análise.</p>
+            <p className="text-[color:var(--color-muted)] font-medium">Nenhuma foto pendente de análise.</p>
         </div>
       )}
 
@@ -164,10 +164,10 @@ const PhotoProcessingView: React.FC = () => {
                 </div>
                 <div className="p-5">
                     <div className="flex justify-between items-start mb-3 gap-2">
-                        <h3 className="font-bold text-slate-800 line-clamp-1 text-sm" title={item.product?.name}>{item.product?.name}</h3>
+                        <h3 className="font-bold text-[color:var(--color-text)] line-clamp-1 text-sm" title={item.product?.name}>{item.product?.name}</h3>
                         <StatusBadge status={item.aiStatus} />
                     </div>
-                    <p className="text-xs text-slate-500 mb-3 flex items-center gap-1">
+                    <p className="text-xs text-[color:var(--color-muted)] mb-3 flex items-center gap-1">
                         <span className="font-bold">{item.routeItem?.route?.promoter?.fullName || 'Promotor'}</span>
                         <span>•</span>
                         <span>{item.checkInTime ? new Date(item.checkInTime).toLocaleDateString() : '-'}</span>
@@ -194,7 +194,7 @@ const StatusBadge = ({ status }: { status: string }) => {
     switch(status) {
         case 'OK': return <span className="bg-green-100 text-green-700 px-2 py-1 rounded-lg text-[10px] font-black flex items-center gap-1 whitespace-nowrap"><Check size={10}/> OK</span>;
         case 'FLAGGED': return <span className="bg-red-100 text-red-700 px-2 py-1 rounded-lg text-[10px] font-black flex items-center gap-1 whitespace-nowrap"><XCircle size={10}/> REVISAR</span>;
-        default: return <span className="bg-slate-100 text-slate-500 px-2 py-1 rounded-lg text-[10px] font-black whitespace-nowrap">PENDENTE</span>;
+        default: return <span className="bg-slate-100 text-[color:var(--color-muted)] px-2 py-1 rounded-lg text-[10px] font-black whitespace-nowrap">PENDENTE</span>;
     }
 }
 

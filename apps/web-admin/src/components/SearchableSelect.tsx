@@ -107,7 +107,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
       
       <div className="overflow-y-auto flex-1">
         {filteredOptions.length === 0 ? (
-          <div className="p-4 text-center text-sm text-slate-500">
+          <div className="p-4 text-center text-sm text-[color:var(--color-muted)]">
             Nenhum resultado encontrado
           </div>
         ) : (
@@ -117,7 +117,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
               className={`px-4 py-3 text-sm cursor-pointer transition-colors flex items-center justify-between ${
                 option.value === value
                   ? 'bg-blue-50 text-blue-700 font-medium'
-                  : 'text-slate-700 hover:bg-slate-50'
+                  : 'text-[color:var(--color-text)] hover:bg-slate-50'
               }`}
               onClick={() => {
                 onChange(option.value);
@@ -136,7 +136,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   return (
     <div className={`relative ${className}`} ref={containerRef}>
       {label && (
-        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+        <label className="block text-xs font-bold text-[color:var(--color-muted)] uppercase mb-2">
           {label}
         </label>
       )}
@@ -147,7 +147,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
         } ${disabled ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
         onClick={toggleOpen}
       >
-        <span className={`font-medium truncate ${selectedOption ? 'text-slate-700' : 'text-slate-400'}`}>
+        <span className={`font-medium truncate ${selectedOption ? 'text-[color:var(--color-text)]' : 'text-slate-400'}`}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <ChevronDown size={16} className={`text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />

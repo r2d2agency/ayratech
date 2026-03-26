@@ -262,8 +262,8 @@ const BrandsView: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Marcas</h1>
-          <p className="text-slate-500 font-medium text-lg">Gerencie as marcas de produtos.</p>
+          <h1 className="text-2xl font-black text-[color:var(--color-text)] tracking-tight">Marcas</h1>
+          <p className="text-[color:var(--color-muted)] font-medium text-lg">Gerencie as marcas de produtos.</p>
         </div>
         <button 
           onClick={() => { resetForm(); setShowModal(true); }}
@@ -302,13 +302,13 @@ const BrandsView: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {filteredBrands.map(brand => (
                 <tr key={brand.id} className="hover:bg-slate-50 transition-colors group">
-                  <td className="p-6 font-bold text-slate-700 flex items-center gap-2">
+                  <td className="p-6 font-bold text-[color:var(--color-text)] flex items-center gap-2">
                     <Tag size={16} className="text-slate-400" />
                     {brand.name}
                   </td>
-                  <td className="p-6 text-slate-500">
+                  <td className="p-6 text-[color:var(--color-muted)]">
                     {brand.client ? (
-                      <span className="font-medium text-slate-700">{brand.client.nomeFantasia || brand.client.razaoSocial}</span>
+                      <span className="font-medium text-[color:var(--color-text)]">{brand.client.nomeFantasia || brand.client.razaoSocial}</span>
                     ) : (
                       <span className="text-slate-300 italic">Sem cliente</span>
                     )}
@@ -320,7 +320,7 @@ const BrandsView: React.FC = () => {
                         </div>
                     )}
                   </td>
-                  <td className="p-6 text-slate-500">
+                  <td className="p-6 text-[color:var(--color-muted)]">
                     {brand.products?.length || 0} produtos
                   </td>
                   <td className="p-6 text-right">
@@ -360,17 +360,17 @@ const BrandsView: React.FC = () => {
         >
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="text-xl font-black text-slate-800">
+              <h3 className="text-xl font-black text-[color:var(--color-text)]">
                 {editingBrand ? 'Editar Marca' : 'Nova Marca'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-[color:var(--color-muted)]">
                 <X size={24} />
               </button>
             </div>
             
             <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Nome da Marca</label>
+                <label className="block text-xs font-bold text-[color:var(--color-muted)] uppercase mb-2">Nome da Marca</label>
                 <input
                   type="text"
                   required
@@ -397,7 +397,7 @@ const BrandsView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Template de Checklist Padrão</label>
+                <label className="block text-xs font-bold text-[color:var(--color-muted)] uppercase mb-2">Template de Checklist Padrão</label>
                 <select
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium"
                   value={formData.checklistTemplateId}
@@ -420,13 +420,13 @@ const BrandsView: React.FC = () => {
                     checked={formData.waitForStockCount}
                     onChange={e => setFormData({...formData, waitForStockCount: e.target.checked})}
                   />
-                  <label htmlFor="waitForStockCount" className="text-sm font-bold text-slate-700 cursor-pointer">
+                  <label htmlFor="waitForStockCount" className="text-sm font-bold text-[color:var(--color-text)] cursor-pointer">
                     Aguardar contagem de estoque
                   </label>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+                  <label className="block text-xs font-bold text-[color:var(--color-muted)] uppercase mb-2">
                     Frequência de Inventário
                   </label>
                   <select
@@ -447,7 +447,7 @@ const BrandsView: React.FC = () => {
                 
                 {formData.waitForStockCount && (
                   <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Contato para Notificação</label>
+                    <label className="block text-xs font-bold text-[color:var(--color-muted)] uppercase mb-2">Contato para Notificação</label>
                     <input
                       type="text"
                       className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-medium"
@@ -463,10 +463,10 @@ const BrandsView: React.FC = () => {
               </div>
 
               <div className="bg-white border border-slate-200 p-4 rounded-xl space-y-4">
-                <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Regras de Inventário</h4>
+                <h4 className="text-xs font-black text-[color:var(--color-muted)] uppercase tracking-widest">Regras de Inventário</h4>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Dias (semanal/quizenal)</label>
+                  <label className="block text-xs font-bold text-[color:var(--color-muted)] uppercase mb-2">Dias (semanal/quizenal)</label>
                   <input
                     type="number"
                     min={1}
@@ -485,7 +485,7 @@ const BrandsView: React.FC = () => {
                       checked={formData.inventoryPostponeUntilWeekEnd}
                       onChange={e => setFormData({ ...formData, inventoryPostponeUntilWeekEnd: e.target.checked })}
                     />
-                    <span className="text-sm font-bold text-slate-700">Permitir prorrogar apenas até o fim da semana</span>
+                    <span className="text-sm font-bold text-[color:var(--color-text)]">Permitir prorrogar apenas até o fim da semana</span>
                   </label>
 
                   <label className="flex items-center gap-3">
@@ -495,12 +495,12 @@ const BrandsView: React.FC = () => {
                       checked={formData.inventoryPostponeRequiresJustification}
                       onChange={e => setFormData({ ...formData, inventoryPostponeRequiresJustification: e.target.checked })}
                     />
-                    <span className="text-sm font-bold text-slate-700">Exigir justificativa ao prorrogar</span>
+                    <span className="text-sm font-bold text-[color:var(--color-text)]">Exigir justificativa ao prorrogar</span>
                   </label>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Máx. prorrogações por semana</label>
+                  <label className="block text-xs font-bold text-[color:var(--color-muted)] uppercase mb-2">Máx. prorrogações por semana</label>
                   <input
                     type="number"
                     min={0}
@@ -513,7 +513,7 @@ const BrandsView: React.FC = () => {
               </div>
 
               <div className="bg-white border border-slate-200 p-4 rounded-xl space-y-3">
-                <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">PDVs da Marca</h4>
+                <h4 className="text-xs font-black text-[color:var(--color-muted)] uppercase tracking-widest">PDVs da Marca</h4>
                 <SearchableMultiSelect
                   label="Selecionar PDVs"
                   value={formData.supermarketIds}
@@ -527,7 +527,7 @@ const BrandsView: React.FC = () => {
               </div>
 
               <div className="bg-white border border-slate-200 p-4 rounded-xl space-y-3">
-                <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Horários da Marca</h4>
+                <h4 className="text-xs font-black text-[color:var(--color-muted)] uppercase tracking-widest">Horários da Marca</h4>
                 <div className="space-y-2">
                   {(formData.availabilityWindows || []).map((w: any) => {
                     const labels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -545,11 +545,11 @@ const BrandsView: React.FC = () => {
                               setFormData({ ...formData, availabilityWindows: next });
                             }}
                           />
-                          <span className="text-xs font-bold text-slate-700">{labels[w.dayOfWeek] || w.dayOfWeek}</span>
+                          <span className="text-xs font-bold text-[color:var(--color-text)]">{labels[w.dayOfWeek] || w.dayOfWeek}</span>
                         </label>
                         <input
                           type="time"
-                          className="px-3 py-2 rounded-lg border border-slate-200 text-sm font-bold text-slate-700 w-28"
+                          className="px-3 py-2 rounded-lg border border-slate-200 text-sm font-bold text-[color:var(--color-text)] w-28"
                           value={w.startTime || '08:00'}
                           disabled={!w.active}
                           onChange={e => {
@@ -562,7 +562,7 @@ const BrandsView: React.FC = () => {
                         <span className="text-xs text-slate-400 font-bold">até</span>
                         <input
                           type="time"
-                          className="px-3 py-2 rounded-lg border border-slate-200 text-sm font-bold text-slate-700 w-28"
+                          className="px-3 py-2 rounded-lg border border-slate-200 text-sm font-bold text-[color:var(--color-text)] w-28"
                           value={w.endTime || '18:00'}
                           disabled={!w.active}
                           onChange={e => {
@@ -579,7 +579,7 @@ const BrandsView: React.FC = () => {
               </div>
 
               <div className="bg-white border border-slate-200 p-4 rounded-xl space-y-4">
-                <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Promotores da Marca</h4>
+                <h4 className="text-xs font-black text-[color:var(--color-muted)] uppercase tracking-widest">Promotores da Marca</h4>
                 <SearchableSelect
                   label="Supervisor (para filtrar)"
                   placeholder="Selecione..."
@@ -598,8 +598,8 @@ const BrandsView: React.FC = () => {
                   <div className="border border-slate-200 rounded-xl overflow-hidden">
                     <div className="p-3 bg-slate-50 border-b border-slate-100 space-y-2">
                       <div className="flex items-center justify-between">
-                        <p className="text-xs font-black text-slate-600 uppercase">Disponíveis</p>
-                        <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full">
+                        <p className="text-xs font-black text-[color:var(--color-muted)] uppercase">Disponíveis</p>
+                        <span className="text-[10px] font-bold text-[color:var(--color-muted)] bg-slate-200 px-2 py-0.5 rounded-full">
                           {promoters.filter((p: any) => !formData.promoterIds.includes(p.id)).length}
                         </span>
                       </div>
@@ -622,7 +622,7 @@ const BrandsView: React.FC = () => {
                             onClick={() => setFormData({ ...formData, promoterIds: [...formData.promoterIds, p.id] })}
                             className="w-full text-left px-3 py-2 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
                           >
-                            <p className="text-xs font-bold text-slate-800 truncate">{p.fullName || p.name}</p>
+                            <p className="text-xs font-bold text-[color:var(--color-text)] truncate">{p.fullName || p.name}</p>
                             <p className="text-[10px] text-slate-400 truncate">{p.email || ''}</p>
                           </button>
                         ))}
@@ -632,8 +632,8 @@ const BrandsView: React.FC = () => {
                   <div className="border border-slate-200 rounded-xl overflow-hidden">
                     <div className="p-3 bg-slate-50 border-b border-slate-100 space-y-2">
                       <div className="flex items-center justify-between">
-                        <p className="text-xs font-black text-slate-600 uppercase">Selecionados</p>
-                        <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full">
+                        <p className="text-xs font-black text-[color:var(--color-muted)] uppercase">Selecionados</p>
+                        <span className="text-[10px] font-bold text-[color:var(--color-muted)] bg-slate-200 px-2 py-0.5 rounded-full">
                           {formData.promoterIds.length}
                         </span>
                       </div>
@@ -660,7 +660,7 @@ const BrandsView: React.FC = () => {
                             onClick={() => setFormData({ ...formData, promoterIds: formData.promoterIds.filter(pid => pid !== p.id) })}
                             className="w-full text-left px-3 py-2 rounded-lg border border-slate-200 hover:border-red-300 hover:bg-red-50 transition-colors"
                           >
-                            <p className="text-xs font-bold text-slate-800 truncate">{p.fullName || p.name}</p>
+                            <p className="text-xs font-bold text-[color:var(--color-text)] truncate">{p.fullName || p.name}</p>
                             <p className="text-[10px] text-slate-400 truncate">{p.email || ''}</p>
                           </button>
                         ))}
@@ -673,7 +673,7 @@ const BrandsView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-6 py-3 text-slate-600 font-bold hover:bg-slate-50 rounded-xl transition-all"
+                  className="px-6 py-3 text-[color:var(--color-muted)] font-bold hover:bg-slate-50 rounded-xl transition-all"
                 >
                   Cancelar
                 </button>

@@ -280,8 +280,8 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
     <div className="animate-in fade-in duration-500 space-y-8 relative">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Supermercados</h1>
-          <p className="text-slate-500 font-medium text-lg">Pontos de venda da rede Ayratech.</p>
+          <h1 className="text-2xl font-black text-[color:var(--color-text)] tracking-tight">Supermercados</h1>
+          <p className="text-[color:var(--color-muted)] font-medium text-lg">Pontos de venda da rede Ayratech.</p>
         </div>
         <button 
           onClick={handleAddNew} 
@@ -375,20 +375,20 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                          <Store size={22} />
                       </div>
                       <div>
-                        <p className="text-base font-black text-slate-900">{s.fantasyName}</p>
+                        <p className="text-base font-black text-[color:var(--color-text)]">{s.fantasyName}</p>
                         <p className="text-xs text-slate-400 font-bold">CNPJ: {s.cnpj || 'Não informado'}</p>
                       </div>
                    </div>
                 </td>
                 <td className="px-8 py-6">
-                  <span className="text-sm font-black text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">{s.group?.name || 'Sem Rede'}</span>
+                  <span className="text-sm font-black text-[color:var(--color-muted)] bg-slate-100 px-3 py-1 rounded-lg">{s.group?.name || 'Sem Rede'}</span>
                 </td>
                 <td className="px-8 py-6">
-                  <p className="text-sm font-bold text-slate-600">{s.city} - {s.state}</p>
+                  <p className="text-sm font-bold text-[color:var(--color-muted)]">{s.city} - {s.state}</p>
                 </td>
                 <td className="px-8 py-6 text-center">
                    <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider ${
-                      s.classification === 'Ouro' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'
+                      s.classification === 'Ouro' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-[color:var(--color-muted)]'
                    }`}>
                       {s.classification}
                    </span>
@@ -457,10 +457,10 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
           <div className="bg-white rounded-[2rem] w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md px-8 py-6 border-b border-slate-100 flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-black text-slate-900">
+                <h2 className="text-2xl font-black text-[color:var(--color-text)]">
                   {editingSupermarket ? 'Editar Supermercado' : 'Novo Supermercado'}
                 </h2>
-                <p className="text-slate-500 font-medium">Preencha os dados do ponto de venda</p>
+                <p className="text-[color:var(--color-muted)] font-medium">Preencha os dados do ponto de venda</p>
               </div>
               <button 
                 onClick={() => setShowModal(false)}
@@ -473,28 +473,28 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
             <div className="flex border-b border-slate-100">
               <button 
                 type="button"
-                className={`flex-1 px-8 py-4 font-bold text-sm uppercase tracking-wider transition-all border-b-2 ${activeTab === 'general' ? 'border-blue-500 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                className={`flex-1 px-8 py-4 font-bold text-sm uppercase tracking-wider transition-all border-b-2 ${activeTab === 'general' ? 'border-blue-500 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-400 hover:text-[color:var(--color-muted)] hover:bg-slate-50'}`}
                 onClick={() => setActiveTab('general')}
               >
                 Dados Gerais
               </button>
               <button 
                 type="button"
-                className={`flex-1 px-8 py-4 font-bold text-sm uppercase tracking-wider transition-all border-b-2 ${activeTab === 'location' ? 'border-blue-500 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                className={`flex-1 px-8 py-4 font-bold text-sm uppercase tracking-wider transition-all border-b-2 ${activeTab === 'location' ? 'border-blue-500 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-400 hover:text-[color:var(--color-muted)] hover:bg-slate-50'}`}
                 onClick={() => setActiveTab('location')}
               >
                 Endereço e Localização
               </button>
               <button 
                 type="button"
-                className={`flex-1 px-8 py-4 font-bold text-sm uppercase tracking-wider transition-all border-b-2 ${activeTab === 'clients' ? 'border-blue-500 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                className={`flex-1 px-8 py-4 font-bold text-sm uppercase tracking-wider transition-all border-b-2 ${activeTab === 'clients' ? 'border-blue-500 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-400 hover:text-[color:var(--color-muted)] hover:bg-slate-50'}`}
                 onClick={() => setActiveTab('clients')}
               >
                 Clientes Vinculados
               </button>
               <button 
                 type="button"
-                className={`flex-1 px-8 py-4 font-bold text-sm uppercase tracking-wider transition-all border-b-2 ${activeTab === 'products' ? 'border-blue-500 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                className={`flex-1 px-8 py-4 font-bold text-sm uppercase tracking-wider transition-all border-b-2 ${activeTab === 'products' ? 'border-blue-500 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-400 hover:text-[color:var(--color-muted)] hover:bg-slate-50'}`}
                 onClick={() => setActiveTab('products')}
               >
                 Produtos (Mix)
@@ -511,7 +511,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                            name="fantasyName"
                            value={formData.fantasyName}
                            onChange={handleChange}
-                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]" 
                            placeholder="Ex: Pão de Açúcar - Loja 102"
                            required
                        />
@@ -524,7 +524,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                            name="cnpj"
                            value={formData.cnpj}
                            onChange={handleChange}
-                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]" 
                            placeholder="00.000.000/0000-00"
                        />
                     </div>
@@ -568,7 +568,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                                value={formData.zipCode}
                                onChange={handleChange}
                                onBlur={handleCepBlur}
-                               className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                               className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]" 
                                placeholder="00000-000" 
                            />
                            {cepLoading && <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400">Buscando...</div>}
@@ -582,7 +582,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                            name="state"
                            value={formData.state}
                            onChange={handleChange}
-                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]" 
                            placeholder="SP" 
                        />
                     </div>
@@ -594,7 +594,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                            name="city"
                            value={formData.city}
                            onChange={handleChange}
-                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]" 
                            placeholder="Cidade" 
                            required
                        />
@@ -607,7 +607,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                            name="neighborhood"
                            value={formData.neighborhood}
                            onChange={handleChange}
-                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]" 
                            placeholder="Bairro" 
                        />
                     </div>
@@ -619,7 +619,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                            name="street"
                            value={formData.street}
                            onChange={handleChange}
-                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]" 
                            placeholder="Nome da Rua" 
                        />
                     </div>
@@ -631,7 +631,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                            name="number"
                            value={formData.number}
                            onChange={handleChange}
-                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]" 
                            placeholder="123" 
                        />
                     </div>
@@ -643,14 +643,14 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                            name="complement"
                            value={formData.complement}
                            onChange={handleChange}
-                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-800" 
+                           className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-[color:var(--color-text)]" 
                            placeholder="Bloco A, Sala 1" 
                        />
                     </div>
 
                     <div className="md:col-span-2 border-t border-slate-100 pt-6 mt-2 flex flex-col gap-4">
                        <div className="flex justify-between items-center">
-                         <h3 className="text-lg font-black text-slate-800">Coordenadas Geográficas</h3>
+                         <h3 className="text-lg font-black text-[color:var(--color-text)]">Coordenadas Geográficas</h3>
                          <button
                            type="button"
                            onClick={() => setShowMapModal(true)}
@@ -669,7 +669,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                                  step="any"
                                  value={formData.latitude || ''}
                                  readOnly
-                                 className="w-full h-14 px-6 rounded-2xl bg-slate-100 border border-slate-200 outline-none font-bold text-slate-500 cursor-not-allowed" 
+                                 className="w-full h-14 px-6 rounded-2xl bg-slate-100 border border-slate-200 outline-none font-bold text-[color:var(--color-muted)] cursor-not-allowed" 
                                  placeholder="Latitude" 
                              />
                           </div>
@@ -680,7 +680,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                                  step="any"
                                  value={formData.longitude || ''}
                                  readOnly
-                                 className="w-full h-14 px-6 rounded-2xl bg-slate-100 border border-slate-200 outline-none font-bold text-slate-500 cursor-not-allowed" 
+                                 className="w-full h-14 px-6 rounded-2xl bg-slate-100 border border-slate-200 outline-none font-bold text-[color:var(--color-muted)] cursor-not-allowed" 
                                  placeholder="Longitude" 
                              />
                           </div>
@@ -692,8 +692,8 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
               {activeTab === 'clients' && (
                 <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                   <div className="mb-6">
-                    <h3 className="text-lg font-black text-slate-800 mb-2">Vínculo com Clientes</h3>
-                    <p className="text-sm text-slate-500">Selecione os clientes que atuam neste supermercado.</p>
+                    <h3 className="text-lg font-black text-[color:var(--color-text)] mb-2">Vínculo com Clientes</h3>
+                    <p className="text-sm text-[color:var(--color-muted)]">Selecione os clientes que atuam neste supermercado.</p>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto pr-2">
@@ -722,8 +722,8 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                         </div>
                         
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-slate-800 truncate">{client.nomeFantasia || client.razaoSocial}</p>
-                          <p className="text-xs text-slate-500 font-medium">CNPJ: {client.cnpj}</p>
+                          <p className="font-bold text-[color:var(--color-text)] truncate">{client.nomeFantasia || client.razaoSocial}</p>
+                          <p className="text-xs text-[color:var(--color-muted)] font-medium">CNPJ: {client.cnpj}</p>
                         </div>
                       </div>
                     ))}
@@ -764,8 +764,8 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                       {/* Available Products */}
                       <div className="flex flex-col h-full border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
                         <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
-                          <h3 className="font-bold text-slate-700">Disponíveis</h3>
-                          <span className="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded-full">
+                          <h3 className="font-bold text-[color:var(--color-text)]">Disponíveis</h3>
+                          <span className="text-xs bg-slate-200 text-[color:var(--color-muted)] px-2 py-1 rounded-full">
                             {Array.isArray(products) ? products.filter(p => (p.brand?.id === selectedBrandForMix || p.brandId === selectedBrandForMix) && !formData.productIds.includes(p.id)).length : 0}
                           </span>
                         </div>
@@ -787,7 +787,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                                     </div>
                                   )}
                                   <div>
-                                    <p className="text-sm font-medium text-slate-700 group-hover:text-blue-700">{product.name}</p>
+                                    <p className="text-sm font-medium text-[color:var(--color-text)] group-hover:text-blue-700">{product.name}</p>
                                     {product.sku && <p className="text-[10px] text-slate-400">SKU: {product.sku}</p>}
                                   </div>
                                 </div>
@@ -843,7 +843,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                                     </div>
                                   )}
                                   <div>
-                                    <p className="text-sm font-medium text-slate-700 group-hover:text-red-700">{product.name}</p>
+                                    <p className="text-sm font-medium text-[color:var(--color-text)] group-hover:text-red-700">{product.name}</p>
                                     {product.sku && <p className="text-[10px] text-slate-400">SKU: {product.sku}</p>}
                                   </div>
                                 </div>
@@ -881,7 +881,7 @@ const SupermarketsListView: React.FC<SupermarketsListViewProps> = ({ onNavigate 
                  <button 
                    type="button"
                    onClick={() => setShowModal(false)} 
-                   className="px-6 py-3 font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-all"
+                   className="px-6 py-3 font-bold text-[color:var(--color-muted)] hover:bg-slate-50 rounded-xl transition-all"
                  >
                    Cancelar
                  </button>

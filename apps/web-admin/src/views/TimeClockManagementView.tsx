@@ -408,7 +408,7 @@ const TimeClockManagementView = () => {
             title="Clique para editar"
         >
             <div className="flex items-center gap-2">
-                <span className={`font-semibold ${isManual ? 'text-purple-700' : 'text-slate-700'}`}>
+                <span className={`font-semibold ${isManual ? 'text-purple-700' : 'text-[color:var(--color-text)]'}`}>
                     {time}
                 </span>
                 <span className="opacity-0 group-hover:opacity-100 text-blue-600 transition-opacity">
@@ -461,14 +461,14 @@ const TimeClockManagementView = () => {
         </div>
 
         <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-2">
-          <button onClick={() => setRhTab('eventos')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'eventos' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Eventos</button>
-          <button onClick={() => setRhTab('ponto_diario')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'ponto_diario' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Ponto diário</button>
-          <button onClick={() => setRhTab('ocorrencias')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'ocorrencias' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Ocorrências</button>
-          <button onClick={() => setRhTab('manuais')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'manuais' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Manuais</button>
-          <button onClick={() => setRhTab('impares')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'impares' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Ímpares</button>
-          <button onClick={() => setRhTab('faltas')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'faltas' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Faltas</button>
-          <button onClick={() => setRhTab('extras')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'extras' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Horas</button>
-          <button onClick={() => setRhTab('banco')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'banco' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Banco</button>
+          <button onClick={() => setRhTab('eventos')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'eventos' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-[color:var(--color-text)] hover:bg-slate-200'}`}>Eventos</button>
+          <button onClick={() => setRhTab('ponto_diario')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'ponto_diario' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-[color:var(--color-text)] hover:bg-slate-200'}`}>Ponto diário</button>
+          <button onClick={() => setRhTab('ocorrencias')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'ocorrencias' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-[color:var(--color-text)] hover:bg-slate-200'}`}>Ocorrências</button>
+          <button onClick={() => setRhTab('manuais')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'manuais' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-[color:var(--color-text)] hover:bg-slate-200'}`}>Manuais</button>
+          <button onClick={() => setRhTab('impares')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'impares' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-[color:var(--color-text)] hover:bg-slate-200'}`}>Ímpares</button>
+          <button onClick={() => setRhTab('faltas')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'faltas' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-[color:var(--color-text)] hover:bg-slate-200'}`}>Faltas</button>
+          <button onClick={() => setRhTab('extras')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'extras' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-[color:var(--color-text)] hover:bg-slate-200'}`}>Horas</button>
+          <button onClick={() => setRhTab('banco')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'banco' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-[color:var(--color-text)] hover:bg-slate-200'}`}>Banco</button>
         </div>
 
         {/* Alerts */}
@@ -504,7 +504,7 @@ const TimeClockManagementView = () => {
         {rhTab === 'eventos' && (
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end">
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Colaborador</label>
+                <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Colaborador</label>
                 <select 
                     className="border border-slate-300 rounded-lg p-2 w-64 focus:ring-2 focus:ring-blue-500 outline-none"
                     value={filters.employeeId}
@@ -517,7 +517,7 @@ const TimeClockManagementView = () => {
                 </select>
             </div>
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Data Início</label>
+                <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Data Início</label>
                 <input 
                     type="date" 
                     className="border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -526,7 +526,7 @@ const TimeClockManagementView = () => {
                 />
             </div>
             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Data Fim</label>
+                <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Data Fim</label>
                 <input 
                     type="date" 
                     className="border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -546,7 +546,7 @@ const TimeClockManagementView = () => {
         {rhTab === 'ponto_diario' && (
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Colaborador</label>
+              <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Colaborador</label>
               <select
                 className="border border-slate-300 rounded-lg p-2 w-64 focus:ring-2 focus:ring-blue-500 outline-none"
                 value={filters.employeeId}
@@ -559,7 +559,7 @@ const TimeClockManagementView = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Data</label>
+              <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Data</label>
               <input
                 type="date"
                 className="border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -576,7 +576,7 @@ const TimeClockManagementView = () => {
         {rhTab === 'ocorrencias' && (
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Colaborador</label>
+              <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Colaborador</label>
               <select
                 className="border border-slate-300 rounded-lg p-2 w-64 focus:ring-2 focus:ring-blue-500 outline-none"
                 value={filters.employeeId}
@@ -589,7 +589,7 @@ const TimeClockManagementView = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Data</label>
+              <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Data</label>
               <input
                 type="date"
                 className="border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -606,7 +606,7 @@ const TimeClockManagementView = () => {
         {rhTab === 'manuais' && (
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Colaborador</label>
+              <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Colaborador</label>
               <select
                 className="border border-slate-300 rounded-lg p-2 w-64 focus:ring-2 focus:ring-blue-500 outline-none"
                 value={filters.employeeId}
@@ -619,7 +619,7 @@ const TimeClockManagementView = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Data</label>
+              <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Data</label>
               <input
                 type="date"
                 className="border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -636,7 +636,7 @@ const TimeClockManagementView = () => {
         {rhTab === 'impares' && (
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Colaborador</label>
+              <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Colaborador</label>
               <select
                 className="border border-slate-300 rounded-lg p-2 w-64 focus:ring-2 focus:ring-blue-500 outline-none"
                 value={filters.employeeId}
@@ -649,7 +649,7 @@ const TimeClockManagementView = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Data</label>
+              <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Data</label>
               <input
                 type="date"
                 className="border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -666,7 +666,7 @@ const TimeClockManagementView = () => {
         {rhTab === 'faltas' && (
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Colaborador</label>
+              <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Colaborador</label>
               <select
                 className="border border-slate-300 rounded-lg p-2 w-64 focus:ring-2 focus:ring-blue-500 outline-none"
                 value={filters.employeeId}
@@ -679,7 +679,7 @@ const TimeClockManagementView = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Data</label>
+              <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Data</label>
               <input
                 type="date"
                 className="border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -696,7 +696,7 @@ const TimeClockManagementView = () => {
         {rhTab === 'extras' && (
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Colaborador</label>
+              <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Colaborador</label>
               <select
                 className="border border-slate-300 rounded-lg p-2 w-64 focus:ring-2 focus:ring-blue-500 outline-none"
                 value={filters.employeeId}
@@ -709,7 +709,7 @@ const TimeClockManagementView = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Data Início</label>
+              <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Data Início</label>
               <input
                 type="date"
                 className="border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -718,7 +718,7 @@ const TimeClockManagementView = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Data Fim</label>
+              <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Data Fim</label>
               <input
                 type="date"
                 className="border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -736,7 +736,7 @@ const TimeClockManagementView = () => {
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
             <div className="flex flex-wrap gap-4 items-end">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Colaborador</label>
+                <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Colaborador</label>
                 <select
                   className="border border-slate-300 rounded-lg p-2 w-64 focus:ring-2 focus:ring-blue-500 outline-none"
                   value={filters.employeeId}
@@ -749,7 +749,7 @@ const TimeClockManagementView = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Competência</label>
+                <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Competência</label>
                 <input
                   type="month"
                   className="border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -764,7 +764,7 @@ const TimeClockManagementView = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Colaborador</label>
+                <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Colaborador</label>
                 <select
                   className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
                   value={balanceAdjustment.employeeId}
@@ -777,7 +777,7 @@ const TimeClockManagementView = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Competência</label>
+                <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Competência</label>
                 <input
                   type="month"
                   className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -786,7 +786,7 @@ const TimeClockManagementView = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Delta (horas)</label>
+                <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Delta (horas)</label>
                 <input
                   type="number"
                   step="0.25"
@@ -796,7 +796,7 @@ const TimeClockManagementView = () => {
                 />
               </div>
               <div className="md:col-span-4">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Motivo</label>
+                <label className="block text-sm font-medium text-[color:var(--color-text)] mb-1">Motivo</label>
                 <input
                   type="text"
                   className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -817,12 +817,12 @@ const TimeClockManagementView = () => {
             <table className="w-full">
                 <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
-                        <th className="text-left p-4 text-sm font-semibold text-slate-600">Colaborador</th>
-                        <th className="text-left p-4 text-sm font-semibold text-slate-600">Data</th>
-                        <th className="text-left p-4 text-sm font-semibold text-slate-600">Entrada</th>
-                        <th className="text-left p-4 text-sm font-semibold text-slate-600">Início Almoço</th>
-                        <th className="text-left p-4 text-sm font-semibold text-slate-600">Fim Almoço</th>
-                        <th className="text-left p-4 text-sm font-semibold text-slate-600">Saída</th>
+                        <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Colaborador</th>
+                        <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Data</th>
+                        <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Entrada</th>
+                        <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Início Almoço</th>
+                        <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Fim Almoço</th>
+                        <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Saída</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -834,10 +834,10 @@ const TimeClockManagementView = () => {
                         groupedEvents.map((group: any) => (
                             <tr key={group.id} className="hover:bg-slate-50">
                                 <td className="p-4">
-                                    <div className="font-medium text-slate-900">{group.employee?.fullName}</div>
-                                    <div className="text-xs text-slate-500">{group.employee?.email}</div>
+                                    <div className="font-medium text-[color:var(--color-text)]">{group.employee?.fullName}</div>
+                                    <div className="text-xs text-[color:var(--color-muted)]">{group.employee?.email}</div>
                                 </td>
-                                <td className="p-4 text-slate-700 font-medium">
+                                <td className="p-4 text-[color:var(--color-text)] font-medium">
                                     {format(parseISO(group.date), "dd/MM/yyyy", { locale: ptBR })}
                                 </td>
                                 <td className="p-4 bg-green-50/30">
@@ -865,15 +865,15 @@ const TimeClockManagementView = () => {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Colaborador</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Escala</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Entrada</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Almoço</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Saída</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Trabalhadas</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Previstas</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Extras</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Faltas</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Colaborador</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Escala</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Entrada</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Almoço</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Saída</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Trabalhadas</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Previstas</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Extras</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Faltas</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -883,19 +883,19 @@ const TimeClockManagementView = () => {
                   dailySheet.map((r: any) => (
                     <tr key={`${r.employeeId}-${r.date}`} className="hover:bg-slate-50">
                       <td className="p-4">
-                        <div className="font-medium text-slate-900">{r.employeeName}</div>
-                        <div className="text-xs text-slate-500">
+                        <div className="font-medium text-[color:var(--color-text)]">{r.employeeName}</div>
+                        <div className="text-xs text-[color:var(--color-muted)]">
                           {r.hasManual ? 'Manual' : 'App'} {r.hasOddPunches ? '• Ímpar' : ''} {Array.isArray(r.absences) && r.absences.length ? `• ${r.absences[0].type}` : ''}
                         </div>
                       </td>
-                      <td className="p-4 text-slate-700">{r.schedule || '-'}</td>
-                      <td className="p-4 text-slate-700">{r.entry || '-'}</td>
-                      <td className="p-4 text-slate-700">{r.lunchStart || '-'} / {r.lunchEnd || '-'}</td>
-                      <td className="p-4 text-slate-700">{r.exit || '-'}</td>
-                      <td className="p-4 font-semibold text-slate-700">{formatMinutes(r.workedMinutes)}</td>
-                      <td className="p-4 text-slate-700">{formatMinutes(r.expectedMinutes)}</td>
-                      <td className="p-4 text-slate-700">{formatMinutes(r.overtimeMinutes)}</td>
-                      <td className="p-4 text-slate-700">{formatMinutes(r.missingMinutes)}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{r.schedule || '-'}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{r.entry || '-'}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{r.lunchStart || '-'} / {r.lunchEnd || '-'}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{r.exit || '-'}</td>
+                      <td className="p-4 font-semibold text-[color:var(--color-text)]">{formatMinutes(r.workedMinutes)}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{formatMinutes(r.expectedMinutes)}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{formatMinutes(r.overtimeMinutes)}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{formatMinutes(r.missingMinutes)}</td>
                     </tr>
                   ))
                 )}
@@ -909,9 +909,9 @@ const TimeClockManagementView = () => {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Colaborador</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Tipo</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Detalhe</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Colaborador</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Tipo</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Detalhe</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -920,9 +920,9 @@ const TimeClockManagementView = () => {
                 ) : (
                   occurrences.map((o: any, idx: number) => (
                     <tr key={`${o.employeeId}-${idx}`} className="hover:bg-slate-50">
-                      <td className="p-4 font-medium text-slate-900">{o.employeeName}</td>
-                      <td className="p-4 text-slate-700">{o.type}</td>
-                      <td className="p-4 text-slate-700">{o.detail}</td>
+                      <td className="p-4 font-medium text-[color:var(--color-text)]">{o.employeeName}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{o.type}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{o.detail}</td>
                     </tr>
                   ))
                 )}
@@ -936,11 +936,11 @@ const TimeClockManagementView = () => {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Colaborador</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Data/Hora</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Tipo</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Editado por</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Motivo</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Colaborador</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Data/Hora</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Tipo</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Editado por</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Motivo</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -949,11 +949,11 @@ const TimeClockManagementView = () => {
                 ) : (
                   manualMarks.map((e: any) => (
                     <tr key={e.id} className="hover:bg-slate-50">
-                      <td className="p-4 font-medium text-slate-900">{e.employee?.fullName}</td>
-                      <td className="p-4 text-slate-700">{isValid(parseISO(e.timestamp)) ? format(parseISO(e.timestamp), 'dd/MM/yyyy HH:mm', { locale: ptBR }) : '-'}</td>
-                      <td className="p-4 text-slate-700">{e.eventType}</td>
-                      <td className="p-4 text-slate-700">{e.editedBy || '-'}</td>
-                      <td className="p-4 text-slate-700">{e.validationReason || '-'}</td>
+                      <td className="p-4 font-medium text-[color:var(--color-text)]">{e.employee?.fullName}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{isValid(parseISO(e.timestamp)) ? format(parseISO(e.timestamp), 'dd/MM/yyyy HH:mm', { locale: ptBR }) : '-'}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{e.eventType}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{e.editedBy || '-'}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{e.validationReason || '-'}</td>
                     </tr>
                   ))
                 )}
@@ -967,10 +967,10 @@ const TimeClockManagementView = () => {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Colaborador</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Marcações</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Entrada</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Saída</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Colaborador</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Marcações</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Entrada</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Saída</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -979,10 +979,10 @@ const TimeClockManagementView = () => {
                 ) : (
                   oddMarks.map((r: any) => (
                     <tr key={`${r.employeeId}-${r.date}`} className="hover:bg-slate-50">
-                      <td className="p-4 font-medium text-slate-900">{r.employeeName}</td>
-                      <td className="p-4 text-slate-700">{r.punchesCount}</td>
-                      <td className="p-4 text-slate-700">{r.entry || '-'}</td>
-                      <td className="p-4 text-slate-700">{r.exit || '-'}</td>
+                      <td className="p-4 font-medium text-[color:var(--color-text)]">{r.employeeName}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{r.punchesCount}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{r.entry || '-'}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{r.exit || '-'}</td>
                     </tr>
                   ))
                 )}
@@ -996,10 +996,10 @@ const TimeClockManagementView = () => {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Colaborador</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Escala</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Previstas</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Justificativa</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Colaborador</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Escala</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Previstas</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Justificativa</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -1010,10 +1010,10 @@ const TimeClockManagementView = () => {
                     .filter((r: any) => r.expectedMinutes != null && r.punchesCount === 0 && (!Array.isArray(r.absences) || r.absences.length === 0))
                     .map((r: any) => (
                       <tr key={`${r.employeeId}-${r.date}`} className="hover:bg-slate-50">
-                        <td className="p-4 font-medium text-slate-900">{r.employeeName}</td>
-                        <td className="p-4 text-slate-700">{r.schedule || '-'}</td>
-                        <td className="p-4 text-slate-700">{formatMinutes(r.expectedMinutes)}</td>
-                        <td className="p-4 text-slate-700">-</td>
+                        <td className="p-4 font-medium text-[color:var(--color-text)]">{r.employeeName}</td>
+                        <td className="p-4 text-[color:var(--color-text)]">{r.schedule || '-'}</td>
+                        <td className="p-4 text-[color:var(--color-text)]">{formatMinutes(r.expectedMinutes)}</td>
+                        <td className="p-4 text-[color:var(--color-text)]">-</td>
                       </tr>
                     ))
                 )}
@@ -1027,12 +1027,12 @@ const TimeClockManagementView = () => {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Colaborador</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Extra 50%</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Extra 100%</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Adic. Noturno</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Banco</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Horas faltas</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Colaborador</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Extra 50%</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Extra 100%</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Adic. Noturno</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Banco</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Horas faltas</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -1041,12 +1041,12 @@ const TimeClockManagementView = () => {
                 ) : (
                   overtimeSummary.map((r: any) => (
                     <tr key={r.employeeId} className="hover:bg-slate-50">
-                      <td className="p-4 font-medium text-slate-900">{r.employeeName}</td>
-                      <td className="p-4 text-slate-700">{r.overtime50Hours}</td>
-                      <td className="p-4 text-slate-700">{r.overtime100Hours}</td>
-                      <td className="p-4 text-slate-700">{r.nightHours}</td>
-                      <td className="p-4 text-slate-700">{r.bankHours}</td>
-                      <td className="p-4 text-slate-700">{r.missingHours}</td>
+                      <td className="p-4 font-medium text-[color:var(--color-text)]">{r.employeeName}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{r.overtime50Hours}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{r.overtime100Hours}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{r.nightHours}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{r.bankHours}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{r.missingHours}</td>
                     </tr>
                   ))
                 )}
@@ -1060,12 +1060,12 @@ const TimeClockManagementView = () => {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Colaborador</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Competência</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Saldo banco</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Previstas</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Trabalhadas</th>
-                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Extras</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Colaborador</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Competência</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Saldo banco</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Previstas</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Trabalhadas</th>
+                  <th className="text-left p-4 text-sm font-semibold text-[color:var(--color-muted)]">Extras</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -1074,12 +1074,12 @@ const TimeClockManagementView = () => {
                 ) : (
                   balances.map((b: any) => (
                     <tr key={b.id} className="hover:bg-slate-50">
-                      <td className="p-4 font-medium text-slate-900">{b.employee?.fullName || '-'}</td>
-                      <td className="p-4 text-slate-700">{b.competence}</td>
-                      <td className="p-4 text-slate-700">{b.balanceHours}</td>
-                      <td className="p-4 text-slate-700">{b.expectedHours}</td>
-                      <td className="p-4 text-slate-700">{b.workedHours}</td>
-                      <td className="p-4 text-slate-700">{b.overtimeHours}</td>
+                      <td className="p-4 font-medium text-[color:var(--color-text)]">{b.employee?.fullName || '-'}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{b.competence}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{b.balanceHours}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{b.expectedHours}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{b.workedHours}</td>
+                      <td className="p-4 text-[color:var(--color-text)]">{b.overtimeHours}</td>
                     </tr>
                   ))
                 )}
@@ -1186,7 +1186,7 @@ const TimeClockManagementView = () => {
                     <div className="mt-6 flex justify-end gap-3">
                         <button 
                             onClick={() => setShowModal(false)}
-                            className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium"
+                            className="px-4 py-2 text-[color:var(--color-muted)] hover:bg-slate-100 rounded-lg font-medium"
                         >
                             Cancelar
                         </button>
