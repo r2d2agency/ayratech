@@ -71,6 +71,70 @@ export class TimeClockController {
     res.end();
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('reports/daily')
+  getDailyReport(@Query('date') date: string, @Query('employeeId') employeeId?: string) {
+    return this.timeClockService.getDailyTimeSheet(date, employeeId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('reports/occurrences')
+  getOccurrences(@Query('date') date: string, @Query('employeeId') employeeId?: string) {
+    return this.timeClockService.getDailyOccurrences(date, employeeId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('reports/manual')
+  getManualMarks(@Query('date') date: string, @Query('employeeId') employeeId?: string) {
+    return this.timeClockService.getDailyManualMarks(date, employeeId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('reports/odd')
+  getOddMarks(@Query('date') date: string, @Query('employeeId') employeeId?: string) {
+    return this.timeClockService.getDailyOddMarks(date, employeeId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('reports/absences')
+  getAbsences(@Query('date') date: string, @Query('employeeId') employeeId?: string) {
+    return this.timeClockService.getDailyAbsences(date, employeeId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('reports/overtime')
+  getOvertime(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Query('employeeId') employeeId?: string,
+  ) {
+    return this.timeClockService.getOvertimeSummary(startDate, endDate, employeeId);
+  }
+
+  @Post('balances')
+  createBalance(@Body() createBalanceDto: CreateTimeBalanceDto) {
+    return this.timeClockService.createBalance(createBalanceDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('balances')
+  listBalances(@Query('competence') competence?: string, @Query('employeeId') employeeId?: string) {
+    return this.timeClockService.listBalances(competence, employeeId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('balances/upsert')
+  upsertBalance(@Body() createBalanceDto: CreateTimeBalanceDto) {
+    return this.timeClockService.upsertBalance(createBalanceDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('balances/adjust')
+  adjustBalance(@Body() data: { employeeId: string; competence: string; deltaHours: number; reason?: string }, @Req() req: any) {
+    const createdBy = req.user?.userId || req.user?.email || null;
+    return this.timeClockService.adjustBalance({ ...data, createdBy });
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.timeClockService.findOne(id);
@@ -92,10 +156,5 @@ export class TimeClockController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.timeClockService.remove(id);
-  }
-
-  @Post('balances')
-  createBalance(@Body() createBalanceDto: CreateTimeBalanceDto) {
-    return this.timeClockService.createBalance(createBalanceDto);
   }
 }

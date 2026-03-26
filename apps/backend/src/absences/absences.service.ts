@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
@@ -40,13 +40,34 @@ export class AbsencesService {
       ...absenceData
     } = createAbsenceRequestDto;
 
+    if (!employeeId) {
+      throw new BadRequestException('employeeId é obrigatório.');
+    }
+    if (!startDate) {
+      throw new BadRequestException('startDate é obrigatório.');
+    }
+
+    if (String(absenceData?.type || '') === 'atestado') {
+      const missing: string[] = [];
+      if (!absenceData.medicalCid) missing.push('CID');
+      if (!absenceData.medicalProfessionalName) missing.push('nome do médico');
+      if (!absenceData.medicalServiceLocation) missing.push('local de atendimento');
+      if (!absenceData.medicalLicenseNumber) missing.push('CRM');
+      if (missing.length) {
+        throw new BadRequestException(`Para atestado, informe: ${missing.join(', ')}.`);
+      }
+      (absenceData as any).medicalLicenseType = 'CRM';
+    }
+
     const absence = this.absencesRepository.create({
       ...absenceData,
       status: status || undefined,
       startDate: startDate ? new Date(startDate) : undefined,
       endDate: endDate ? new Date(endDate) : null,
       employeeDocumentId: employeeDocumentId || null,
+      employeeId,
       employee: { id: employeeId },
+      approverId: approverId || null,
       approver: approverId ? { id: approverId } : null,
     });
 
@@ -77,6 +98,18 @@ export class AbsencesService {
   async update(id: string, updateAbsenceRequestDto: UpdateAbsenceRequestDto) {
     if (Object.keys(updateAbsenceRequestDto).length > 0) {
       const { startDate, endDate, approvedAt, ...rest } = updateAbsenceRequestDto as any;
+      const type = String(rest?.type || '');
+      if (type === 'atestado') {
+        const missing: string[] = [];
+        if (!rest.medicalCid) missing.push('CID');
+        if (!rest.medicalProfessionalName) missing.push('nome do médico');
+        if (!rest.medicalServiceLocation) missing.push('local de atendimento');
+        if (!rest.medicalLicenseNumber) missing.push('CRM');
+        if (missing.length) {
+          throw new BadRequestException(`Para atestado, informe: ${missing.join(', ')}.`);
+        }
+        rest.medicalLicenseType = 'CRM';
+      }
       await this.absencesRepository.update(id, {
         ...rest,
         startDate: startDate ? new Date(startDate) : undefined,

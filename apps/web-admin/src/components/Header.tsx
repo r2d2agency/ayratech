@@ -132,20 +132,20 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   };
 
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3 shadow-sm h-16">
+    <header className="sticky top-0 z-40 flex items-center justify-between bg-[color:var(--surface)]/80 backdrop-blur-md px-8 border-b border-white/5 h-16">
       <div className="flex items-center gap-4">
         <button 
           onClick={onToggleSidebar}
-          className="md:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg"
+          className="md:hidden p-2 -ml-2 text-[color:var(--color-muted)] hover:bg-white/5 rounded-lg"
         >
           <Menu size={24} />
         </button>
         <div className="relative hidden md:block group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-[#196ee6]" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[color:var(--color-muted)] transition-colors group-focus-within:text-[color:var(--color-secondary)]" size={18} />
           <input 
             type="text" 
             placeholder="Busca global..." 
-            className="h-10 w-64 xl:w-80 rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-[#196ee6]/10 focus:border-[#196ee6] transition-all"
+            className="h-10 w-64 xl:w-80 rounded-full border-none bg-[color:var(--surface-container-highest)] pl-10 pr-4 text-sm outline-none focus:ring-1 focus:ring-[color:var(--color-secondary)]/50 placeholder-[color:var(--color-muted)] text-[color:var(--color-text)]"
           />
         </div>
       </div>
@@ -153,7 +153,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
       <div className="flex items-center gap-4">
         <div className="relative" ref={notificationRef}>
           <button 
-            className="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 transition-colors border border-slate-200"
+            className="relative flex h-10 w-10 items-center justify-center rounded-xl text-[color:var(--color-muted)] hover:text-[color:var(--color-secondary)] hover:bg-white/5 transition-colors border border-white/5"
             onClick={() => setShowNotifications(!showNotifications)}
           >
             <Bell size={20} />
@@ -163,44 +163,44 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 top-12 w-80 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
-              <div className="p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <h3 className="font-semibold text-slate-700 text-sm">Notificações</h3>
+            <div className="absolute right-0 top-12 w-80 bg-[color:var(--surface-container-low)] rounded-xl shadow-[0_0_20px_rgba(204,151,255,0.12)] border border-white/5 overflow-hidden z-50">
+              <div className="p-3 border-b border-white/5 flex justify-between items-center bg-[color:var(--surface)]/40">
+                <h3 className="font-semibold text-[color:var(--color-text)] text-sm">Notificações</h3>
                 {unreadCount > 0 && (
-                    <button onClick={handleMarkAllAsRead} className="text-xs text-blue-600 hover:text-blue-700 font-medium">
+                    <button onClick={handleMarkAllAsRead} className="text-xs text-[color:var(--color-primary)] font-medium">
                         Marcar todas como lidas
                     </button>
                 )}
               </div>
               <div className="max-h-96 overflow-y-auto">
                 {notifications.length === 0 ? (
-                  <div className="p-6 text-center text-slate-400 text-sm">
+                  <div className="p-6 text-center text-[color:var(--color-muted)] text-sm">
                     Nenhuma notificação
                   </div>
                 ) : (
                   notifications.map(notification => (
                     <div 
                       key={notification.id} 
-                      className={`p-3 border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer ${notification.read ? 'opacity-60' : 'bg-blue-50/30'}`}
+                      className={`p-3 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${notification.read ? 'opacity-60' : 'bg-[color:var(--surface-container-highest)]/40'}`}
                       onClick={() => handleMarkAsRead(notification.id)}
                     >
                       <div className="flex gap-3">
-                        <div className={`mt-1 h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${notification.read ? 'bg-slate-100' : 'bg-white shadow-sm border border-slate-100'}`}>
+                        <div className={`mt-1 h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${notification.read ? 'bg-[color:var(--surface-container-highest)]' : 'bg-[color:var(--surface)] shadow-sm border border-white/5'}`}>
                           {getNotificationIcon(notification.type)}
                         </div>
                         <div className="flex-1">
-                          <p className={`text-sm ${notification.read ? 'text-slate-600' : 'text-slate-900 font-medium'}`}>
+                          <p className={`text-sm ${notification.read ? 'text-[color:var(--color-muted)]' : 'text-[color:var(--color-text)] font-medium'}`}>
                             {notification.title}
                           </p>
-                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
+                          <p className="text-xs text-[color:var(--color-muted)] mt-0.5 line-clamp-2">
                             {notification.message}
                           </p>
-                          <p className="text-[10px] text-slate-400 mt-1">
+                          <p className="text-[10px] text-[color:var(--color-muted)] mt-1">
                             {new Date(notification.createdAt).toLocaleString()}
                           </p>
                         </div>
                         {!notification.read && (
-                          <div className="mt-2 h-2 w-2 rounded-full bg-blue-500 shrink-0"></div>
+                          <div className="mt-2 h-2 w-2 rounded-full bg-[color:var(--color-tertiary)] shrink-0"></div>
                         )}
                       </div>
                     </div>
@@ -211,16 +211,16 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           )}
         </div>
 
-        <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
+        <div className="flex items-center gap-3 pl-4 border-l border-white/10">
           <div className="text-right hidden sm:block">
-            <p className="text-xs font-black text-slate-900">
+            <p className="text-xs font-medium text-[color:var(--color-text)] font-headline">
               {user?.employee?.fullName || user?.employee?.name || user?.email || 'Usuário'}
             </p>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">
+            <p className="text-[10px] text-[color:var(--color-muted)] font-medium uppercase tracking-wider font-headline">
               {user?.employee?.position || user?.role?.name || 'Nível de Acesso'}
             </p>
           </div>
-          <div className="h-10 w-10 overflow-hidden rounded-xl ring-2 ring-slate-100 cursor-pointer transition-all hover:ring-blue-100 bg-slate-100">
+          <div className="h-10 w-10 overflow-hidden rounded-full border border-[color:var(--color-primary)]/30 cursor-pointer transition-all bg-[color:var(--surface-container-highest)]">
             {user?.employee?.facialPhotoUrl ? (
                <img 
                  src={getImageUrl(user.employee.facialPhotoUrl)} 

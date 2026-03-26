@@ -4,10 +4,12 @@ import { Repository, Between } from 'typeorm';
 import * as ExcelJS from 'exceljs';
 import { TimeClockEvent } from './entities/time-clock-event.entity';
 import { TimeBalance } from './entities/time-balance.entity';
+import { TimeBalanceAdjustment } from './entities/time-balance-adjustment.entity';
 import { Employee } from '../employees/entities/employee.entity';
 import { WorkSchedule } from '../work-schedules/entities/work-schedule.entity';
 import { CreateTimeClockEventDto, CreateTimeBalanceDto } from './dto/create-time-clock.dto';
 import { UpdateTimeClockEventDto } from './dto/update-time-clock.dto';
+import { AbsenceRequest } from '../absences/entities/absence-request.entity';
 
 @Injectable()
 export class TimeClockService {
@@ -16,10 +18,14 @@ export class TimeClockService {
     private eventsRepository: Repository<TimeClockEvent>,
     @InjectRepository(TimeBalance)
     private balancesRepository: Repository<TimeBalance>,
+    @InjectRepository(TimeBalanceAdjustment)
+    private balanceAdjustmentsRepository: Repository<TimeBalanceAdjustment>,
     @InjectRepository(WorkSchedule)
     private schedulesRepository: Repository<WorkSchedule>,
     @InjectRepository(Employee)
     private employeesRepository: Repository<Employee>,
+    @InjectRepository(AbsenceRequest)
+    private absencesRepository: Repository<AbsenceRequest>,
   ) {}
 
   async generateReport(startDate?: string, endDate?: string, employeeId?: string) {
@@ -376,5 +382,431 @@ export class TimeClockService {
   createBalance(createBalanceDto: CreateTimeBalanceDto) {
     const balance = this.balancesRepository.create(createBalanceDto);
     return this.balancesRepository.save(balance);
+  }
+
+  async listBalances(competence?: string, employeeId?: string) {
+    const where: any = {};
+    if (competence) where.competence = competence;
+    if (employeeId) where.employee = { id: employeeId };
+    return this.balancesRepository.find({
+      where,
+      relations: ['employee'],
+      order: { competence: 'DESC', createdAt: 'DESC' } as any,
+    });
+  }
+
+  async upsertBalance(createBalanceDto: CreateTimeBalanceDto) {
+    const { employeeId, competence } = createBalanceDto as any;
+    if (!employeeId || !competence) {
+      throw new BadRequestException('employeeId e competence são obrigatórios');
+    }
+
+    const existing = await this.balancesRepository.findOne({
+      where: { employeeId, competence } as any,
+    });
+
+    if (existing) {
+      await this.balancesRepository.update(existing.id, {
+        expectedHours: createBalanceDto.expectedHours,
+        workedHours: createBalanceDto.workedHours,
+        overtimeHours: createBalanceDto.overtimeHours,
+        balanceHours: createBalanceDto.balanceHours,
+      } as any);
+      return this.balancesRepository.findOne({ where: { id: existing.id }, relations: ['employee'] });
+    }
+
+    const employee = await this.employeesRepository.findOne({ where: { id: employeeId } });
+    if (!employee) {
+      throw new BadRequestException('Funcionário não encontrado');
+    }
+
+    const balance = this.balancesRepository.create({
+      ...createBalanceDto,
+      employeeId,
+      employee,
+    } as any);
+    return this.balancesRepository.save(balance);
+  }
+
+  async adjustBalance(input: { employeeId: string; competence: string; deltaHours: number; reason?: string; createdBy?: string }) {
+    const employeeId = input.employeeId;
+    const competence = String(input.competence || '').trim();
+    const deltaHours = Number(input.deltaHours);
+    if (!employeeId || !competence || !Number.isFinite(deltaHours)) {
+      throw new BadRequestException('employeeId, competence e deltaHours são obrigatórios');
+    }
+
+    const employee = await this.employeesRepository.findOne({ where: { id: employeeId } });
+    if (!employee) {
+      throw new BadRequestException('Funcionário não encontrado');
+    }
+
+    const adjustment = this.balanceAdjustmentsRepository.create({
+      employeeId,
+      employee,
+      competence,
+      deltaHours,
+      reason: input.reason || null,
+      createdBy: input.createdBy || null,
+    } as any);
+    await this.balanceAdjustmentsRepository.save(adjustment);
+
+    const existing = await this.balancesRepository.findOne({ where: { employeeId, competence } as any });
+    if (existing) {
+      const next = Number(existing.balanceHours) + deltaHours;
+      await this.balancesRepository.update(existing.id, { balanceHours: next } as any);
+      return this.balancesRepository.findOne({ where: { id: existing.id }, relations: ['employee'] });
+    }
+
+    const balance = this.balancesRepository.create({
+      employeeId,
+      employee,
+      competence,
+      expectedHours: 0,
+      workedHours: 0,
+      overtimeHours: 0,
+      balanceHours: deltaHours,
+    } as any);
+    return this.balancesRepository.save(balance);
+  }
+
+  async getDailyTimeSheet(date: string, employeeId?: string) {
+    const dateStr = this.normalizeDate(date);
+    const employees = employeeId
+      ? await this.employeesRepository.find({ where: { id: employeeId } as any })
+      : await this.employeesRepository.find({ where: { status: 'active' } as any, order: { fullName: 'ASC' } as any });
+
+    const start = new Date(`${dateStr}T00:00:00.000Z`);
+    const end = new Date(`${dateStr}T23:59:59.999Z`);
+    end.setHours(end.getHours() + 4);
+
+    const absences = await this.absencesRepository.query(
+      `SELECT * FROM "absence_requests"
+       WHERE "status" != 'rejected'
+         AND (COALESCE("endDate","startDate") >= $1)
+         AND ("startDate" <= $1)
+         ${employeeId ? `AND "employeeId" = $2` : ''}`,
+      employeeId ? [dateStr, employeeId] : [dateStr],
+    );
+    const absencesByEmployee = new Map<string, any[]>();
+    for (const a of absences || []) {
+      const eid = a.employeeId;
+      if (!eid) continue;
+      if (!absencesByEmployee.has(eid)) absencesByEmployee.set(eid, []);
+      absencesByEmployee.get(eid).push(a);
+    }
+
+    const events = await this.eventsRepository.find({
+      where: {
+        ...(employeeId ? { employeeId } : {}),
+        timestamp: Between(start, end),
+      } as any,
+      relations: ['employee'],
+      order: { timestamp: 'ASC' } as any,
+    });
+
+    const eventsByEmployee = new Map<string, TimeClockEvent[]>();
+    for (const ev of events) {
+      const eid = ev.employeeId || ev.employee?.id;
+      if (!eid) continue;
+      if (!eventsByEmployee.has(eid)) eventsByEmployee.set(eid, []);
+      eventsByEmployee.get(eid).push(ev);
+    }
+
+    const rows: any[] = [];
+    for (const emp of employees) {
+      const empEvents = eventsByEmployee.get(emp.id) || [];
+      const scheduleDay = await this.getScheduleDay(emp.id, dateStr);
+      const entry = empEvents.find(e => e.eventType === 'ENTRY');
+      const lunchStart = empEvents.find(e => e.eventType === 'LUNCH_START');
+      const lunchEnd = empEvents.find(e => e.eventType === 'LUNCH_END');
+      const exit = empEvents.find(e => e.eventType === 'EXIT');
+
+      const workedMinutes = this.calculateWorkedMinutes(entry?.timestamp, lunchStart?.timestamp, lunchEnd?.timestamp, exit?.timestamp);
+      const expectedMinutes = scheduleDay ? this.calculateExpectedMinutes(scheduleDay.startTime, scheduleDay.endTime, scheduleDay.breakStart, scheduleDay.breakEnd) : null;
+
+      const absenceList = absencesByEmployee.get(emp.id) || [];
+      const hasAbsence = absenceList.length > 0;
+
+      rows.push({
+        employeeId: emp.id,
+        employeeName: emp.fullName,
+        date: dateStr,
+        schedule: scheduleDay ? `${scheduleDay.startTime}-${scheduleDay.endTime}` : null,
+        entry: entry ? this.formatTime(entry.timestamp) : null,
+        lunchStart: lunchStart ? this.formatTime(lunchStart.timestamp) : null,
+        lunchEnd: lunchEnd ? this.formatTime(lunchEnd.timestamp) : null,
+        exit: exit ? this.formatTime(exit.timestamp) : null,
+        punchesCount: empEvents.length,
+        hasOddPunches: empEvents.length % 2 === 1,
+        hasManual: empEvents.some(e => e.isManual),
+        workedMinutes,
+        expectedMinutes,
+        overtimeMinutes: expectedMinutes != null ? Math.max(0, workedMinutes - expectedMinutes) : null,
+        missingMinutes: expectedMinutes != null ? Math.max(0, expectedMinutes - workedMinutes) : null,
+        absences: hasAbsence ? absenceList.map(a => ({ type: a.type, status: a.status, startDate: String(a.startDate).slice(0, 10), endDate: a.endDate ? String(a.endDate).slice(0, 10) : null })) : [],
+      });
+    }
+
+    return rows;
+  }
+
+  async getDailyOccurrences(date: string, employeeId?: string) {
+    const dateStr = this.normalizeDate(date);
+    const rows = await this.getDailyTimeSheet(dateStr, employeeId);
+    const occurrences: any[] = [];
+    for (const row of rows) {
+      const scheduleDay = await this.getScheduleDay(row.employeeId, dateStr);
+      const hasAbsence = Array.isArray(row.absences) && row.absences.length > 0;
+      if (!scheduleDay) continue;
+
+      const expectedTypes = ['ENTRY', 'EXIT'];
+      if (scheduleDay.breakStart) expectedTypes.push('LUNCH_START');
+      if (scheduleDay.breakEnd) expectedTypes.push('LUNCH_END');
+
+      const missing: string[] = [];
+      if (!row.entry) missing.push('ENTRY');
+      if (!row.exit) missing.push('EXIT');
+      if (scheduleDay.breakStart && !row.lunchStart) missing.push('LUNCH_START');
+      if (scheduleDay.breakEnd && !row.lunchEnd) missing.push('LUNCH_END');
+
+      if (!hasAbsence && missing.length === expectedTypes.length) {
+        occurrences.push({ employeeId: row.employeeId, employeeName: row.employeeName, date: dateStr, type: 'FALTA_SUSPEITA', detail: 'Sem marcações no dia' });
+      }
+
+      for (const t of missing) {
+        occurrences.push({ employeeId: row.employeeId, employeeName: row.employeeName, date: dateStr, type: 'MARCACAO_FALTANDO', detail: t });
+      }
+
+      if (row.hasOddPunches) {
+        occurrences.push({ employeeId: row.employeeId, employeeName: row.employeeName, date: dateStr, type: 'MARCACOES_IMPARES', detail: `Total: ${row.punchesCount}` });
+      }
+
+      if (row.hasManual) {
+        occurrences.push({ employeeId: row.employeeId, employeeName: row.employeeName, date: dateStr, type: 'MARCACAO_MANUAL', detail: 'Contém ajuste manual' });
+      }
+
+      if (row.entry) {
+        const lateMinutes = this.diffLateMinutes(scheduleDay.startTime, row.entry, scheduleDay.toleranceMinutes);
+        if (lateMinutes > 0) {
+          occurrences.push({ employeeId: row.employeeId, employeeName: row.employeeName, date: dateStr, type: 'ATRASO', detail: `${lateMinutes} min` });
+        }
+      }
+
+      if (row.exit) {
+        const earlyMinutes = this.diffEarlyMinutes(scheduleDay.endTime, row.exit, scheduleDay.toleranceMinutes);
+        if (earlyMinutes > 0) {
+          occurrences.push({ employeeId: row.employeeId, employeeName: row.employeeName, date: dateStr, type: 'SAIDA_ANTECIPADA', detail: `${earlyMinutes} min` });
+        }
+      }
+    }
+
+    return occurrences;
+  }
+
+  async getDailyManualMarks(date: string, employeeId?: string) {
+    const dateStr = this.normalizeDate(date);
+    const start = new Date(`${dateStr}T00:00:00.000Z`);
+    const end = new Date(`${dateStr}T23:59:59.999Z`);
+    end.setHours(end.getHours() + 4);
+
+    const where: any = { timestamp: Between(start, end), isManual: true };
+    if (employeeId) where.employeeId = employeeId;
+    return this.eventsRepository.find({
+      where,
+      relations: ['employee'],
+      order: { timestamp: 'ASC' } as any,
+    });
+  }
+
+  async getDailyOddMarks(date: string, employeeId?: string) {
+    const dateStr = this.normalizeDate(date);
+    const sheet = await this.getDailyTimeSheet(dateStr, employeeId);
+    return sheet.filter(r => r.punchesCount % 2 === 1);
+  }
+
+  async getDailyAbsences(date: string, employeeId?: string) {
+    const dateStr = this.normalizeDate(date);
+    const rows = await this.absencesRepository.query(
+      `SELECT * FROM "absence_requests"
+       WHERE "status" != 'rejected'
+         AND (COALESCE("endDate","startDate") >= $1)
+         AND ("startDate" <= $1)
+         ${employeeId ? `AND "employeeId" = $2` : ''}`,
+      employeeId ? [dateStr, employeeId] : [dateStr],
+    );
+    return rows || [];
+  }
+
+  async getOvertimeSummary(startDate: string, endDate: string, employeeId?: string) {
+    const startStr = this.normalizeDate(startDate);
+    const endStr = this.normalizeDate(endDate);
+    const days = this.enumerateDays(startStr, endStr);
+
+    const employees = employeeId
+      ? await this.employeesRepository.find({ where: { id: employeeId } as any })
+      : await this.employeesRepository.find({ where: { status: 'active' } as any, order: { fullName: 'ASC' } as any });
+
+    const totals = new Map<string, any>();
+    for (const emp of employees) {
+      totals.set(emp.id, {
+        employeeId: emp.id,
+        employeeName: emp.fullName,
+        overtime50Minutes: 0,
+        overtime100Minutes: 0,
+        nightMinutes: 0,
+        bankMinutes: 0,
+        missingMinutes: 0,
+      });
+    }
+
+    for (const day of days) {
+      const sheet = await this.getDailyTimeSheet(day, employeeId);
+      const d = new Date(`${day}T12:00:00.000Z`);
+      const isSunday = d.getUTCDay() === 0;
+      for (const row of sheet) {
+        const t = totals.get(row.employeeId);
+        if (!t) continue;
+        const expected = row.expectedMinutes;
+        const worked = row.workedMinutes;
+        if (typeof expected !== 'number') continue;
+
+        const delta = worked - expected;
+        if (delta > 0) {
+          if (isSunday) t.overtime100Minutes += delta;
+          else t.overtime50Minutes += delta;
+        } else if (delta < 0) {
+          t.missingMinutes += Math.abs(delta);
+        }
+
+        t.bankMinutes += delta;
+        t.nightMinutes += this.calculateNightMinutes(row.entry, row.lunchStart, row.lunchEnd, row.exit);
+      }
+    }
+
+    return Array.from(totals.values()).map(r => ({
+      ...r,
+      overtime50Hours: this.minutesToHours(r.overtime50Minutes),
+      overtime100Hours: this.minutesToHours(r.overtime100Minutes),
+      nightHours: this.minutesToHours(r.nightMinutes),
+      bankHours: this.minutesToHours(r.bankMinutes),
+      missingHours: this.minutesToHours(r.missingMinutes),
+    }));
+  }
+
+  private normalizeDate(value: string) {
+    const s = String(value || '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+      throw new BadRequestException('Data inválida (use YYYY-MM-DD)');
+    }
+    return s;
+  }
+
+  private enumerateDays(start: string, end: string) {
+    const out: string[] = [];
+    let d = new Date(`${start}T12:00:00.000Z`);
+    const endD = new Date(`${end}T12:00:00.000Z`);
+    while (d.getTime() <= endD.getTime()) {
+      out.push(d.toISOString().slice(0, 10));
+      d.setUTCDate(d.getUTCDate() + 1);
+    }
+    return out;
+  }
+
+  private async getScheduleDay(employeeId: string, dateStr: string) {
+    const schedules = await this.schedulesRepository.find({
+      where: { employeeId } as any,
+      relations: ['days'],
+      order: { validFrom: 'DESC' } as any,
+    });
+    const date = new Date(`${dateStr}T12:00:00.000Z`);
+    const schedule = (schedules || []).find(s => {
+      const from = s.validFrom ? new Date(s.validFrom) : null;
+      const to = s.validTo ? new Date(s.validTo) : null;
+      if (!from) return false;
+      const okFrom = from.getTime() <= date.getTime();
+      const okTo = !to || to.getTime() >= date.getTime();
+      return okFrom && okTo;
+    });
+    if (!schedule || !Array.isArray(schedule.days)) return null;
+    const dow = date.getUTCDay();
+    const day = schedule.days.find(d => Number(d.dayOfWeek) === dow && d.active);
+    return day || null;
+  }
+
+  private timeToMinutes(t: string) {
+    const [h, m] = String(t || '').split(':').map(Number);
+    return (Number.isFinite(h) ? h : 0) * 60 + (Number.isFinite(m) ? m : 0);
+  }
+
+  private formatTime(d: Date) {
+    return d.toISOString().slice(11, 16);
+  }
+
+  private calculateWorkedMinutes(entry?: Date, lunchStart?: Date, lunchEnd?: Date, exit?: Date) {
+    const ms = (a?: Date, b?: Date) => (a && b ? b.getTime() - a.getTime() : 0);
+    let total = 0;
+    if (entry && lunchStart) total += ms(entry, lunchStart);
+    if (lunchEnd && exit) total += ms(lunchEnd, exit);
+    if (entry && exit && !lunchStart && !lunchEnd) total += ms(entry, exit);
+    return Math.max(0, Math.floor(total / (1000 * 60)));
+  }
+
+  private calculateExpectedMinutes(startTime: string, endTime: string, breakStart?: string, breakEnd?: string) {
+    const start = this.timeToMinutes(startTime);
+    const end = this.timeToMinutes(endTime);
+    let expected = Math.max(0, end - start);
+    if (breakStart && breakEnd) {
+      expected -= Math.max(0, this.timeToMinutes(breakEnd) - this.timeToMinutes(breakStart));
+    }
+    return Math.max(0, expected);
+  }
+
+  private diffLateMinutes(scheduleStart: string, entryHHMM: string, tolerance: number) {
+    const sched = this.timeToMinutes(scheduleStart) + (Number(tolerance) || 0);
+    const entry = this.timeToMinutes(entryHHMM);
+    return Math.max(0, entry - sched);
+  }
+
+  private diffEarlyMinutes(scheduleEnd: string, exitHHMM: string, tolerance: number) {
+    const sched = this.timeToMinutes(scheduleEnd) - (Number(tolerance) || 0);
+    const out = this.timeToMinutes(exitHHMM);
+    return Math.max(0, sched - out);
+  }
+
+  private calculateNightMinutes(entry?: string | null, lunchStart?: string | null, lunchEnd?: string | null, exit?: string | null) {
+    const intervals: Array<[number, number]> = [];
+    const toMin = (hhmm?: string | null) => (hhmm ? this.timeToMinutes(hhmm) : null);
+    const e = toMin(entry);
+    const ls = toMin(lunchStart);
+    const le = toMin(lunchEnd);
+    const ex = toMin(exit);
+    if (e != null && ls != null) intervals.push([e, ls]);
+    if (le != null && ex != null) intervals.push([le, ex]);
+    if (e != null && ex != null && ls == null && le == null) intervals.push([e, ex]);
+
+    const night1: [number, number] = [22 * 60, 24 * 60];
+    const night2: [number, number] = [0, 5 * 60];
+    let total = 0;
+    for (const [a, b] of intervals) {
+      total += this.overlapMinutes(a, b, night1[0], night1[1]);
+      total += this.overlapMinutes(a, b, night2[0], night2[1]);
+    }
+    return total;
+  }
+
+  private overlapMinutes(a1: number, a2: number, b1: number, b2: number) {
+    const start = Math.max(a1, b1);
+    const end = Math.min(a2, b2);
+    return Math.max(0, end - start);
+  }
+
+  private minutesToHours(min: number) {
+    const n = Number(min) || 0;
+    const sign = n < 0 ? '-' : '';
+    const abs = Math.abs(n);
+    const h = Math.floor(abs / 60);
+    const m = abs % 60;
+    return `${sign}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   }
 }

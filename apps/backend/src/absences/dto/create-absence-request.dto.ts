@@ -7,6 +7,11 @@ export class CreateAbsenceRequestDto {
   endDate?: string;
   endTime?: string;
   reason?: string;
+  medicalCid?: string;
+  medicalProfessionalName?: string;
+  medicalServiceLocation?: string;
+  medicalLicenseType?: string;
+  medicalLicenseNumber?: string;
   employeeDocumentId?: string;
   fileUrl?: string;
   status?: string;

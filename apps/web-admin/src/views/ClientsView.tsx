@@ -382,16 +382,16 @@ const ClientsView: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500 relative">
       {showLinkModal && linkClient && (
         <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-5xl w-full shadow-2xl relative flex flex-col max-h-[90vh]">
+          <div className="rounded-3xl p-6 max-w-5xl w-full shadow-[0_0_20px_rgba(204,151,255,0.12)] relative flex flex-col max-h-[90vh] border border-white/5 bg-[color:var(--surface-container-low)]">
             <button 
               onClick={() => setShowLinkModal(false)}
-              className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full transition-colors"
+              className="absolute top-4 right-4 p-2 hover:bg-white/5 rounded-full transition-colors"
             >
-              <X size={20} className="text-slate-400" />
+              <X size={20} className="text-[color:var(--color-muted)]" />
             </button>
-            <h2 className="text-xl font-black text-slate-900 mb-4">Vincular PDVs - {linkClient.nome}</h2>
+            <h2 className="text-xl font-bold font-headline text-[color:var(--color-text)] mb-4">Vincular PDVs - {linkClient.nome}</h2>
             <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-4">
-              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 flex flex-col h-full overflow-hidden">
+              <div className="rounded-xl p-3 border border-white/5 flex flex-col h-full overflow-hidden bg-[color:var(--surface-container-highest)]">
                 <div className="mb-2 space-y-2 flex-shrink-0">
                   <div className="flex gap-2">
                     <div className="flex-1 relative z-20">
@@ -419,7 +419,7 @@ const ClientsView: React.FC = () => {
                     value={leftSearch}
                     onChange={e => setLeftSearch(e.target.value)}
                     placeholder="Filtrar PDVs disponíveis..."
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs"
+                    className="w-full px-3 py-2 rounded-lg border border-white/5 bg-[color:var(--surface-container-low)] text-xs"
                   />
                 </div>
                 <div className="flex-1 overflow-y-auto space-y-1 pr-1">
@@ -428,14 +428,14 @@ const ClientsView: React.FC = () => {
                     .filter(s => !selectedGroupFilter || (s.group?.id === selectedGroupFilter))
                     .filter(s => (s.fantasyName || '').toLowerCase().includes(leftSearch.toLowerCase()))
                     .map(s => (
-                      <div key={s.id} className="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-3 py-2 hover:border-blue-300 transition-colors group cursor-pointer" onClick={() => addToSelected(s.id)}>
+                      <div key={s.id} className="flex items-center justify-between bg-[color:var(--surface-container-low)] border border-white/5 rounded-lg px-3 py-2 hover:border-[color:var(--color-secondary)]/50 transition-colors group cursor-pointer" onClick={() => addToSelected(s.id)}>
                         <div className="min-w-0">
-                          <p className="text-xs font-bold text-slate-800 truncate group-hover:text-blue-700">{s.fantasyName}</p>
-                          <p className="text-[10px] text-slate-500">{s.city} - {s.state}</p>
+                          <p className="text-xs font-medium text-[color:var(--color-text)] truncate group-hover:text-[color:var(--color-secondary)]">{s.fantasyName}</p>
+                          <p className="text-[10px] text-[color:var(--color-muted)]">{s.city} - {s.state}</p>
                         </div>
                         <button 
                           onClick={(e) => { e.stopPropagation(); addToSelected(s.id); }}
-                          className="text-[10px] font-black text-blue-600 hover:bg-blue-50 px-2 py-1 rounded"
+                          className="text-[10px] font-bold text-[color:var(--color-secondary)] hover:bg-white/5 px-2 py-1 rounded"
                         >
                           Incluir
                         </button>
@@ -446,21 +446,21 @@ const ClientsView: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-center py-2 lg:py-0">
-                <div className="text-slate-300 font-bold text-xs lg:rotate-0 rotate-90 hidden lg:block">&rarr;</div>
+                <div className="text-[color:var(--color-muted)] font-bold text-xs lg:rotate-0 rotate-90 hidden lg:block">&rarr;</div>
               </div>
               
-              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 flex flex-col h-full overflow-hidden">
+              <div className="rounded-xl p-3 border border-white/5 flex flex-col h-full overflow-hidden bg-[color:var(--surface-container-highest)]">
                 <div className="mb-2 flex-shrink-0 flex justify-between items-center gap-2">
                   <input 
                     type="text"
                     value={rightSearch}
                     onChange={e => setRightSearch(e.target.value)}
                     placeholder="Filtrar PDVs vinculados..."
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs"
+                    className="w-full px-3 py-2 rounded-lg border border-white/5 bg-[color:var(--surface-container-low)] text-xs"
                   />
                   <button 
                     onClick={() => setSelectedSupermarketIds([])}
-                    className="text-xs font-bold text-red-500 hover:text-red-600 whitespace-nowrap"
+                    className="text-xs font-bold text-[color:var(--color-tertiary)] hover:opacity-90 whitespace-nowrap"
                   >
                     Remover Todos
                   </button>
@@ -470,14 +470,14 @@ const ClientsView: React.FC = () => {
                     .filter(s => selectedSupermarketIds.includes(s.id))
                     .filter(s => (s.fantasyName || '').toLowerCase().includes(rightSearch.toLowerCase()))
                     .map(s => (
-                      <div key={s.id} className="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-3 py-2 hover:border-red-300 transition-colors group cursor-pointer" onClick={() => removeFromSelected(s.id)}>
+                      <div key={s.id} className="flex items-center justify-between bg-[color:var(--surface-container-low)] border border-white/5 rounded-lg px-3 py-2 hover:border-[color:var(--color-tertiary)]/50 transition-colors group cursor-pointer" onClick={() => removeFromSelected(s.id)}>
                         <div className="min-w-0">
-                          <p className="text-xs font-bold text-slate-800 truncate group-hover:text-red-700">{s.fantasyName}</p>
-                          <p className="text-[10px] text-slate-500">{s.city} - {s.state}</p>
+                          <p className="text-xs font-medium text-[color:var(--color-text)] truncate group-hover:text-[color:var(--color-tertiary)]">{s.fantasyName}</p>
+                          <p className="text-[10px] text-[color:var(--color-muted)]">{s.city} - {s.state}</p>
                         </div>
                         <button 
                           onClick={(e) => { e.stopPropagation(); removeFromSelected(s.id); }}
-                          className="text-[10px] font-black text-red-600 hover:bg-red-50 px-2 py-1 rounded"
+                          className="text-[10px] font-bold text-[color:var(--color-tertiary)] hover:bg-white/5 px-2 py-1 rounded"
                         >
                           Remover
                         </button>
@@ -490,7 +490,7 @@ const ClientsView: React.FC = () => {
             <div className="mt-4 flex justify-end gap-3 flex-shrink-0">
               <button 
                 onClick={() => setShowLinkModal(false)}
-                className="px-4 py-2 font-bold text-slate-600 hover:bg-slate-50 rounded-lg text-sm"
+                className="px-4 py-2 font-bold text-[color:var(--color-muted)] hover:bg-white/5 rounded-lg text-sm"
               >
                 Cancelar
               </button>
@@ -507,80 +507,80 @@ const ClientsView: React.FC = () => {
       )}
       {showClientModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
+          <div className="rounded-3xl p-8 max-w-2xl w-full shadow-[0_0_20px_rgba(204,151,255,0.12)] relative max-h-[90vh] overflow-y-auto border border-white/5 bg-[color:var(--surface-container-low)]">
             <button 
               onClick={() => setShowClientModal(false)}
-              className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full transition-colors"
+              className="absolute top-4 right-4 p-2 hover:bg-white/5 rounded-full transition-colors"
             >
-              <X size={20} className="text-slate-400" />
+              <X size={20} className="text-[color:var(--color-muted)]" />
             </button>
             
-            <h2 className="text-2xl font-black text-slate-900 mb-6">{editingClient ? 'Editar Cliente' : 'Novo Cliente'}</h2>
+            <h2 className="text-2xl font-bold font-headline text-[color:var(--color-text)] mb-6">{editingClient ? 'Editar Cliente' : 'Novo Cliente'}</h2>
             
             <form onSubmit={handleClientSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Razão Social *</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Razão Social *</label>
                   <input 
                     type="text" 
                     required
                     value={newClient.razaoSocial}
                     onChange={e => setNewClient({...newClient, razaoSocial: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                    className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                     placeholder="Razão Social Ltda"
                   />
                 </div>
                 
                 <div className="col-span-2 md:col-span-1">
-                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Nome Fantasia</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Nome Fantasia</label>
                   <input 
                     type="text" 
                     value={newClient.nomeFantasia}
                     onChange={e => setNewClient({...newClient, nomeFantasia: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                    className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                     placeholder="Nome Comercial"
                   />
                 </div>
 
                 <div className="col-span-2 md:col-span-1">
-                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">CNPJ *</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">CNPJ *</label>
                   <input 
                     type="text" 
                     required
                     value={newClient.cnpj}
                     onChange={e => setNewClient({...newClient, cnpj: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                    className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                     placeholder="00.000.000/0000-00"
                   />
                 </div>
 
                 <div className="col-span-2 md:col-span-1">
-                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Email Principal</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Email Principal</label>
                   <input 
                     type="email" 
                     value={newClient.emailPrincipal}
                     onChange={e => setNewClient({...newClient, emailPrincipal: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                    className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                   />
                 </div>
 
                 <div className="col-span-2 md:col-span-1">
-                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Telefone Principal</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Telefone Principal</label>
                   <input 
                     type="text" 
                     value={newClient.telefonePrincipal}
                     onChange={e => setNewClient({...newClient, telefonePrincipal: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                    className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                   />
                 </div>
 
                 <div className="col-span-2 md:col-span-1">
-                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Senha de Acesso (Opcional na edição)</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Senha de Acesso (Opcional na edição)</label>
                   <input 
                     type="password" 
                     value={newClient.password || ''}
                     onChange={e => setNewClient({...newClient, password: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                    className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                     placeholder={editingClient ? "Deixe em branco para manter" : "Senha do cliente"}
                     required={!editingClient}
                   />
@@ -600,8 +600,8 @@ const ClientsView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="border-t border-slate-100 pt-4">
-                <h3 className="text-sm font-black text-slate-900 mb-4 uppercase tracking-wide">Padrões de Checklist</h3>
+              <div className="border-t border-white/5 pt-4">
+                <h3 className="text-sm font-bold text-[color:var(--color-text)] mb-4 uppercase tracking-wider font-headline">Padrões de Checklist</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="col-span-2 md:col-span-1">
                     <SearchableSelect
@@ -627,7 +627,7 @@ const ClientsView: React.FC = () => {
                       ]}
                     />
                   </div>
-                  <div className="col-span-2 flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <div className="col-span-2 flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-[color:var(--surface-container-highest)]">
                     <input
                       type="checkbox"
                       id="requiresInventoryCount"
@@ -635,17 +635,17 @@ const ClientsView: React.FC = () => {
                       onChange={e => setNewClient({...newClient, requiresInventoryCount: e.target.checked})}
                       className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <label htmlFor="requiresInventoryCount" className="text-sm font-bold text-slate-700 cursor-pointer select-none">
+                    <label htmlFor="requiresInventoryCount" className="text-sm font-bold text-[color:var(--color-text)] cursor-pointer select-none">
                       Exigir Contagem de Estoque (Inventário)
                     </label>
                   </div>
                   
                   <div className="col-span-2 md:col-span-1">
-                     <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Frequência de Inventário</label>
+                     <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Frequência de Inventário</label>
                      <select
                        value={newClient.inventoryFrequency || ''}
                        onChange={e => setNewClient({...newClient, inventoryFrequency: e.target.value})}
-                       className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                       className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                      >
                        <option value="">Sempre (Padrão)</option>
                        <option value="daily">Diário (1x por dia)</option>
@@ -655,87 +655,87 @@ const ClientsView: React.FC = () => {
                      </select>
                   </div>
                   <div className="col-span-2 md:col-span-1">
-                    <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Raio de Localização (m)</label>
+                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Raio de Localização (m)</label>
                     <input 
                       type="number" 
                       value={newClient.locationRange || 500}
                       onChange={e => setNewClient({...newClient, locationRange: parseInt(e.target.value) || 500})}
-                      className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                      className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="border-t border-slate-100 pt-4">
-                <h3 className="text-sm font-black text-slate-900 mb-4 uppercase tracking-wide">Endereço</h3>
+              <div className="border-t border-white/5 pt-4">
+                <h3 className="text-sm font-bold text-[color:var(--color-text)] mb-4 uppercase tracking-wider font-headline">Endereço</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="col-span-2 md:col-span-1">
-                    <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">CEP</label>
+                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">CEP</label>
                     <input 
                       type="text" 
                       value={newClient.cep}
                       onChange={e => setNewClient({...newClient, cep: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                      className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                     />
                   </div>
                   <div className="col-span-2 md:col-span-1">
-                    <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Logradouro</label>
+                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Logradouro</label>
                     <input 
                       type="text" 
                       value={newClient.logradouro}
                       onChange={e => setNewClient({...newClient, logradouro: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                      className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                     />
                   </div>
                   <div className="col-span-2 md:col-span-1">
-                    <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Número</label>
+                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Número</label>
                     <input 
                       type="text" 
                       value={newClient.numero}
                       onChange={e => setNewClient({...newClient, numero: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                      className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                     />
                   </div>
                   <div className="col-span-2 md:col-span-1">
-                    <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Bairro</label>
+                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Bairro</label>
                     <input 
                       type="text" 
                       value={newClient.bairro}
                       onChange={e => setNewClient({...newClient, bairro: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                      className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                     />
                   </div>
                   <div className="col-span-2 md:col-span-1">
-                    <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Cidade</label>
+                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Cidade</label>
                     <input 
                       type="text" 
                       value={newClient.cidade}
                       onChange={e => setNewClient({...newClient, cidade: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                      className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                     />
                   </div>
                   <div className="col-span-2 md:col-span-1">
-                    <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Estado (UF)</label>
+                    <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Estado (UF)</label>
                     <input 
                       type="text" 
                       value={newClient.estado}
                       onChange={e => setNewClient({...newClient, estado: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                      className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="border-t border-slate-100 pt-4">
-                <h3 className="text-sm font-black text-slate-900 mb-4 uppercase tracking-wide">Configuração de Fotos (Checklist)</h3>
-                <p className="text-xs text-slate-500 mb-4">Defina os rótulos das fotos que devem ser tiradas. Deixe em branco para desativar um tipo de foto.</p>
+              <div className="border-t border-white/5 pt-4">
+                <h3 className="text-sm font-bold text-[color:var(--color-text)] mb-4 uppercase tracking-wider font-headline">Configuração de Fotos (Checklist)</h3>
+                <p className="text-xs text-[color:var(--color-muted)] mb-4">Defina os rótulos das fotos que devem ser tiradas. Deixe em branco para desativar um tipo de foto.</p>
                 
                 {/* Default Config */}
                 <div className="mb-6">
-                  <h4 className="text-xs font-bold text-slate-700 mb-3">Rótulos Padrão</h4>
+                  <h4 className="text-xs font-bold text-[color:var(--color-text)] mb-3">Rótulos Padrão</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Foto Antes</label>
+                      <label className="text-[10px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block">Foto Antes</label>
                       <input 
                         type="text" 
                         value={newClient.photoConfig?.labels?.before || ''}
@@ -743,12 +743,12 @@ const ClientsView: React.FC = () => {
                           ...prev,
                           photoConfig: { ...prev.photoConfig, labels: { ...prev.photoConfig?.labels, before: e.target.value } }
                         }))}
-                        className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm"
+                        className="w-full px-3 py-2 rounded-lg text-sm"
                         placeholder="Ex: Foto Loja"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Foto Estoque</label>
+                      <label className="text-[10px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block">Foto Estoque</label>
                       <input 
                         type="text" 
                         value={newClient.photoConfig?.labels?.storage || ''}
@@ -756,12 +756,12 @@ const ClientsView: React.FC = () => {
                           ...prev,
                           photoConfig: { ...prev.photoConfig, labels: { ...prev.photoConfig?.labels, storage: e.target.value } }
                         }))}
-                        className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm"
+                        className="w-full px-3 py-2 rounded-lg text-sm"
                         placeholder="Ex: Foto Câmara Fria"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Foto Depois</label>
+                      <label className="text-[10px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block">Foto Depois</label>
                       <input 
                         type="text" 
                         value={newClient.photoConfig?.labels?.after || ''}
@@ -769,7 +769,7 @@ const ClientsView: React.FC = () => {
                           ...prev,
                           photoConfig: { ...prev.photoConfig, labels: { ...prev.photoConfig?.labels, after: e.target.value } }
                         }))}
-                        className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm"
+                        className="w-full px-3 py-2 rounded-lg text-sm"
                         placeholder="Ex: Foto Loja Arrumada"
                       />
                     </div>
@@ -778,20 +778,20 @@ const ClientsView: React.FC = () => {
 
                 {/* Category Configs */}
                 <div>
-                  <h4 className="text-xs font-bold text-slate-700 mb-3">Personalizar por Categoria</h4>
+                  <h4 className="text-xs font-bold text-[color:var(--color-text)] mb-3">Personalizar por Categoria</h4>
                   
                   <div className="flex gap-2 mb-4">
                     <input 
                       type="text" 
                       value={newCategoryName}
                       onChange={e => setNewCategoryName(e.target.value)}
-                      className="flex-1 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm"
+                      className="flex-1 px-3 py-2 rounded-lg text-sm"
                       placeholder="Nome da Categoria (ex: Laticínios)"
                     />
                     <button 
                       type="button"
                       onClick={handleAddCategory}
-                      className="px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-bold hover:bg-slate-700"
+                      className="px-4 py-2 bg-[color:var(--color-primary)] text-black rounded-lg text-sm font-bold hover:opacity-90"
                     >
                       Adicionar
                     </button>
@@ -799,15 +799,15 @@ const ClientsView: React.FC = () => {
 
                   <div className="space-y-4">
                     {Object.entries(newClient.photoConfig?.categories || {}).map(([category, config]: [string, any]) => (
-                      <div key={category} className="bg-slate-50 p-3 rounded-xl border border-slate-200 relative">
+                      <div key={category} className="p-3 rounded-xl border border-white/5 relative bg-[color:var(--surface-container-highest)]">
                         <button 
                           type="button"
                           onClick={() => handleRemoveCategory(category)}
-                          className="absolute top-2 right-2 text-red-500 hover:bg-red-50 p-1 rounded"
+                          className="absolute top-2 right-2 text-[color:var(--color-tertiary)] hover:bg-white/5 p-1 rounded"
                         >
                           <Trash2 size={14} />
                         </button>
-                        <h5 className="text-sm font-bold text-slate-800 mb-2">{category}</h5>
+                        <h5 className="text-sm font-bold text-[color:var(--color-text)] mb-2">{category}</h5>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                           <input 
                             type="text" 
@@ -825,7 +825,7 @@ const ClientsView: React.FC = () => {
                                 }
                               }
                             }))}
-                            className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs"
+                            className="w-full px-2 py-1.5 rounded text-xs"
                             placeholder="Rótulo Antes"
                           />
                           <input 
@@ -844,7 +844,7 @@ const ClientsView: React.FC = () => {
                                 }
                               }
                             }))}
-                            className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs"
+                            className="w-full px-2 py-1.5 rounded text-xs"
                             placeholder="Rótulo Estoque"
                           />
                           <input 
@@ -863,7 +863,7 @@ const ClientsView: React.FC = () => {
                                 }
                               }
                             }))}
-                            className="w-full px-2 py-1.5 rounded border border-slate-200 text-xs"
+                            className="w-full px-2 py-1.5 rounded text-xs"
                             placeholder="Rótulo Depois"
                           />
                         </div>
@@ -874,19 +874,19 @@ const ClientsView: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Logo (Upload ou URL)</label>
+                <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Logo (Upload ou URL)</label>
                 <div className="flex flex-col gap-2">
                   <input 
                     type="file" 
                     accept="image/*"
                     onChange={e => setLogoFile(e.target.files?.[0] || null)}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                    className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                   />
                   <input 
                     type="text" 
                     value={newClient.logo}
                     onChange={e => setNewClient({...newClient, logo: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                    className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                     placeholder="Ou cole a URL da imagem..."
                   />
                 </div>
@@ -906,15 +906,15 @@ const ClientsView: React.FC = () => {
 
       {showContractModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative">
+          <div className="rounded-3xl p-8 max-w-md w-full shadow-[0_0_20px_rgba(204,151,255,0.12)] relative border border-white/5 bg-[color:var(--surface-container-low)]">
             <button 
               onClick={() => setShowContractModal(false)}
-              className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full transition-colors"
+              className="absolute top-4 right-4 p-2 hover:bg-white/5 rounded-full transition-colors"
             >
-              <X size={20} className="text-slate-400" />
+              <X size={20} className="text-[color:var(--color-muted)]" />
             </button>
             
-            <h2 className="text-2xl font-black text-slate-900 mb-6">Novo Contrato</h2>
+            <h2 className="text-2xl font-bold font-headline text-[color:var(--color-text)] mb-6">Novo Contrato</h2>
             
             <form onSubmit={handleCreateContract} className="space-y-4">
               <div>
@@ -949,46 +949,46 @@ const ClientsView: React.FC = () => {
               </div>
               
               <div>
-                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Descrição do Contrato</label>
+                <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Descrição do Contrato</label>
                 <input 
                   type="text" 
                   required
                   value={newContract.description}
                   onChange={e => setNewContract({...newContract, description: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                   placeholder="Ex: Contrato Anual 2024"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Início</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Início</label>
                   <input 
                     type="date" 
                     required
                     value={newContract.startDate}
                     onChange={e => setNewContract({...newContract, startDate: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                    className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Fim</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Fim</label>
                   <input 
                     type="date" 
                     required
                     value={newContract.endDate}
                     onChange={e => setNewContract({...newContract, endDate: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                    className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Tipo de Contrato</label>
+                <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Tipo de Contrato</label>
                 <select 
                   value={newContract.type}
                   onChange={e => setNewContract({...newContract, type: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                 >
                   <option value="fixo">Fixo Mensal</option>
                   <option value="por_loja">Por Loja</option>
@@ -998,77 +998,77 @@ const ClientsView: React.FC = () => {
 
               {newContract.type === 'fixo' && (
                 <div>
-                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Valor Mensal (R$)</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Valor Mensal (R$)</label>
                   <input 
                     type="number" 
                     min="0"
                     step="0.01"
                     value={newContract.value}
                     onChange={e => setNewContract({...newContract, value: parseFloat(e.target.value)})}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                    className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                   />
                 </div>
               )}
 
               {newContract.type === 'por_loja' && (
                 <div>
-                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Valor por Loja (R$)</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Valor por Loja (R$)</label>
                   <input 
                     type="number" 
                     min="0"
                     step="0.01"
                     value={newContract.valuePerStore}
                     onChange={e => setNewContract({...newContract, valuePerStore: parseFloat(e.target.value)})}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                    className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                   />
                 </div>
               )}
 
               {newContract.type === 'por_visita' && (
                 <div>
-                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Valor por Visita (R$)</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Valor por Visita (R$)</label>
                   <input 
                     type="number" 
                     min="0"
                     step="0.01"
                     value={newContract.valuePerVisit}
                     onChange={e => setNewContract({...newContract, valuePerVisit: parseFloat(e.target.value)})}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                    className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                   />
                 </div>
               )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Frequência de Visitas</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Frequência de Visitas</label>
                   <input 
                     type="text" 
                     value={newContract.visitFrequency}
                     onChange={e => setNewContract({...newContract, visitFrequency: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                    className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                     placeholder="Ex: Semanal"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">Visitas/Mês</label>
+                  <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">Visitas/Mês</label>
                   <input 
                     type="number" 
                     value={newContract.visitsPerMonth}
                     onChange={e => setNewContract({...newContract, visitsPerMonth: parseFloat(e.target.value)})}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                    className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[11px] font-black text-slate-400 uppercase mb-1 block">SLA (%)</label>
+                <label className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase mb-1 block font-headline tracking-wider">SLA (%)</label>
                 <input 
                   type="number" 
                   min="0"
                   max="100"
                   value={newContract.slaPercentage}
                   onChange={e => setNewContract({...newContract, slaPercentage: parseFloat(e.target.value)})}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-sm"
+                  className="w-full px-4 py-3 rounded-xl font-bold text-sm"
                 />
               </div>
 
@@ -1144,14 +1144,14 @@ const ClientsView: React.FC = () => {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Clientes & Contratos</h1>
-          <p className="text-slate-500 font-medium text-lg">Marcas que confiam na operação Ayratech.</p>
+          <h1 className="text-4xl font-bold tracking-tight font-headline text-[color:var(--color-text)]">Clientes & Contratos</h1>
+          <p className="text-[color:var(--color-muted)] font-medium text-lg">Marcas que confiam na operação Ayratech.</p>
         </div>
         <div className="flex gap-4">
           {activeTab === 'templates' && (
              <button 
               onClick={() => setShowTemplateModal(true)}
-              className="flex items-center gap-2 bg-white text-slate-700 border border-slate-200 px-6 py-3 rounded-2xl font-black shadow-sm transition-all hover:bg-slate-50"
+              className="flex items-center gap-2 text-[color:var(--color-text)] border border-white/10 px-6 py-3 rounded-2xl font-bold shadow-sm transition-all hover:bg-white/5 bg-[color:var(--surface-container-low)]"
             >
               <Plus size={20} /> Novo Modelo
             </button>
@@ -1159,14 +1159,14 @@ const ClientsView: React.FC = () => {
           {activeTab === 'clients' && (
             <button 
               onClick={() => { resetClientForm(); setShowClientModal(true); }}
-              className="flex items-center gap-2 bg-white text-slate-700 border border-slate-200 px-6 py-3 rounded-2xl font-black shadow-sm transition-all hover:bg-slate-50"
+              className="flex items-center gap-2 text-[color:var(--color-text)] border border-white/10 px-6 py-3 rounded-2xl font-bold shadow-sm transition-all hover:bg-white/5 bg-[color:var(--surface-container-low)]"
             >
               <Plus size={20} /> Novo Cliente
             </button>
           )}
           <button 
             onClick={() => setShowContractModal(true)}
-            className="flex items-center gap-2 text-white px-8 py-3 rounded-2xl font-black shadow-xl shadow-blue-200 transition-all hover:scale-105"
+            className="flex items-center gap-2 text-black px-8 py-3 rounded-2xl font-bold shadow-[0_0_20px_rgba(204,151,255,0.25)] transition-all hover:scale-105 bg-gradient-to-r from-[color:var(--color-primary)] to-[color:var(--color-primary)]"
             style={{ backgroundColor: settings.primaryColor }}
           >
             <Plus size={20} /> Novo Contrato
@@ -1175,13 +1175,13 @@ const ClientsView: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-6 border-b border-slate-200">
+      <div className="flex gap-6 border-b border-white/10">
         <button 
           onClick={() => setActiveTab('clients')}
           className={`pb-4 text-sm font-black uppercase tracking-widest transition-all ${
             activeTab === 'clients' 
-              ? 'border-b-4 text-slate-900' 
-              : 'text-slate-400 hover:text-slate-600'
+              ? 'border-b-4 text-[color:var(--color-text)]' 
+              : 'text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]'
           }`}
           style={{ borderColor: activeTab === 'clients' ? settings.primaryColor : 'transparent' }}
         >
@@ -1191,8 +1191,8 @@ const ClientsView: React.FC = () => {
           onClick={() => setActiveTab('templates')}
           className={`pb-4 text-sm font-black uppercase tracking-widest transition-all ${
             activeTab === 'templates' 
-              ? 'border-b-4 text-slate-900' 
-              : 'text-slate-400 hover:text-slate-600'
+              ? 'border-b-4 text-[color:var(--color-text)]' 
+              : 'text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]'
           }`}
           style={{ borderColor: activeTab === 'templates' ? settings.primaryColor : 'transparent' }}
         >
@@ -1223,7 +1223,7 @@ const ClientsView: React.FC = () => {
             <div 
               key={c.id} 
               onClick={() => openLinkModal(c)}
-              className="bg-white rounded-3xl border border-slate-200 p-8 hover:shadow-xl transition-all group relative overflow-hidden cursor-pointer"
+              className="rounded-3xl border border-white/10 p-8 hover:shadow-xl transition-all group relative overflow-hidden cursor-pointer bg-[color:var(--surface-container-low)]"
             >
               <div 
                 className="absolute top-0 right-0 w-32 h-32 opacity-10 rounded-bl-full -mr-10 -mt-10 transition-all group-hover:opacity-20" 
@@ -1231,7 +1231,7 @@ const ClientsView: React.FC = () => {
               />
               <div className="relative z-10">
                 <div className="flex justify-between items-start mb-8">
-                  <div className="h-16 w-16 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center justify-center p-3">
+                  <div className="h-16 w-16 rounded-2xl bg-[color:var(--surface-container-highest)] border border-white/10 shadow-sm flex items-center justify-center p-3">
                     <img src={getImageUrl(c.logo)} className="object-contain" alt={c.nome} />
                   </div>
                   <div className="flex flex-col items-end gap-2">
@@ -1241,14 +1241,14 @@ const ClientsView: React.FC = () => {
                     <div className="flex gap-2">
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleEditClient(c); }}
-                        className="p-2 bg-slate-50 text-slate-400 hover:text-[var(--primary-color)] hover:bg-blue-50 rounded-lg transition-all" 
+                        className="p-2 bg-white/5 text-[color:var(--color-muted)] hover:text-[color:var(--color-secondary)] hover:bg-white/10 rounded-lg transition-all" 
                         title="Editar"
                       >
                         <Edit size={16} />
                       </button>
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleDeleteClient(c.id); }}
-                        className="p-2 bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" 
+                        className="p-2 bg-white/5 text-[color:var(--color-muted)] hover:text-[color:var(--color-tertiary)] hover:bg-white/10 rounded-lg transition-all" 
                         title="Excluir"
                       >
                         <Trash2 size={16} />
@@ -1256,16 +1256,16 @@ const ClientsView: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <h3 className="text-2xl font-black text-slate-900 mb-1">{c.nome}</h3>
-                <p className="text-slate-500 font-bold mb-2">{c.totalProdutos} SKUs cadastrados</p>
-                <p className="text-slate-500 font-bold mb-8">{c.totalPdvs} PDVs vinculados</p>
-                <div className="pt-6 border-t border-slate-100 flex gap-3">
+                <h3 className="text-2xl font-bold text-[color:var(--color-text)] mb-1">{c.nome}</h3>
+                <p className="text-[color:var(--color-muted)] font-bold mb-2">{c.totalProdutos} SKUs cadastrados</p>
+                <p className="text-[color:var(--color-muted)] font-bold mb-8">{c.totalPdvs} PDVs vinculados</p>
+                <div className="pt-6 border-t border-white/10 flex gap-3">
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
                       openDetailsModal(c);
                     }}
-                    className="flex-1 py-3 bg-slate-50 text-slate-700 rounded-xl text-xs font-black hover:bg-slate-100 transition-colors"
+                    className="flex-1 py-3 bg-white/5 text-[color:var(--color-text)] rounded-xl text-xs font-bold hover:bg-white/10 transition-colors"
                   >
                     Produtos
                   </button>
@@ -1274,7 +1274,7 @@ const ClientsView: React.FC = () => {
                       e.stopPropagation();
                       openLinkModal(c);
                     }}
-                    className="flex-1 py-3 rounded-xl text-xs font-black transition-colors bg-opacity-10 hover:bg-opacity-20"
+                    className="flex-1 py-3 rounded-xl text-xs font-bold transition-colors bg-opacity-10 hover:bg-opacity-20"
                     style={{ 
                       color: settings.primaryColor,
                       backgroundColor: `${settings.primaryColor}1a` // 10% opacity
@@ -1290,15 +1290,15 @@ const ClientsView: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {templates.map(t => (
-            <div key={t.id} className="bg-white rounded-3xl border border-slate-200 p-8 hover:shadow-xl transition-all group relative overflow-hidden">
+            <div key={t.id} className="rounded-3xl border border-white/10 p-8 hover:shadow-xl transition-all group relative overflow-hidden bg-[color:var(--surface-container-low)]">
               <div 
                 className="absolute top-0 right-0 w-32 h-32 opacity-5 rounded-bl-full -mr-10 -mt-10 transition-all group-hover:opacity-10 bg-slate-900" 
               />
               <div className="relative z-10">
-                <h3 className="text-xl font-black text-slate-900 mb-2">{t.name}</h3>
-                <p className="text-slate-500 font-medium text-sm mb-4 line-clamp-2">{t.description || 'Sem descrição'}</p>
-                <div className="pt-4 border-t border-slate-100">
-                  <button className="w-full py-2 bg-slate-50 text-slate-700 rounded-lg text-xs font-black hover:bg-slate-100 transition-colors">
+                <h3 className="text-xl font-bold text-[color:var(--color-text)] mb-2">{t.name}</h3>
+                <p className="text-[color:var(--color-muted)] font-medium text-sm mb-4 line-clamp-2">{t.description || 'Sem descrição'}</p>
+                <div className="pt-4 border-t border-white/10">
+                  <button className="w-full py-2 bg-white/5 text-[color:var(--color-text)] rounded-lg text-xs font-bold hover:bg-white/10 transition-colors">
                     Editar Modelo
                   </button>
                 </div>
@@ -1306,7 +1306,7 @@ const ClientsView: React.FC = () => {
             </div>
           ))}
           {templates.length === 0 && (
-            <div className="col-span-full text-center py-12 text-slate-400">
+            <div className="col-span-full text-center py-12 text-[color:var(--color-muted)]">
               <p>Nenhum modelo de contrato cadastrado.</p>
             </div>
           )}
@@ -1315,29 +1315,29 @@ const ClientsView: React.FC = () => {
 
       {showDetailsModal && detailsClient && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-4xl w-full shadow-2xl relative max-h-[90vh] flex flex-col">
+          <div className="rounded-3xl p-8 max-w-4xl w-full shadow-[0_0_20px_rgba(204,151,255,0.12)] relative max-h-[90vh] flex flex-col border border-white/5 bg-[color:var(--surface-container-low)]">
             <button 
               onClick={() => setShowDetailsModal(false)}
-              className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full transition-colors"
+              className="absolute top-4 right-4 p-2 hover:bg-white/5 rounded-full transition-colors"
             >
-              <X size={20} className="text-slate-400" />
+              <X size={20} className="text-[color:var(--color-muted)]" />
             </button>
 
             <div className="flex items-center gap-4 mb-6">
-              <div className="h-16 w-16 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center justify-center p-3">
+              <div className="h-16 w-16 rounded-2xl bg-[color:var(--surface-container-highest)] border border-white/10 shadow-sm flex items-center justify-center p-3">
                 <img src={getImageUrl(detailsClient.logo)} className="object-contain" alt={detailsClient.nome} />
               </div>
               <div>
-                <h2 className="text-2xl font-black text-slate-900">{detailsClient.nome}</h2>
-                <p className="text-slate-500 font-medium">Detalhes e Associações</p>
+                <h2 className="text-2xl font-bold text-[color:var(--color-text)]">{detailsClient.nome}</h2>
+                <p className="text-[color:var(--color-muted)] font-medium">Detalhes e Associações</p>
               </div>
             </div>
 
-            <div className="flex gap-6 border-b border-slate-200 mb-6">
+            <div className="flex gap-6 border-b border-white/10 mb-6">
               <button 
                 onClick={() => setDetailsTab('products')}
                 className={`pb-4 flex items-center gap-2 text-sm font-black uppercase tracking-widest transition-all ${
-                  detailsTab === 'products' ? 'border-b-4 text-slate-900' : 'text-slate-400 hover:text-slate-600'
+                  detailsTab === 'products' ? 'border-b-4 text-[color:var(--color-text)]' : 'text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]'
                 }`}
                 style={{ borderColor: detailsTab === 'products' ? settings.primaryColor : 'transparent' }}
               >
@@ -1346,7 +1346,7 @@ const ClientsView: React.FC = () => {
               <button 
                 onClick={() => setDetailsTab('pdvs')}
                 className={`pb-4 flex items-center gap-2 text-sm font-black uppercase tracking-widest transition-all ${
-                  detailsTab === 'pdvs' ? 'border-b-4 text-slate-900' : 'text-slate-400 hover:text-slate-600'
+                  detailsTab === 'pdvs' ? 'border-b-4 text-[color:var(--color-text)]' : 'text-[color:var(--color-muted)] hover:text-[color:var(--color-text)]'
                 }`}
                 style={{ borderColor: detailsTab === 'pdvs' ? settings.primaryColor : 'transparent' }}
               >
@@ -1359,22 +1359,22 @@ const ClientsView: React.FC = () => {
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                    {detailsClient.allProducts?.length > 0 ? (
                      detailsClient.allProducts.map((p: any) => (
-                       <div key={p.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex gap-3 items-center">
-                          <div className="h-12 w-12 bg-white rounded-lg flex items-center justify-center border border-slate-100">
+                       <div key={p.id} className="p-4 rounded-xl border border-white/10 flex gap-3 items-center bg-[color:var(--surface-container-highest)]">
+                          <div className="h-12 w-12 rounded-lg flex items-center justify-center border border-white/10 bg-[color:var(--surface-container-low)]">
                             {p.image ? (
                               <img src={getImageUrl(p.image)} className="h-10 w-10 object-contain" />
                             ) : (
-                              <Package size={20} className="text-slate-300" />
+                              <Package size={20} className="text-[color:var(--color-muted)]" />
                             )}
                           </div>
                           <div>
-                            <p className="font-bold text-slate-900 line-clamp-1" title={p.name}>{p.name}</p>
-                            <p className="text-xs text-slate-500">{p.category?.name || 'Sem categoria'}</p>
+                            <p className="font-bold text-[color:var(--color-text)] line-clamp-1" title={p.name}>{p.name}</p>
+                            <p className="text-xs text-[color:var(--color-muted)]">{p.category?.name || 'Sem categoria'}</p>
                           </div>
                        </div>
                      ))
                    ) : (
-                      <div className="col-span-full text-center py-12 text-slate-400 flex flex-col items-center">
+                      <div className="col-span-full text-center py-12 text-[color:var(--color-muted)] flex flex-col items-center">
                         <Package size={48} className="mb-4 opacity-20" />
                         <p>Nenhum produto cadastrado.</p>
                       </div>
@@ -1386,10 +1386,10 @@ const ClientsView: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {detailsClient.supermarkets?.length > 0 ? (
                       detailsClient.supermarkets.map((s: any) => (
-                        <div key={s.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex justify-between items-center">
+                        <div key={s.id} className="p-4 rounded-xl border border-white/10 flex justify-between items-center bg-[color:var(--surface-container-highest)]">
                            <div>
-                             <p className="font-bold text-slate-900">{s.fantasyName}</p>
-                             <p className="text-xs text-slate-500">{s.city} - {s.state}</p>
+                             <p className="font-bold text-[color:var(--color-text)]">{s.fantasyName}</p>
+                             <p className="text-xs text-[color:var(--color-muted)]">{s.city} - {s.state}</p>
                            </div>
                            <div className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-lg">
                              Ativo
@@ -1397,7 +1397,7 @@ const ClientsView: React.FC = () => {
                         </div>
                       ))
                     ) : (
-                       <div className="col-span-full text-center py-12 text-slate-400 flex flex-col items-center">
+                      <div className="col-span-full text-center py-12 text-[color:var(--color-muted)] flex flex-col items-center">
                         <Store size={48} className="mb-4 opacity-20" />
                         <p>Nenhum PDV vinculado.</p>
                       </div>

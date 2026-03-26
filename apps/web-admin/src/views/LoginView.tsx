@@ -113,8 +113,8 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded shadow-md w-96 flex flex-col items-center">
+    <div className="min-h-screen flex items-center justify-center bg-[color:var(--surface)]">
+      <div className="p-8 rounded-2xl border border-white/5 w-96 flex flex-col items-center bg-[color:var(--surface-container-low)] shadow-[0_0_20px_rgba(204,151,255,0.12)]">
         {settings.loginLogoUrl ? (
           <img 
             src={getImageUrl(settings.loginLogoUrl)} 
@@ -123,8 +123,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
           />
         ) : (
           <div 
-            className="mb-6 h-16 w-16 flex items-center justify-center rounded-2xl text-white shadow-lg"
-            style={{ backgroundColor: settings.primaryColor }}
+            className="mb-6 h-16 w-16 flex items-center justify-center rounded-full text-[color:var(--on-background)] shadow-[0_0_15px_rgba(204,151,255,0.25)] bg-gradient-to-tr from-[color:var(--color-primary)] to-[color:var(--color-secondary)]"
           >
             {settings.logoUrl ? (
               <img 
@@ -137,23 +136,23 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
             )}
           </div>
         )}
-        <h2 className="text-2xl font-bold mb-6 text-center" style={{ color: settings.primaryColor }}>Login</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center font-headline text-[color:var(--color-primary)]">Login</h2>
         {error && <p className="text-red-500 mb-4">{error}</p>}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Email</label>
+            <label className="block text-[color:var(--color-muted)] text-sm font-medium mb-2 font-headline uppercase tracking-wider">Email</label>
             <input
               type="text"
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-4 py-3 rounded-xl"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Senha</label>
+            <label className="block text-[color:var(--color-muted)] text-sm font-medium mb-2 font-headline uppercase tracking-wider">Senha</label>
             <input
               type="password"
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-4 py-3 rounded-xl"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -162,31 +161,30 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
             <input
               type="checkbox"
               id="rememberMe"
-              className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="mr-2 h-4 w-4 text-[color:var(--color-secondary)] border-white/20 rounded"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
             />
-            <label htmlFor="rememberMe" className="text-gray-700 text-sm">Lembrar de mim</label>
+            <label htmlFor="rememberMe" className="text-[color:var(--color-muted)] text-sm">Lembrar de mim</label>
           </div>
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full text-white font-bold py-2 px-4 rounded hover:opacity-90 transition-colors disabled:opacity-70"
-            style={{ backgroundColor: settings.primaryColor }}
+            className="w-full text-[color:var(--on-background)] font-bold py-3 px-4 rounded-xl bg-gradient-to-r from-[color:var(--color-primary)] to-[color:var(--color-primary)] hover:opacity-90 transition-colors disabled:opacity-70"
           >
             {isLoading ? 'Entrando...' : 'Entrar'}
           </button>
            <button
             type="button"
             onClick={handleRegister}
-            className="w-full mt-2 text-gray-600 font-bold py-2 px-4 rounded border hover:bg-gray-50 transition-colors"
+            className="w-full mt-2 text-[color:var(--color-muted)] font-bold py-2.5 px-4 rounded-xl border border-white/10 hover:bg-white/5 transition-colors"
           >
             Registrar (Dev)
           </button>
           <button
             type="button"
             onClick={handleDevReset}
-            className="w-full mt-2 text-gray-600 font-bold py-2 px-4 rounded border hover:bg-gray-50 transition-colors"
+            className="w-full mt-2 text-[color:var(--color-muted)] font-bold py-2.5 px-4 rounded-xl border border-white/10 hover:bg-white/5 transition-colors"
           >
             Recuperar acesso (Dev)
           </button>

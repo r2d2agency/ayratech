@@ -7,7 +7,7 @@ export class AbsenceRequest {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ insert: false, update: false })
+  @Column()
   employeeId: string;
 
   @ManyToOne(() => Employee)
@@ -33,6 +33,21 @@ export class AbsenceRequest {
   reason: string;
 
   @Column({ nullable: true })
+  medicalCid: string;
+
+  @Column({ nullable: true })
+  medicalProfessionalName: string;
+
+  @Column({ nullable: true })
+  medicalServiceLocation: string;
+
+  @Column({ nullable: true })
+  medicalLicenseType: string; // CRM | COREN | outros
+
+  @Column({ nullable: true })
+  medicalLicenseNumber: string;
+
+  @Column({ nullable: true })
   employeeDocumentId: string;
 
   @ManyToOne(() => EmployeeDocument, { nullable: true })
@@ -45,7 +60,7 @@ export class AbsenceRequest {
   @Column({ default: 'pending' })
   status: string; // pendente | aprovado | recusado
 
-  @Column({ nullable: true, insert: false, update: false })
+  @Column({ nullable: true })
   approverId: string;
 
   @ManyToOne(() => Employee, { nullable: true })

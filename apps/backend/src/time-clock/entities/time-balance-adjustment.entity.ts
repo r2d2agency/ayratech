@@ -1,8 +1,8 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 import { Employee } from '../../employees/entities/employee.entity';
 
-@Entity('time_balances')
-export class TimeBalance {
+@Entity('time_balance_adjustments')
+export class TimeBalanceAdjustment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -14,19 +14,16 @@ export class TimeBalance {
   employee: Employee;
 
   @Column()
-  competence: string; // YYYY-MM
+  competence: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  expectedHours: number; // horas_previstas
+  deltaHours: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
-  workedHours: number; // horas_trabalhadas
+  @Column({ type: 'text', nullable: true })
+  reason: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
-  overtimeHours: number; // horas_extras
-
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
-  balanceHours: number; // saldo_banco_horas
+  @Column({ nullable: true })
+  createdBy: string;
 
   @CreateDateColumn()
   createdAt: Date;

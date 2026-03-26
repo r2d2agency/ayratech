@@ -10,10 +10,11 @@ import { WorkScheduleDay } from '../work-schedules/entities/work-schedule-day.en
 import { UsersModule } from '../users/users.module';
 import { RolesModule } from '../roles/roles.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { AbsenceRequest } from '../absences/entities/absence-request.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Employee, EmployeeCompensation, EmployeeDocument, WorkSchedule, WorkScheduleDay]),
+    TypeOrmModule.forFeature([Employee, EmployeeCompensation, EmployeeDocument, WorkSchedule, WorkScheduleDay, AbsenceRequest]),
     UsersModule,
     RolesModule,
     NotificationsModule

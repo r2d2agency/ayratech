@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFile, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFile, Request, Query, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
@@ -99,9 +99,56 @@ export class EmployeesController {
     return this.employeesService.findAll({ search, supervisorId, role });
   }
 
+  @Get('me/documents')
+  @Roles('admin', 'rh', 'manager', 'supervisor de operações', 'promotor', 'promoter', 'app_user')
+  findMyDocuments(@Query('search') search: string, @Request() req: any) {
+    const employeeId = req.user?.employee?.id;
+    if (!employeeId) return [];
+    return this.employeesService.findAllDocumentsByEmployee(employeeId, search);
+  }
+
+  @Post('me/documents')
+  @Roles('admin', 'rh', 'manager', 'supervisor de operações', 'promotor', 'promoter', 'app_user')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: (req, file, cb) => {
+        const uploadPath = join(UPLOAD_ROOT, 'documents');
+        if (!fs.existsSync(uploadPath)) {
+          fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
+      },
+    }),
+  }))
+  addMyDocument(@Body() data: any, @UploadedFile() file: Express.Multer.File, @Request() req: any) {
+    const employeeId = req.user?.employee?.id;
+    if (!employeeId) {
+      throw new BadRequestException('Usuário sem funcionário vinculado.');
+    }
+
+    const fileUrl = file ? `/uploads/documents/${file.filename}` : data.fileUrl;
+    const senderId = req.user?.userId;
+
+    return this.employeesService.addDocument({ 
+      ...data, 
+      employeeId,
+      fileUrl,
+      senderId
+    });
+  }
+
   @Get(':id/documents')
-  findAllDocumentsByEmployee(@Param('id') id: string) {
-    return this.employeesService.findAllDocumentsByEmployee(id);
+  findAllDocumentsByEmployee(@Param('id') id: string, @Query('search') search?: string) {
+    return this.employeesService.findAllDocumentsByEmployee(id, search);
+  }
+
+  @Get(':id/vacation-alert')
+  getVacationAlert(@Param('id') id: string) {
+    return this.employeesService.getVacationAlert(id);
   }
 
   @Get(':id')

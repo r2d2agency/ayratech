@@ -4,10 +4,105 @@
 
 :root {
   --font-sans: 'Inter', sans-serif;
-  --color-background: #f6f7f8;
+  --surface: #f6f7f8;
+  --surface-container-low: #ffffff;
+  --surface-container-highest: #ffffff;
+  --surface-bright: #ffffff;
+  --outline-variant: #e2e8f0;
+
+  --on-background: #0f172a;
+  --on-surface-variant: #64748b;
+
+  --color-background: var(--surface);
+  --color-panel: var(--surface-container-low);
+  --color-border: var(--outline-variant);
+  --color-text: var(--on-background);
+  --color-muted: var(--on-surface-variant);
+  --color-primary: #cc97ff;
+  --color-secondary: #53ddfc;
+  --color-tertiary: #ff6daf;
 }
 
 body {
   background-color: var(--color-background);
   font-family: var(--font-sans);
+}
+
+.dark {
+  --surface: #0e0e0e;
+  --surface-container-low: #131313;
+  --surface-container-highest: #262626;
+  --surface-bright: #2c2c2c;
+  --outline-variant: rgba(255,255,255,0.06);
+
+  --on-background: #ffffff;
+  --on-surface-variant: #adaaaa;
+
+  --color-background: var(--surface);
+  --color-panel: var(--surface-container-low);
+  --color-border: var(--outline-variant);
+  --color-text: var(--on-background);
+  --color-muted: var(--on-surface-variant);
+  --color-primary: #cc97ff;
+  --color-secondary: #53ddfc;
+  --color-tertiary: #ff6daf;
+}
+
+@layer base {
+  body {
+    @apply text-[color:var(--color-text)];
+  }
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  select,
+  textarea {
+    background-color: var(--surface-container-highest);
+    color: var(--on-background);
+    border: 1px solid var(--outline-variant);
+    border-radius: 0.75rem;
+    outline: none;
+  }
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  input[type="number"]:focus,
+  input[type="tel"]:focus,
+  select:focus,
+  textarea:focus {
+    border-color: var(--color-secondary);
+  }
+}
+
+@layer utilities {
+  .text-ayra { color: var(--color-text); }
+  .bg-ayra { background-color: var(--color-background); }
+  .panel-ayra { background-color: var(--color-panel); border-color: var(--color-border); }
+  .border-ayra { border-color: var(--color-border); }
+  .muted-ayra { color: var(--color-muted); }
+  .primary-ayra { color: var(--color-primary); }
+  .bg-primary-ayra { background-color: var(--color-primary); }
+
+  .dark .bg-white { background-color: var(--surface-container-low) !important; }
+  .dark .text-slate-900 { color: var(--color-text) !important; }
+  .dark .text-slate-800 { color: var(--color-text) !important; }
+  .dark .text-slate-700 { color: var(--color-text) !important; }
+  .dark .text-slate-600 { color: var(--color-muted) !important; }
+  .dark .text-slate-500 { color: var(--color-muted) !important; }
+  .dark .border-slate-200 { border-color: var(--color-border) !important; }
+  .dark .bg-slate-50 { background-color: var(--surface-container-highest) !important; }
+  .dark .bg-slate-100 { background-color: var(--surface-bright) !important; }
+
+  .dark .text-gray-900 { color: var(--color-text) !important; }
+  .dark .text-gray-800 { color: var(--color-text) !important; }
+  .dark .text-gray-700 { color: var(--color-text) !important; }
+  .dark .text-gray-600 { color: var(--color-muted) !important; }
+  .dark .text-gray-500 { color: var(--color-muted) !important; }
+  .dark .text-gray-400 { color: var(--color-muted) !important; }
+  .dark .border-gray-200 { border-color: var(--color-border) !important; }
+  .dark .border-gray-300 { border-color: var(--color-border) !important; }
+  .dark .bg-gray-50 { background-color: var(--surface-container-highest) !important; }
+  .dark .bg-gray-100 { background-color: var(--surface-bright) !important; }
 }

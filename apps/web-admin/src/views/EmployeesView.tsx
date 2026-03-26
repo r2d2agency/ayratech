@@ -28,6 +28,13 @@ interface EmployeeDocument {
   fileUrl: string;
   description?: string;
   createdAt: string;
+  sentAt?: string;
+  senderId?: string;
+  sender?: {
+    id: string;
+    email: string;
+    employee?: { id: string; fullName: string };
+  };
 }
 
 interface AbsenceRequest {
@@ -39,6 +46,11 @@ interface AbsenceRequest {
   endDate?: string;
   endTime?: string;
   reason?: string;
+  medicalCid?: string;
+  medicalProfessionalName?: string;
+  medicalServiceLocation?: string;
+  medicalLicenseType?: string;
+  medicalLicenseNumber?: string;
   fileUrl?: string;
   employeeDocumentId?: string;
   createdAt: string;
@@ -124,6 +136,10 @@ const EmployeesView: React.FC = () => {
   const [employeeDocuments, setEmployeeDocuments] = useState<EmployeeDocument[]>([]);
   const [employeeAbsences, setEmployeeAbsences] = useState<AbsenceRequest[]>([]);
   const [loadingAbsences, setLoadingAbsences] = useState(false);
+  const [documentSearch, setDocumentSearch] = useState('');
+  const [previewDoc, setPreviewDoc] = useState<EmployeeDocument | null>(null);
+  const [vacationAlert, setVacationAlert] = useState<{ applicable: boolean; level?: string; label?: string; concessiveEnd?: string; daysToExpire?: number } | null>(null);
+  const [showVacationAlert, setShowVacationAlert] = useState(false);
   const [absenceForm, setAbsenceForm] = useState({
     type: 'atestado',
     status: 'approved',
@@ -132,10 +148,36 @@ const EmployeesView: React.FC = () => {
     endDate: '',
     endTime: '',
     reason: '',
+    medicalCid: '',
+    medicalProfessionalName: '',
+    medicalServiceLocation: '',
+    medicalLicenseType: 'CRM',
+    medicalLicenseNumber: '',
     employeeDocumentId: '',
     fileUrl: '',
   });
   const [absenceFile, setAbsenceFile] = useState<File | null>(null);
+
+  const isImageFileUrl = (url: string) => {
+    const u = String(url || '').toLowerCase();
+    return u.endsWith('.png') || u.endsWith('.jpg') || u.endsWith('.jpeg') || u.endsWith('.webp') || u.endsWith('.gif');
+  };
+
+  const filteredDocsForLink = employeeDocuments.filter(doc => {
+    const q = documentSearch.trim().toLowerCase();
+    if (!q) return true;
+    const hay = [
+      doc.type,
+      doc.description,
+      doc.fileUrl,
+      doc.sender?.email,
+      doc.sender?.employee?.fullName,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return hay.includes(q);
+  });
 
   // Helper functions
   const formatCPF = (value: string) => {
@@ -272,6 +314,21 @@ const EmployeesView: React.FC = () => {
 
     fetchEmployeeAbsences(employeeId);
     fetchEmployeeDocuments(employeeId);
+    (async () => {
+      try {
+        const res = await api.get(`/employees/${employeeId}/vacation-alert`);
+        const alertData = res.data || null;
+        setVacationAlert(alertData);
+        if (alertData?.applicable && (alertData.level === 'warning' || alertData.level === 'due' || alertData.level === 'expired')) {
+          setShowVacationAlert(true);
+        } else {
+          setShowVacationAlert(false);
+        }
+      } catch (e) {
+        setVacationAlert(null);
+        setShowVacationAlert(false);
+      }
+    })();
   }, [showEmployeeModal, editingEmployee?.id, formTab]);
 
   const handleUploadAbsenceDocument = async () => {
@@ -331,6 +388,13 @@ const EmployeesView: React.FC = () => {
           return;
         }
       }
+      const isMedicalCertificate = absenceForm.type === 'atestado';
+      if (isMedicalCertificate) {
+        if (!absenceForm.medicalCid || !absenceForm.medicalProfessionalName || !absenceForm.medicalServiceLocation || !absenceForm.medicalLicenseNumber) {
+          alert('Para atestado, informe CID, nome do médico, local de atendimento e CRM.');
+          return;
+        }
+      }
 
       const payloadEndDate = isPartialVacation
         ? absenceForm.startDate
@@ -345,6 +409,11 @@ const EmployeesView: React.FC = () => {
         endDate: payloadEndDate,
         endTime: absenceForm.endTime || undefined,
         reason: absenceForm.reason || undefined,
+        medicalCid: absenceForm.medicalCid || undefined,
+        medicalProfessionalName: absenceForm.medicalProfessionalName || undefined,
+        medicalServiceLocation: absenceForm.medicalServiceLocation || undefined,
+        medicalLicenseType: isMedicalCertificate ? 'CRM' : absenceForm.medicalLicenseType || undefined,
+        medicalLicenseNumber: absenceForm.medicalLicenseNumber || undefined,
         employeeDocumentId: absenceForm.employeeDocumentId || undefined,
         fileUrl: absenceForm.fileUrl || undefined,
       });
@@ -357,6 +426,11 @@ const EmployeesView: React.FC = () => {
         endDate: '',
         endTime: '',
         reason: '',
+        medicalCid: '',
+        medicalProfessionalName: '',
+        medicalServiceLocation: '',
+        medicalLicenseType: 'CRM',
+        medicalLicenseNumber: '',
         employeeDocumentId: '',
         fileUrl: '',
       });
@@ -652,6 +726,12 @@ const EmployeesView: React.FC = () => {
 
   return (
     <div className="space-y-6">
+                        {vacationAlert?.applicable && (vacationAlert.level === 'warning' || vacationAlert.level === 'due' || vacationAlert.level === 'expired') && (
+                          <div className={`p-3 rounded-lg border ${vacationAlert.level === 'expired' ? 'bg-red-50 border-red-200 text-red-800' : vacationAlert.level === 'due' ? 'bg-orange-50 border-orange-200 text-orange-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+                            <div className="text-sm font-semibold">{vacationAlert.label}</div>
+                            <div className="text-xs mt-1">Prazo concessivo até {vacationAlert.concessiveEnd}. {typeof vacationAlert.daysToExpire === 'number' && vacationAlert.daysToExpire > 0 ? `Faltam ${vacationAlert.daysToExpire} dia(s).` : ''}</div>
+                          </div>
+                        )}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Gestão de Pessoas</h1>
@@ -1607,12 +1687,19 @@ const EmployeesView: React.FC = () => {
 
                         <div className="space-y-2">
                           <label className="block text-sm font-medium text-slate-700">Documento</label>
+                            <input
+                              type="text"
+                              placeholder="Pesquisar documento (tipo, descrição, remetente...)"
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                              value={documentSearch}
+                              onChange={e => setDocumentSearch(e.target.value)}
+                            />
                           <select
                             className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                             value={absenceForm.employeeDocumentId}
                             onChange={e => {
                               const docId = e.target.value;
-                              const doc = employeeDocuments.find(d => d.id === docId);
+                                const doc = employeeDocuments.find(d => d.id === docId);
                               setAbsenceForm(prev => ({
                                 ...prev,
                                 employeeDocumentId: docId,
@@ -1621,12 +1708,38 @@ const EmployeesView: React.FC = () => {
                             }}
                           >
                             <option value="">Nenhum</option>
-                            {employeeDocuments.map(doc => (
+                              {filteredDocsForLink.map(doc => (
                               <option key={doc.id} value={doc.id}>
-                                {doc.type} - {doc.description || doc.fileUrl}
+                                  {doc.type} - {doc.description || doc.sender?.employee?.fullName || doc.sender?.email || doc.fileUrl}
                               </option>
                             ))}
                           </select>
+
+                            {filteredDocsForLink.length > 0 && (
+                              <div className="grid grid-cols-3 gap-2">
+                                {filteredDocsForLink.slice(0, 12).map(doc => {
+                                  const selected = doc.id === absenceForm.employeeDocumentId;
+                                  return (
+                                    <button
+                                      key={doc.id}
+                                      type="button"
+                                      onClick={() => setPreviewDoc(doc)}
+                                      className={`border rounded-lg p-2 text-left overflow-hidden ${selected ? 'border-blue-600 ring-2 ring-blue-100' : 'border-slate-200 hover:border-slate-300'}`}
+                                      title={doc.description || doc.type}
+                                    >
+                                      <div className="w-full h-20 bg-slate-50 rounded-md flex items-center justify-center overflow-hidden">
+                                        {isImageFileUrl(doc.fileUrl) ? (
+                                          <img src={getImageUrl(doc.fileUrl)} alt={doc.type} className="w-full h-full object-cover" />
+                                        ) : (
+                                          <FileText size={26} className="text-slate-400" />
+                                        )}
+                                      </div>
+                                      <div className="text-xs text-slate-700 mt-2 truncate">{doc.type}</div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
 
                           <div className="flex items-center gap-3">
                             <input
@@ -1664,6 +1777,47 @@ const EmployeesView: React.FC = () => {
                           )}
                         </div>
 
+                        {absenceForm.type === 'atestado' && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">CID</label>
+                              <input
+                                type="text"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                                value={absenceForm.medicalCid}
+                                onChange={e => setAbsenceForm(prev => ({ ...prev, medicalCid: e.target.value }))}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">Nome do médico</label>
+                              <input
+                                type="text"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                                value={absenceForm.medicalProfessionalName}
+                                onChange={e => setAbsenceForm(prev => ({ ...prev, medicalProfessionalName: e.target.value }))}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">Local de atendimento</label>
+                              <input
+                                type="text"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                                value={absenceForm.medicalServiceLocation}
+                                onChange={e => setAbsenceForm(prev => ({ ...prev, medicalServiceLocation: e.target.value }))}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">CRM</label>
+                              <input
+                                type="text"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                                value={absenceForm.medicalLicenseNumber}
+                                onChange={e => setAbsenceForm(prev => ({ ...prev, medicalLicenseNumber: e.target.value }))}
+                              />
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex justify-end">
                           <button
                             type="button"
@@ -1673,6 +1827,69 @@ const EmployeesView: React.FC = () => {
                             Salvar registro
                           </button>
                         </div>
+
+                        {previewDoc && (
+                          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-xl w-full max-w-3xl overflow-hidden">
+                              <div className="flex items-center justify-between px-4 py-3 border-b">
+                                <div className="text-sm font-semibold text-slate-800 truncate">
+                                  {previewDoc.type} {previewDoc.description ? `- ${previewDoc.description}` : ''}
+                                </div>
+                                <button type="button" onClick={() => setPreviewDoc(null)} className="text-slate-500 hover:text-slate-700">
+                                  <XCircle size={20} />
+                                </button>
+                              </div>
+                              <div className="p-4">
+                                <div className="w-full h-[60vh] bg-slate-50 rounded-lg overflow-hidden flex items-center justify-center">
+                                  {isImageFileUrl(previewDoc.fileUrl) ? (
+                                    <img src={getImageUrl(previewDoc.fileUrl)} alt={previewDoc.type} className="max-w-full max-h-full object-contain" />
+                                  ) : (
+                                    <iframe src={getImageUrl(previewDoc.fileUrl)} title={previewDoc.type} className="w-full h-full" />
+                                  )}
+                                </div>
+                                <div className="flex items-center justify-end gap-2 mt-4">
+                                  <a
+                                    href={getImageUrl(previewDoc.fileUrl)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-3 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50"
+                                  >
+                                    Abrir em nova aba
+                                  </a>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setAbsenceForm(prev => ({ ...prev, employeeDocumentId: previewDoc.id, fileUrl: previewDoc.fileUrl }));
+                                      setPreviewDoc(null);
+                                    }}
+                                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                  >
+                                    Vincular ao afastamento
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {showVacationAlert && vacationAlert && (
+                          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-xl w-full max-w-md overflow-hidden">
+                              <div className={`px-4 py-3 border-b ${vacationAlert.level === 'expired' ? 'bg-red-600 text-white' : vacationAlert.level === 'due' ? 'bg-orange-600 text-white' : 'bg-amber-500 text-white'}`}>
+                                <div className="text-sm font-semibold">{vacationAlert.label}</div>
+                              </div>
+                              <div className="p-4 space-y-2">
+                                <div className="text-sm text-slate-800">Prazo concessivo até <span className="font-semibold">{vacationAlert.concessiveEnd}</span>.</div>
+                                {typeof vacationAlert.daysToExpire === 'number' && (
+                                  <div className="text-xs text-slate-600">{vacationAlert.daysToExpire > 0 ? `Faltam ${vacationAlert.daysToExpire} dia(s)` : vacationAlert.daysToExpire === 0 ? 'Vence hoje' : 'Já vencido'}</div>
+                                )}
+                                <div className="pt-2 flex justify-end">
+                                  <button type="button" onClick={() => setShowVacationAlert(false)} className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Entendi</button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
@@ -1718,6 +1935,18 @@ const EmployeesView: React.FC = () => {
                                       </div>
                                       <div className="text-sm text-slate-600">{period}</div>
                                       {a.reason && <div className="text-sm text-slate-600 mt-1">{a.reason}</div>}
+                                      {a.type === 'atestado' && (a.medicalCid || a.medicalProfessionalName || a.medicalLicenseNumber) && (
+                                        <div className="text-sm text-slate-600 mt-1">
+                                          {[
+                                            a.medicalCid ? `CID ${a.medicalCid}` : '',
+                                            a.medicalProfessionalName || '',
+                                            a.medicalServiceLocation ? `Local: ${a.medicalServiceLocation}` : '',
+                                            a.medicalLicenseNumber ? `CRM ${a.medicalLicenseNumber}` : '',
+                                          ]
+                                            .filter(Boolean)
+                                            .join(' • ')}
+                                        </div>
+                                      )}
                                       {a.fileUrl && (
                                         <a
                                           href={getImageUrl(a.fileUrl)}

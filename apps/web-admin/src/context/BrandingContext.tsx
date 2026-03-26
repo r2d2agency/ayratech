@@ -22,7 +22,7 @@ interface BrandingContextType {
 
 const defaultSettings: BrandingSettings = {
   companyName: 'Ayratech',
-  primaryColor: '#196ee6',
+  primaryColor: '#cc97ff',
   logoUrl: 'https://cdn-icons-png.flaticon.com/512/3050/3050253.png', // Placeholder
 };
 
@@ -133,6 +133,7 @@ export const BrandingProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       <style>{`
         :root {
           --primary-color: ${settings.primaryColor};
+          --color-primary: ${settings.primaryColor};
         }
       `}</style>
       {children}

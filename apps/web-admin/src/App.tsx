@@ -68,7 +68,7 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
 
   if (userRole === 'client') {
     return (
-      <div className="min-h-screen bg-[#f8fafc]">
+      <div className="min-h-screen bg-[color:var(--color-background)]">
         <Sidebar 
           activeView={activeView} 
           onNavigate={handleNavigate} 
@@ -90,7 +90,7 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
+    <div className="min-h-screen bg-[color:var(--color-background)]">
       <Sidebar 
         activeView={activeView} 
         onNavigate={handleNavigate} 

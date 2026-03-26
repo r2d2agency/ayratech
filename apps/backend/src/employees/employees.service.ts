@@ -10,6 +10,7 @@ import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { UsersService } from '../users/users.service';
 import { RolesService } from '../roles/roles.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AbsenceRequest } from '../absences/entities/absence-request.entity';
 
 @Injectable()
 export class EmployeesService {
@@ -22,6 +23,8 @@ export class EmployeesService {
     private documentsRepository: Repository<EmployeeDocument>,
     @InjectRepository(WorkSchedule)
     private workScheduleRepository: Repository<WorkSchedule>,
+    @InjectRepository(AbsenceRequest)
+    private absencesRepository: Repository<AbsenceRequest>,
     private usersService: UsersService,
     private rolesService: RolesService,
     private notificationsService: NotificationsService,
@@ -474,12 +477,100 @@ export class EmployeesService {
     });
   }
 
-  async findAllDocumentsByEmployee(employeeId: string) {
-    return this.documentsRepository.find({
-      where: { employeeId },
-      relations: ['sender', 'sender.employee'],
-      order: { sentAt: 'DESC' }
-    });
+  async findAllDocumentsByEmployee(employeeId: string, search?: string) {
+    const qb = this.documentsRepository.createQueryBuilder('doc')
+      .leftJoinAndSelect('doc.sender', 'sender')
+      .leftJoinAndSelect('sender.employee', 'senderEmployee')
+      .where('doc.employeeId = :employeeId', { employeeId })
+      .orderBy('doc.sentAt', 'DESC')
+      .addOrderBy('doc.createdAt', 'DESC');
+
+    const q = String(search || '').trim();
+    if (q) {
+      qb.andWhere(
+        '(doc.type ILIKE :q OR doc.description ILIKE :q OR doc.fileUrl ILIKE :q OR sender.email ILIKE :q OR senderEmployee.fullName ILIKE :q)',
+        { q: `%${q}%` },
+      );
+    }
+
+    return qb.getMany();
+  }
+
+  async getVacationAlert(employeeId: string) {
+    const employee = await this.employeesRepository.findOne({ where: { id: employeeId } });
+    if (!employee) {
+      throw new NotFoundException('Funcionário não encontrado');
+    }
+    if (employee.contractType !== 'clt' || !employee.admissionDate) {
+      return { applicable: false };
+    }
+
+    const lastRow = await this.absencesRepository.query(
+      `SELECT MAX(COALESCE("endDate","startDate")) as "lastDate"
+       FROM "absence_requests"
+       WHERE "employeeId" = $1 AND "type" ILIKE 'ferias%' AND "status" != 'rejected'`,
+      [employeeId],
+    );
+    const last = (lastRow && lastRow[0] && lastRow[0].lastDate) ? String(lastRow[0].lastDate).slice(0, 10) : null;
+
+    const accrualStart = last ? this.addDays(new Date(`${last}T03:00:00.000Z`), 1) : new Date(employee.admissionDate);
+    const aquisitiveEnd = this.addMonths(accrualStart, 12);
+    const concessiveEnd = this.addMonths(aquisitiveEnd, 12);
+    const concessiveEndStr = this.toDateOnlyString(concessiveEnd);
+
+    const today = new Date();
+    const daysToConcessiveEnd = this.diffDays(concessiveEnd, today);
+
+    let level: 'ok' | 'warning' | 'due' | 'expired' = 'ok';
+    if (daysToConcessiveEnd < 0) level = 'expired';
+    else if (daysToConcessiveEnd === 0) level = 'due';
+    else if (daysToConcessiveEnd <= 30) level = 'warning';
+
+    const label =
+      level === 'expired'
+        ? 'Férias vencidas'
+        : level === 'due'
+        ? 'Férias vencem hoje'
+        : level === 'warning'
+        ? 'Férias para vencer'
+        : 'Sem alertas';
+
+    return {
+      applicable: true,
+      level,
+      label,
+      concessiveEnd: concessiveEndStr,
+      daysToExpire: daysToConcessiveEnd,
+    };
+  }
+
+  private addMonths(date: Date, months: number): Date {
+    const d = new Date(date);
+    const day = d.getDate();
+    d.setMonth(d.getMonth() + months);
+    if (d.getDate() !== day) d.setDate(0);
+    return d;
+  }
+
+  private addDays(date: Date, days: number): Date {
+    const d = new Date(date);
+    d.setDate(d.getDate() + days);
+    return d;
+  }
+
+  private diffDays(a: Date, b: Date): number {
+    const a0 = new Date(a);
+    a0.setHours(0, 0, 0, 0);
+    const b0 = new Date(b);
+    b0.setHours(0, 0, 0, 0);
+    return Math.floor((a0.getTime() - b0.getTime()) / (1000 * 60 * 60 * 24));
+  }
+
+  private toDateOnlyString(d: Date) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
   async addDocument(data: any) {

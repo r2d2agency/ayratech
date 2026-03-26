@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { format, parseISO, isValid } from 'date-fns';
+import { format, parseISO, isValid, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Calendar, User, Clock, Plus, Filter, Search, FileText, Download, AlertTriangle, X, Smartphone, Monitor } from 'lucide-react';
 import api, { API_URL } from '../api/client';
@@ -21,10 +21,27 @@ const TimeClockManagementView = () => {
   const [events, setEvents] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [rhTab, setRhTab] = useState<'eventos' | 'ponto_diario' | 'ocorrencias' | 'manuais' | 'impares' | 'faltas' | 'extras' | 'banco'>('eventos');
   const [filters, setFilters] = useState({
     startDate: format(new Date(), 'yyyy-MM-dd'),
     endDate: format(new Date(), 'yyyy-MM-dd'),
     employeeId: ''
+  });
+  const [reportDate, setReportDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [occurrenceDate, setOccurrenceDate] = useState(format(subDays(new Date(), 1), 'yyyy-MM-dd'));
+  const [competence, setCompetence] = useState(format(new Date(), 'yyyy-MM'));
+
+  const [dailySheet, setDailySheet] = useState<any[]>([]);
+  const [occurrences, setOccurrences] = useState<any[]>([]);
+  const [manualMarks, setManualMarks] = useState<any[]>([]);
+  const [oddMarks, setOddMarks] = useState<any[]>([]);
+  const [overtimeSummary, setOvertimeSummary] = useState<any[]>([]);
+  const [balances, setBalances] = useState<any[]>([]);
+  const [balanceAdjustment, setBalanceAdjustment] = useState({
+    employeeId: '',
+    competence: format(new Date(), 'yyyy-MM'),
+    deltaHours: 0,
+    reason: '',
   });
   const [showModal, setShowModal] = useState(false);
   const initialEventState = {
@@ -100,6 +117,91 @@ const TimeClockManagementView = () => {
     } catch (error) {
       console.error('Erro ao buscar funcionários', error);
       toast.error('Erro ao carregar funcionários');
+    }
+  };
+
+  const fetchDailySheet = async () => {
+    try {
+      const res = await api.get('/time-clock/reports/daily', {
+        params: { date: reportDate, employeeId: filters.employeeId || undefined },
+      });
+      setDailySheet(res.data || []);
+    } catch (error) {
+      toast.error('Erro ao carregar ponto diário');
+    }
+  };
+
+  const fetchOccurrences = async () => {
+    try {
+      const res = await api.get('/time-clock/reports/occurrences', {
+        params: { date: occurrenceDate, employeeId: filters.employeeId || undefined },
+      });
+      setOccurrences(res.data || []);
+    } catch (error) {
+      toast.error('Erro ao carregar ocorrências');
+    }
+  };
+
+  const fetchManualMarks = async () => {
+    try {
+      const res = await api.get('/time-clock/reports/manual', {
+        params: { date: reportDate, employeeId: filters.employeeId || undefined },
+      });
+      setManualMarks(res.data || []);
+    } catch (error) {
+      toast.error('Erro ao carregar marcações manuais');
+    }
+  };
+
+  const fetchOddMarks = async () => {
+    try {
+      const res = await api.get('/time-clock/reports/odd', {
+        params: { date: reportDate, employeeId: filters.employeeId || undefined },
+      });
+      setOddMarks(res.data || []);
+    } catch (error) {
+      toast.error('Erro ao carregar marcações ímpares');
+    }
+  };
+
+  const fetchOvertimeSummary = async () => {
+    try {
+      const res = await api.get('/time-clock/reports/overtime', {
+        params: { startDate: filters.startDate, endDate: filters.endDate, employeeId: filters.employeeId || undefined },
+      });
+      setOvertimeSummary(res.data || []);
+    } catch (error) {
+      toast.error('Erro ao carregar relatório de horas');
+    }
+  };
+
+  const fetchBalances = async () => {
+    try {
+      const res = await api.get('/time-clock/balances', {
+        params: { competence, employeeId: filters.employeeId || undefined },
+      });
+      setBalances(res.data || []);
+    } catch (error) {
+      toast.error('Erro ao carregar banco de horas');
+    }
+  };
+
+  const handleAdjustBalance = async () => {
+    try {
+      if (!balanceAdjustment.employeeId) {
+        toast.error('Selecione um colaborador');
+        return;
+      }
+      await api.post('/time-clock/balances/adjust', {
+        employeeId: balanceAdjustment.employeeId,
+        competence: balanceAdjustment.competence,
+        deltaHours: Number(balanceAdjustment.deltaHours),
+        reason: balanceAdjustment.reason || undefined,
+      });
+      toast.success('Saldo ajustado');
+      fetchBalances();
+    } catch (error) {
+      toast.error('Erro ao ajustar saldo');
     }
   };
 
@@ -261,6 +363,15 @@ const TimeClockManagementView = () => {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   };
 
+  const formatMinutes = (minutes?: number | null) => {
+    if (minutes === null || minutes === undefined || Number.isNaN(Number(minutes))) return '-';
+    const sign = Number(minutes) < 0 ? '-' : '';
+    const abs = Math.abs(Number(minutes));
+    const h = Math.floor(abs / 60);
+    const m = abs % 60;
+    return `${sign}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  };
+
   const handleEditEvent = (event: any) => {
       if (!event) return;
       
@@ -349,6 +460,17 @@ const TimeClockManagementView = () => {
         </div>
         </div>
 
+        <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-2">
+          <button onClick={() => setRhTab('eventos')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'eventos' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Eventos</button>
+          <button onClick={() => setRhTab('ponto_diario')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'ponto_diario' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Ponto diário</button>
+          <button onClick={() => setRhTab('ocorrencias')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'ocorrencias' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Ocorrências</button>
+          <button onClick={() => setRhTab('manuais')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'manuais' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Manuais</button>
+          <button onClick={() => setRhTab('impares')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'impares' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Ímpares</button>
+          <button onClick={() => setRhTab('faltas')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'faltas' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Faltas</button>
+          <button onClick={() => setRhTab('extras')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'extras' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Horas</button>
+          <button onClick={() => setRhTab('banco')} className={`px-3 py-2 rounded-lg text-sm font-semibold ${rhTab === 'banco' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Banco</button>
+        </div>
+
         {/* Alerts */}
         {alerts.length > 0 && (
           <div className="space-y-2">
@@ -379,7 +501,7 @@ const TimeClockManagementView = () => {
           </div>
         )}
 
-        {/* Filters */}
+        {rhTab === 'eventos' && (
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end">
             <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Colaborador</label>
@@ -419,8 +541,278 @@ const TimeClockManagementView = () => {
                 <Filter size={18} /> Filtrar
             </button>
         </div>
+        )}
 
-        {/* Table */}
+        {rhTab === 'ponto_diario' && (
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Colaborador</label>
+              <select
+                className="border border-slate-300 rounded-lg p-2 w-64 focus:ring-2 focus:ring-blue-500 outline-none"
+                value={filters.employeeId}
+                onChange={(e) => setFilters({ ...filters, employeeId: e.target.value })}
+              >
+                <option value="">Todos</option>
+                {employees.map((emp: any) => (
+                  <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Data</label>
+              <input
+                type="date"
+                className="border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                value={reportDate}
+                onChange={(e) => setReportDate(e.target.value)}
+              />
+            </div>
+            <button onClick={fetchDailySheet} className="bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 flex items-center gap-2">
+              <Filter size={18} /> Gerar
+            </button>
+          </div>
+        )}
+
+        {rhTab === 'ocorrencias' && (
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Colaborador</label>
+              <select
+                className="border border-slate-300 rounded-lg p-2 w-64 focus:ring-2 focus:ring-blue-500 outline-none"
+                value={filters.employeeId}
+                onChange={(e) => setFilters({ ...filters, employeeId: e.target.value })}
+              >
+                <option value="">Todos</option>
+                {employees.map((emp: any) => (
+                  <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Data</label>
+              <input
+                type="date"
+                className="border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                value={occurrenceDate}
+                onChange={(e) => setOccurrenceDate(e.target.value)}
+              />
+            </div>
+            <button onClick={fetchOccurrences} className="bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 flex items-center gap-2">
+              <Filter size={18} /> Gerar
+            </button>
+          </div>
+        )}
+
+        {rhTab === 'manuais' && (
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Colaborador</label>
+              <select
+                className="border border-slate-300 rounded-lg p-2 w-64 focus:ring-2 focus:ring-blue-500 outline-none"
+                value={filters.employeeId}
+                onChange={(e) => setFilters({ ...filters, employeeId: e.target.value })}
+              >
+                <option value="">Todos</option>
+                {employees.map((emp: any) => (
+                  <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Data</label>
+              <input
+                type="date"
+                className="border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                value={reportDate}
+                onChange={(e) => setReportDate(e.target.value)}
+              />
+            </div>
+            <button onClick={fetchManualMarks} className="bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 flex items-center gap-2">
+              <Filter size={18} /> Gerar
+            </button>
+          </div>
+        )}
+
+        {rhTab === 'impares' && (
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Colaborador</label>
+              <select
+                className="border border-slate-300 rounded-lg p-2 w-64 focus:ring-2 focus:ring-blue-500 outline-none"
+                value={filters.employeeId}
+                onChange={(e) => setFilters({ ...filters, employeeId: e.target.value })}
+              >
+                <option value="">Todos</option>
+                {employees.map((emp: any) => (
+                  <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Data</label>
+              <input
+                type="date"
+                className="border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                value={reportDate}
+                onChange={(e) => setReportDate(e.target.value)}
+              />
+            </div>
+            <button onClick={fetchOddMarks} className="bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 flex items-center gap-2">
+              <Filter size={18} /> Gerar
+            </button>
+          </div>
+        )}
+
+        {rhTab === 'faltas' && (
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Colaborador</label>
+              <select
+                className="border border-slate-300 rounded-lg p-2 w-64 focus:ring-2 focus:ring-blue-500 outline-none"
+                value={filters.employeeId}
+                onChange={(e) => setFilters({ ...filters, employeeId: e.target.value })}
+              >
+                <option value="">Todos</option>
+                {employees.map((emp: any) => (
+                  <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Data</label>
+              <input
+                type="date"
+                className="border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                value={reportDate}
+                onChange={(e) => setReportDate(e.target.value)}
+              />
+            </div>
+            <button onClick={fetchDailySheet} className="bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 flex items-center gap-2">
+              <Filter size={18} /> Gerar
+            </button>
+          </div>
+        )}
+
+        {rhTab === 'extras' && (
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Colaborador</label>
+              <select
+                className="border border-slate-300 rounded-lg p-2 w-64 focus:ring-2 focus:ring-blue-500 outline-none"
+                value={filters.employeeId}
+                onChange={(e) => setFilters({ ...filters, employeeId: e.target.value })}
+              >
+                <option value="">Todos</option>
+                {employees.map((emp: any) => (
+                  <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Data Início</label>
+              <input
+                type="date"
+                className="border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                value={filters.startDate}
+                onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Data Fim</label>
+              <input
+                type="date"
+                className="border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                value={filters.endDate}
+                onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+              />
+            </div>
+            <button onClick={fetchOvertimeSummary} className="bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 flex items-center gap-2">
+              <Filter size={18} /> Gerar
+            </button>
+          </div>
+        )}
+
+        {rhTab === 'banco' && (
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <div className="flex flex-wrap gap-4 items-end">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Colaborador</label>
+                <select
+                  className="border border-slate-300 rounded-lg p-2 w-64 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={filters.employeeId}
+                  onChange={(e) => setFilters({ ...filters, employeeId: e.target.value })}
+                >
+                  <option value="">Todos</option>
+                  {employees.map((emp: any) => (
+                    <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Competência</label>
+                <input
+                  type="month"
+                  className="border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={competence}
+                  onChange={(e) => setCompetence(e.target.value)}
+                />
+              </div>
+              <button onClick={fetchBalances} className="bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 flex items-center gap-2">
+                <Filter size={18} /> Carregar
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Colaborador</label>
+                <select
+                  className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={balanceAdjustment.employeeId}
+                  onChange={(e) => setBalanceAdjustment(prev => ({ ...prev, employeeId: e.target.value }))}
+                >
+                  <option value="">Selecione</option>
+                  {employees.map((emp: any) => (
+                    <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Competência</label>
+                <input
+                  type="month"
+                  className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={balanceAdjustment.competence}
+                  onChange={(e) => setBalanceAdjustment(prev => ({ ...prev, competence: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Delta (horas)</label>
+                <input
+                  type="number"
+                  step="0.25"
+                  className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={balanceAdjustment.deltaHours as any}
+                  onChange={(e) => setBalanceAdjustment(prev => ({ ...prev, deltaHours: Number(e.target.value) }))}
+                />
+              </div>
+              <div className="md:col-span-4">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Motivo</label>
+                <input
+                  type="text"
+                  className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={balanceAdjustment.reason}
+                  onChange={(e) => setBalanceAdjustment(prev => ({ ...prev, reason: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button onClick={handleAdjustBalance} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium">Salvar ajuste</button>
+            </div>
+          </div>
+        )}
+
+        {rhTab === 'eventos' && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <table className="w-full">
                 <thead className="bg-slate-50 border-b border-slate-200">
@@ -466,6 +858,235 @@ const TimeClockManagementView = () => {
                 </tbody>
             </table>
         </div>
+        )}
+
+        {rhTab === 'ponto_diario' && (
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Colaborador</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Escala</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Entrada</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Almoço</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Saída</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Trabalhadas</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Previstas</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Extras</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Faltas</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {dailySheet.length === 0 ? (
+                  <tr><td colSpan={9} className="p-8 text-center text-slate-400">Nenhum resultado.</td></tr>
+                ) : (
+                  dailySheet.map((r: any) => (
+                    <tr key={`${r.employeeId}-${r.date}`} className="hover:bg-slate-50">
+                      <td className="p-4">
+                        <div className="font-medium text-slate-900">{r.employeeName}</div>
+                        <div className="text-xs text-slate-500">
+                          {r.hasManual ? 'Manual' : 'App'} {r.hasOddPunches ? '• Ímpar' : ''} {Array.isArray(r.absences) && r.absences.length ? `• ${r.absences[0].type}` : ''}
+                        </div>
+                      </td>
+                      <td className="p-4 text-slate-700">{r.schedule || '-'}</td>
+                      <td className="p-4 text-slate-700">{r.entry || '-'}</td>
+                      <td className="p-4 text-slate-700">{r.lunchStart || '-'} / {r.lunchEnd || '-'}</td>
+                      <td className="p-4 text-slate-700">{r.exit || '-'}</td>
+                      <td className="p-4 font-semibold text-slate-700">{formatMinutes(r.workedMinutes)}</td>
+                      <td className="p-4 text-slate-700">{formatMinutes(r.expectedMinutes)}</td>
+                      <td className="p-4 text-slate-700">{formatMinutes(r.overtimeMinutes)}</td>
+                      <td className="p-4 text-slate-700">{formatMinutes(r.missingMinutes)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {rhTab === 'ocorrencias' && (
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Colaborador</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Tipo</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Detalhe</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {occurrences.length === 0 ? (
+                  <tr><td colSpan={3} className="p-8 text-center text-slate-400">Nenhum resultado.</td></tr>
+                ) : (
+                  occurrences.map((o: any, idx: number) => (
+                    <tr key={`${o.employeeId}-${idx}`} className="hover:bg-slate-50">
+                      <td className="p-4 font-medium text-slate-900">{o.employeeName}</td>
+                      <td className="p-4 text-slate-700">{o.type}</td>
+                      <td className="p-4 text-slate-700">{o.detail}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {rhTab === 'manuais' && (
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Colaborador</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Data/Hora</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Tipo</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Editado por</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Motivo</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {manualMarks.length === 0 ? (
+                  <tr><td colSpan={5} className="p-8 text-center text-slate-400">Nenhum resultado.</td></tr>
+                ) : (
+                  manualMarks.map((e: any) => (
+                    <tr key={e.id} className="hover:bg-slate-50">
+                      <td className="p-4 font-medium text-slate-900">{e.employee?.fullName}</td>
+                      <td className="p-4 text-slate-700">{isValid(parseISO(e.timestamp)) ? format(parseISO(e.timestamp), 'dd/MM/yyyy HH:mm', { locale: ptBR }) : '-'}</td>
+                      <td className="p-4 text-slate-700">{e.eventType}</td>
+                      <td className="p-4 text-slate-700">{e.editedBy || '-'}</td>
+                      <td className="p-4 text-slate-700">{e.validationReason || '-'}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {rhTab === 'impares' && (
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Colaborador</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Marcações</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Entrada</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Saída</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {oddMarks.length === 0 ? (
+                  <tr><td colSpan={4} className="p-8 text-center text-slate-400">Nenhum resultado.</td></tr>
+                ) : (
+                  oddMarks.map((r: any) => (
+                    <tr key={`${r.employeeId}-${r.date}`} className="hover:bg-slate-50">
+                      <td className="p-4 font-medium text-slate-900">{r.employeeName}</td>
+                      <td className="p-4 text-slate-700">{r.punchesCount}</td>
+                      <td className="p-4 text-slate-700">{r.entry || '-'}</td>
+                      <td className="p-4 text-slate-700">{r.exit || '-'}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {rhTab === 'faltas' && (
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Colaborador</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Escala</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Previstas</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Justificativa</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {dailySheet.filter((r: any) => r.expectedMinutes != null && r.punchesCount === 0 && (!Array.isArray(r.absences) || r.absences.length === 0)).length === 0 ? (
+                  <tr><td colSpan={4} className="p-8 text-center text-slate-400">Nenhum resultado.</td></tr>
+                ) : (
+                  dailySheet
+                    .filter((r: any) => r.expectedMinutes != null && r.punchesCount === 0 && (!Array.isArray(r.absences) || r.absences.length === 0))
+                    .map((r: any) => (
+                      <tr key={`${r.employeeId}-${r.date}`} className="hover:bg-slate-50">
+                        <td className="p-4 font-medium text-slate-900">{r.employeeName}</td>
+                        <td className="p-4 text-slate-700">{r.schedule || '-'}</td>
+                        <td className="p-4 text-slate-700">{formatMinutes(r.expectedMinutes)}</td>
+                        <td className="p-4 text-slate-700">-</td>
+                      </tr>
+                    ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {rhTab === 'extras' && (
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Colaborador</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Extra 50%</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Extra 100%</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Adic. Noturno</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Banco</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Horas faltas</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {overtimeSummary.length === 0 ? (
+                  <tr><td colSpan={6} className="p-8 text-center text-slate-400">Nenhum resultado.</td></tr>
+                ) : (
+                  overtimeSummary.map((r: any) => (
+                    <tr key={r.employeeId} className="hover:bg-slate-50">
+                      <td className="p-4 font-medium text-slate-900">{r.employeeName}</td>
+                      <td className="p-4 text-slate-700">{r.overtime50Hours}</td>
+                      <td className="p-4 text-slate-700">{r.overtime100Hours}</td>
+                      <td className="p-4 text-slate-700">{r.nightHours}</td>
+                      <td className="p-4 text-slate-700">{r.bankHours}</td>
+                      <td className="p-4 text-slate-700">{r.missingHours}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {rhTab === 'banco' && (
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Colaborador</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Competência</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Saldo banco</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Previstas</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Trabalhadas</th>
+                  <th className="text-left p-4 text-sm font-semibold text-slate-600">Extras</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {balances.length === 0 ? (
+                  <tr><td colSpan={6} className="p-8 text-center text-slate-400">Nenhum resultado.</td></tr>
+                ) : (
+                  balances.map((b: any) => (
+                    <tr key={b.id} className="hover:bg-slate-50">
+                      <td className="p-4 font-medium text-slate-900">{b.employee?.fullName || '-'}</td>
+                      <td className="p-4 text-slate-700">{b.competence}</td>
+                      <td className="p-4 text-slate-700">{b.balanceHours}</td>
+                      <td className="p-4 text-slate-700">{b.expectedHours}</td>
+                      <td className="p-4 text-slate-700">{b.workedHours}</td>
+                      <td className="p-4 text-slate-700">{b.overtimeHours}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Modal */}
         {showModal && (

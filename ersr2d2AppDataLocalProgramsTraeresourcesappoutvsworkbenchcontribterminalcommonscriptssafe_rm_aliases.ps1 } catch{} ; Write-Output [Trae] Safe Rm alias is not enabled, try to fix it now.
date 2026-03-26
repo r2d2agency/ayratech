@@ -1,0 +1,23 @@
+warning: in the working copy of 'apps/backend/src/absences/absences.controller.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/absences/absences.module.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/absences/absences.service.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/absences/dto/create-absence-request.dto.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/absences/dto/update-absence-request.dto.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/absences/entities/absence-request.entity.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/routes/routes.module.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/routes/routes.service.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/time-clock/time-clock-monitor.service.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/backend/src/time-clock/time-clock.module.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/web-admin/src/views/EmployeesView.tsx', LF will be replaced by CRLF the next time Git touches it
+ apps/backend/src/absences/absences.controller.ts   |  11 [32m+[m[31m-[m
+ apps/backend/src/absences/absences.module.ts       |  10 [32m+[m[31m-[m
+ apps/backend/src/absences/absences.service.ts      | 363 [32m+++++++++++++++[m[31m-[m
+ .../src/absences/dto/create-absence-request.dto.ts |   8 [32m+[m[31m-[m
+ .../src/absences/dto/update-absence-request.dto.ts |   2 [32m+[m[31m-[m
+ .../absences/entities/absence-request.entity.ts    |  14 [32m+[m
+ apps/backend/src/routes/routes.module.ts           |   2 [32m+[m
+ apps/backend/src/routes/routes.service.ts          |  15 [32m+[m
+ .../src/time-clock/time-clock-monitor.service.ts   |  82 [32m++[m[31m--[m
+ apps/backend/src/time-clock/time-clock.module.ts   |   6 [32m+[m[31m-[m
+ apps/web-admin/src/views/EmployeesView.tsx         | 454 [32m++++++++++++++++++++[m[31m-[m
+ 11 files changed, 917 insertions(+), 50 deletions(-)

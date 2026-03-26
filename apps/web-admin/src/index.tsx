@@ -5,6 +5,10 @@ import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import App from './App';
 
+if (typeof document !== 'undefined') {
+  document.documentElement.classList.add('dark');
+}
+
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");

@@ -23,12 +23,8 @@ const DocumentsView = () => {
 
   const fetchDocuments = async () => {
     try {
-      const employeeId = user?.employee?.id;
-      
-      if (employeeId) {
-        const response = await client.get(`/employees/${employeeId}/documents`); 
-        setDocuments(response.data);
-      }
+      const response = await client.get(`/employees/me/documents`);
+      setDocuments(response.data || []);
     } catch (error) {
       console.error('Error fetching documents:', error);
       // Only show error toast if not 404 (handled by empty state)
@@ -90,20 +86,12 @@ const DocumentsView = () => {
 
     setUploading(true);
     try {
-      const employeeId = user?.employee?.id;
-      
-      if (!employeeId) {
-        toast.error('Erro: Funcionário não identificado');
-        setUploading(false);
-        return;
-      }
-
       // Offline Handling
       if (!navigator.onLine) {
          const base64 = await fileToBase64(selectedFile);
          await offlineService.addPendingAction(
             'DOCUMENT_UPLOAD',
-            `/employees/${employeeId}/documents`,
+            `/employees/me/documents`,
             'POST',
             {
                 fileBase64: base64,
@@ -126,7 +114,7 @@ const DocumentsView = () => {
       formData.append('type', 'Outros'); // Default type
       formData.append('description', description); // Add description
 
-      await client.post(`/employees/${employeeId}/documents`, formData, {
+      await client.post(`/employees/me/documents`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
       });
       toast.success('Documento enviado com sucesso!');
@@ -145,26 +133,22 @@ const DocumentsView = () => {
       if (isNetworkError || isServer5xx) {
           try {
              const base64 = await fileToBase64(selectedFile);
-             const employeeId = user?.employee?.id;
-             
-             if (employeeId) {
-                 await offlineService.addPendingAction(
-                    'DOCUMENT_UPLOAD',
-                    `/employees/${employeeId}/documents`,
-                    'POST',
-                    {
-                        fileBase64: base64,
-                        filename: selectedFile.name,
-                        type: 'Outros',
-                        description: description
-                    }
-                 );
-                 toast.success('Erro de conexão. Documento salvo para envio posterior!');
-                 setIsModalOpen(false);
-                 setSelectedFile(null);
-                 setDescription('');
-                 return;
-             }
+             await offlineService.addPendingAction(
+                'DOCUMENT_UPLOAD',
+                `/employees/me/documents`,
+                'POST',
+                {
+                    fileBase64: base64,
+                    filename: selectedFile.name,
+                    type: 'Outros',
+                    description: description
+                }
+             );
+             toast.success('Erro de conexão. Documento salvo para envio posterior!');
+             setIsModalOpen(false);
+             setSelectedFile(null);
+             setDescription('');
+             return;
           } catch (offlineError) {
               console.error('Failed to save offline fallback', offlineError);
           }
