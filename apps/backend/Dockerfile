@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM node:20-alpine AS builder
+FROM node:20-alpine3.20 AS builder
 ARG GIT_SHA
 
 # Set working directory
@@ -24,7 +24,7 @@ COPY . .
 RUN echo "GIT_SHA=$GIT_SHA" && npm run build
 
 # Stage 2: Production Run
-FROM node:20-alpine
+FROM node:20-alpine3.20
 ARG GIT_SHA
 LABEL org.opencontainers.image.revision=$GIT_SHA
 
