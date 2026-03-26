@@ -229,17 +229,25 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     return false;
   };
 
+  const isIgnoredChecklistItem = (item: any) => {
+    if (item?.type === 'PHOTO') return true;
+    const desc = (item?.description || '').toLowerCase();
+    if (desc.includes('gondola') && desc.includes('foto')) return true;
+    return false;
+  };
+
   const hasNonStockChecklist = (p: any) => {
     const cl = getChecklists(p);
-    return cl.some((c: any) => c?.type !== 'STOCK_COUNT');
+    return cl.some((c: any) => c?.type !== 'STOCK_COUNT' && !isIgnoredChecklistItem(c));
   };
 
   const hasInteractiveChecklist = (p: any) => {
     const cl = getChecklists(p);
     return cl.some((c: any) => {
       if (c?.type === 'STOCK_COUNT') return false;
+      if (isIgnoredChecklistItem(c)) return false;
       if (isValidityChecklistItem(c)) return true;
-      return c?.type === 'PRICE_CHECK' || c?.type === 'PHOTO';
+      return c?.type === 'PRICE_CHECK';
     });
   };
 
@@ -275,7 +283,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
       return totalCount > 0 ? true : hasRupture;
     }
 
-    const requiredChecklists = cl.filter((c: any) => c?.type !== 'STOCK_COUNT');
+    const requiredChecklists = cl.filter((c: any) => c?.type !== 'STOCK_COUNT' && !isIgnoredChecklistItem(c));
     const allChecked = requiredChecklists.every((c: any) => !!c?.isChecked);
     if (!allChecked) return false;
 
@@ -968,14 +976,15 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
             try {
               const cl = getChecklists(p);
               const nextCheckedValueForSimple = (() => {
-                const anyChecked = cl.some((c: any) => c?.type !== 'STOCK_COUNT' && !!c?.isChecked);
+                const anyChecked = cl.some((c: any) => c?.type !== 'STOCK_COUNT' && !isIgnoredChecklistItem(c) && !!c?.isChecked);
                 return !anyChecked;
               })();
 
               const nextChecklistsForSimple = cl.map((c: any) => {
                 if (c?.type === 'STOCK_COUNT') return c;
                 if (isValidityChecklistItem(c)) return c;
-                if (c?.type === 'PRICE_CHECK' || c?.type === 'PHOTO') return c;
+                if (isIgnoredChecklistItem(c)) return c;
+                if (c?.type === 'PRICE_CHECK') return c;
                 return { ...c, isChecked: nextCheckedValueForSimple };
               });
 

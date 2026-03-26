@@ -49,6 +49,13 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
     return false;
   };
 
+  const isIgnoredChecklistItem = (item: any) => {
+    if (item?.type === 'PHOTO') return true;
+    const desc = (item?.description || '').toLowerCase();
+    if (desc.includes('gondola') && desc.includes('foto')) return true;
+    return false;
+  };
+
   const [checklistState, setChecklistState] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
@@ -236,6 +243,7 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
         ? product.checklists.filter((c: any) => {
             if (c?.type === 'STOCK_COUNT') return false;
             if (isValidityChecklistItem(c)) return false;
+            if (isIgnoredChecklistItem(c)) return false;
             return true;
           })
         : [];
@@ -333,6 +341,7 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
                     // Skip STOCK_COUNT (handled by inputs) and VALIDITY_CHECK (handled by its own section)
                     if (item.type === 'STOCK_COUNT') return null;
                     if (isValidityChecklistItem(item)) return null;
+                    if (isIgnoredChecklistItem(item)) return null;
 
                     return (
                         <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">

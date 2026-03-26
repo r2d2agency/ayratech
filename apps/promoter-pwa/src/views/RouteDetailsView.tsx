@@ -596,17 +596,40 @@ const RouteDetailsView = () => {
       if (p.isStockout) return !!(p.ruptureReason && String(p.ruptureReason).trim());
   
       const cl = Array.isArray(p.checklists) ? p.checklists : [];
+      const isValidityChecklistItem = (item: any) => {
+        const desc = (item?.description || '').toLowerCase();
+        if (item?.type === 'VALIDITY_CHECK') return true;
+        if (desc.includes('vencimento') || desc.includes('venci') || desc.includes('validade')) return true;
+        return false;
+      };
+      const isIgnoredChecklistItem = (item: any) => {
+        if (item?.type === 'PHOTO') return true;
+        const desc = (item?.description || '').toLowerCase();
+        if (desc.includes('gondola') && desc.includes('foto')) return true;
+        return false;
+      };
+  
       const stockCountItems = cl.filter((c: any) => c?.type === 'STOCK_COUNT').length;
       const hasStockCount = stockCountItems > 0;
-      const hasValidity = cl.some((c: any) => c?.type === 'VALIDITY_CHECK');
+      const hasNonStock = cl.some((c: any) => c?.type !== 'STOCK_COUNT' && !isIgnoredChecklistItem(c));
+      const hasValidity = cl.some((c: any) => isValidityChecklistItem(c));
   
-      if (!hasStockCount && !hasValidity) return true;
+      if (!hasStockCount && !hasNonStock) return true;
   
       const invPolicy = !!p.product?.client?.requiresInventoryCount;
       if (hasStockCount) {
         if (p.gondolaCount == null) return false;
         if ((stockCountItems >= 2 || invPolicy) && p.inventoryCount == null) return false;
       }
+  
+      const nonStockRequiredChecklists = cl.filter((c: any) => {
+        if (c?.type === 'STOCK_COUNT') return false;
+        if (isValidityChecklistItem(c)) return false;
+        if (isIgnoredChecklistItem(c)) return false;
+        return true;
+      });
+      const nonStockOk = nonStockRequiredChecklists.every((c: any) => !!c?.isChecked);
+      if (!nonStockOk) return false;
   
       if (hasValidity) {
         const legacyOk = !!(p.validityDate && p.validityQuantity && p.validityQuantity > 0);
