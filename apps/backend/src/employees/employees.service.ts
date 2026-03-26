@@ -544,6 +544,22 @@ export class EmployeesService {
     };
   }
 
+  async getVacationAlerts() {
+    const employees = await this.employeesRepository.find();
+    const alerts = [];
+    for (const emp of employees) {
+      try {
+        const alert = await this.getVacationAlert(emp.id);
+        if (alert.applicable && alert.level !== 'ok') {
+          alerts.push({ employee: emp, ...alert });
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    return alerts;
+  }
+
   private addMonths(date: Date, months: number): Date {
     const d = new Date(date);
     const day = d.getDate();

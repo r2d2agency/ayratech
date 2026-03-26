@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException, NotFoundException, UnauthorizedException, HttpException } from '@nestjs/common';
 import * as sharp from 'sharp';
 import { RouteItemCheckin } from './entities/route-item-checkin.entity';
 import { InjectRepository } from '@nestjs/typeorm';
