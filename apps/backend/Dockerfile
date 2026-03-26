@@ -6,7 +6,10 @@ ARG GIT_SHA
 WORKDIR /app
 
 # Install build dependencies just in case
-RUN apk add --no-cache python3 make g++
+RUN apk add --no-cache \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/v3.20/main \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/v3.20/community \
+    python3 make g++
 
 # Copy package files
 COPY package*.json ./
