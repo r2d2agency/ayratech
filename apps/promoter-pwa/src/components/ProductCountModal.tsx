@@ -182,6 +182,9 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
 
       const composedRuptureReason = (() => {
         if (!requireStockCount) return null;
+        const storeEntered = typeof gondolaCount === 'number';
+        const inventoryEntered = typeof inventoryCount === 'number';
+        if (!storeEntered || !inventoryEntered) return null;
         if (total !== 0) return null;
 
         if (!selectedRuptureReasonId) {
@@ -202,7 +205,13 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
       })();
 
       // Validation
-      if (requireStockCount && total === 0 && !composedRuptureReason && !isStockout) {
+      const storeEntered = typeof gondolaCount === 'number';
+      const inventoryEntered = typeof inventoryCount === 'number';
+      const countsComplete = !requireStockCount
+        ? true
+        : storeEntered && inventoryEntered && (total > 0 || !!composedRuptureReason);
+
+      if (requireStockCount && storeEntered && inventoryEntered && total === 0 && !composedRuptureReason) {
         toast.error('Se o estoque é 0, descreva o motivo da ruptura.');
         setSaving(false);
         return;
@@ -223,34 +232,54 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
           })()
         : null;
 
+      const nonStockRequiredChecklists = Array.isArray(product.checklists)
+        ? product.checklists.filter((c: any) => {
+            if (c?.type === 'STOCK_COUNT') return false;
+            if (isValidityChecklistItem(c)) return false;
+            return true;
+          })
+        : [];
+
+      const nonStockOk = nonStockRequiredChecklists.every((c: any) => {
+        const isChecked = checklistState[c.id] ?? c.isChecked ?? false;
+        return !!isChecked;
+      });
+
+      const validityOk = !hasValidityChecklist || !!overallValidity;
+      const isComplete = !!(countsComplete && nonStockOk && validityOk);
+
       const payload: any = {
-        checked: true,
+        checked: isComplete,
         checklists: Array.isArray(product.checklists)
           ? product.checklists.map((c: any) => {
               if (isValidityChecklistItem(c) && overallValidity?.date) {
                 return {
+                  ...c,
                   id: c.id,
                   isChecked: true,
-                  value: overallValidity.date
+                  value: overallValidity.date,
                 };
               }
 
               const isChecked = checklistState[c.id] ?? c.isChecked ?? false;
               return {
+                ...c,
                 id: c.id,
                 isChecked: !!isChecked,
-                value: c.value
+                value: c.value,
               };
             })
           : []
       };
 
       if (requireStockCount) {
-        payload.gondolaCount = gondolaCount === '' ? 0 : gondolaCount;
-        payload.inventoryCount = inventoryCount === '' ? 0 : inventoryCount;
-        payload.ruptureReason = composedRuptureReason;
-        payload.isStockout = total === 0;
-        payload.stockCount = total;
+        if (storeEntered) payload.gondolaCount = gondolaCount;
+        if (inventoryEntered) payload.inventoryCount = inventoryCount;
+        if (storeEntered && inventoryEntered) {
+          payload.stockCount = total;
+          payload.isStockout = total === 0;
+          payload.ruptureReason = total === 0 ? composedRuptureReason : null;
+        }
       }
 
       if (hasValidityChecklist) {
@@ -318,7 +347,7 @@ export const ProductCountModal: React.FC<ProductCountModalProps> = ({
                               className="text-base font-medium text-gray-800 flex-1 cursor-pointer select-none" 
                               onClick={() => !readOnly && handleChecklistToggle(item.id)}
                             >
-                                {item.description}
+                                {item.description || 'Checklist'}
                             </span>
                         </div>
                     );

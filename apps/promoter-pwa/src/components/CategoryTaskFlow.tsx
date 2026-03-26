@@ -69,7 +69,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 }) => {
   const MIN_BEFORE_PHOTOS = 1;
   const [step, setStep] = useState(mode === 'ITEMS' ? STEPS.PRODUCTS : STEPS.BEFORE_PHOTO);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [selectedProduct, setSelectedProduct] = useState<{ pointType: 'natural' | 'extra'; product: any } | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
@@ -94,6 +94,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   const [pointType, setPointType] = useState<PointType>('natural');
   const [extraSearch, setExtraSearch] = useState('');
   const [extraSelectedProductIds, setExtraSelectedProductIds] = useState<string[]>([]);
+  const [extraProductChecks, setExtraProductChecks] = useState<Record<string, any>>({});
 
   const photosKey = categoryKey || categoryLabel || category || 'Categoria';
   const extraPhotosKey = `${photosKey}::EXTRA`;
@@ -111,6 +112,12 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
       setExtraSelectedProductIds(storedExtra.map((x: any) => String(x)));
     } else {
       setExtraSelectedProductIds([]);
+    }
+    const storedExtraChecks = routeItem?.categoryPhotos?.[`${photosKey}::EXTRA`]?.extraProductChecks;
+    if (storedExtraChecks && typeof storedExtraChecks === 'object') {
+      setExtraProductChecks(storedExtraChecks as Record<string, any>);
+    } else {
+      setExtraProductChecks({});
     }
 
     if (mode === 'ITEMS') {
@@ -185,6 +192,36 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
   const isExtraSelected = (p: any) => extraSelectedProductIds.includes(String(p?.productId));
 
+  const getProductForPoint = (p: any, pt: 'natural' | 'extra') => {
+    if (pt === 'natural') return p;
+    const pid = String(p?.productId);
+    const stored = extraProductChecks?.[pid];
+
+    const baseChecklists = Array.isArray(p?.checklists)
+      ? p.checklists.map((c: any) => ({ ...c, isChecked: false, value: undefined }))
+      : p?.checklists;
+
+    const base = {
+      ...p,
+      checked: false,
+      isStockout: false,
+      ruptureReason: undefined,
+      gondolaCount: undefined,
+      inventoryCount: undefined,
+      stockCount: undefined,
+      validityDate: undefined,
+      validityQuantity: undefined,
+      validityStoreDate: undefined,
+      validityStoreQuantity: undefined,
+      validityStockDate: undefined,
+      validityStockQuantity: undefined,
+      checklists: baseChecklists,
+    };
+
+    if (!stored) return base;
+    return { ...base, ...stored, product: p.product };
+  };
+
   const isValidityChecklistItem = (item: any) => {
     const desc = (item?.description || '').toLowerCase();
     if (item?.type === 'VALIDITY_CHECK') return true;
@@ -208,8 +245,18 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
   const canOpenProduct = (p: any) => isStockCountRequired(p) || hasNonStockChecklist(p) || isExtraSelected(p);
 
-  const isProductRequiredForProgress = (p: any) =>
-    isStockCountRequired(p) || hasInteractiveChecklist(p) || isExtraSelected(p);
+  const isProductRequiredForProgress = (p: any) => isStockCountRequired(p) || hasInteractiveChecklist(p);
+
+  const getProductProgressFraction = (p: any) => {
+    const cl = getChecklists(p);
+    const requiresStockCount = cl.some((c: any) => c?.type === 'STOCK_COUNT');
+    if (requiresStockCount) {
+      const storeDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
+      const stockDone = p.inventoryCount !== null && p.inventoryCount !== undefined;
+      return (Number(storeDone) + Number(stockDone)) / 2;
+    }
+    return isProductCountComplete(p) ? 1 : 0;
+  };
 
   const isProductCountComplete = (p: any) => {
     const cl = getChecklists(p);
@@ -221,15 +268,11 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
     if (requiresStockCount) {
       const gDone = p.gondolaCount !== null && p.gondolaCount !== undefined;
-      const inv = p.inventoryCount;
-      const hasInv = inv !== null && inv !== undefined;
+      const iDone = p.inventoryCount !== null && p.inventoryCount !== undefined;
+      if (!gDone || !iDone) return false;
+      const totalCount = Number(p.gondolaCount || 0) + Number(p.inventoryCount || 0);
       const hasRupture = !!p.ruptureReason || !!p.isStockout;
-      const iDone = (() => {
-        if (!hasInv) return false;
-        if (inv === 0) return hasRupture;
-        return inv > 0;
-      })();
-      return gDone && iDone;
+      return totalCount > 0 ? true : hasRupture;
     }
 
     const requiredChecklists = cl.filter((c: any) => c?.type !== 'STOCK_COUNT');
@@ -249,8 +292,12 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
     const catProducts = products || [];
     if (!catProducts.length) return true;
     return catProducts.every((p: any) => {
-      if (!isProductRequiredForProgress(p)) return true;
-      return isProductCountComplete(p);
+      if (isProductRequiredForProgress(p) && !isProductCountComplete(p)) return false;
+      if (isExtraSelected(p)) {
+        const extraView = getProductForPoint(p, 'extra');
+        if (!isProductCountComplete(extraView)) return false;
+      }
+      return true;
     });
   };
 
@@ -393,7 +440,28 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
 
   const handleProductSave = async (productId: string, data: any) => {
     try {
-      await onUpdateProduct(productId, data);
+      const pt = selectedProduct?.pointType || 'natural';
+      if (pt === 'extra') {
+        const pid = String(productId);
+        const nextChecks = {
+          ...extraProductChecks,
+          [pid]: { ...(extraProductChecks?.[pid] || {}), ...data }
+        };
+        setExtraProductChecks(nextChecks);
+
+        const currentExtra = getCategoryPhotos(extraPhotosKey);
+        const updatedPhotos: any = {
+          ...(routeItem.categoryPhotos || {}),
+          [extraPhotosKey]: {
+            ...currentExtra,
+            extraProducts: extraSelectedProductIds,
+            extraProductChecks: nextChecks
+          }
+        };
+        await onUpdateItem(routeItem.id, { categoryPhotos: updatedPhotos });
+      } else {
+        await onUpdateProduct(productId, data);
+      }
       setSelectedProduct(null);
       toast.success('Salvo com sucesso!');
     } catch (error) {
@@ -870,29 +938,56 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
   };
 
   const renderProductsStep = () => {
-    const total = products.length;
-    const completed = products.filter(isProductCountComplete).length;
-    const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const naturalProducts = products || [];
+    const extraProducts = naturalProducts.filter(isExtraSelected).map((p: any) => getProductForPoint(p, 'extra'));
+    const entries = [...extraProducts, ...naturalProducts];
+    const total = entries.length;
+    const completed = entries.filter(isProductCountComplete).length;
+    const fractionSum = entries.reduce((acc: number, p: any) => acc + getProductProgressFraction(p), 0);
+    const progress = total > 0 ? Math.round((fractionSum / total) * 100) : 0;
     const productsOk = mode === 'FULL' ? areAllProductsComplete() : true;
     const beforeOk = getBeforeCount(photosKey) >= MIN_BEFORE_PHOTOS;
-    const extraProducts = products.filter(isExtraSelected);
-    const naturalProducts = products;
 
-    const renderProductRow = (p: any) => {
+    const renderProductRow = (p: any, pt: 'natural' | 'extra') => {
       const required = isStockCountRequired(p);
       const rowCompleted = isProductCountComplete(p);
       const openModal = canOpenProduct(p);
+      const productProgress = Math.round(getProductProgressFraction(p) * 100);
 
       return (
         <div
-          key={p.productId}
+          key={`${pt}-${p.productId}`}
           onClick={async () => {
             if (readOnly) return;
             if (openModal) {
-              setSelectedProduct(p);
+              setSelectedProduct({ pointType: pt, product: p });
               return;
             }
             try {
+              if (pt === 'extra') {
+                const pid = String(p.productId);
+                const current = extraProductChecks?.[pid] || {};
+                const nextChecked = !(current.checked ?? false);
+                const nextChecks = {
+                  ...extraProductChecks,
+                  [pid]: { ...current, checked: nextChecked }
+                };
+                setExtraProductChecks(nextChecks);
+
+                const currentExtra = getCategoryPhotos(extraPhotosKey);
+                const updatedPhotos: any = {
+                  ...(routeItem.categoryPhotos || {}),
+                  [extraPhotosKey]: {
+                    ...currentExtra,
+                    extraProducts: extraSelectedProductIds,
+                    extraProductChecks: nextChecks
+                  }
+                };
+                await onUpdateItem(routeItem.id, { categoryPhotos: updatedPhotos });
+                toast.success(nextChecked ? 'Marcado como concluído.' : 'Desmarcado.');
+                return;
+              }
+
               const nextChecked = !p.checked;
               await onUpdateProduct(p.productId, { checked: nextChecked });
               toast.success(nextChecked ? 'Marcado como concluído.' : 'Desmarcado.');
@@ -915,7 +1010,10 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
               <div className="min-w-0">
                 <h3 className="font-medium text-gray-900 truncate">{p.product.name}</h3>
                 <p className="text-xs text-gray-500 truncate">{p.product.ean || 'Sem EAN'}</p>
-                {!required && !hasNonStockChecklist(p) && !isExtraSelected(p) && (
+                {required && productProgress > 0 && productProgress < 100 && (
+                  <span className="text-[10px] bg-orange-50 text-orange-700 px-1 rounded">{productProgress}% parcial</span>
+                )}
+                {!required && !hasNonStockChecklist(p) && pt !== 'extra' && (
                   <span className="text-[10px] bg-gray-100 text-gray-500 px-1 rounded">Sem obrigatoriedade</span>
                 )}
               </div>
@@ -938,7 +1036,9 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
               <span className={rowCompleted ? 'text-green-700 font-medium' : 'text-orange-600 font-medium'}>
                 {rowCompleted ? 'Concluído' : openModal ? 'Toque para abrir' : 'Toque para marcar'}
               </span>
-              {!readOnly && openModal && <span className="text-gray-400">Pendente</span>}
+              {!readOnly && openModal && (
+                <span className="text-gray-400">{productProgress > 0 && !rowCompleted ? `${productProgress}%` : 'Pendente'}</span>
+              )}
             </div>
           </div>
         </div>
@@ -965,7 +1065,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
           {extraProducts.length > 0 && (
             <div className="pt-1">
               <div className="text-[11px] font-bold text-orange-700 px-1 mb-2">Ponto Extra</div>
-              <div className="space-y-3">{extraProducts.map(renderProductRow)}</div>
+              <div className="space-y-3">{extraProducts.map((p: any) => renderProductRow(p, 'extra'))}</div>
             </div>
           )}
 
@@ -973,7 +1073,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
             <div className="text-[11px] font-bold text-slate-700 px-1 mb-2">
               {extraProducts.length > 0 ? 'Ponto Natural (Todos)' : 'Lista de Produtos'}
             </div>
-            <div className="space-y-3">{naturalProducts.map(renderProductRow)}</div>
+            <div className="space-y-3">{naturalProducts.map((p: any) => renderProductRow(p, 'natural'))}</div>
           </div>
         </div>
 
@@ -1154,11 +1254,11 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
         <ProductCountModal
           isOpen={!!selectedProduct}
           onClose={() => setSelectedProduct(null)}
-          product={selectedProduct}
+          product={selectedProduct.product}
           onSave={handleProductSave}
           mode="BOTH"
           readOnly={readOnly}
-          requireStockCount={isStockCountRequired(selectedProduct) || isExtraSelected(selectedProduct)}
+          requireStockCount={isStockCountRequired(selectedProduct.product)}
           routeItemId={routeItem?.id}
           supermarketId={routeItem?.supermarket?.id || routeItem?.supermarketId}
         />
