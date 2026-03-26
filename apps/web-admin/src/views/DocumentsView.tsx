@@ -25,6 +25,8 @@ interface Document {
   type: string;
   description: string;
   fileUrl: string;
+  signedFileUrl?: string;
+  signedAt?: string;
   sentAt: string;
   readAt?: string;
   senderId?: string;
@@ -547,13 +549,26 @@ const DocumentsView: React.FC = () => {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <button 
-                          onClick={() => handleMarkAsRead(doc)}
-                          className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded-lg transition-colors inline-block"
-                          title="Abrir e Marcar como Lido"
-                        >
-                          <Download size={18} />
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          {doc.signedFileUrl && (
+                            <button
+                              onClick={() => window.open(getImageUrl(doc.signedFileUrl!), '_blank')}
+                              className="text-emerald-700 hover:text-emerald-900 px-3 py-2 hover:bg-emerald-50 rounded-lg transition-colors inline-flex items-center gap-2"
+                              title="Baixar PDF assinado"
+                            >
+                              <FileText size={18} />
+                              <span className="text-xs font-semibold">PDF assinado</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleMarkAsRead(doc)}
+                            className="text-blue-600 hover:text-blue-800 px-3 py-2 hover:bg-blue-50 rounded-lg transition-colors inline-flex items-center gap-2"
+                            title="Abrir e Marcar como Lido"
+                          >
+                            <Download size={18} />
+                            <span className="text-xs font-semibold">Abrir</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

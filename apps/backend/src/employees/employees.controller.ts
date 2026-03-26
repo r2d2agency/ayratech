@@ -159,9 +159,9 @@ export class EmployeesController {
     return this.employeesService.approveTimesheetsAndNotify(competence);
   }
 
-  @Get('public/verify-document')
-  verifyDocument(@Query('id') id: string, @Query('hash') hash: string) {
-    return this.employeesService.verifyDocumentSignature(id, hash);
+  @Get('documents/timesheets/status-summary')
+  getTimesheetsStatusSummary(@Query('competence') competence: string) {
+    return this.employeesService.getTimesheetsStatusSummary(competence);
   }
 
   @Get('documents/timesheets/general/export')

@@ -10,6 +10,7 @@ import { WorkSchedule } from '../work-schedules/entities/work-schedule.entity';
 import { CreateTimeClockEventDto, CreateTimeBalanceDto } from './dto/create-time-clock.dto';
 import { UpdateTimeClockEventDto } from './dto/update-time-clock.dto';
 import { AbsenceRequest } from '../absences/entities/absence-request.entity';
+import { createHash } from 'crypto';
 
 @Injectable()
 export class TimeClockService {
@@ -86,6 +87,7 @@ export class TimeClockService {
       date ? date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-';
 
     const dates = Array.from(groupedByDate.keys()).sort();
+    const dataForHash: any[] = [];
     let totalMs = 0;
     for (const dateKey of dates) {
       const dayEvents = groupedByDate.get(dateKey)!;
@@ -107,6 +109,15 @@ export class TimeClockService {
       totalMs += Math.max(0, dayMs);
       const totalHours = dayMs > 0 ? (dayMs / (1000 * 60 * 60)).toFixed(2) : '0.00';
 
+      dataForHash.push({
+        date: dateKey,
+        entry: entry?.timestamp ? entry.timestamp.toISOString() : null,
+        lunchStart: lunchStart?.timestamp ? lunchStart.timestamp.toISOString() : null,
+        lunchEnd: lunchEnd?.timestamp ? lunchEnd.timestamp.toISOString() : null,
+        exit: exit?.timestamp ? exit.timestamp.toISOString() : null,
+        hasManualAdjustments: dayEvents.some(e => e.isManual) || false,
+      });
+
       ws.addRow({
         date: new Date(`${dateKey}T00:00:00`).toLocaleDateString('pt-BR'),
         entry: formatTime(entry?.timestamp),
@@ -120,6 +131,11 @@ export class TimeClockService {
 
     ws.addRow([]);
     ws.addRow([`Total do mês (horas): ${(totalMs / (1000 * 60 * 60)).toFixed(2)}`]);
+    ws.addRow([]);
+    const dataHash = createHash('sha256')
+      .update(JSON.stringify({ competence: String(competence || '').trim(), employeeId, days: dataForHash, totalMs }))
+      .digest('hex');
+    ws.addRow([`Hash dos dados do ponto (SHA-256): ${dataHash}`]);
     ws.addRow([]);
     ws.addRow(['Assinatura do Funcionário: ________________________________']);
     ws.addRow(['Data: ____/____/________']);
@@ -214,6 +230,31 @@ export class TimeClockService {
         });
       });
     });
+
+    const sortedEvents = [...events].sort((a, b) => {
+      const ae = a.employee?.id || '';
+      const be = b.employee?.id || '';
+      if (ae !== be) return ae.localeCompare(be);
+      return a.timestamp.getTime() - b.timestamp.getTime();
+    });
+    const dataHash = createHash('sha256')
+      .update(
+        JSON.stringify({
+          startDate: startDate || null,
+          endDate: endDate || null,
+          employeeId: employeeId || null,
+          events: sortedEvents.map(e => ({
+            employeeId: e.employee?.id || null,
+            timestamp: e.timestamp?.toISOString() || null,
+            eventType: e.eventType,
+            isManual: !!e.isManual,
+          })),
+        }),
+      )
+      .digest('hex');
+
+    worksheet.addRow([]);
+    worksheet.addRow([`Hash dos dados do ponto (SHA-256): ${dataHash}`]);
 
     return workbook;
   }

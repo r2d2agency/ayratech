@@ -100,7 +100,7 @@ const DocumentsView = () => {
         cpf: (user as any)?.employee?.cpf || (user as any)?.cpf || undefined,
       };
 
-      await client.patch(`/employees/me/documents/${doc.id}/sign`, {
+      const res = await client.patch(`/employees/me/documents/${doc.id}/sign`, {
         timestamp,
         device,
         location,
@@ -108,7 +108,19 @@ const DocumentsView = () => {
         signatureImage,
       });
 
-      setDocuments(prev => prev.map(d => d.id === doc.id ? { ...d, signedAt: timestamp, readAt: d.readAt || timestamp } : d));
+      const signed = res?.data;
+      setDocuments(prev =>
+        prev.map(d =>
+          d.id === doc.id
+            ? {
+                ...d,
+                signedAt: signed?.signedAt || timestamp,
+                signedFileUrl: signed?.signedFileUrl || d.signedFileUrl,
+                readAt: d.readAt || signed?.readAt || timestamp,
+              }
+            : d,
+        ),
+      );
       toast.success('Documento assinado com sucesso');
       setShowSignModal(false);
       setDocToSign(null);
@@ -354,6 +366,15 @@ const DocumentsView = () => {
                      title="Assinar documento"
                    >
                      <PenLine size={20} />
+                   </button>
+                 )}
+                 {doc.signedFileUrl && (
+                   <button
+                     onClick={() => window.open(getDownloadUrl(doc.signedFileUrl), '_blank')}
+                     className="p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+                     title="Baixar PDF assinado"
+                   >
+                     <FileText size={20} />
                    </button>
                  )}
                  <button 

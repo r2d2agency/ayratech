@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { 
   Users, Calendar, Clock, AlertTriangle, FileText, CalendarClock, ChevronRight, TrendingUp
 } from 'lucide-react';
 import SectionHeader from '../components/SectionHeader';
 import StatCard from '../components/StatCard';
+import api from '../api/client';
 
 type DateFilterId =
   | 'hoje'
@@ -99,6 +100,25 @@ interface RHDashboardViewProps {}
 const RHDashboardView: React.FC<RHDashboardViewProps> = () => {
   const [dateFilter, setDateFilter] = useState<DateFilterId>('este_mes');
   const [selectedAlert, setSelectedAlert] = useState<any | null>(null);
+  const [timesheetCompetence, setTimesheetCompetence] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [timesheetSummary, setTimesheetSummary] = useState<any | null>(null);
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const res = await api.get('/employees/documents/timesheets/status-summary', {
+          params: { competence: timesheetCompetence },
+        });
+        setTimesheetSummary(res.data || null);
+      } catch (e) {
+        setTimesheetSummary(null);
+      }
+    };
+    run();
+  }, [timesheetCompetence]);
 
   // Mocks para o dashboard de RH
   const absencesList: AbsenceItem[] = [
@@ -216,7 +236,7 @@ const RHDashboardView: React.FC<RHDashboardViewProps> = () => {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
         <StatCard 
           icon={<AlertTriangle />}
           label="Atestados / Afastados"
@@ -252,6 +272,24 @@ const RHDashboardView: React.FC<RHDashboardViewProps> = () => {
           sub={rhStats.lateClocks.sub}
           color="bg-orange-50 text-orange-500 border-orange-100"
         />
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <label className="text-[10px] font-semibold text-[color:var(--color-muted)] uppercase tracking-wider">Folha (comp.)</label>
+            <input
+              value={timesheetCompetence}
+              onChange={(e) => setTimesheetCompetence(e.target.value)}
+              className="w-[110px] text-xs px-2 py-1 rounded-md border border-[color:var(--color-border)] bg-[color:var(--surface-container-low)]"
+              placeholder="YYYY-MM"
+            />
+          </div>
+          <StatCard
+            icon={<FileText />}
+            label="Folhas de Ponto"
+            value={`${timesheetSummary?.pending ?? 0} / ${timesheetSummary?.validated ?? 0}`}
+            sub={`Aguardando / Validadas | A assinar: ${timesheetSummary?.validatedUnsigned ?? 0}`}
+            color="bg-slate-50 text-slate-700 border-slate-200"
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

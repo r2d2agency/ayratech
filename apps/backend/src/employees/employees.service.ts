@@ -809,7 +809,7 @@ export class EmployeesService {
 
     document.signedAt = new Date();
     document.signedByEmployeeId = employeeId;
-    document.signedMeta = { ...signedMeta, hash: signatureHash, docHash, qrDataUrl } ?? { hash: signatureHash, docHash, qrDataUrl };
+    document.signedMeta = { ...(signedMeta || {}), hash: signatureHash, docHash, qrDataUrl };
     if (signedFileUrl) document.signedFileUrl = signedFileUrl;
     if (!document.readAt) document.readAt = new Date();
 
@@ -930,6 +930,40 @@ export class EmployeesService {
       docHash: doc.signedMeta?.docHash || null,
       signedFileUrl: doc.signedFileUrl || null,
     };
+  }
+
+  async getTimesheetsStatusSummary(competence: string) {
+    const comp = String(competence || '').trim();
+    if (!comp) throw new BadRequestException('Competência é obrigatória (YYYY-MM).');
+
+    const rows = await this.documentsRepository
+      .createQueryBuilder('doc')
+      .select("COALESCE(doc.approvalStatus, 'pending')", 'status')
+      .addSelect('COUNT(*)', 'count')
+      .where('doc.type = :type', { type: 'folha_ponto' })
+      .andWhere('doc.competence = :competence', { competence: comp })
+      .groupBy('status')
+      .getRawMany<{ status: 'pending' | 'validated'; count: string }>();
+
+    const pending = Number(rows.find(r => r.status === 'pending')?.count || 0);
+    const validated = Number(rows.find(r => r.status === 'validated')?.count || 0);
+
+    const signed = await this.documentsRepository
+      .createQueryBuilder('doc')
+      .where('doc.type = :type', { type: 'folha_ponto' })
+      .andWhere('doc.competence = :competence', { competence: comp })
+      .andWhere('doc.signedAt IS NOT NULL')
+      .getCount();
+
+    const validatedUnsigned = await this.documentsRepository
+      .createQueryBuilder('doc')
+      .where('doc.type = :type', { type: 'folha_ponto' })
+      .andWhere('doc.competence = :competence', { competence: comp })
+      .andWhere("COALESCE(doc.approvalStatus, 'pending') = 'validated'")
+      .andWhere('doc.signedAt IS NULL')
+      .getCount();
+
+    return { competence: comp, pending, validated, signed, validatedUnsigned };
   }
 
   async generateMonthlyTimesheets(body: {
