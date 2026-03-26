@@ -6,8 +6,7 @@ ARG GIT_SHA
 WORKDIR /app
 
 # Install build dependencies just in case
-RUN sed -i 's|http://dl-cdn.alpinelinux.org|https://dl-cdn.alpinelinux.org|g' /etc/apk/repositories \
-    && apk add --no-cache python3 make g++
+RUN apk add --no-cache python3 make g++
 
 # Copy package files
 COPY package*.json ./
