@@ -18,8 +18,12 @@ export class AbsencesController {
   }
 
   @Get()
-  findAll(@Query('employeeId') employeeId?: string) {
-    return this.absencesService.findAll({ employeeId });
+  findAll(
+    @Query('employeeId') employeeId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.absencesService.findAll({ employeeId, startDate, endDate });
   }
 
   @Get(':id')

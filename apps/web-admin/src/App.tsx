@@ -4,6 +4,7 @@ import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import { ViewType } from './types';
 import DashboardView from './views/DashboardView';
+import RHDashboardView from './views/RHDashboardView';
 import ClientsView from './views/ClientsView';
 import ProductsView from './views/ProductsView';
 import LiveMapView from './views/LiveMapView';
@@ -105,6 +106,7 @@ const MainContent: React.FC<{ onLogout: () => void, userRole: string }> = ({ onL
         
         <main className="max-w-[1600px] mx-auto w-full px-6 py-10 md:px-12">
           {activeView === 'dashboard' && <DashboardView />}
+          {activeView === 'rh_dashboard' && <RHDashboardView />}
           {activeView === 'client_dashboard' && <ClientDashboardView />}
           {activeView === 'clients' && <ClientsView />}
           {activeView === 'products' && <ProductsView />}

@@ -14,6 +14,8 @@ export default [
       '@typescript-eslint': tseslint,
     },
     rules: {
+      'no-undef': 'off',
+      'no-unused-vars': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/ban-ts-comment': 'off',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],

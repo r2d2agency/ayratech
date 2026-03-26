@@ -3,7 +3,6 @@ import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { UsersService } from '../users/users.service';
-import * as bcrypt from 'bcryptjs';
 
 @Controller('auth')
 export class AuthController {
@@ -29,17 +28,13 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() body) {
-    try {
-      const user = await this.usersService.create({
-        email: body.email,
-        password: body.password,
-        roleId: body.roleId,
-      });
-      const { password, ...result } = user;
-      return result;
-    } catch (e: any) {
-      throw e;
-    }
+    const user = await this.usersService.create({
+      email: body.email,
+      password: body.password,
+      roleId: body.roleId,
+    });
+    const { password, ...result } = user;
+    return result;
   }
 
   @UseGuards(JwtAuthGuard)

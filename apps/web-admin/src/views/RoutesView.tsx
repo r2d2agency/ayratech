@@ -408,7 +408,8 @@ const RoutesView: React.FC = () => {
   const [duplicateTargetDates, setDuplicateTargetDates] = useState<string[]>([]);
   const [currentDateInput, setCurrentDateInput] = useState('');
   const [weeklySupervisorId, setWeeklySupervisorId] = useState<string>('');
-  const [weeklyMonths, setWeeklyMonths] = useState<number>(1);
+  const [weeklyWeeks, setWeeklyWeeks] = useState<number>(1);
+  const [weeklyRecurrenceType, setWeeklyRecurrenceType] = useState<'weeks' | 'months'>('weeks');
   const [weeklyWizardStep, setWeeklyWizardStep] = useState<number>(1);
   const [weeklyClientId, setWeeklyClientId] = useState<string>('');
   const [weeklyBrandId, setWeeklyBrandId] = useState<string>('');
@@ -434,7 +435,11 @@ const RoutesView: React.FC = () => {
     if (selectedDays.length === 0) return [];
     const start = getNextBusinessStart();
     const end = new Date(start);
-    end.setMonth(end.getMonth() + Math.max(1, weeklyMonths || 1));
+    if (weeklyRecurrenceType === 'months') {
+      end.setMonth(end.getMonth() + Math.max(1, weeklyWeeks || 1));
+    } else {
+      end.setDate(end.getDate() + 7 * Math.max(1, weeklyWeeks || 1) - 1);
+    }
     const dates: string[] = [];
     const cursor = new Date(start);
     while (cursor <= end) {
@@ -536,7 +541,8 @@ const RoutesView: React.FC = () => {
       setWeeklyChecklistTemplateId('');
       setSelectedPromoters([]);
       setRouteItems([]);
-      setWeeklyMonths(1);
+      setWeeklyWeeks(1);
+      setWeeklyRecurrenceType('weeks');
       setWeeklyWeekdays({ 0: false, 1: true, 2: false, 3: true, 4: false, 5: true, 6: false });
     }
     setShowWeeklyModal(true);
@@ -560,7 +566,8 @@ const RoutesView: React.FC = () => {
       const date = new Date(pendingRouteEdit.date);
       const dayOfWeek = date.getDay();
       setWeeklyWeekdays({ 0: false, 1: false, 2: false, 3: false, 4: false, 5: false, 6: false, [dayOfWeek]: true });
-      setWeeklyMonths(1); 
+      setWeeklyWeeks(1); 
+      setWeeklyRecurrenceType('weeks');
       
       openWeeklyWizard('edit');
     }
@@ -1055,7 +1062,7 @@ const RoutesView: React.FC = () => {
       console.error('Error saving route:', error);
       if (error.response?.status === 401) return;
       const errorMsg = error.response?.data?.message || error.message || 'Erro desconhecido';
-      alert(`Erro ao salvar rota: ${errorMsg}`);
+      alert(`Erro ao salvar rota: ${Array.isArray(errorMsg) ? errorMsg.join('\n') : errorMsg}`);
     } finally {
       setLoading(false);
     }
@@ -1137,23 +1144,28 @@ const RoutesView: React.FC = () => {
     }
   };
 
-  // Recorrência: gerar datas por dias da semana e quantidade de meses
+  // Recorrência: gerar datas por dias da semana e quantidade de meses/semanas
   const [recurrenceWeekdays, setRecurrenceWeekdays] = useState<Record<number, boolean>>({
     1: false, 2: false, 3: false, 4: false, 5: false, 6: false, 0: false
   });
-  const [recurrenceMonths, setRecurrenceMonths] = useState<number>(1);
+  const [recurrenceAmount, setRecurrenceAmount] = useState<number>(1);
+  const [recurrenceType, setRecurrenceType] = useState<'weeks' | 'months'>('weeks');
   const handleToggleWeekday = (day: number) => {
     setRecurrenceWeekdays(prev => ({ ...prev, [day]: !prev[day] }));
   };
   const handleGenerateRecurrence = () => {
     if (!routeToDuplicate) return;
     const start = new Date(routeToDuplicate.date + 'T00:00:00');
-    const months = Math.max(1, recurrenceMonths || 1);
+    const amount = Math.max(1, recurrenceAmount || 1);
     const selectedDays = Object.entries(recurrenceWeekdays).filter(([d, v]) => v).map(([d]) => parseInt(d, 10));
     if (selectedDays.length === 0) return;
     const dates: string[] = [];
     const end = new Date(start);
-    end.setMonth(end.getMonth() + months);
+    if (recurrenceType === 'months') {
+      end.setMonth(end.getMonth() + amount);
+    } else {
+      end.setDate(end.getDate() + (7 * amount));
+    }
     const cursor = new Date(start);
     while (cursor <= end) {
       if (selectedDays.includes(cursor.getDay())) {
@@ -1270,7 +1282,8 @@ const RoutesView: React.FC = () => {
     } catch (error: any) {
         console.error('Error updating promoters:', error);
         if (error.response?.status === 401) return;
-        alert('Erro ao atualizar promotores.');
+        const msg = error.response?.data?.message || error.message || 'Erro desconhecido';
+        alert(`Erro ao atualizar promotores: ${Array.isArray(msg) ? msg.join('\n') : msg}`);
     } finally {
         setLoading(false);
     }
@@ -3078,15 +3091,28 @@ const RoutesView: React.FC = () => {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="text-xs font-bold text-[color:var(--color-muted)] block mb-1">Meses de Recorrência</label>
-                      <input
-                        type="number"
-                        min={1}
-                        value={weeklyMonths}
-                        onChange={(e) => setWeeklyMonths(parseInt(e.target.value || '1', 10))}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                      />
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <label className="text-xs font-bold text-[color:var(--color-muted)] block mb-1">Tipo de Recorrência</label>
+                        <select
+                          value={weeklyRecurrenceType}
+                          onChange={(e) => setWeeklyRecurrenceType(e.target.value as 'weeks' | 'months')}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white"
+                        >
+                          <option value="weeks">Semanas</option>
+                          <option value="months">Meses</option>
+                        </select>
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-xs font-bold text-[color:var(--color-muted)] block mb-1">Quantidade</label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={weeklyWeeks}
+                          onChange={(e) => setWeeklyWeeks(parseInt(e.target.value || '1', 10))}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                        />
+                      </div>
                     </div>
 
                     {weeklyBrandId && (() => {

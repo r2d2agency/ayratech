@@ -12,6 +12,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 
 type FindAllFilters = {
   employeeId?: string;
+  startDate?: string;
+  endDate?: string;
 };
 
 @Injectable()
@@ -77,15 +79,30 @@ export class AbsencesService {
   }
 
   findAll(filters: FindAllFilters = {}) {
-    const where: any = {};
+    const qb = this.absencesRepository
+      .createQueryBuilder('a')
+      .leftJoinAndSelect('a.employee', 'employee')
+      .leftJoinAndSelect('a.approver', 'approver')
+      .leftJoinAndSelect('a.employeeDocument', 'employeeDocument')
+      .orderBy('a.startDate', 'DESC')
+      .addOrderBy('a.createdAt', 'DESC');
+
     if (filters.employeeId) {
-      where.employee = { id: filters.employeeId };
+      qb.andWhere('a.employeeId = :employeeId', { employeeId: filters.employeeId });
     }
-    return this.absencesRepository.find({
-      where,
-      relations: ['employee', 'approver', 'employeeDocument'],
-      order: { startDate: 'DESC', createdAt: 'DESC' } as any,
-    });
+
+    const startDate = filters.startDate ? String(filters.startDate).slice(0, 10) : '';
+    const endDate = filters.endDate ? String(filters.endDate).slice(0, 10) : '';
+
+    if (startDate || endDate) {
+      const rangeStart = startDate || endDate;
+      const rangeEnd = endDate || startDate;
+
+      qb.andWhere('a.startDate <= :rangeEnd', { rangeEnd })
+        .andWhere('(a.endDate IS NULL OR a.endDate >= :rangeStart)', { rangeStart });
+    }
+
+    return qb.getMany();
   }
 
   findOne(id: string) {

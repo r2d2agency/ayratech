@@ -141,6 +141,11 @@ export class EmployeesController {
     });
   }
 
+  @Get('vacation-alerts')
+  getVacationAlerts() {
+    return this.employeesService.getVacationAlerts();
+  }
+
   @Get(':id/documents')
   findAllDocumentsByEmployee(@Param('id') id: string, @Query('search') search?: string) {
     return this.employeesService.findAllDocumentsByEmployee(id, search);

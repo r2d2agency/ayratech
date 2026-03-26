@@ -60,7 +60,7 @@ export class RoutesService {
       .leftJoinAndSelect('p.brand', 'b')
       .leftJoinAndSelect('rip.completedBy', 'u')
       .where("rip.photos IS NOT NULL")
-      .andWhere("cardinality(rip.photos) > 0")
+      .andWhere('COALESCE(array_length(rip.photos, 1), 0) > 0')
       .andWhere('rip.checkOutTime >= :timeThreshold', { timeThreshold })
       .orderBy('rip.checkOutTime', 'DESC')
       .take(20);
@@ -395,8 +395,12 @@ export class RoutesService {
 
       await queryRunner.commitTransaction();
       return this.findOne(savedRoute.id);
-    } catch (err) {
+    } catch (err: any) {
       await queryRunner.rollbackTransaction();
+      
+      if (err.status === 400 || err.name === 'BadRequestException' || err instanceof BadRequestException) {
+          throw new BadRequestException(err.message);
+      }
       throw err;
     } finally {
       await queryRunner.release();
@@ -1428,12 +1432,20 @@ export class RoutesService {
       }
 
       return this.findOne(id);
-    } catch (error) {
+    } catch (error: any) {
       await queryRunner.rollbackTransaction();
       console.error('Error updating route (Stack):', error.stack);
       console.error('Error updating route (Message):', error.message);
       console.error('Error updating route (Full):', JSON.stringify(error, null, 2));
-      if (error instanceof BadRequestException) throw error;
+      
+      // Fix for error instance check
+      if (error instanceof HttpException) {
+          throw error;
+      }
+      if (error.status === 400 || error.name === 'BadRequestException') {
+          const msg = error.response?.message || error.response || error.message;
+          throw new BadRequestException(msg);
+      }
       throw new InternalServerErrorException(`Erro ao salvar rota: ${error.message}`);
     } finally {
       await queryRunner.release();
@@ -1810,7 +1822,7 @@ export class RoutesService {
         if (photo.startsWith('data:image')) {
            try {
              // Extract Base64 data
-             const matches = photo.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+             const matches = photo.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
              if (matches && matches.length === 3) {
                 const buffer = Buffer.from(matches[2], 'base64');
                 

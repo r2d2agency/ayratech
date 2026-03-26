@@ -139,6 +139,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate, expanded, set
           Principal
         </p>
         {navItem('dashboard', <LayoutGrid size={20} />, 'Dashboard')}
+        {canViewEmployees && navItem('rh_dashboard', <Users size={20} />, 'Dashboard RH')}
         {navItem('live_map', <MapPinned size={20} />, 'Monitoramento')}
 
         <div className="pt-4" />
