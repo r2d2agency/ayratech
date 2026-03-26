@@ -632,7 +632,7 @@ export const CategoryTaskFlow: React.FC<CategoryTaskFlowProps> = ({
             </button>
           </div>
 
-          {isExtra && (
+          {isExtra && type === 'before' && (
             <div className="space-y-2">
               <div className="text-xs font-bold text-gray-700">Produtos no Ponto Extra</div>
               <input
